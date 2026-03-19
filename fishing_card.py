@@ -80,11 +80,11 @@ def _draw_gradient(img: "Image.Image", top_color: tuple, bottom_color: tuple) ->
     w, h = img.size
     draw = ImageDraw.Draw(img)
     tr, tg, tb = top_color[:3]
-    br, bg_c, bb = bottom_color[:3]
+    br, bg, bb = bottom_color[:3]
     for y in range(h):
         t = y / max(h - 1, 1)
         r = int(tr + (br - tr) * t)
-        g = int(tg + (bg_c - tg) * t)
+        g = int(tg + (bg - tg) * t)
         b = int(tb + (bb - tb) * t)
         draw.line([(0, y), (w - 1, y)], fill=(r, g, b))
 

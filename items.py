@@ -97,6 +97,12 @@ CONSUMABLES = {
         "mp": 5,
         "en": 0,
     },
+    # ── 신규 포션 (제조 결과물) ───────────────────────────────────────────────
+    "hp_potion_mid": {"name": "중급 HP 포션", "type": "consumable", "grade": "Rare",   "price": 400,  "desc": "HP를 대량 회복.",                         "hp": 250, "mp": 0,   "en": 0},
+    "mp_potion_mid": {"name": "중급 MP 포션", "type": "consumable", "grade": "Rare",   "price": 450,  "desc": "MP를 대량 회복.",                         "hp": 0,   "mp": 200, "en": 0},
+    "energy_potion": {"name": "기력 포션",    "type": "consumable", "grade": "Normal", "price": 250,  "desc": "기력 회복.",                              "hp": 0,   "mp": 0,   "en": 50},
+    "antidote":      {"name": "해독 포션",    "type": "consumable", "grade": "Normal", "price": 180,  "desc": "해독 + HP 회복.",                         "hp": 50,  "mp": 0,   "en": 0},
+    "all_potion":    {"name": "만능 포션",    "type": "consumable", "grade": "Epic",   "price": 2000, "desc": "HP+MP+EN 전부 회복.",                     "hp": 500, "mp": 300, "en": 50},
 }
 
 GATHERING_ITEMS = {
@@ -128,6 +134,20 @@ GATHERING_ITEMS = {
     "carrot":          {"name": "당근",           "type": "gathering", "grade": "Normal",    "price": 15,   "desc": "달콤한 당근."},
     "cucumber":        {"name": "오이",           "type": "gathering", "grade": "Normal",    "price": 12,   "desc": "시원한 오이."},
     "onion":           {"name": "양파",           "type": "gathering", "grade": "Normal",    "price": 14,   "desc": "알싸한 양파."},
+    # ── 즉시 소비 열매 (신규) ─────────────────────────────────────────────────
+    "wild_berry":      {"name": "야생 열매",      "type": "gathering", "grade": "Normal",    "price": 20,   "desc": "야생에서 딴 열매.",                     "hp": 20, "en": 5},
+    "golden_apple":    {"name": "황금사과",       "type": "gathering", "grade": "Epic",      "price": 500,  "desc": "전설의 황금사과.",                      "hp": 100, "mp": 50},
+    "forest_nut":      {"name": "숲 열매",        "type": "gathering", "grade": "Normal",    "price": 18,   "desc": "견과류.",                               "en": 15},
+    "blue_berry":      {"name": "블루베리",       "type": "gathering", "grade": "Normal",    "price": 22,   "desc": "달콤한 블루베리.",                      "mp": 15},
+    # ── 포션 재료 (신규) ─────────────────────────────────────────────────────
+    "healing_root":    {"name": "치유의 뿌리",    "type": "gathering", "grade": "Rare",      "price": 80,   "desc": "고급 HP 포션 재료."},
+    "mana_flower":     {"name": "마나꽃",         "type": "gathering", "grade": "Rare",      "price": 90,   "desc": "고급 MP 포션 재료."},
+    "antidote_herb":   {"name": "해독초",         "type": "gathering", "grade": "Normal",    "price": 35,   "desc": "해독 포션 재료."},
+    "energy_leaf":     {"name": "원기잎",         "type": "gathering", "grade": "Normal",    "price": 30,   "desc": "기력 포션 재료."},
+    "moonlight_dew":   {"name": "달빛 이슬",      "type": "gathering", "grade": "Epic",      "price": 300,  "desc": "만능 포션 재료."},
+    # ── 채집 요리 재료 (신규) ────────────────────────────────────────────────
+    "wild_garlic":     {"name": "산마늘",         "type": "gathering", "grade": "Normal",    "price": 15,   "desc": "향이 강한 산마늘."},
+    "pine_nut":        {"name": "잣",             "type": "gathering", "grade": "Rare",      "price": 60,   "desc": "고소한 잣."},
 }
 
 LOOT_ITEMS = {
@@ -244,6 +264,14 @@ COOKED_DISHES = {
     "tuna_sashimi":       {"name": "참치회",            "type": "cooked", "grade": "Rare",      "price": 200,  "desc": "신선한 참치회.",                          "hp": 80,  "mp": 15,  "en": 25},
     "lemon_juice":        {"name": "레몬 주스",         "type": "cooked", "grade": "Normal",    "price": 45,   "desc": "상큼한 레몬 주스.",                       "hp": 10,  "mp": 20,  "en": 20},
     "onion_salad":        {"name": "양파 샐러드",       "type": "cooked", "grade": "Normal",    "price": 40,   "desc": "달콤하게 절인 양파 샐러드.",              "hp": 20,  "mp": 10,  "en": 10},
+    # ── 신규 요리 7종 ────────────────────────────────────────────────────────
+    "ck_rice":           {"name": "밥",           "type": "cooked", "grade": "Normal", "price": 30,  "desc": "갓 지은 따뜻한 밥.",                     "hp": 15, "mp": 0,  "en": 20},
+    "ck_tofu":           {"name": "두부",         "type": "cooked", "grade": "Normal", "price": 40,  "desc": "부드러운 수제 두부.",                     "hp": 20, "mp": 5,  "en": 10},
+    "ck_soft_tofu":      {"name": "순두부",       "type": "cooked", "grade": "Normal", "price": 45,  "desc": "곱고 부드러운 순두부.",                   "hp": 25, "mp": 5,  "en": 15},
+    "ck_soft_tofu_stew": {"name": "순두부찌개",   "type": "cooked", "grade": "Rare",   "price": 120, "desc": "매콤한 순두부찌개.",                      "hp": 80, "mp": 20, "en": 30},
+    "ck_yukhoe":         {"name": "육회",         "type": "cooked", "grade": "Rare",   "price": 150, "desc": "신선한 고급 육회.",                       "hp": 60, "mp": 10, "en": 25},
+    "ck_natto":          {"name": "낫또",         "type": "cooked", "grade": "Normal", "price": 35,  "desc": "발효된 대두 낫또.",                       "hp": 15, "mp": 10, "en": 10},
+    "ck_mandu":          {"name": "만두",         "type": "cooked", "grade": "Normal", "price": 60,  "desc": "속이 꽉 찬 만두.",                        "hp": 40, "mp": 10, "en": 20},
 }
 
 # 몬스터 드랍 아이템
@@ -684,6 +712,35 @@ TOOLS = {
     "tool_ferment": {"name": "발효통",   "type": "tool", "grade": "Rare",   "price": 2000, "desc": "발효 요리 전용"},
 }
 
+# 기본 재료 (물 뜨기, 요리 재료) — 새 재료만 (GROCERIES와 중복 없이)
+MATERIALS = {
+    "wheat":        {"name": "밀",      "type": "material", "grade": "Normal", "price": 12, "desc": "밀가루 원료."},
+}
+
+# 레이나 상점 식료품 카탈로그
+GROCERIES = {
+    "salt":         {"name": "소금",      "type": "material", "grade": "Normal", "price": 10,  "desc": "기본 조미료."},
+    "sugar":        {"name": "설탕",      "type": "material", "grade": "Normal", "price": 12,  "desc": "단맛 조미료."},
+    "soy_sauce":    {"name": "간장",      "type": "material", "grade": "Normal", "price": 15,  "desc": "짭조름한 양념."},
+    "pepper":       {"name": "후추",      "type": "material", "grade": "Normal", "price": 15,  "desc": "매운 향신료."},
+    "butter":       {"name": "버터",      "type": "material", "grade": "Normal", "price": 25,  "desc": "부드러운 버터."},
+    "oil":          {"name": "식용유",    "type": "material", "grade": "Normal", "price": 12,  "desc": "기본 기름."},
+    "olive_oil":    {"name": "올리브유",  "type": "material", "grade": "Normal", "price": 30,  "desc": "고급 기름."},
+    "flour":        {"name": "밀가루",    "type": "material", "grade": "Normal", "price": 18,  "desc": "빵·면·만두 재료."},
+    "garlic":       {"name": "마늘",      "type": "material", "grade": "Normal", "price": 10,  "desc": "향신 재료."},
+    "vinegar":      {"name": "식초",      "type": "material", "grade": "Normal", "price": 10,  "desc": "신맛 조미료."},
+    "wasabi":       {"name": "와사비",    "type": "material", "grade": "Normal", "price": 20,  "desc": "톡 쏘는 양념."},
+    "chili_powder": {"name": "고춧가루",  "type": "material", "grade": "Normal", "price": 15,  "desc": "매운 양념."},
+    "coffee_bean":  {"name": "커피 원두", "type": "material", "grade": "Normal", "price": 25,  "desc": "커피 재료."},
+    "milk":         {"name": "우유 원액", "type": "material", "grade": "Normal", "price": 20,  "desc": "요리 재료용 우유."},
+    "wine":         {"name": "와인",      "type": "material", "grade": "Normal", "price": 50,  "desc": "고급 요리 재료."},
+    "egg":          {"name": "달걀",      "type": "material", "grade": "Normal", "price": 12,  "desc": "기본 식재료."},
+    "rice":         {"name": "쌀",        "type": "material", "grade": "Normal", "price": 15,  "desc": "밥 재료."},
+    "soybean":      {"name": "대두",      "type": "material", "grade": "Normal", "price": 12,  "desc": "두부·낫또 재료."},
+    "sesame_oil":   {"name": "참기름",    "type": "material", "grade": "Normal", "price": 25,  "desc": "한국 요리 향유."},
+    "empty_bottle": {"name": "빈 병",     "type": "material", "grade": "Normal", "price": 15,  "desc": "물 뜨기용."},
+}
+
 ALL_ITEMS = {
     **WEAPONS,
     **ARMORS,
@@ -698,4 +755,6 @@ ALL_ITEMS = {
     **NEW_ORE_ITEMS,
     **SPECIAL_ITEMS,
     **TOOLS,
+    **MATERIALS,
+    **GROCERIES,
 }

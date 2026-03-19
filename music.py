@@ -19,10 +19,29 @@ SONGS = [
 
 _SONG_BY_ID = {s["id"]: s for s in SONGS}
 
+MAX_MELODY_LEN = 32
+VALID_NOTES_SET = set(NOTES)
+
+
+def parse_melody(melody_str: str) -> list | None:
+    """한글 음계 문자열을 파싱합니다. 유효하지 않으면 None 반환."""
+    # 공백으로 구분된 경우
+    if " " in melody_str:
+        tokens = melody_str.split()
+    else:
+        # 글자 단위로 분리 (도/레/미/파/솔/라/시 각 1글자)
+        tokens = list(melody_str)
+    if not tokens or len(tokens) > MAX_MELODY_LEN:
+        return None
+    for t in tokens:
+        if t not in VALID_NOTES_SET:
+            return None
+    return tokens
+
 
 class NoteButton(discord.ui.Button):
     def __init__(self, note: str, view_ref):
-        super().__init__(label=f"{NOTE_EMOJIS.get(note, '')} {note}", style=discord.ButtonStyle.secondary)
+        super().__init__(label=note, style=discord.ButtonStyle.secondary)
         self.note     = note
         self.view_ref = view_ref
 
@@ -69,7 +88,7 @@ class MusicView(discord.ui.View):
                 pass
 
             result_notes = " ".join(
-                f"{'✅' if a == b else '❌'}{a}" for a, b in zip(self.entered, self.target)
+                f"{'✅' if a == b else '❌'} {a}" for a, b in zip(self.entered, self.target)
             )
             embed = discord.Embed(
                 title=f"🎵 {self.song['name']} — 연주 완료!",
@@ -85,7 +104,7 @@ class MusicView(discord.ui.View):
             self.stop()
         else:
             progress = " ".join(
-                f"{'✅' if a == b else '❌'}{a}"
+                f"{'✅' if a == b else '❌'} {a}"
                 for a, b in zip(self.entered, self.target[:len(self.entered)])
             )
             remain = len(self.target) - len(self.entered)
@@ -123,7 +142,7 @@ class MusicEngine:
         """곡 선택 임베드를 표시합니다."""
         embed = discord.Embed(
             title="🎵 작곡 & 연주",
-            description="연주할 곡을 선택하세요!\n`/연주 [곡ID]` 로 연주 시작",
+            description="연주할 곡을 선택하세요!\n`/연주 [곡ID]` 로 연주 시작\n`/작곡 [곡이름] [멜로디]` 로 악보 저장",
             color=EMBED_COLOR.get("help", 0x7B5EA7),
         )
         for song in SONGS:
@@ -139,13 +158,75 @@ class MusicEngine:
         embed.set_footer(text="🎵 음표를 순서대로 클릭하면 점수가 계산됨미댜!")
         await ctx.send(embed=embed)
 
-    async def perform(self, ctx, song_id: str):
-        """지정한 곡을 연주합니다."""
-        song = _SONG_BY_ID.get(song_id)
-        if not song:
-            ids = ", ".join(_SONG_BY_ID.keys())
-            await ctx.send(ansi(f"  {C.RED}✖ [{song_id}]는 없는 곡임미댜! 가능한 ID: {ids}{C.R}"))
+    async def save_composition(self, ctx, title: str, melody_str: str):
+        """악보를 저장합니다."""
+        notes = parse_melody(melody_str)
+        if notes is None:
+            valid = "/".join(NOTES)
+            await ctx.send(ansi(
+                f"  {C.RED}✖ 멜로디가 잘못됐슴미댜!\n"
+                f"  유효한 음표: {valid}\n"
+                f"  최대 {MAX_MELODY_LEN}음표까지 입력 가능임미댜!{C.R}"
+            ))
             return
+        from database import save_sheet_music
+        save_sheet_music(0, title, " ".join(notes))
+        await ctx.send(ansi(
+            f"  {C.GREEN}✔ 악보 [{title}] 저장 완료!{C.R}\n"
+            f"  {C.WHITE}멜로디:{C.R} {' '.join(notes)} ({len(notes)}음표)"
+        ))
+
+    async def show_sheet_list(self, ctx):
+        """저장된 악보 목록을 표시합니다."""
+        from database import load_sheet_music_list
+        sheets = load_sheet_music_list(0)
+        if not sheets:
+            await ctx.send(ansi(f"  {C.DARK}저장된 악보가 없슴미댜.{C.R}"))
+            return
+        lines = [header_box("📜 악보 목록")]
+        for s in sheets:
+            notes_preview = s["melody"][:20] + ("..." if len(s["melody"]) > 20 else "")
+            lines.append(f"  {C.WHITE}[{s['id']}] {s['title']}{C.R}  {C.DARK}{notes_preview}{C.R}")
+        lines.append(divider())
+        lines.append(f"  {C.GREEN}/연주 [곡이름]{C.R} 으로 연주!")
+        await ctx.send(ansi("\n".join(lines)))
+
+    async def delete_sheet(self, ctx, title: str):
+        """악보를 삭제합니다."""
+        from database import delete_sheet_music
+        ok = delete_sheet_music(0, title)
+        if ok:
+            await ctx.send(ansi(f"  {C.GREEN}✔ 악보 [{title}] 삭제 완료!{C.R}"))
+        else:
+            await ctx.send(ansi(f"  {C.RED}✖ 악보 [{title}]을(를) 찾을 수 없슴미댜!{C.R}"))
+
+    async def perform(self, ctx, song_id: str):
+        """지정한 곡을 연주합니다. 프리셋 곡 또는 유저 작곡 곡 지원."""
+        # 1. 프리셋 곡 확인
+        song = _SONG_BY_ID.get(song_id)
+        user_melody = None
+
+        if not song:
+            # 2. 유저 작곡 악보 확인 (ID 숫자 또는 제목)
+            from database import load_sheet_music
+            sheet = load_sheet_music(0, song_id)
+            if not sheet:
+                ids = ", ".join(_SONG_BY_ID.keys())
+                await ctx.send(ansi(
+                    f"  {C.RED}✖ [{song_id}]는 없는 곡임미댜!\n"
+                    f"  프리셋 ID: {ids}\n"
+                    f"  또는 /악보목록 에서 저장된 악보를 확인하셰요!{C.R}"
+                ))
+                return
+            user_melody = sheet["melody"].split()
+            # 유저 악보는 가상 song dict 사용
+            song = {
+                "id": song_id,
+                "name": sheet["title"],
+                "length": len(user_melody),
+                "reward_gold": min(50 * len(user_melody), 500),
+                "reward_contrib": min(len(user_melody), 10),
+            }
 
         energy_cost = 10
         if not self.player.consume_energy(energy_cost):
@@ -154,8 +235,12 @@ class MusicEngine:
             ))
             return
 
-        target   = [random.choice(NOTES) for _ in range(song["length"])]
-        target_s = " ".join(f"{NOTE_EMOJIS.get(n,'')}{n}" for n in target)
+        if user_melody:
+            target = user_melody
+        else:
+            target = [random.choice(NOTES) for _ in range(song["length"])]
+
+        target_s = " ".join(target)
 
         embed = discord.Embed(
             title=f"🎵 {song['name']} — 연주 시작!",

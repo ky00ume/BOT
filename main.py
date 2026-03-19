@@ -29,7 +29,7 @@ from cooking_db   import CookingEngine
 from metallurgy   import MetallurgyEngine
 from alarms       import setup_alarms
 from responses    import get_drider_response, get_hyness_response, get_majesty_response, get_pet_response
-from items        import CONSUMABLES, COOKED_DISHES, ALL_ITEMS
+from items        import CONSUMABLES, COOKED_DISHES, ALL_ITEMS, GATHERING_ITEMS
 from village      import village_manager
 from gathering    import GatheringEngine
 from weather      import weather_system
@@ -60,6 +60,10 @@ if not TOKEN:
 
 # 먹을 수 있는 아이템 합산
 EDIBLE_ITEMS = {**CONSUMABLES, **COOKED_DISHES}
+# 채집 아이템 중 hp, mp, en이 있는 것도 포함
+for _k, _v in GATHERING_ITEMS.items():
+    if any(_v.get(stat, 0) > 0 for stat in ("hp", "mp", "en")):
+        EDIBLE_ITEMS[_k] = _v
 
 # ─── Discord 봇 초기화 ────────────────────────────────────────────────────
 intents = discord.Intents.default()
@@ -82,6 +86,10 @@ gacha_engine      = GachaEngine(shared_player)
 music_engine      = MusicEngine(shared_player)
 crafting_engine   = CraftingEngine(shared_player)
 shared_player._affinity_manager = affinity_manager
+
+# 보관함 엔진 초기화
+from storage import StorageEngine
+storage_engine = StorageEngine(shared_player)
 
 
 # ─── 이벤트 ──────────────────────────────────────────────────────────────
@@ -296,13 +304,33 @@ async def buy_list_cmd(ctx, npc_name: str = None):
 
 
 @bot.command(name="구매")
-async def buy_cmd(ctx, npc_name: str = None, item_name: str = None):
+async def buy_cmd(ctx, npc_name: str = None, item_name: str = None, count: int = 1):
     if not await _check_channel(ctx):
         return
-    if not npc_name or not item_name:
-        await ctx.send(ansi(f"  {C.RED}✖ /구매 [NPC이름] [아이템이름] 형식으로 입력하셰요!{C.R}"))
+    if not npc_name:
+        await ctx.send(ansi(f"  {C.RED}✖ /구매 [NPC이름] [아이템이름] [수량] 형식으로 입력하셰요!{C.R}"))
         return
-    msg = shop_manager.execute_buy(npc_name, item_name)
+    if not item_name:
+        # 인터랙티브 UI 표시
+        from shop import NPC_CATALOGS
+        from shop_ui import BuyView
+        catalog = NPC_CATALOGS.get(npc_name)
+        if not catalog:
+            available = ", ".join(NPC_CATALOGS.keys())
+            await ctx.send(ansi(
+                f"  {C.RED}✖ [{npc_name}]은(는) 상점 NPC가 아님미댜!\n"
+                f"  상점 NPC: {available}{C.R}"
+            ))
+            return
+        view = BuyView(shared_player, shop_manager, npc_name, catalog)
+        msg  = await ctx.send(
+            ansi(f"  {C.GOLD}🛒 {npc_name} 상점{C.R}  —  아이템을 선택하셰요!"),
+            view=view
+        )
+        view._message = msg
+        return
+    count = max(1, min(count, 999))
+    msg = shop_manager.execute_buy(npc_name, item_name, count)
     await ctx.send(msg)
 
 
@@ -315,13 +343,32 @@ async def sell_list_cmd(ctx):
 
 
 @bot.command(name="판매", aliases=["판매확정"])
-async def sell_cmd(ctx, item_name: str = None):
+async def sell_cmd(ctx, item_name: str = None, count_or_all: str = "1"):
     if not await _check_channel(ctx):
         return
     if not item_name:
-        await ctx.send(ansi(f"  {C.RED}✖ /판매 [아이템이름] 형식으로 입력하셰요!{C.R}"))
+        # 인터랙티브 판매 UI
+        from shop_ui import SellView
+        view = SellView(shared_player, shop_manager)
+        msg  = await ctx.send(
+            ansi(f"  {C.GOLD}🏪 판매 UI{C.R}  —  아이템을 선택하셰요!"),
+            view=view
+        )
+        view._message = msg
         return
-    msg = shop_manager.sell_item(item_name)
+    # 수량 파싱 ("전부" 또는 숫자)
+    if count_or_all == "전부":
+        item_id = find_item_by_name(item_name)
+        count   = shared_player.inventory.get(item_id, 0) if item_id else 0
+        if count == 0:
+            await ctx.send(ansi(f"  {C.RED}✖ [{item_name}]이(가) 인벤토리에 없슴미댜!{C.R}"))
+            return
+    else:
+        try:
+            count = max(1, int(count_or_all))
+        except ValueError:
+            count = 1
+    msg = shop_manager.sell_item(item_name, count)
     await ctx.send(msg)
 
 
@@ -767,10 +814,30 @@ async def gacha10_cmd(ctx):
 # ═══════════════════════════════════════════════════════════════════════════
 
 @bot.command(name="작곡")
-async def compose_cmd(ctx):
+async def compose_cmd(ctx, title: str = None, *, melody: str = None):
     if not await _check_channel(ctx):
         return
-    await music_engine.compose(ctx)
+    if not title or not melody:
+        await music_engine.compose(ctx)
+        return
+    await music_engine.save_composition(ctx, title, melody)
+
+
+@bot.command(name="악보목록")
+async def sheet_list_cmd(ctx):
+    if not await _check_channel(ctx):
+        return
+    await music_engine.show_sheet_list(ctx)
+
+
+@bot.command(name="악보삭제")
+async def sheet_delete_cmd(ctx, title: str = None):
+    if not await _check_channel(ctx):
+        return
+    if not title:
+        await ctx.send(ansi(f"  {C.RED}✖ /악보삭제 [곡이름] 형식으로 입력하셰요!{C.R}"))
+        return
+    await music_engine.delete_sheet(ctx, title)
 
 
 @bot.command(name="연주")
@@ -993,6 +1060,129 @@ def _shutdown_handler(sig, frame):
 
 signal.signal(signal.SIGINT,  _shutdown_handler)
 signal.signal(signal.SIGTERM, _shutdown_handler)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 신규 명령어 — 물 뜨기
+# ═══════════════════════════════════════════════════════════════════════════
+
+@bot.command(name="물뜨기")
+async def draw_water_cmd(ctx, count: int = 1):
+    if not await _check_channel(ctx):
+        return
+    count = max(1, min(count, 99))
+    if shared_player.inventory.get("empty_bottle", 0) < count:
+        await ctx.send(ansi(f"  {C.RED}✖ 빈 병이 부족함미댜! (필요: {count}개){C.R}"))
+        return
+    energy_cost = 5 * count
+    if not shared_player.consume_energy(energy_cost):
+        await ctx.send(ansi(f"  {C.RED}✖ 기력이 부족함미댜! (필요: {energy_cost}){C.R}"))
+        return
+    shared_player.remove_item("empty_bottle", count)
+    shared_player.add_item("water", count)
+    await ctx.send(ansi(
+        f"  {C.GREEN}✔ 물을 떴슴미댜!{C.R}\n"
+        f"  {C.WHITE}물{C.R} x{count} 획득!\n"
+        f"  {C.RED}기력 -{energy_cost}{C.R}"
+    ))
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 신규 명령어 — 아이템 목록 CSV
+# ═══════════════════════════════════════════════════════════════════════════
+
+@bot.command(name="아이템목록")
+async def item_list_cmd(ctx):
+    if not await _check_channel(ctx):
+        return
+    from generate_item_list import generate_csv_buffer
+    buf  = generate_csv_buffer()
+    file = discord.File(buf, filename="item_list.csv")
+    await ctx.send("📋 전체 아이템 목록이에요!", file=file)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 신규 명령어 — 보관함 시스템
+# ═══════════════════════════════════════════════════════════════════════════
+
+@bot.command(name="보관함")
+async def storage_cmd(ctx):
+    if not await _check_channel(ctx):
+        return
+    await ctx.send(storage_engine.show())
+
+
+@bot.command(name="보관함넣기")
+async def storage_deposit_cmd(ctx, item_name: str = None, count: int = 1):
+    if not await _check_channel(ctx):
+        return
+    if not item_name:
+        await ctx.send(ansi(f"  {C.RED}✖ /보관함넣기 [아이템이름] [수량] 형식으로 입력하셰요!{C.R}"))
+        return
+    item_id = find_item_by_name(item_name)
+    if not item_id:
+        await ctx.send(ansi(f"  {C.RED}✖ [{item_name}]을(를) 찾을 수 없슴미댜!{C.R}"))
+        return
+    count = max(1, count)
+    await ctx.send(storage_engine.deposit(item_id, count))
+
+
+@bot.command(name="보관함꺼내기")
+async def storage_withdraw_cmd(ctx, item_name: str = None, count: int = 1):
+    if not await _check_channel(ctx):
+        return
+    if not item_name:
+        await ctx.send(ansi(f"  {C.RED}✖ /보관함꺼내기 [아이템이름] [수량] 형식으로 입력하셰요!{C.R}"))
+        return
+    item_id = find_item_by_name(item_name)
+    if not item_id:
+        await ctx.send(ansi(f"  {C.RED}✖ [{item_name}]을(를) 찾을 수 없슴미댜!{C.R}"))
+        return
+    count = max(1, count)
+    await ctx.send(storage_engine.withdraw(item_id, count))
+
+
+@bot.command(name="보관함업그레이드")
+async def storage_upgrade_cmd(ctx):
+    if not await _check_channel(ctx):
+        return
+    await ctx.send(storage_engine.upgrade())
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 신규 명령어 — 선물 시스템
+# ═══════════════════════════════════════════════════════════════════════════
+
+@bot.command(name="선물")
+async def gift_cmd(ctx, npc_name: str = None, item_name: str = None):
+    if not await _check_channel(ctx):
+        return
+    if not npc_name or not item_name:
+        await ctx.send(ansi(f"  {C.RED}✖ /선물 [NPC이름] [아이템이름] 형식으로 입력하셰요!{C.R}"))
+        return
+    from database import NPC_DATA
+    if npc_name not in NPC_DATA:
+        await ctx.send(ansi(f"  {C.RED}✖ [{npc_name}]은(는) NPC가 아닌데요!{C.R}"))
+        return
+    item_id = find_item_by_name(item_name)
+    if not item_id or shared_player.inventory.get(item_id, 0) == 0:
+        await ctx.send(ansi(f"  {C.RED}✖ [{item_name}]이(가) 인벤토리에 없슴미댜!{C.R}"))
+        return
+    shared_player.remove_item(item_id, 1)
+    amount, reaction, leveled, lv_name = affinity_manager.give_gift(npc_name, item_id)
+    item_display = ALL_ITEMS.get(item_id, {}).get("name", item_id)
+    sign = "+" if amount >= 0 else ""
+    from ui_theme import header_box
+    lines = [
+        header_box(f"🎁 {npc_name}에게 선물"),
+        f"  {C.WHITE}{item_display}{C.R} → {C.GOLD}{npc_name}{C.R}",
+        f"  💬 \"{reaction}\"",
+        f"  {C.GREEN if amount >= 0 else C.RED}호감도 {sign}{amount}{C.R}",
+    ]
+    if leveled:
+        lines.append(f"  {C.GOLD}✨ 관계 변화! → [{lv_name}]{C.R}")
+    await ctx.send(ansi("\n".join(lines)))
+
 
 # ─── 봇 실행 ──────────────────────────────────────────────────────────────
 if __name__ == "__main__":

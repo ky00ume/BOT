@@ -5,25 +5,74 @@ import discord
 from ui_theme import C, ansi, header_box, divider, rank_badge, FOOTERS, GRADE_EMBED_COLOR
 
 FISH_DB = {
-    "붕어":     {"id": "fs_carp_01",     "grade": "Normal",    "price": 5,   "size": (10, 30),  "rate": 0.45, "rank_req": "연습", "cookable": True},
-    "잉어":     {"id": "fs_carp_02",     "grade": "Normal",    "price": 15,  "size": (20, 50),  "rate": 0.25, "rank_req": "연습", "cookable": True},
-    "연어":     {"id": "fs_salmon_01",   "grade": "Rare",      "price": 40,  "size": (40, 80),  "rate": 0.18, "rank_req": "F",    "cookable": True},
-    "장어":     {"id": "fs_eel_01",      "grade": "Rare",      "price": 60,  "size": (30, 70),  "rate": 0.08, "rank_req": "E",    "cookable": True},
-    "황금장어": {"id": "fs_gold_eel_01", "grade": "Legendary", "price": 300, "size": (60, 120), "rate": 0.02, "rank_req": "B",    "cookable": True},
-    "폐타이어": {"id": "trash_tire_01",  "grade": "Normal",    "price": 1,   "size": (0, 0),    "rate": 0.02, "rank_req": "연습", "cookable": False},
+    # ── Normal ──────────────────────────────────────────────────────────────
+    "붕어":       {"id": "fs_carp_01",      "grade": "Normal",    "price": 5,    "size": (10, 30),   "rate": 0.45, "rank_req": "연습", "cookable": True},
+    "잉어":       {"id": "fs_carp_02",      "grade": "Normal",    "price": 15,   "size": (20, 50),   "rate": 0.25, "rank_req": "연습", "cookable": True},
+    "미꾸라지":   {"id": "fs_loach_01",     "grade": "Normal",    "price": 8,    "size": (8, 20),    "rate": 0.40, "rank_req": "연습", "cookable": True},
+    "피라미":     {"id": "fs_minnow_01",    "grade": "Normal",    "price": 6,    "size": (5, 15),    "rate": 0.38, "rank_req": "연습", "cookable": True},
+    "메기":       {"id": "fs_catfish_01",   "grade": "Normal",    "price": 20,   "size": (25, 60),   "rate": 0.22, "rank_req": "연습", "cookable": True},
+    "가재":       {"id": "fs_crayfish_01",  "grade": "Normal",    "price": 12,   "size": (5, 15),    "rate": 0.30, "rank_req": "연습", "cookable": True},
+    "폐타이어":   {"id": "trash_tire_01",   "grade": "Normal",    "price": 1,    "size": (0, 0),     "rate": 0.02, "rank_req": "연습", "cookable": False},
+    # ── Rare ────────────────────────────────────────────────────────────────
+    "연어":       {"id": "fs_salmon_01",    "grade": "Rare",      "price": 40,   "size": (40, 80),   "rate": 0.18, "rank_req": "F",    "cookable": True},
+    "장어":       {"id": "fs_eel_01",       "grade": "Rare",      "price": 60,   "size": (30, 70),   "rate": 0.08, "rank_req": "E",    "cookable": True},
+    "참치":       {"id": "fs_tuna_01",      "grade": "Rare",      "price": 80,   "size": (60, 200),  "rate": 0.12, "rank_req": "D",    "cookable": True},
+    "광어":       {"id": "fs_flatfish_01",  "grade": "Rare",      "price": 70,   "size": (30, 80),   "rate": 0.14, "rank_req": "D",    "cookable": True},
+    "고등어":     {"id": "fs_mackerel_01",  "grade": "Rare",      "price": 50,   "size": (25, 50),   "rate": 0.16, "rank_req": "E",    "cookable": True},
+    "꽃게":       {"id": "fs_crab_01",      "grade": "Rare",      "price": 65,   "size": (10, 25),   "rate": 0.10, "rank_req": "D",    "cookable": True},
+    "문어":       {"id": "fs_octopus_01",   "grade": "Rare",      "price": 90,   "size": (20, 80),   "rate": 0.08, "rank_req": "C",    "cookable": True},
+    # ── Epic ────────────────────────────────────────────────────────────────
+    "복어":       {"id": "fs_puffer_01",    "grade": "Epic",      "price": 200,  "size": (15, 40),   "rate": 0.04, "rank_req": "B",    "cookable": True},
+    "상어":       {"id": "fs_shark_01",     "grade": "Epic",      "price": 350,  "size": (100, 400), "rate": 0.02, "rank_req": "A",    "cookable": True},
+    "대왕오징어": {"id": "fs_squid_01",     "grade": "Epic",      "price": 280,  "size": (50, 300),  "rate": 0.03, "rank_req": "9",    "cookable": True},
+    # ── Legendary ───────────────────────────────────────────────────────────
+    "황금잉어":   {"id": "fs_gold_carp_01", "grade": "Legendary", "price": 500,  "size": (30, 80),   "rate": 0.008,"rank_req": "8",    "cookable": True},
+    "황금장어":   {"id": "fs_gold_eel_01",  "grade": "Legendary", "price": 300,  "size": (60, 120),  "rate": 0.02, "rank_req": "B",    "cookable": True},
+    "용의 물고기":{"id": "fs_dragon_01",    "grade": "Legendary", "price": 2000, "size": (80, 200),  "rate": 0.003,"rank_req": "5",    "cookable": True},
+    "심해어":     {"id": "fs_deep_01",      "grade": "Legendary", "price": 1500, "size": (40, 150),  "rate": 0.005,"rank_req": "7",    "cookable": True},
 }
 
 FISH_GUIDE = {
     "방울숲 강": {
         "desc": "조용한 방울숲 근처의 작은 강.",
-        "fish": ["붕어", "잉어", "연어"],
+        "fish": ["붕어", "잉어", "연어", "미꾸라지", "피라미"],
         "energy_cost": 10,
         "fee_rate": 0.20,
     },
     "소금광산 지하호수": {
         "desc": "소금 광산 깊은 곳의 지하호수.",
-        "fish": ["잉어", "연어", "장어", "황금장어"],
+        "fish": ["잉어", "연어", "장어", "황금장어", "메기"],
         "energy_cost": 20,
+        "fee_rate": 0.15,
+    },
+    "고요한 연못": {
+        "desc": "마을 근처의 고요하고 얕은 연못. 초보자 낚시터.",
+        "fish": ["붕어", "잉어", "미꾸라지", "피라미", "가재", "폐타이어"],
+        "energy_cost": 8,
+        "fee_rate": 0.25,
+    },
+    "은빛 해안": {
+        "desc": "은빛 파도가 치는 바닷가 낚시터. 바다 물고기가 많다.",
+        "fish": ["참치", "광어", "고등어", "꽃게", "문어", "가재"],
+        "energy_cost": 25,
+        "fee_rate": 0.18,
+    },
+    "용암 호수": {
+        "desc": "화산지대 근처의 뜨거운 용암 호수. 특이한 물고기가 서식한다.",
+        "fish": ["복어", "상어", "심해어", "장어", "문어"],
+        "energy_cost": 35,
+        "fee_rate": 0.12,
+    },
+    "요정의 샘": {
+        "desc": "요정들이 사는 신비로운 샘. 전설 등급 물고기가 출현한다.",
+        "fish": ["황금잉어", "용의 물고기", "황금장어", "복어"],
+        "energy_cost": 40,
+        "fee_rate": 0.10,
+    },
+    "폭풍 부두": {
+        "desc": "거센 폭풍이 몰아치는 부두. 위험하지만 Epic 물고기가 풍부하다.",
+        "fish": ["상어", "대왕오징어", "복어", "참치", "광어"],
+        "energy_cost": 30,
         "fee_rate": 0.15,
     },
 }

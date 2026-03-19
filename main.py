@@ -41,6 +41,7 @@ from music        import MusicEngine
 from bulletin     import bulletin_board, weekly_fishing
 from shop         import find_item_by_name
 from rest         import RestEngine
+from crafting     import CraftingEngine
 
 # ─── 상수 (환경변수로 관리) ────────────────────────────────────────────────
 TOKEN              = os.getenv("DISCORD_TOKEN", "")
@@ -76,6 +77,7 @@ quest_manager     = QuestManager(shared_player)
 affinity_manager  = AffinityManager(shared_player)
 gacha_engine      = GachaEngine(shared_player)
 music_engine      = MusicEngine(shared_player)
+crafting_engine   = CraftingEngine(shared_player)
 shared_player._affinity_manager = affinity_manager
 
 
@@ -397,10 +399,10 @@ async def cook_cmd(ctx, dish_id: str = None):
     if not await _check_channel(ctx):
         return
     if not dish_id:
-        result = cooking_engine.show_recipe_list()
+        result = cooking_engine.show_recipe_list(method_filter="cook")
         await ctx.send(result)
         return
-    result = cooking_engine.cook(dish_id)
+    result = cooking_engine.cook(dish_id, force_method="cook")
     await ctx.send(result)
 
 
@@ -433,6 +435,46 @@ async def smelt_list_cmd(ctx):
     if not await _check_channel(ctx):
         return
     result = metallurgy_engine.show_recipe_list()
+    await ctx.send(result)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 혼합 요리 명령어 (비가열)
+# ═══════════════════════════════════════════════════════════════════════════
+
+@bot.command(name="혼합", aliases=["믹스"])
+async def mix_cmd(ctx, dish_id: str = None):
+    if not await _check_channel(ctx):
+        return
+    if not dish_id:
+        result = cooking_engine.show_recipe_list(method_filter="mix")
+        await ctx.send(result)
+        return
+    result = cooking_engine.cook(dish_id, force_method="mix")
+    await ctx.send(result)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 장비 제작 명령어
+# ═══════════════════════════════════════════════════════════════════════════
+
+@bot.command(name="제작")
+async def craft_item_cmd(ctx, result_id: str = None):
+    if not await _check_channel(ctx):
+        return
+    if not result_id:
+        result = crafting_engine.show_recipe_list()
+        await ctx.send(result)
+        return
+    result = crafting_engine.craft(result_id)
+    await ctx.send(result)
+
+
+@bot.command(name="제작도감")
+async def craft_guide_cmd(ctx):
+    if not await _check_channel(ctx):
+        return
+    result = crafting_engine.show_recipe_list()
     await ctx.send(result)
 
 
@@ -519,13 +561,17 @@ async def help_cmd(ctx):
         name="🌿 생활",
         value=(
             "`/낚시` — 낚시하기 (타이밍 게임)\n"
-            "`/낚시터정보` — 낚시터·물고기 정보\n"
+            "`/낚시도감` `/낚시터정보` — 낚시터·물고기 정보\n"
             "`/채집` — 채집 (기력 15)\n"
             "`/채광` — 채광 (기력 20)\n"
-            "`/요리 [레시피ID]` — 요리하기\n"
+            "`/채집도감` — 채집 가능 아이템 목록\n"
+            "`/요리 [레시피ID]` — 가열 요리\n"
+            "`/혼합 [레시피ID]` — 혼합(비가열) 요리\n"
             "`/레시피` — 요리 레시피 목록\n"
             "`/제련 [광석ID]` — 제련하기\n"
             "`/제련목록` — 제련 목록\n"
+            "`/제작 [장비ID]` — 장비 제작\n"
+            "`/제작도감` — 제작 가능 장비 목록\n"
             "`/제조 [레시피ID]` — 포션 제조\n"
             "`/날씨` — 현재 날씨 확인"
         ),
@@ -571,6 +617,39 @@ async def fish_spot_cmd(ctx):
         return
     result = fishing_engine.show_fish_guide()
     await ctx.send(result)
+
+
+@bot.command(name="낚시도감")
+async def fish_guide_cmd(ctx):
+    if not await _check_channel(ctx):
+        return
+    result = fishing_engine.show_fish_guide()
+    await ctx.send(result)
+
+
+@bot.command(name="채집도감")
+async def gather_guide_cmd(ctx):
+    if not await _check_channel(ctx):
+        return
+    from gathering import GATHER_ITEMS_BY_SEASON, MINE_ITEMS, get_current_season
+    from ui_theme import header_box, divider, section, GRADE_ICON_PLAIN
+    season = get_current_season()
+    season_kr = {"spring": "봄", "summer": "여름", "autumn": "가을", "winter": "겨울"}.get(season, season)
+    pool = GATHER_ITEMS_BY_SEASON.get(season, [])
+    lines = [header_box("🌿 채집 도감"), section(f"현재 계절: {season_kr}")]
+    for item in sorted(pool, key=lambda x: x["grade"]):
+        grade = item["grade"]
+        mark  = GRADE_ICON_PLAIN.get(grade, "⚬")
+        pct   = int(item["rate"] * 100)
+        lines.append(f"  {mark} {C.WHITE}{item['name']}{C.R}  {C.DARK}등급: {grade}  {pct}%{C.R}")
+    lines.append(section("채광 아이템"))
+    for item in MINE_ITEMS:
+        grade = item["grade"]
+        mark  = GRADE_ICON_PLAIN.get(grade, "⚬")
+        lines.append(f"  {mark} {C.WHITE}{item['name']}{C.R}  {C.DARK}등급: {grade}  힘 {item['str_req']} 필요{C.R}")
+    lines.append(divider())
+    lines.append(f"  {C.GREEN}/채집{C.R} 또는 {C.GREEN}/채광{C.R} 으로 수집하셰요!")
+    await ctx.send(ansi("\n".join(lines)))
 
 
 @bot.command(name="날씨")

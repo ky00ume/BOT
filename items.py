@@ -1,139 +1,59 @@
 WEAPONS = {
-    "wp_sword_01": {
-        "name": "낡은 검",
-        "type": "weapon",
-        "subtype": "sword",
-        "grade": "Normal",
-        "attack": 12,
-        "price": 500,
-        "desc": "오래된 한손검. 기본 성능을 가진다.",
-        "slot": "main",
-    },
-    "wp_sword_02": {
-        "name": "철제 롱소드",
-        "type": "weapon",
-        "subtype": "sword",
-        "grade": "Rare",
-        "attack": 28,
-        "price": 2500,
-        "desc": "견고한 철로 제작된 롱소드.",
-        "slot": "main",
-    },
-    "wp_bow_01": {
-        "name": "나무 활",
-        "type": "weapon",
-        "subtype": "bow",
-        "grade": "Normal",
-        "attack": 10,
-        "price": 400,
-        "desc": "가벼운 나무 활.",
-        "slot": "main",
-    },
-    "wp_bow_02": {
-        "name": "합성 활",
-        "type": "weapon",
-        "subtype": "bow",
-        "grade": "Rare",
-        "attack": 24,
-        "price": 2200,
-        "desc": "여러 소재로 만든 강화된 활.",
-        "slot": "main",
-    },
-    "wp_staff_01": {
-        "name": "나무 지팡이",
-        "type": "weapon",
-        "subtype": "staff",
-        "grade": "Normal",
-        "attack": 8,
-        "magic_attack": 15,
-        "price": 600,
-        "desc": "마력을 담은 나무 지팡이.",
-        "slot": "main",
-    },
-    "wp_wand_01": {
-        "name": "마법 완드",
-        "type": "weapon",
-        "subtype": "wand",
-        "grade": "Rare",
-        "attack": 6,
-        "magic_attack": 30,
-        "price": 3000,
-        "desc": "마법 집중력이 높은 완드.",
-        "slot": "main",
-    },
-    "wp_mace_01": {
-        "name": "철제 메이스",
-        "type": "weapon",
-        "subtype": "mace",
-        "grade": "Normal",
-        "attack": 15,
-        "price": 700,
-        "desc": "둔기형 한손 무기.",
-        "slot": "main",
-    },
-    "wp_hammer_01": {
-        "name": "전투 해머",
-        "type": "weapon",
-        "subtype": "hammer",
-        "grade": "Rare",
-        "attack": 35,
-        "price": 3500,
-        "desc": "강력한 충격을 주는 양손 해머.",
-        "slot": "main",
-    },
+    # ── 기존 무기 ─────────────────────────────────────────────────────────────
+    "wp_sword_01": {"name": "낡은 검",       "type": "weapon", "subtype": "sword",   "grade": "Normal",    "attack": 12,  "price": 500,   "desc": "오래된 한손검. 기본 성능을 가진다.",    "slot": "main"},
+    "wp_sword_02": {"name": "철제 롱소드",   "type": "weapon", "subtype": "sword",   "grade": "Rare",      "attack": 28,  "price": 2500,  "desc": "견고한 철로 제작된 롱소드.",            "slot": "main"},
+    "wp_bow_01":   {"name": "나무 활",       "type": "weapon", "subtype": "bow",     "grade": "Normal",    "attack": 10,  "price": 400,   "desc": "가벼운 나무 활.",                       "slot": "main"},
+    "wp_bow_02":   {"name": "합성 활",       "type": "weapon", "subtype": "bow",     "grade": "Rare",      "attack": 24,  "price": 2200,  "desc": "여러 소재로 만든 강화된 활.",           "slot": "main"},
+    "wp_staff_01": {"name": "나무 지팡이",   "type": "weapon", "subtype": "staff",   "grade": "Normal",    "attack": 8,   "magic_attack": 15, "price": 600,   "desc": "마력을 담은 나무 지팡이.", "slot": "main"},
+    "wp_wand_01":  {"name": "마법 완드",     "type": "weapon", "subtype": "wand",    "grade": "Rare",      "attack": 6,   "magic_attack": 30, "price": 3000,  "desc": "마법 집중력이 높은 완드.", "slot": "main"},
+    "wp_mace_01":  {"name": "철제 메이스",   "type": "weapon", "subtype": "mace",    "grade": "Normal",    "attack": 15,  "price": 700,   "desc": "둔기형 한손 무기.",                     "slot": "main"},
+    "wp_hammer_01":{"name": "전투 해머",     "type": "weapon", "subtype": "hammer",  "grade": "Rare",      "attack": 35,  "price": 3500,  "desc": "강력한 충격을 주는 양손 해머.",         "slot": "main"},
+    # ── 검 계열 5단계 ─────────────────────────────────────────────────────────
+    "wp_sword_03": {"name": "강철검",        "type": "weapon", "subtype": "sword",   "grade": "Epic",      "attack": 55,  "price": 12000, "desc": "강철로 단련한 검.",                     "slot": "main"},
+    "wp_sword_04": {"name": "미스릴검",      "type": "weapon", "subtype": "sword",   "grade": "Legendary", "attack": 90,  "price": 40000, "desc": "미스릴로 주조한 예검.",                 "slot": "main"},
+    "wp_sword_05": {"name": "드래곤슬레이어","type": "weapon", "subtype": "sword",   "grade": "Mythic",    "attack": 160, "price": 200000,"desc": "용을 베기 위해 만들어진 전설의 대검.",  "slot": "main"},
+    # ── 활 계열 5단계 ─────────────────────────────────────────────────────────
+    "wp_bow_03":   {"name": "사냥꾼의 활",   "type": "weapon", "subtype": "bow",     "grade": "Epic",      "attack": 48,  "price": 10000, "desc": "숙련된 사냥꾼이 쓰는 정밀한 활.",      "slot": "main"},
+    "wp_bow_04":   {"name": "미스릴활",      "type": "weapon", "subtype": "bow",     "grade": "Legendary", "attack": 80,  "price": 35000, "desc": "미스릴 시위를 가진 고급 활.",           "slot": "main"},
+    "wp_bow_05":   {"name": "폭풍의 활",     "type": "weapon", "subtype": "bow",     "grade": "Mythic",    "attack": 145, "price": 180000,"desc": "폭풍을 담은 전설의 활.",                "slot": "main"},
+    # ── 지팡이 계열 5단계 ─────────────────────────────────────────────────────
+    "wp_staff_02": {"name": "마법지팡이",    "type": "weapon", "subtype": "staff",   "grade": "Rare",      "attack": 5,   "magic_attack": 35, "price": 3500,  "desc": "마력을 집중시키는 지팡이.",  "slot": "main"},
+    "wp_staff_03": {"name": "현자의 지팡이", "type": "weapon", "subtype": "staff",   "grade": "Epic",      "attack": 5,   "magic_attack": 65, "price": 14000, "desc": "현자가 사용하던 지팡이.",    "slot": "main"},
+    "wp_staff_04": {"name": "미스릴지팡이",  "type": "weapon", "subtype": "staff",   "grade": "Legendary", "attack": 5,   "magic_attack": 110,"price": 50000, "desc": "미스릴로 만든 마법 지팡이.", "slot": "main"},
+    "wp_staff_05": {"name": "대마도사의 지팡이","type": "weapon","subtype": "staff",  "grade": "Mythic",    "attack": 5,   "magic_attack": 200,"price": 250000,"desc": "대마도사의 힘이 깃든 지팡이.","slot": "main"},
 }
 
 ARMORS = {
-    "ar_shield_01": {
-        "name": "나무 방패",
-        "type": "armor",
-        "subtype": "shield",
-        "grade": "Normal",
-        "defense": 5,
-        "price": 300,
-        "desc": "가벼운 나무 방패.",
-        "slot": "sub",
-    },
-    "ar_shield_02": {
-        "name": "철제 방패",
-        "type": "armor",
-        "subtype": "shield",
-        "grade": "Rare",
-        "defense": 18,
-        "price": 2000,
-        "desc": "단단한 철제 방패.",
-        "slot": "sub",
-    },
-    "ar_armor_01": {
-        "name": "가죽 갑옷",
-        "type": "armor",
-        "subtype": "body",
-        "grade": "Normal",
-        "defense": 10,
-        "price": 800,
-        "desc": "기동성이 좋은 가죽 갑옷.",
-        "slot": "body",
-    },
-    "ar_armor_02": {
-        "name": "사슬 갑옷",
-        "type": "armor",
-        "subtype": "body",
-        "grade": "Rare",
-        "defense": 22,
-        "price": 2800,
-        "desc": "사슬로 엮어 만든 방어구.",
-        "slot": "body",
-    },
-    "ar_armor_03": {
-        "name": "철판 갑옷",
-        "type": "armor",
-        "subtype": "body",
-        "grade": "Epic",
-        "defense": 40,
-        "price": 7000,
-        "desc": "두꺼운 철판으로 만든 중갑.",
-        "slot": "body",
-    },
+    # ── 기존 방어구 ─────────────────────────────────────────────────────────
+    "ar_shield_01": {"name": "나무 방패",    "type": "armor", "subtype": "shield", "grade": "Normal",    "defense": 5,   "price": 300,   "desc": "가벼운 나무 방패.",              "slot": "sub"},
+    "ar_shield_02": {"name": "철제 방패",    "type": "armor", "subtype": "shield", "grade": "Rare",      "defense": 18,  "price": 2000,  "desc": "단단한 철제 방패.",              "slot": "sub"},
+    "ar_armor_01":  {"name": "가죽 갑옷",    "type": "armor", "subtype": "body",   "grade": "Normal",    "defense": 10,  "price": 800,   "desc": "기동성이 좋은 가죽 갑옷.",       "slot": "body"},
+    "ar_armor_02":  {"name": "사슬 갑옷",    "type": "armor", "subtype": "body",   "grade": "Rare",      "defense": 22,  "price": 2800,  "desc": "사슬로 엮어 만든 방어구.",       "slot": "body"},
+    "ar_armor_03":  {"name": "철판 갑옷",    "type": "armor", "subtype": "body",   "grade": "Epic",      "defense": 40,  "price": 7000,  "desc": "두꺼운 철판으로 만든 중갑.",     "slot": "body"},
+    # ── 투구 계열 5단계 ──────────────────────────────────────────────────────
+    "ar_helm_01":   {"name": "가죽모자",     "type": "armor", "subtype": "helm",   "grade": "Normal",    "defense": 4,   "price": 300,   "desc": "기본 가죽 모자.",                "slot": "head"},
+    "ar_helm_02":   {"name": "철투구",       "type": "armor", "subtype": "helm",   "grade": "Rare",      "defense": 12,  "price": 2000,  "desc": "단단한 철 투구.",                "slot": "head"},
+    "ar_helm_03":   {"name": "강철투구",     "type": "armor", "subtype": "helm",   "grade": "Epic",      "defense": 25,  "price": 8000,  "desc": "강화 강철 투구.",                "slot": "head"},
+    "ar_helm_04":   {"name": "미스릴투구",   "type": "armor", "subtype": "helm",   "grade": "Legendary", "defense": 45,  "price": 30000, "desc": "미스릴로 만든 경량 투구.",       "slot": "head"},
+    "ar_helm_05":   {"name": "드래곤투구",   "type": "armor", "subtype": "helm",   "grade": "Mythic",    "defense": 80,  "price": 150000,"desc": "드래곤 비늘로 만든 전설의 투구.","slot": "head"},
+    # ── 갑옷 계열 5단계 ──────────────────────────────────────────────────────
+    "ar_body_01":   {"name": "천옷",         "type": "armor", "subtype": "body",   "grade": "Normal",    "defense": 6,   "price": 400,   "desc": "가벼운 천으로 만든 옷.",         "slot": "body"},
+    "ar_body_02":   {"name": "체인메일",     "type": "armor", "subtype": "body",   "grade": "Rare",      "defense": 20,  "price": 3000,  "desc": "사슬로 엮어 만든 갑옷.",         "slot": "body"},
+    "ar_body_03":   {"name": "강철갑옷",     "type": "armor", "subtype": "body",   "grade": "Epic",      "defense": 42,  "price": 10000, "desc": "강철로 만든 무거운 갑옷.",       "slot": "body"},
+    "ar_body_04":   {"name": "미스릴갑옷",   "type": "armor", "subtype": "body",   "grade": "Legendary", "defense": 75,  "price": 45000, "desc": "미스릴로 주조한 경갑옷.",        "slot": "body"},
+    "ar_body_05":   {"name": "드래곤아머",   "type": "armor", "subtype": "body",   "grade": "Mythic",    "defense": 130, "price": 200000,"desc": "드래곤 비늘 전신 갑옷.",         "slot": "body"},
+    # ── 장갑 계열 5단계 ──────────────────────────────────────────────────────
+    "ar_glove_01":  {"name": "천장갑",       "type": "armor", "subtype": "glove",  "grade": "Normal",    "defense": 2,   "price": 200,   "desc": "기본 천 장갑.",                  "slot": "glove"},
+    "ar_glove_02":  {"name": "가죽장갑",     "type": "armor", "subtype": "glove",  "grade": "Rare",      "defense": 8,   "price": 1500,  "desc": "튼튼한 가죽 장갑.",              "slot": "glove"},
+    "ar_glove_03":  {"name": "강철장갑",     "type": "armor", "subtype": "glove",  "grade": "Epic",      "defense": 18,  "price": 6000,  "desc": "강철 보강 장갑.",                "slot": "glove"},
+    "ar_glove_04":  {"name": "미스릴장갑",   "type": "armor", "subtype": "glove",  "grade": "Legendary", "defense": 32,  "price": 25000, "desc": "미스릴로 만든 정밀 장갑.",       "slot": "glove"},
+    "ar_glove_05":  {"name": "드래곤클로",   "type": "armor", "subtype": "glove",  "grade": "Mythic",    "defense": 55,  "attack": 20,   "price": 120000,"desc": "드래곤 발톱 소재의 장갑.", "slot": "glove"},
+    # ── 신발 계열 5단계 ──────────────────────────────────────────────────────
+    "ar_boot_01":   {"name": "천신발",       "type": "armor", "subtype": "boot",   "grade": "Normal",    "defense": 2,   "price": 200,   "desc": "가벼운 천 신발.",                "slot": "boot"},
+    "ar_boot_02":   {"name": "가죽부츠",     "type": "armor", "subtype": "boot",   "grade": "Rare",      "defense": 7,   "price": 1800,  "desc": "튼튼한 가죽 부츠.",              "slot": "boot"},
+    "ar_boot_03":   {"name": "강철부츠",     "type": "armor", "subtype": "boot",   "grade": "Epic",      "defense": 16,  "price": 5500,  "desc": "강철 보강 부츠.",                "slot": "boot"},
+    "ar_boot_04":   {"name": "미스릴부츠",   "type": "armor", "subtype": "boot",   "grade": "Legendary", "defense": 30,  "price": 22000, "desc": "미스릴로 만든 가벼운 부츠.",     "slot": "boot"},
+    "ar_boot_05":   {"name": "드래곤부츠",   "type": "armor", "subtype": "boot",   "grade": "Mythic",    "defense": 50,  "price": 100000,"desc": "드래곤 비늘 부츠.",              "slot": "boot"},
 }
 
 CONSUMABLES = {
@@ -180,27 +100,34 @@ CONSUMABLES = {
 }
 
 GATHERING_ITEMS = {
-    "gt_herb_01": {
-        "name": "들풀",
-        "type": "gathering",
-        "grade": "Normal",
-        "price": 15,
-        "desc": "들판에서 채집한 풀.",
-    },
-    "gt_wood_01": {
-        "name": "나무 조각",
-        "type": "gathering",
-        "grade": "Normal",
-        "price": 20,
-        "desc": "숲에서 채집한 나무 조각.",
-    },
-    "gt_flower_01": {
-        "name": "들꽃",
-        "type": "gathering",
-        "grade": "Normal",
-        "price": 25,
-        "desc": "들판에 핀 예쁜 꽃.",
-    },
+    # ── 기존 채집 아이템 ─────────────────────────────────────────────────────
+    "gt_herb_01":      {"name": "들풀",          "type": "gathering", "grade": "Normal",    "price": 15,   "desc": "들판에서 채집한 풀."},
+    "gt_wood_01":      {"name": "나무 조각",      "type": "gathering", "grade": "Normal",    "price": 20,   "desc": "숲에서 채집한 나무 조각."},
+    "gt_flower_01":    {"name": "들꽃",          "type": "gathering", "grade": "Normal",    "price": 25,   "desc": "들판에 핀 예쁜 꽃."},
+    # ── 허브류 ────────────────────────────────────────────────────────────────
+    "healing_herb":    {"name": "힐링허브",       "type": "gathering", "grade": "Normal",    "price": 40,   "desc": "상처를 치유하는 효능이 있는 허브.",    "hp": 20},
+    "mana_pool":       {"name": "마나풀",         "type": "gathering", "grade": "Rare",      "price": 150,  "desc": "마력이 가득 담긴 신비한 풀.",          "mp": 40},
+    "poison_herb":     {"name": "독초",           "type": "gathering", "grade": "Rare",      "price": 80,   "desc": "독성이 있는 위험한 풀. 포션 재료."},
+    "fragrant_flower": {"name": "향기로운꽃",     "type": "gathering", "grade": "Normal",    "price": 35,   "desc": "달콤한 향기를 내뿜는 꽃."},
+    "lavender":        {"name": "라벤더",         "type": "gathering", "grade": "Rare",      "price": 100,  "desc": "보라빛 라벤더. 허브차 재료.",          "mp": 15},
+    # ── 버섯류 ────────────────────────────────────────────────────────────────
+    "shiitake":        {"name": "표고버섯",       "type": "gathering", "grade": "Normal",    "price": 45,   "desc": "향긋한 표고버섯."},
+    "toxic_mushroom":  {"name": "독버섯",         "type": "gathering", "grade": "Normal",    "price": 20,   "desc": "독성이 있는 버섯. 포션 재료."},
+    "glow_mushroom":   {"name": "발광버섯",       "type": "gathering", "grade": "Rare",      "price": 200,  "desc": "어둠 속에서 빛나는 신비한 버섯.",       "mp": 25},
+    "pine_mushroom":   {"name": "송이버섯",       "type": "gathering", "grade": "Rare",      "price": 300,  "desc": "귀한 향기의 송이버섯."},
+    "reishi":          {"name": "영지버섯",       "type": "gathering", "grade": "Epic",      "price": 800,  "desc": "불로장생의 효능이 있다는 영지버섯.",    "hp": 50, "mp": 50},
+    # ── 열매류 ────────────────────────────────────────────────────────────────
+    "apple":           {"name": "사과",           "type": "gathering", "grade": "Normal",    "price": 20,   "desc": "빨갛고 달콤한 사과.",                   "hp": 15},
+    "strawberry":      {"name": "딸기",           "type": "gathering", "grade": "Normal",    "price": 25,   "desc": "새콤달콤한 딸기.",                       "hp": 10},
+    "grape":           {"name": "포도",           "type": "gathering", "grade": "Normal",    "price": 30,   "desc": "탱글탱글한 포도.",                       "hp": 12},
+    "lemon":           {"name": "레몬",           "type": "gathering", "grade": "Normal",    "price": 15,   "desc": "새콤한 레몬."},
+    "cherry":          {"name": "체리",           "type": "gathering", "grade": "Rare",      "price": 60,   "desc": "작고 달콤한 체리.",                      "hp": 8},
+    # ── 채소류 ────────────────────────────────────────────────────────────────
+    "lettuce":         {"name": "상추",           "type": "gathering", "grade": "Normal",    "price": 10,   "desc": "신선한 상추."},
+    "tomato":          {"name": "토마토",         "type": "gathering", "grade": "Normal",    "price": 18,   "desc": "빨갛게 익은 토마토."},
+    "carrot":          {"name": "당근",           "type": "gathering", "grade": "Normal",    "price": 15,   "desc": "달콤한 당근."},
+    "cucumber":        {"name": "오이",           "type": "gathering", "grade": "Normal",    "price": 12,   "desc": "시원한 오이."},
+    "onion":           {"name": "양파",           "type": "gathering", "grade": "Normal",    "price": 14,   "desc": "알싸한 양파."},
 }
 
 LOOT_ITEMS = {
@@ -228,54 +155,29 @@ LOOT_ITEMS = {
 }
 
 FISH_ITEMS = {
-    "fs_carp_01": {
-        "name": "붕어",
-        "type": "fish",
-        "grade": "Normal",
-        "price": 5,
-        "desc": "강에서 잡은 붕어.",
-        "cookable": True,
-    },
-    "fs_carp_02": {
-        "name": "잉어",
-        "type": "fish",
-        "grade": "Normal",
-        "price": 15,
-        "desc": "강에서 잡은 잉어.",
-        "cookable": True,
-    },
-    "fs_salmon_01": {
-        "name": "연어",
-        "type": "fish",
-        "grade": "Rare",
-        "price": 40,
-        "desc": "싱싱한 연어.",
-        "cookable": True,
-    },
-    "fs_eel_01": {
-        "name": "장어",
-        "type": "fish",
-        "grade": "Rare",
-        "price": 60,
-        "desc": "탱탱한 장어.",
-        "cookable": True,
-    },
-    "fs_gold_eel_01": {
-        "name": "황금장어",
-        "type": "fish",
-        "grade": "Legendary",
-        "price": 300,
-        "desc": "황금빛으로 빛나는 전설의 장어.",
-        "cookable": True,
-    },
-    "trash_tire_01": {
-        "name": "폐타이어",
-        "type": "loot",
-        "grade": "Normal",
-        "price": 1,
-        "desc": "낚시 중에 건진 폐타이어.",
-        "cookable": False,
-    },
+    # ── 기존 물고기 ─────────────────────────────────────────────────────────
+    "fs_carp_01":     {"name": "붕어",       "type": "fish", "grade": "Normal",    "price": 5,    "desc": "강에서 잡은 붕어.",                    "cookable": True},
+    "fs_carp_02":     {"name": "잉어",       "type": "fish", "grade": "Normal",    "price": 15,   "desc": "강에서 잡은 잉어.",                    "cookable": True},
+    "fs_salmon_01":   {"name": "연어",       "type": "fish", "grade": "Rare",      "price": 40,   "desc": "싱싱한 연어.",                         "cookable": True},
+    "fs_eel_01":      {"name": "장어",       "type": "fish", "grade": "Rare",      "price": 60,   "desc": "탱탱한 장어.",                         "cookable": True},
+    "fs_gold_eel_01": {"name": "황금장어",   "type": "fish", "grade": "Legendary", "price": 300,  "desc": "황금빛으로 빛나는 전설의 장어.",       "cookable": True},
+    "trash_tire_01":  {"name": "폐타이어",   "type": "loot", "grade": "Normal",    "price": 1,    "desc": "낚시 중에 건진 폐타이어.",             "cookable": False},
+    # ── 신규 물고기 ─────────────────────────────────────────────────────────
+    "fs_loach_01":    {"name": "미꾸라지",   "type": "fish", "grade": "Normal",    "price": 8,    "desc": "진흙 속을 헤엄치는 미꾸라지.",         "cookable": True},
+    "fs_minnow_01":   {"name": "피라미",     "type": "fish", "grade": "Normal",    "price": 6,    "desc": "작고 날쌘 피라미.",                    "cookable": True},
+    "fs_catfish_01":  {"name": "메기",       "type": "fish", "grade": "Normal",    "price": 20,   "desc": "수염이 달린 메기.",                    "cookable": True},
+    "fs_crayfish_01": {"name": "가재",       "type": "fish", "grade": "Normal",    "price": 12,   "desc": "집게발을 가진 민물 가재.",             "cookable": True},
+    "fs_tuna_01":     {"name": "참치",       "type": "fish", "grade": "Rare",      "price": 80,   "desc": "살이 붉고 맛있는 참치.",               "cookable": True},
+    "fs_flatfish_01": {"name": "광어",       "type": "fish", "grade": "Rare",      "price": 70,   "desc": "납작한 몸을 가진 바다 생선.",          "cookable": True},
+    "fs_mackerel_01": {"name": "고등어",     "type": "fish", "grade": "Rare",      "price": 50,   "desc": "등이 파란 바다 생선.",                 "cookable": True},
+    "fs_crab_01":     {"name": "꽃게",       "type": "fish", "grade": "Rare",      "price": 65,   "desc": "꽃처럼 예쁜 게.",                      "cookable": True},
+    "fs_octopus_01":  {"name": "문어",       "type": "fish", "grade": "Rare",      "price": 90,   "desc": "여덟 개의 다리를 가진 문어.",          "cookable": True},
+    "fs_puffer_01":   {"name": "복어",       "type": "fish", "grade": "Epic",      "price": 200,  "desc": "독을 품은 위험한 복어.",               "cookable": True},
+    "fs_shark_01":    {"name": "상어",       "type": "fish", "grade": "Epic",      "price": 350,  "desc": "바다의 포식자 상어.",                  "cookable": True},
+    "fs_squid_01":    {"name": "대왕오징어", "type": "fish", "grade": "Epic",      "price": 280,  "desc": "심해에 사는 거대한 오징어.",            "cookable": True},
+    "fs_gold_carp_01":{"name": "황금잉어",   "type": "fish", "grade": "Legendary", "price": 500,  "desc": "황금빛 비늘이 빛나는 전설의 잉어.",    "cookable": True},
+    "fs_dragon_01":   {"name": "용의 물고기","type": "fish", "grade": "Legendary", "price": 2000, "desc": "용의 힘을 품은 전설의 물고기.",        "cookable": True},
+    "fs_deep_01":     {"name": "심해어",     "type": "fish", "grade": "Legendary", "price": 1500, "desc": "빛이 닿지 않는 심해에 사는 물고기.",   "cookable": True},
 }
 
 COOKED_DISHES = {
@@ -319,6 +221,29 @@ COOKED_DISHES = {
         "mp": 80,
         "en": 80,
     },
+    # ── 신규 가열 요리 ───────────────────────────────────────────────────────
+    "grilled_carp":       {"name": "붕어구이",          "type": "cooked", "grade": "Normal",    "price": 40,   "desc": "바삭한 붕어구이.",                        "hp": 50,  "mp": 0,   "en": 20},
+    "salmon_steak":       {"name": "연어 스테이크",     "type": "cooked", "grade": "Rare",      "price": 200,  "desc": "버터에 구운 연어 스테이크.",              "hp": 110, "mp": 20,  "en": 30},
+    "eel_rice_bowl":      {"name": "장어덮밥",          "type": "cooked", "grade": "Rare",      "price": 250,  "desc": "달콤짭짤한 장어덮밥.",                   "hp": 130, "mp": 15,  "en": 40},
+    "tuna_rice_bowl":     {"name": "참치회덮밥",        "type": "cooked", "grade": "Rare",      "price": 220,  "desc": "신선한 참치 회덮밥.",                    "hp": 100, "mp": 25,  "en": 35},
+    "mackerel_stew":      {"name": "고등어조림",        "type": "cooked", "grade": "Rare",      "price": 180,  "desc": "매콤달콤한 고등어조림.",                  "hp": 90,  "mp": 10,  "en": 30},
+    "shiitake_soup":      {"name": "표고버섯 수프",     "type": "cooked", "grade": "Normal",    "price": 120,  "desc": "향긋한 표고버섯 수프.",                   "hp": 60,  "mp": 30,  "en": 20},
+    "potato_soup":        {"name": "감자 수프",         "type": "cooked", "grade": "Normal",    "price": 100,  "desc": "부드러운 크림 감자 수프.",                "hp": 55,  "mp": 15,  "en": 25},
+    "tomato_pasta":       {"name": "토마토 파스타",     "type": "cooked", "grade": "Rare",      "price": 260,  "desc": "토마토 소스 파스타.",                     "hp": 120, "mp": 20,  "en": 50},
+    "seafood_stew":       {"name": "해물탕",            "type": "cooked", "grade": "Epic",      "price": 600,  "desc": "해산물 가득한 해물탕.",                   "hp": 250, "mp": 50,  "en": 60},
+    "spicy_fish_stew":    {"name": "매운탕",            "type": "cooked", "grade": "Rare",      "price": 200,  "desc": "칼칼하고 시원한 매운탕.",                 "hp": 110, "mp": 20,  "en": 35},
+    "pine_mushroom_rice": {"name": "송이버섯밥",        "type": "cooked", "grade": "Epic",      "price": 700,  "desc": "귀한 송이버섯 솥밥.",                    "hp": 220, "mp": 80,  "en": 70},
+    "dragon_fish_soup":   {"name": "용의 물고기 요리",  "type": "cooked", "grade": "Legendary", "price": 5000, "desc": "전설의 용의 물고기 요리. 모든 능력치 폭발적 회복.", "hp": 1000, "mp": 500, "en": 200},
+    # ── 혼합(비가열) 요리 ────────────────────────────────────────────────────
+    "salmon_sashimi":     {"name": "연어회",            "type": "cooked", "grade": "Rare",      "price": 150,  "desc": "민첩 버프 효과의 연어회.",                "hp": 70,  "mp": 10,  "en": 20},
+    "fresh_salad":        {"name": "신선한 샐러드",     "type": "cooked", "grade": "Normal",    "price": 60,   "desc": "신선한 채소 샐러드.",                    "hp": 30,  "mp": 15,  "en": 20},
+    "strawberry_smoothie":{"name": "딸기 스무디",       "type": "cooked", "grade": "Normal",    "price": 70,   "desc": "달콤한 딸기 스무디.",                    "hp": 20,  "mp": 30,  "en": 25},
+    "fruit_platter":      {"name": "과일 모듬",         "type": "cooked", "grade": "Normal",    "price": 80,   "desc": "다양한 과일 모듬.",                       "hp": 35,  "mp": 20,  "en": 15},
+    "cucumber_pickle":    {"name": "오이 피클",         "type": "cooked", "grade": "Normal",    "price": 50,   "desc": "상큼한 오이 피클.",                       "hp": 15,  "mp": 5,   "en": 10},
+    "herb_tea":           {"name": "허브차",            "type": "cooked", "grade": "Normal",    "price": 55,   "desc": "향기로운 허브차. MP 회복.",               "hp": 10,  "mp": 40,  "en": 15},
+    "tuna_sashimi":       {"name": "참치회",            "type": "cooked", "grade": "Rare",      "price": 200,  "desc": "신선한 참치회.",                          "hp": 80,  "mp": 15,  "en": 25},
+    "lemon_juice":        {"name": "레몬 주스",         "type": "cooked", "grade": "Normal",    "price": 45,   "desc": "상큼한 레몬 주스.",                       "hp": 10,  "mp": 20,  "en": 20},
+    "onion_salad":        {"name": "양파 샐러드",       "type": "cooked", "grade": "Normal",    "price": 40,   "desc": "달콤하게 절인 양파 샐러드.",              "hp": 20,  "mp": 10,  "en": 10},
 }
 
 # 몬스터 드랍 아이템
@@ -699,59 +624,56 @@ INGREDIENTS = {
         "price": 30,
         "desc": "반죽된 빵 재료.",
     },
+    # ── 신규 조미료/재료 ──────────────────────────────────────────────────────
+    "pepper":       {"name": "후추",     "type": "ingredient", "grade": "Normal", "price": 12,  "desc": "매콤한 후추."},
+    "soy_sauce":    {"name": "간장",     "type": "ingredient", "grade": "Normal", "price": 15,  "desc": "짭조름한 간장."},
+    "olive_oil":    {"name": "올리브유", "type": "ingredient", "grade": "Normal", "price": 30,  "desc": "향긋한 올리브유."},
+    "vinegar":      {"name": "식초",     "type": "ingredient", "grade": "Normal", "price": 10,  "desc": "새콤한 식초."},
+    "butter":       {"name": "버터",     "type": "ingredient", "grade": "Normal", "price": 25,  "desc": "고소한 버터."},
+    "lemon_juice":  {"name": "레몬즙",   "type": "ingredient", "grade": "Normal", "price": 20,  "desc": "상큼한 레몬즙."},
+    "chili_powder": {"name": "고춧가루", "type": "ingredient", "grade": "Normal", "price": 15,  "desc": "매운 고춧가루."},
+    "garlic":       {"name": "마늘",     "type": "ingredient", "grade": "Normal", "price": 10,  "desc": "알싸한 마늘."},
+    "ginger":       {"name": "생강",     "type": "ingredient", "grade": "Normal", "price": 10,  "desc": "매콤한 생강."},
+    "wasabi":       {"name": "와사비",   "type": "ingredient", "grade": "Rare",   "price": 80,  "desc": "코끝이 찡한 와사비."},
 }
 
 # 제련 주괴
 BAR_ITEMS = {
-    "copper_bar": {
-        "name": "구리 주괴",
-        "type": "bar",
-        "grade": "Normal",
-        "price": 150,
-        "desc": "구리를 제련한 주괴.",
-    },
-    "iron_bar": {
-        "name": "철 주괴",
-        "type": "bar",
-        "grade": "Normal",
-        "price": 200,
-        "desc": "철을 제련한 주괴.",
-    },
-    "silver_bar": {
-        "name": "은 주괴",
-        "type": "bar",
-        "grade": "Rare",
-        "price": 500,
-        "desc": "은을 제련한 주괴.",
-    },
-    "gold_bar": {
-        "name": "금 주괴",
-        "type": "bar",
-        "grade": "Rare",
-        "price": 1000,
-        "desc": "금을 제련한 주괴.",
-    },
-    "mithril_bar": {
-        "name": "미스릴 주괴",
-        "type": "bar",
-        "grade": "Epic",
-        "price": 4000,
-        "desc": "미스릴을 제련한 주괴.",
-    },
-    "slag": {
-        "name": "쇳물 찌꺼기",
-        "type": "loot",
-        "grade": "Normal",
-        "price": 5,
-        "desc": "제련 과정에서 나온 찌꺼기.",
-    },
-    "mithril_dust": {
-        "name": "미스릴 가루",
-        "type": "loot",
-        "grade": "Rare",
-        "price": 300,
-        "desc": "미스릴 정제 시 나오는 가루.",
-    },
+    # ── 기존 주괴 ─────────────────────────────────────────────────────────────
+    "copper_bar":      {"name": "구리 주괴",        "type": "bar", "grade": "Normal",    "price": 150,   "desc": "구리를 제련한 주괴."},
+    "iron_bar":        {"name": "철 주괴",          "type": "bar", "grade": "Normal",    "price": 200,   "desc": "철을 제련한 주괴."},
+    "silver_bar":      {"name": "은 주괴",          "type": "bar", "grade": "Rare",      "price": 500,   "desc": "은을 제련한 주괴."},
+    "gold_bar":        {"name": "금 주괴",          "type": "bar", "grade": "Rare",      "price": 1000,  "desc": "금을 제련한 주괴."},
+    "mithril_bar":     {"name": "미스릴 주괴",      "type": "bar", "grade": "Epic",      "price": 4000,  "desc": "미스릴을 제련한 주괴."},
+    "slag":            {"name": "쇳물 찌꺼기",      "type": "loot","grade": "Normal",    "price": 5,     "desc": "제련 과정에서 나온 찌꺼기."},
+    "mithril_dust":    {"name": "미스릴 가루",      "type": "loot","grade": "Rare",      "price": 300,   "desc": "미스릴 정제 시 나오는 가루."},
+    # ── 신규 주괴 ─────────────────────────────────────────────────────────────
+    "tin_bar":         {"name": "주석 주괴",        "type": "bar", "grade": "Normal",    "price": 130,   "desc": "주석을 제련한 주괴."},
+    "orichalcum_bar":  {"name": "오리할콘 주괴",    "type": "bar", "grade": "Epic",      "price": 8000,  "desc": "오리할콘을 제련한 주괴."},
+    "adamantium_bar":  {"name": "아다만티움 주괴",  "type": "bar", "grade": "Legendary", "price": 20000, "desc": "아다만티움을 제련한 주괴."},
+    "dragonite_bar":   {"name": "드래곤나이트 주괴","type": "bar", "grade": "Legendary", "price": 50000, "desc": "드래곤나이트를 제련한 주괴."},
+}
+
+# 신규 광석 (DROP_ITEMS에서 분리)
+NEW_ORE_ITEMS = {
+    "tin_ore":         {"name": "주석 광석",      "type": "ore",  "grade": "Normal",    "price": 50,   "desc": "주석을 함유한 광석."},
+    "orichalcum_ore":  {"name": "오리할콘 광석",  "type": "ore",  "grade": "Epic",      "price": 3000, "desc": "신비한 빛을 내는 광석."},
+    "adamantium_ore":  {"name": "아다만티움 광석","type": "ore",  "grade": "Legendary", "price": 8000, "desc": "극도로 단단한 광석."},
+    "dragonite_ore":   {"name": "드래곤나이트 광석","type": "ore","grade": "Legendary", "price": 20000,"desc": "드래곤의 힘이 깃든 광석."},
+}
+
+# 특수 아이템 (보스드랍/이벤트 전용)
+SPECIAL_ITEMS = {
+    "dragon_scale":    {"name": "용의 비늘",    "type": "special", "grade": "Legendary", "price": 15000, "desc": "강력한 용에게서 얻은 비늘. 제작 재료."},
+    "pearl":           {"name": "진주",         "type": "special", "grade": "Epic",      "price": 5000,  "desc": "조개에서 나온 빛나는 진주."},
+    "magic_stone":     {"name": "마법의 돌",    "type": "special", "grade": "Epic",      "price": 8000,  "desc": "마력이 깃든 신비한 돌."},
+    "ancient_fragment":{"name": "고대의 조각",  "type": "special", "grade": "Epic",      "price": 6000,  "desc": "고대 문명의 유물 조각."},
+    "fairy_wing":      {"name": "요정의 날개",  "type": "special", "grade": "Legendary", "price": 30000, "desc": "요정에게서 얻은 투명한 날개."},
+    "fish_bone":       {"name": "물고기 뼈",    "type": "special", "grade": "Normal",    "price": 20,    "desc": "물고기의 뼈. 각종 제작에 사용."},
+    "shark_tooth":     {"name": "상어 이빨",    "type": "special", "grade": "Rare",      "price": 800,   "desc": "날카로운 상어의 이빨."},
+    "deep_sea_tear":   {"name": "심해의 눈물",  "type": "special", "grade": "Legendary", "price": 25000, "desc": "심해에서만 구할 수 있는 신비한 결정."},
+    "golden_key":      {"name": "황금 열쇠",    "type": "special", "grade": "Legendary", "price": 50000, "desc": "어디든 열 수 있다는 전설의 열쇠."},
+    "star_fragment":   {"name": "별의 파편",    "type": "special", "grade": "Legendary", "price": 40000, "desc": "별똥별이 떨어지며 남긴 파편."},
 }
 
 TOOLS = {
@@ -773,5 +695,7 @@ ALL_ITEMS = {
     **DROP_ITEMS,
     **INGREDIENTS,
     **BAR_ITEMS,
+    **NEW_ORE_ITEMS,
+    **SPECIAL_ITEMS,
     **TOOLS,
 }

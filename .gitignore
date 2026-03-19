@@ -23,3 +23,8 @@ env/
 # OS
 .DS_Store
 Thumbs.db
+
+# 런타임 생성 데이터 파일
+achievements.json
+collections.json
+diaries.json

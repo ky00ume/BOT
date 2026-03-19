@@ -1,0 +1,10 @@
+{
+  "낚시": {
+    "fs_carp_01": {
+      "name": "붕어",
+      "grade": "Normal",
+      "best_size": 15.0,
+      "count": 1
+    }
+  }
+}

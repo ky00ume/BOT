@@ -1,0 +1,10 @@
+{
+  "counters": {
+    "battles_won": 1,
+    "fish_caught": 1
+  },
+  "unlocked": [
+    "first_blood",
+    "first_fish"
+  ]
+}

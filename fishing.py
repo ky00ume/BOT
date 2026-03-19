@@ -103,9 +103,11 @@ class FishingView(discord.ui.View):
             child.disabled = True
 
     async def start(self, channel_or_ctx):
+        from ui_theme import spider_scene
         embed = discord.Embed(
             title="🎣 낚시 시작!",
             description=(
+                f"{spider_scene('fishing_wait')}\n"
                 f"**{self.spot_name}** 에 낚싯줄을 던졌슴미댜!\n\n"
                 "찌가 움직이면 **낚싯줄 당기기** 버튼을 누르셰요!"
             ),
@@ -114,171 +116,240 @@ class FishingView(discord.ui.View):
         embed.set_footer(text="⏱ 70초 안에 반응하셰요!")
         msg = await channel_or_ctx.send(embed=embed, view=self)
         self._message = msg
-        self._bite_task = asyncio.create_task(self._wait_and_bite())
+        self._bite_task = asyncio.create_task(self._schedule_bite())
 
-    async def _wait_and_bite(self):
+    async def _schedule_bite(self):
+        """다양한 낚시 패턴을 랜덤으로 실행"""
         try:
-            await asyncio.sleep(random.uniform(5, 15))
+            patterns = ["normal", "normal", "slow", "fake_then_real", "fake_then_real", "double_fake", "instant"]
+            pattern = random.choice(patterns)
 
-            fake_count = random.randint(0, 2)
-            for _ in range(fake_count):
+            if pattern == "normal":
+                await asyncio.sleep(random.uniform(3.0, 7.0))
+                await self._trigger_bite()
+            elif pattern == "slow":
+                await asyncio.sleep(random.uniform(8.0, 14.0))
+                await self._trigger_bite()
+            elif pattern == "fake_then_real":
+                await asyncio.sleep(random.uniform(2.0, 5.0))
                 if self.state != "waiting":
                     return
-                embed = discord.Embed(
-                    title="🎣 낚시 중...",
-                    description="찌가 살짝 움직인 것 같슴미댜...\n아직 아닌 것 같슴미댜.",
-                    color=0x888888,
-                )
+                fake_msgs = [
+                    "🕷️ ...! 찌가 살짝 움직인 것 같슴미댜...? 아닌가...?",
+                    "🕷️ 물결이 일었슴미댜...! ...아, 바람이었슴미댜.",
+                    "🕷️ 뭔가 스친 느낌...! ...물풀이었슴미댜 ㅠ",
+                    "🕷️ 철썩! ...돌멩이가 떨어진 것 같슴미댜...",
+                ]
                 if self._message:
-                    await self._message.edit(embed=embed, view=self)
-                await asyncio.sleep(random.uniform(3, 8))
-
-            if self.state != "waiting":
-                return
-
-            self.state = "bite"
-            embed = discord.Embed(
-                title="❗❗❗ 앗!! 찌에 느낌이!!!",
-                description="**지금이다!! 낚싯줄 당기기!!**",
-                color=0xff2200,
-            )
-            embed.set_footer(text="⚡ 10초 안에 버튼을 눌러야 함미댜!")
-            if self._message:
-                await self._message.edit(embed=embed, view=self)
-
-            await asyncio.sleep(10)
-            if self.state == "bite":
-                self.state = "done"
-                self._disable_buttons()
-                embed = discord.Embed(
-                    title="🎣 낚시 실패",
-                    description="물고기를 놓쳤슴미댜! 다음엔 빠르게 반응하셰요~",
-                    color=0x884444,
-                )
-                if self._message:
-                    await self._message.edit(embed=embed, view=self)
-                self.stop()
+                    await self._message.channel.send(random.choice(fake_msgs))
+                await asyncio.sleep(random.uniform(3.0, 8.0))
+                await self._trigger_bite()
+            elif pattern == "double_fake":
+                for _ in range(2):
+                    await asyncio.sleep(random.uniform(2.0, 4.0))
+                    if self.state != "waiting":
+                        return
+                    fake_msgs = ["🕷️ ...찌가! ...아, 아니었슴미댜;;", "🕷️ 또 움직...인 줄 알았슴미댜..."]
+                    if self._message:
+                        await self._message.channel.send(random.choice(fake_msgs))
+                await asyncio.sleep(random.uniform(2.0, 6.0))
+                await self._trigger_bite()
+            elif pattern == "instant":
+                await asyncio.sleep(random.uniform(1.0, 2.0))
+                await self._trigger_bite()
         except asyncio.CancelledError:
             pass
 
-    @discord.ui.button(label="🎣 낚싯줄 당기기", style=discord.ButtonStyle.primary)
-    async def pull_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if self.state == "waiting":
-            await interaction.response.send_message(
-                "아무것도 없슴미댜... 조금 더 기다려 보셰요!", ephemeral=True
-            )
+    async def _trigger_bite(self):
+        """실제 바이트 상태로 전환"""
+        if self.state != "waiting":
             return
+        self.state = "bite"
+        if self._message:
+            from ui_theme import spider_scene
+            bite_msgs = [
+                f"{spider_scene('fishing_bite')}\n🎣❗ **찌가 움직였슴미댜!! 지금 당기셰요!!** 🕷️💨",
+                "🎣🔥 **입질임미댜!!! 빨리빨리!!** 🕷️✨",
+                "🎣💥 **물고기댜!! 당기라고오오!!** 🕸️",
+            ]
+            embed = discord.Embed(
+                title="❗❗❗ 앗!! 찌에 느낌이!!!",
+                description=random.choice(bite_msgs),
+                color=0xff2200,
+            )
+            embed.set_footer(text="⚡ 3초 안에 버튼을 눌러야 함미댜!")
+            await self._message.edit(embed=embed, view=self)
 
+        # 타임아웃 — 3초 안에 안 누르면 놓침
+        await asyncio.sleep(3.0)
         if self.state == "bite":
             self.state = "done"
-            if self._bite_task and not self._bite_task.done():
-                self._bite_task.cancel()
             self._disable_buttons()
-
-            player   = self.player
-            spot     = self.spot_data
-            fee_rate = spot.get("fee_rate", 0.20)
-
-            total_rate = sum(f["rate"] for f in self.fish_db_filtered.values())
-            roll = random.uniform(0, total_rate)
-            cumulative  = 0.0
-            caught_name = None
-            caught_data = None
-            for name, data in self.fish_db_filtered.items():
-                cumulative += data["rate"]
-                if roll <= cumulative:
-                    caught_name = name
-                    caught_data = data
-                    break
-            if not caught_name:
-                caught_name, caught_data = list(self.fish_db_filtered.items())[-1]
-
-            fish_id  = caught_data["id"]
-            grade    = caught_data["grade"]
-            lo, hi   = caught_data.get("size", (10, 30))
-            size_cm  = round(random.uniform(lo, hi), 1) if hi > 0 else 0.0
-            price    = caught_data["price"]
-            fee      = int(price * fee_rate)
-            net      = price - fee
-
-            added    = player.add_item(fish_id)
-            rank_msg = player.train_skill("fishing", 15.0)
-
-            try:
-                from village import village_manager
-                village_manager.add_contribution(1, "fishing")
-            except Exception:
-                pass
-
-            try:
-                from bulletin import weekly_fishing
-                weekly_fishing.add_catch(player.name, caught_name, size_cm)
-            except Exception:
-                pass
-
-            # PIL 카드
-            FLAVOR_TEXT = {
-                "Normal":    "평범한 녀석이지만 기분은 좋다!",
-                "Rare":      "오! 꽤 귀한 녀석인데?!",
-                "Epic":      "대박!! 이건 정말 레어한 녀석이다!!",
-                "Legendary": "전설의 물고기?! 이건 대단한 발견이다!!!",
-            }
-            flavor = FLAVOR_TEXT.get(grade, "")
-            card_sent = False
-            if added and hi > 0:
-                try:
-                    import fishing_card
-                    buf  = fishing_card.generate_fishing_card(
-                        caught_name, size_cm, price, fee, 0, net, grade=grade
-                    )
-                    file = discord.File(buf, filename="fishing_result.png")
-                    embed = discord.Embed(
-                        title=f"🎣 와! {caught_name}을(를) 낚았다!! [{grade}]",
-                        description=flavor,
-                        color=GRADE_EMBED_COLOR.get(grade, 0x00aa44),
-                    )
-                    embed.set_image(url="attachment://fishing_result.png")
-                    footer_parts = [f"📍 {self.spot_name}", f"{grade} 등급"]
-                    if rank_msg:
-                        footer_parts.append(rank_msg)
-                    embed.set_footer(text="  |  ".join(footer_parts))
-                    await interaction.response.edit_message(embed=embed, attachments=[file], view=self)
-                    card_sent = True
-                except Exception:
-                    pass
-
-            if not card_sent:
-                grade_mark = {"Normal": "⚬", "Rare": "◆", "Epic": "❖", "Legendary": "✦"}.get(grade, "⚬")
-                embed_color = GRADE_EMBED_COLOR.get(grade, 0x00aa44)
-                if added:
-                    desc = (
-                        f"**{grade_mark} {caught_name}** 을(를) 낚았슴미댜!\n\n"
-                        f"📏 크기: **{size_cm} cm**\n"
-                        f"💰 {price:,}G  수수료 -{fee:,}G  순수익 {net:,}G"
-                    )
-                    if rank_msg:
-                        desc += f"\n\n{rank_msg}"
-                    embed = discord.Embed(
-                        title=f"🎣 와! {caught_name}을(를) 낚았다!! [{grade}]",
-                        description=f"{desc}\n\n{flavor}" if flavor else desc,
-                        color=embed_color,
-                    )
-                    embed.set_footer(text=f"📍 {self.spot_name}  |  {grade} 등급")
-                else:
-                    embed = discord.Embed(
-                        title="🎣 낚시 성공... but",
-                        description=f"**{caught_name}** 을(를) 낚았지만 인벤토리가 가득 차서 놓쳤슴미댜!",
-                        color=GRADE_EMBED_COLOR.get(grade, 0xaa6600),
-                    )
-                await interaction.response.edit_message(embed=embed, view=self)
-
+            if self._message:
+                embed = discord.Embed(
+                    title="🎣 낚시 실패",
+                    description="🕷️💧 물고기가 미끼만 먹고 도망갔슴미댜... 다음엔 더 빨리 당기셰요!",
+                    color=0x884444,
+                )
+                await self._message.edit(embed=embed, view=self)
             self.stop()
-            return
 
-        if self.state == "done":
+    async def _handle_catch(self, interaction: discord.Interaction):
+        """물고기를 잡았을 때의 처리 로직"""
+        if self._bite_task and not self._bite_task.done():
+            self._bite_task.cancel()
+
+        player   = self.player
+        spot     = self.spot_data
+        fee_rate = spot.get("fee_rate", 0.20)
+
+        total_rate = sum(f["rate"] for f in self.fish_db_filtered.values())
+        roll = random.uniform(0, total_rate)
+        cumulative  = 0.0
+        caught_name = None
+        caught_data = None
+        for name, data in self.fish_db_filtered.items():
+            cumulative += data["rate"]
+            if roll <= cumulative:
+                caught_name = name
+                caught_data = data
+                break
+        if not caught_name:
+            caught_name, caught_data = list(self.fish_db_filtered.items())[-1]
+
+        fish_id  = caught_data["id"]
+        grade    = caught_data["grade"]
+        lo, hi   = caught_data.get("size", (10, 30))
+        size_cm  = round(random.uniform(lo, hi), 1) if hi > 0 else 0.0
+        price    = caught_data["price"]
+        fee      = int(price * fee_rate)
+        net      = price - fee
+
+        added    = player.add_item(fish_id)
+        rank_msg = player.train_skill("fishing", 15.0)
+
+        try:
+            from village import village_manager
+            village_manager.add_contribution(1, "fishing")
+        except Exception:
+            pass
+
+        try:
+            from bulletin import weekly_fishing
+            weekly_fishing.add_catch(player.name, caught_name, size_cm)
+        except Exception:
+            pass
+
+        try:
+            from collection import collection_manager
+            is_new, total = collection_manager.register("낚시", fish_id, caught_name, grade, size_cm)
+            if is_new and self._message:
+                await self._message.channel.send(
+                    f"📖✨ **새로운 도감 등록!** 🎣 `{caught_name}` 이(가) 낚시 도감에 추가됐슴미댜!"
+                )
+        except Exception:
+            pass
+
+        try:
+            from achievements import achievement_manager
+            achievement_manager.increment("fish_caught", 1)
+        except Exception:
+            pass
+
+        FLAVOR_TEXT = {
+            "Normal":    "평범한 녀석이지만 기분은 좋다!",
+            "Rare":      "오! 꽤 귀한 녀석인데?!",
+            "Epic":      "대박!! 이건 정말 레어한 녀석이다!!",
+            "Legendary": "전설의 물고기?! 이건 대단한 발견이다!!!",
+        }
+        flavor = FLAVOR_TEXT.get(grade, "")
+        card_sent = False
+        if added and hi > 0:
+            try:
+                import fishing_card
+                from ui_theme import spider_scene
+                buf  = fishing_card.generate_fishing_card(
+                    caught_name, size_cm, price, fee, 0, net, grade=grade
+                )
+                file = discord.File(buf, filename="fishing_result.png")
+                embed = discord.Embed(
+                    title=f"🎣 {fishing_card.GRADE_TITLE_TEXT.get(grade, '🕷️ {name}을(를) 낚았슴미댜!').format(name=caught_name)}",
+                    description=f"{spider_scene('fishing_catch')}\n{flavor}",
+                    color=GRADE_EMBED_COLOR.get(grade, 0x00aa44),
+                )
+                embed.set_image(url="attachment://fishing_result.png")
+                footer_parts = [f"📍 {self.spot_name}", f"{grade} 등급"]
+                if rank_msg:
+                    footer_parts.append(rank_msg)
+                embed.set_footer(text="  |  ".join(footer_parts))
+                await interaction.response.edit_message(embed=embed, attachments=[file], view=self)
+                card_sent = True
+            except Exception:
+                pass
+
+        if not card_sent:
+            grade_mark = {"Normal": "⚬", "Rare": "◆", "Epic": "❖", "Legendary": "✦"}.get(grade, "⚬")
+            embed_color = GRADE_EMBED_COLOR.get(grade, 0x00aa44)
+            if added:
+                from ui_theme import spider_scene
+                desc = (
+                    f"{spider_scene('fishing_catch')}\n"
+                    f"**{grade_mark} {caught_name}** 을(를) 낚았슴미댜!\n\n"
+                    f"📏 크기: **{size_cm} cm**\n"
+                    f"💰 {price:,}G  수수료 -{fee:,}G  순수익 {net:,}G"
+                )
+                if rank_msg:
+                    desc += f"\n\n{rank_msg}"
+                embed = discord.Embed(
+                    title=f"🎣 와! {caught_name}을(를) 낚았다!! [{grade}]",
+                    description=f"{desc}\n\n{flavor}" if flavor else desc,
+                    color=embed_color,
+                )
+                embed.set_footer(text=f"📍 {self.spot_name}  |  {grade} 등급")
+            else:
+                embed = discord.Embed(
+                    title="🎣 낚시 성공... but",
+                    description=f"**{caught_name}** 을(를) 낚았지만 인벤토리가 가득 차서 놓쳤슴미댜!",
+                    color=GRADE_EMBED_COLOR.get(grade, 0xaa6600),
+                )
+            await interaction.response.edit_message(embed=embed, view=self)
+
+    # ① 항상 보이는 "당기기" 버튼
+    @discord.ui.button(label="🎣 낚싯줄 당기기!", style=discord.ButtonStyle.primary, row=0)
+    async def pull_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if self.state == "waiting":
+            self.state = "done"
+            self._disable_buttons()
+            await interaction.response.edit_message(
+                content="🕷️💦 앗! 너무 일찍 당겼슴미댜... 물고기가 놀라서 도망갔슴미댜!",
+                view=self,
+            )
+            self.stop()
+        elif self.state == "bite":
+            self.state = "done"
+            self._disable_buttons()
+            await self._handle_catch(interaction)
+            self.stop()
+        elif self.state == "done":
             await interaction.response.send_message("이미 끝났슴미댜!", ephemeral=True)
 
-    @discord.ui.button(label="🚫 그만하기", style=discord.ButtonStyle.secondary)
+    # ② 보조 버튼 — waiting 상태에서 마우스 위치 유지용
+    @discord.ui.button(label="🕸️ 기다리는 중...", style=discord.ButtonStyle.secondary, row=0)
+    async def wait_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if self.state == "waiting":
+            await interaction.response.send_message(
+                "🕷️ 조용히 기다리는 중임미댜... 찌가 움직이면 당기기를 누르셰요!",
+                ephemeral=True,
+            )
+        elif self.state == "bite":
+            self.state = "done"
+            self._disable_buttons()
+            await self._handle_catch(interaction)
+            self.stop()
+        elif self.state == "done":
+            await interaction.response.send_message("이미 끝났슴미댜!", ephemeral=True)
+
+    @discord.ui.button(label="🚫 그만하기", style=discord.ButtonStyle.danger, row=1)
     async def stop_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         if self.state == "done":
             await interaction.response.send_message("이미 끝났슴미댜!", ephemeral=True)

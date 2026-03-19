@@ -45,7 +45,10 @@ class ShopManager:
         if not inventory:
             return ansi(f"  {C.RED}✖ 인벤토리가 비어있슴미댜!{C.R}")
 
-        lines = [header_box("🏪 판매 목록"), section("인벤토리 아이템")]
+        lines = [header_box("🏪 판매 목록")]
+        lines.append(f"  {C.GOLD}💰 소지금: {self.player.gold:,}G{C.R}")
+        lines.append(divider())
+        lines.append(section("인벤토리 아이템"))
         total = 0
         for item_id, count in inventory.items():
             item = ALL_ITEMS.get(item_id, {})
@@ -100,7 +103,10 @@ class ShopManager:
                 f"  상점 NPC: {available}{C.R}"
             )
 
-        lines = [header_box(f"🛒 {npc_name} 상점")]
+        from ui_theme import spider_scene
+        lines = [spider_scene("shop"), header_box(f"🛒 {npc_name} 상점")]
+        lines.append(f"  {C.GOLD}💰 소지금: {self.player.gold:,}G{C.R}")
+        lines.append(divider())
         lines.append(section("판매 상품"))
 
         for item_id, item in catalog.items():

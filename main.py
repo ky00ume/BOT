@@ -42,6 +42,9 @@ from bulletin     import bulletin_board, weekly_fishing
 from shop         import find_item_by_name
 from rest         import RestEngine
 from crafting     import CraftingEngine
+from diary        import diary_manager
+from collection   import collection_manager
+from achievements import achievement_manager
 
 # ─── 상수 (환경변수로 관리) ────────────────────────────────────────────────
 TOKEN              = os.getenv("DISCORD_TOKEN", "")
@@ -101,7 +104,7 @@ async def on_ready():
         print("[DB 로드] 저장 데이터 없음 — 기본 캐릭터로 시작")
 
     # 알람 설정
-    alarm_loop = setup_alarms(bot, ALLOWED_CHANNEL_ID, DRIDER_ID)
+    alarm_loop = setup_alarms(bot, ALLOWED_CHANNEL_ID, DRIDER_ID, hyness_id=HYNESS_ID, majesty_id=MAJESTY_ID)
     if not alarm_loop.is_running():
         alarm_loop.start()
 
@@ -359,7 +362,23 @@ async def attack_cmd(ctx, skill_id: str = "smash"):
     if not battle_engine.in_battle:
         await ctx.send(ansi(f"  {C.RED}✖ 현재 전투 중이 아님미댜! /사냥 으로 전투 시작.{C.R}"))
         return
+
+    was_in_battle = battle_engine.in_battle
     result = battle_engine.process_turn(skill_id)
+
+    # 전투 종료 후 업적 체크 (승리 시)
+    if was_in_battle and not battle_engine.in_battle and shared_player.hp > 0:
+        newly_unlocked = achievement_manager.increment("battles_won", 1)
+        diary_manager.increment("battles_won", 1)
+        for ach_id in newly_unlocked:
+            from achievements import ACHIEVEMENT_DEFS
+            ach = ACHIEVEMENT_DEFS.get(ach_id, {})
+            await ctx.send(
+                f"🏆✨ **업적 달성!** [{ach.get('name', ach_id)}]\n"
+                f"  {ach.get('desc', '')}\n"
+                f"  🎀 타이틀 획득: **{ach.get('title', '')}**"
+            )
+
     await ctx.send(result if result.startswith("```") else ansi(result))
 
 
@@ -809,6 +828,11 @@ async def pat_cmd(ctx):
     if not await _check_channel(ctx):
         return
     msg = get_pet_response()
+
+    # 업적 & 일기 카운터 증가
+    newly_unlocked = achievement_manager.increment("pet_count", 1)
+    diary_manager.increment("pet_count", 1)
+
     embed = discord.Embed(
         title="🐱 쓰담쓰담...",
         description=msg,
@@ -816,6 +840,16 @@ async def pat_cmd(ctx):
     )
     embed.set_footer(text="츄라이더는 언제나 쓰다듬어주면 좋아합니다! 💕")
     await ctx.send(embed=embed)
+
+    # 새 업적 달성 알림
+    for ach_id in newly_unlocked:
+        from achievements import ACHIEVEMENT_DEFS
+        ach = ACHIEVEMENT_DEFS.get(ach_id, {})
+        await ctx.send(
+            f"🏆✨ **업적 달성!** [{ach.get('name', ach_id)}]\n"
+            f"  {ach.get('desc', '')}\n"
+            f"  🎀 타이틀 획득: **{ach.get('title', '')}**"
+        )
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -866,6 +900,84 @@ async def rest_cmd(ctx):
     await ctx.send(embed=embed)
 
     await rest_engine.start_rest()
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 신규 명령어 — 일기
+# ═══════════════════════════════════════════════════════════════════════════
+
+@bot.command(name="일기")
+async def diary_cmd(ctx, date_str: str = None):
+    if not await _check_channel(ctx):
+        return
+    diary_manager.set_player(shared_player)
+    if date_str:
+        msg = diary_manager.get_diary_detail(date_str)
+    else:
+        msg = diary_manager.get_diary_list()
+    await ctx.send(msg)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 신규 명령어 — 도감
+# ═══════════════════════════════════════════════════════════════════════════
+
+@bot.command(name="도감")
+async def collection_cmd(ctx, category: str = None):
+    if not await _check_channel(ctx):
+        return
+    from collection import CATEGORY_ICONS
+    if category and category in CATEGORY_ICONS:
+        msg = collection_manager.show_collection(category)
+    else:
+        msg = collection_manager.show_all_categories()
+    await ctx.send(msg)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 신규 명령어 — 업적
+# ═══════════════════════════════════════════════════════════════════════════
+
+@bot.command(name="업적")
+async def achievements_cmd(ctx):
+    if not await _check_channel(ctx):
+        return
+    msg = achievement_manager.show_achievements()
+    await ctx.send(msg)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 신규 명령어 — 타이틀
+# ═══════════════════════════════════════════════════════════════════════════
+
+@bot.command(name="타이틀")
+async def title_cmd(ctx, *, title_name: str = None):
+    if not await _check_channel(ctx):
+        return
+    owned_titles = achievement_manager.get_unlocked_titles()
+    # 기본 타이틀도 항상 포함
+    if shared_player.current_title not in owned_titles:
+        owned_titles = [shared_player.current_title] + owned_titles
+
+    if not title_name:
+        # 목록 표시
+        lines = [f"  {C.GOLD}🎀 보유 타이틀 목록{C.R}"]
+        for t in owned_titles:
+            marker = f"{C.GREEN}▶{C.R}" if t == shared_player.current_title else "  "
+            lines.append(f"  {marker} {C.WHITE}{t}{C.R}")
+        lines.append(f"\n  {C.GREEN}/타이틀 [이름]{C.R} 으로 장착!")
+        await ctx.send(ansi("\n".join(lines)))
+    else:
+        # 장착
+        if title_name in owned_titles:
+            shared_player.current_title = title_name
+            await ctx.send(ansi(
+                f"  {C.GREEN}✔ [{title_name}] 타이틀을 장착했슴미댜! 🎀{C.R}"
+            ))
+        else:
+            await ctx.send(ansi(
+                f"  {C.RED}✖ [{title_name}] 타이틀을 보유하고 있지 않슴미댜!{C.R}"
+            ))
 
 
 # ─── 종료 시그널 핸들러 ───────────────────────────────────────────────────

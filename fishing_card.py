@@ -1,11 +1,21 @@
 """fishing_card.py — PIL 통일 카드 이미지 생성기 (모든 컨텐츠 공용)"""
 import io
+import os
 
 try:
     from PIL import Image, ImageDraw, ImageFont
     PIL_AVAILABLE = True
 except ImportError:
     PIL_AVAILABLE = False
+
+# 등급별 타이틀 텍스트
+GRADE_TITLE_TEXT = {
+    "Normal":    "🕷️ {name}을(를) 낚았슴미댜!",
+    "Rare":      "🕷️✨ 오! {name} 발견임미댜!!",
+    "Epic":      "🕷️🔥 와앗! {name}이(가) 잡혔슴미댜!!!",
+    "Legendary": "🕷️👑 전설이댜!!! {name}?!?!",
+    "Fail":      "🕷️💦 이건... 쓰레기...",
+}
 
 # 등급별 그라데이션 (상단 RGB, 하단 RGB)
 GRADE_GRADIENTS = {
@@ -104,10 +114,12 @@ def generate_card(
     grade: str = "Normal",
     width: int = 520,
     height: int = 320,
+    subtitle: str = None,
 ) -> io.BytesIO:
     """
     통일 카드 이미지를 생성하고 BytesIO로 반환합니다.
     rows: [{"label": str, "value": str}, ...]
+    subtitle: 헤더 아래에 추가 표시될 작은 텍스트 (선택)
     """
     if not PIL_AVAILABLE:
         raise RuntimeError("Pillow가 설치되지 않았슴미댜.")
@@ -120,9 +132,17 @@ def generate_card(
     txt_col  = (230, 232, 245)
     grade_lbl = GRADE_LABELS.get(grade, grade)
 
-    # ── 1. 그라데이션 배경 ──────────────────────────────────────────
-    bg = Image.new("RGB", (width, height))
-    _draw_gradient(bg, top_col, bot_col)
+    # ── 1. 배경: bg PNG 있으면 사용, 없으면 그라데이션 ─────────────────
+    bg_path = os.path.join(os.path.dirname(__file__), "static", "cards", f"bg_{grade}.png")
+    if os.path.isfile(bg_path):
+        try:
+            bg = Image.open(bg_path).convert("RGB").resize((width, height))
+        except (IOError, OSError, Exception):
+            bg = Image.new("RGB", (width, height))
+            _draw_gradient(bg, top_col, bot_col)
+    else:
+        bg = Image.new("RGB", (width, height))
+        _draw_gradient(bg, top_col, bot_col)
 
     # ── 2. 둥근 모서리 마스크 ────────────────────────────────────────
     mask = Image.new("L", (width, height), 0)
@@ -144,15 +164,20 @@ def generate_card(
     )
 
     # ── 4. 폰트 ──────────────────────────────────────────────────────
-    font_title = _get_font(24)
-    font_label = _get_font(15)
-    font_value = _get_font(16)
-    font_grade = _get_font(18)
+    font_title    = _get_font(24)
+    font_subtitle = _get_font(13)
+    font_label    = _get_font(15)
+    font_value    = _get_font(16)
+    font_grade    = _get_font(18)
+    font_footer   = _get_font(12)
 
     # ── 5. 헤더: 제목 + 등급 배지 ──────────────────────────────────
-    HEADER_H = 62
+    HEADER_H = 62 if not subtitle else 80
     title_text = f"{icon}  {title}"
     draw.text((20, 16), title_text, font=font_title, fill=txt_col)
+
+    if subtitle:
+        draw.text((22, 44), subtitle, font=font_subtitle, fill=lbl_col)
 
     gw = _text_width(draw, grade_lbl, font_grade)
     draw.text((width - gw - 16, 20), grade_lbl, font=font_grade, fill=accent)
@@ -216,6 +241,13 @@ def generate_card(
     btext_y = badge_y0 + (badge_h - 18) // 2
     draw.text((btext_x, btext_y), grade_lbl, font=font_grade, fill=txt_col)
 
+    # ── 10. 거미줄 푸터 텍스트 ──────────────────────────────────────
+    footer_text = "🕸️ 츄라이더의 기록 🕸️"
+    fw = _text_width(draw, footer_text, font_footer)
+    fx = (width - fw) // 2
+    fy = badge_y0 + (badge_h - 12) // 2 + 14
+    draw.text((fx, fy), footer_text, font=font_footer, fill=(120, 120, 140))
+
     buf = io.BytesIO()
     img.save(buf, format="PNG")
     buf.seek(0)
@@ -231,6 +263,8 @@ def generate_fishing_card(
     net_profit: int,
     grade: str = "Normal",
 ) -> io.BytesIO:
+    title_template = GRADE_TITLE_TEXT.get(grade, "🕷️ {name}을(를) 낚았슴미댜!")
+    title = title_template.format(name=fish_name)
     rows = [
         {"label": "물고기",   "value": fish_name},
         {"label": "크기",     "value": f"{size_cm:.1f} cm"},
@@ -239,7 +273,47 @@ def generate_fishing_card(
         {"label": "보너스",   "value": f"+{bonus:,} G"},
         {"label": "순수익",   "value": f"{net_profit:,} G"},
     ]
-    return generate_card(f"와! {fish_name}을(를) 낚았다!!", "🎣", rows, grade=grade)
+    return generate_card(title, "🎣", rows, grade=grade)
+
+
+def generate_card_v2(
+    title: str,
+    icon: str,
+    rows: list,
+    grade: str = "Normal",
+    width: int = 520,
+    height: int = 320,
+    subtitle: str = None,
+    spider_art_key: str = None,
+) -> io.BytesIO:
+    """
+    generate_card의 확장판. spider_art_key를 지정하면 카드 오른쪽 하단 모서리에 거미 이모지 아트를 작게 렌더링합니다.
+    """
+    buf = generate_card(title, icon, rows, grade=grade, width=width, height=height, subtitle=subtitle)
+    if spider_art_key is None or not PIL_AVAILABLE:
+        return buf
+
+    from ui_theme import spider_scene
+    art_text = spider_scene(spider_art_key)
+    # art_text에서 ```코드블록 마커 제거 후 순수 텍스트만 추출
+    art_lines = [l for l in art_text.replace("```", "").strip().splitlines()]
+
+    buf.seek(0)
+    img = Image.open(buf).convert("RGB")
+    draw = ImageDraw.Draw(img)
+    font_art = _get_font(10)
+    accent = GRADE_ACCENT_COLORS.get(grade, (100, 130, 255))
+    art_color = tuple(min(255, c + 60) for c in accent)
+
+    x_start = width - 130
+    y_start = height - len(art_lines) * 13 - 10
+    for i, line in enumerate(art_lines):
+        draw.text((x_start, y_start + i * 13), line, font=font_art, fill=art_color)
+
+    out = io.BytesIO()
+    img.save(out, format="PNG")
+    out.seek(0)
+    return out
 
 
 def generate_cooking_card(

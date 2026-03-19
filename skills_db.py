@@ -317,6 +317,24 @@ OTHER_SKILLS = {
         "icon": "💤",
         "ranks": {r: {} for r in RANK_ORDER},
     },
+    "crafting": {
+        "name": "제작",
+        "desc": "재료를 조합하여 장비를 만든다.",
+        "icon": "🔨",
+        "ranks": {r: {} for r in RANK_ORDER},
+    },
+    "gathering": {
+        "name": "채집",
+        "desc": "자연에서 재료를 채집한다.",
+        "icon": "🌿",
+        "ranks": {r: {} for r in RANK_ORDER},
+    },
+    "mining": {
+        "name": "채광",
+        "desc": "광석을 채굴한다.",
+        "icon": "⛏",
+        "ranks": {r: {} for r in RANK_ORDER},
+    },
 }
 
 ALL_SKILLS = {

@@ -2,7 +2,7 @@
 import asyncio
 import random
 import discord
-from ui_theme import C, ansi, header_box, divider, rank_badge, FOOTERS
+from ui_theme import C, ansi, header_box, divider, rank_badge, FOOTERS, GRADE_EMBED_COLOR
 
 FISH_DB = {
     "붕어":     {"id": "fs_carp_01",     "grade": "Normal",    "price": 5,   "size": (10, 30),  "rate": 0.45, "rank_req": "연습", "cookable": True},
@@ -177,12 +177,14 @@ class FishingView(discord.ui.View):
                     )
                     file = discord.File(buf, filename="fishing_result.png")
                     embed = discord.Embed(
-                        title=f"🎣 {caught_name} 낚음! [{grade}]",
-                        color=0x00aa44,
+                        title=f"🎣 와! {caught_name}을(를) 낚았슴미댜!!",
+                        color=GRADE_EMBED_COLOR.get(grade, 0x00aa44),
                     )
                     embed.set_image(url="attachment://fishing_result.png")
+                    footer_parts = [f"📍 {self.spot_name}", f"{grade} 등급"]
                     if rank_msg:
-                        embed.set_footer(text=rank_msg)
+                        footer_parts.append(rank_msg)
+                    embed.set_footer(text="  |  ".join(footer_parts))
                     await interaction.response.edit_message(embed=embed, attachments=[file], view=self)
                     card_sent = True
                 except Exception:
@@ -190,6 +192,7 @@ class FishingView(discord.ui.View):
 
             if not card_sent:
                 grade_mark = {"Normal": "⚬", "Rare": "◆", "Epic": "❖", "Legendary": "✦"}.get(grade, "⚬")
+                embed_color = GRADE_EMBED_COLOR.get(grade, 0x00aa44)
                 if added:
                     desc = (
                         f"**{grade_mark} {caught_name}** 을(를) 낚았슴미댜!\n\n"
@@ -198,12 +201,17 @@ class FishingView(discord.ui.View):
                     )
                     if rank_msg:
                         desc += f"\n\n{rank_msg}"
-                    embed = discord.Embed(title="🎣 낚시 성공!", description=desc, color=0x00aa44)
+                    embed = discord.Embed(
+                        title=f"🎣 와! {caught_name}을(를) 낚았슴미댜!!",
+                        description=desc,
+                        color=embed_color,
+                    )
+                    embed.set_footer(text=f"📍 {self.spot_name}  |  {grade} 등급")
                 else:
                     embed = discord.Embed(
                         title="🎣 낚시 성공... but",
                         description=f"**{caught_name}** 을(를) 낚았지만 인벤토리가 가득 차서 놓쳤슴미댜!",
-                        color=0xaa6600,
+                        color=GRADE_EMBED_COLOR.get(grade, 0xaa6600),
                     )
                 await interaction.response.edit_message(embed=embed, view=self)
 

@@ -7,53 +7,94 @@ try:
 except ImportError:
     PIL_AVAILABLE = False
 
-GRADE_COLORS = {
-    "Normal":    "#1a1a2e",
-    "Rare":      "#0d3320",
-    "Epic":      "#2d0a4e",
-    "Legendary": "#3d2b00",
-    "Fail":      "#3d1a1a",
+# 등급별 그라데이션 (상단 RGB, 하단 RGB)
+GRADE_GRADIENTS = {
+    "Normal":    ((22, 22, 58),   (10, 10, 38)),
+    "Rare":      ((8,  55, 75),   (4,  38, 55)),
+    "Epic":      ((48, 8,  88),   (30, 4,  60)),
+    "Legendary": ((78, 52, 4),    (50, 30, 0)),
+    "Fail":      ((68, 18, 18),   (42, 8,  8)),
 }
 
-GRADE_TITLE_COLORS = {
-    "Normal":    (180, 180, 220),
-    "Rare":      (100, 220, 150),
-    "Epic":      (180, 120, 255),
-    "Legendary": (255, 215,   0),
-    "Fail":      (200, 100, 100),
+# 등급별 강조색 (테두리·라인·배지)
+GRADE_ACCENT_COLORS = {
+    "Normal":    (100, 130, 255),
+    "Rare":      (0,   200, 160),
+    "Epic":      (200, 100, 255),
+    "Legendary": (255, 200,  50),
+    "Fail":      (220,  80,  80),
 }
 
-_FONT_CACHE = {}
+# 등급별 값 텍스트 색상
+GRADE_VALUE_COLORS = {
+    "Normal":    (180, 200, 255),
+    "Rare":      (100, 240, 190),
+    "Epic":      (220, 150, 255),
+    "Legendary": (255, 230, 100),
+    "Fail":      (255, 150, 150),
+}
 
+# 등급 표시 라벨
+GRADE_LABELS = {
+    "Normal":    "★ NORMAL",
+    "Rare":      "★★ RARE",
+    "Epic":      "★★★ EPIC",
+    "Legendary": "★★★★ LEGENDARY",
+    "Fail":      "✖ FAIL",
+}
 
-def _hex_to_rgb(hex_str: str) -> tuple:
-    hex_str = hex_str.lstrip("#")
-    return tuple(int(hex_str[i:i+2], 16) for i in (0, 2, 4))
+_FONT_CACHE: dict = {}
+
+_CORNER_RADIUS = 18
 
 
 def _get_font(size: int):
     if not PIL_AVAILABLE:
         return None
-    key = size
-    if key in _FONT_CACHE:
-        return _FONT_CACHE[key]
+    if size in _FONT_CACHE:
+        return _FONT_CACHE[size]
 
     candidates = [
         "NanumGothic", "NanumGothic.ttf",
+        "/usr/share/fonts/truetype/nanum/NanumGothic.ttf",
         "MalgunGothic", "malgun.ttf",
         "NanumBarunGothic", "NanumBarunGothic.ttf",
+        "DejaVuSans", "DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
     ]
     for name in candidates:
         try:
             font = ImageFont.truetype(name, size)
-            _FONT_CACHE[key] = font
+            _FONT_CACHE[size] = font
             return font
         except (IOError, OSError):
             pass
 
     font = ImageFont.load_default()
-    _FONT_CACHE[key] = font
+    _FONT_CACHE[size] = font
     return font
+
+
+def _draw_gradient(img: "Image.Image", top_color: tuple, bottom_color: tuple) -> None:
+    """이미지에 상단→하단 RGB 그라데이션을 칠합니다."""
+    w, h = img.size
+    draw = ImageDraw.Draw(img)
+    tr, tg, tb = top_color[:3]
+    br, bg_c, bb = bottom_color[:3]
+    for y in range(h):
+        t = y / max(h - 1, 1)
+        r = int(tr + (br - tr) * t)
+        g = int(tg + (bg_c - tg) * t)
+        b = int(tb + (bb - tb) * t)
+        draw.line([(0, y), (w - 1, y)], fill=(r, g, b))
+
+
+def _text_width(draw: "ImageDraw.ImageDraw", text: str, font) -> int:
+    try:
+        bb = draw.textbbox((0, 0), text, font=font)
+        return bb[2] - bb[0]
+    except AttributeError:
+        return len(text) * (getattr(font, "size", 10) // 2 + 3)
 
 
 def generate_card(
@@ -61,8 +102,8 @@ def generate_card(
     icon: str,
     rows: list,
     grade: str = "Normal",
-    width: int = 400,
-    height: int = 250,
+    width: int = 520,
+    height: int = 320,
 ) -> io.BytesIO:
     """
     통일 카드 이미지를 생성하고 BytesIO로 반환합니다.
@@ -71,42 +112,109 @@ def generate_card(
     if not PIL_AVAILABLE:
         raise RuntimeError("Pillow가 설치되지 않았슴미댜.")
 
-    bg_color  = _hex_to_rgb(GRADE_COLORS.get(grade, GRADE_COLORS["Normal"]))
-    tc_color  = GRADE_TITLE_COLORS.get(grade, (180, 180, 220))
-    txt_color = (220, 220, 230)
-    val_color = (255, 255, 200)
+    top_col  = GRADE_GRADIENTS.get(grade, GRADE_GRADIENTS["Normal"])[0]
+    bot_col  = GRADE_GRADIENTS.get(grade, GRADE_GRADIENTS["Normal"])[1]
+    accent   = GRADE_ACCENT_COLORS.get(grade,  (100, 130, 255))
+    val_col  = GRADE_VALUE_COLORS.get(grade,   (180, 200, 255))
+    lbl_col  = (175, 180, 200)
+    txt_col  = (230, 232, 245)
+    grade_lbl = GRADE_LABELS.get(grade, grade)
 
-    img  = Image.new("RGB", (width, height), bg_color)
+    # ── 1. 그라데이션 배경 ──────────────────────────────────────────
+    bg = Image.new("RGB", (width, height))
+    _draw_gradient(bg, top_col, bot_col)
+
+    # ── 2. 둥근 모서리 마스크 ────────────────────────────────────────
+    mask = Image.new("L", (width, height), 0)
+    ImageDraw.Draw(mask).rounded_rectangle(
+        [0, 0, width - 1, height - 1], radius=_CORNER_RADIUS, fill=255
+    )
+    base = Image.new("RGB", (width, height), (12, 12, 28))
+    base.paste(bg, mask=mask)
+    img = base
+
     draw = ImageDraw.Draw(img)
 
-    # 테두리
-    for i in range(3):
-        draw.rectangle([i, i, width - 1 - i, height - 1 - i], outline=tc_color)
+    # ── 3. 테두리 ────────────────────────────────────────────────────
+    draw.rounded_rectangle(
+        [1, 1, width - 2, height - 2],
+        radius=_CORNER_RADIUS - 1,
+        outline=accent,
+        width=2,
+    )
 
-    font_title = _get_font(20)
-    font_label = _get_font(14)
-    font_value = _get_font(14)
+    # ── 4. 폰트 ──────────────────────────────────────────────────────
+    font_title = _get_font(24)
+    font_label = _get_font(15)
+    font_value = _get_font(16)
+    font_grade = _get_font(18)
 
-    # 제목
-    title_text = f"{icon} {title}"
-    draw.text((16, 14), title_text, font=font_title, fill=tc_color)
+    # ── 5. 헤더: 제목 + 등급 배지 ──────────────────────────────────
+    HEADER_H = 62
+    title_text = f"{icon}  {title}"
+    draw.text((20, 16), title_text, font=font_title, fill=txt_col)
 
-    # 구분선
-    draw.line([(16, 44), (width - 16, 44)], fill=tc_color, width=1)
+    gw = _text_width(draw, grade_lbl, font_grade)
+    draw.text((width - gw - 16, 20), grade_lbl, font=font_grade, fill=accent)
 
-    # 행 데이터
-    y = 54
-    row_h = 26
-    for row in rows:
+    # ── 6. 장식 라인 ─────────────────────────────────────────────────
+    line_y = HEADER_H
+    draw.line([(16, line_y), (width - 16, line_y)], fill=accent, width=2)
+    draw.ellipse([12, line_y - 3, 20, line_y + 3], fill=accent)
+    draw.ellipse([width - 20, line_y - 3, width - 12, line_y + 3], fill=accent)
+
+    # ── 7. 반투명 정보 박스 ──────────────────────────────────────────
+    BOTTOM_H = 52
+    bx0, by0 = 16, HEADER_H + 8
+    bx1, by1 = width - 16, height - BOTTOM_H - 4
+
+    overlay = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    ImageDraw.Draw(overlay).rounded_rectangle(
+        [bx0, by0, bx1, by1], radius=10, fill=(0, 0, 0, 115)
+    )
+    img = Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
+    draw = ImageDraw.Draw(img)
+
+    # ── 8. 행 데이터 ─────────────────────────────────────────────────
+    row_h   = max(28, (by1 - by0 - 12) // max(len(rows), 1))
+    row_h   = min(row_h, 34)
+    pad_l   = bx0 + 14
+    mid_x   = bx0 + (bx1 - bx0) // 2 + 10
+    y       = by0 + 10
+
+    for idx, row in enumerate(rows):
         label = row.get("label", "")
         value = row.get("value", "")
-        draw.text((20,         y), f"{label}:", font=font_label, fill=txt_color)
-        draw.text((width // 2, y), str(value),  font=font_value, fill=val_color)
+        if idx > 0:
+            sep_y = y - 5
+            draw.line([(pad_l, sep_y), (bx1 - 14, sep_y)], fill=(55, 58, 78), width=1)
+        draw.text((pad_l, y), f"{label}:", font=font_label, fill=lbl_col)
+        draw.text((mid_x,  y), str(value), font=font_value, fill=val_col)
         y += row_h
 
-    # 등급 배지
-    grade_text = f"[ {grade} ]"
-    draw.text((width - 90, height - 22), grade_text, font=font_label, fill=tc_color)
+    # ── 9. 하단 등급 배지 ────────────────────────────────────────────
+    sep_y2 = height - BOTTOM_H
+    draw.line([(16, sep_y2), (width - 16, sep_y2)], fill=accent, width=1)
+
+    badge_pad  = 12
+    badge_w    = _text_width(draw, grade_lbl, font_grade) + badge_pad * 2
+    badge_h    = BOTTOM_H - 14
+    badge_x0   = width // 2 - badge_w // 2
+    badge_y0   = sep_y2 + 6
+    badge_x1   = badge_x0 + badge_w
+    badge_y1   = badge_y0 + badge_h
+
+    ov2 = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    r, g, b = accent
+    ImageDraw.Draw(ov2).rounded_rectangle(
+        [badge_x0, badge_y0, badge_x1, badge_y1], radius=8, fill=(r, g, b, 55)
+    )
+    img = Image.alpha_composite(img.convert("RGBA"), ov2).convert("RGB")
+    draw = ImageDraw.Draw(img)
+
+    btext_x = badge_x0 + badge_pad
+    btext_y = badge_y0 + (badge_h - 18) // 2
+    draw.text((btext_x, btext_y), grade_lbl, font=font_grade, fill=txt_col)
 
     buf = io.BytesIO()
     img.save(buf, format="PNG")

@@ -28,6 +28,14 @@ EMBED_COLOR = {
     "system":    0x2F3136,
 }
 
+GRADE_EMBED_COLOR = {
+    "Normal":    0x3A7BD5,
+    "Rare":      0x00D2A0,
+    "Epic":      0x9B59B6,
+    "Legendary": 0xF39C12,
+    "Fail":      0xE74C3C,
+}
+
 
 def bar(current, max_val, width=10, fill_c=C.RED, empty_c=C.DARK):
     if max_val <= 0:

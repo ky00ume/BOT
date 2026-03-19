@@ -2,7 +2,7 @@
 import asyncio
 import random
 import discord
-from ui_theme import C, ansi, header_box, divider, EMBED_COLOR, GRADE_ICON_PLAIN
+from ui_theme import C, ansi, header_box, divider, EMBED_COLOR, GRADE_ICON_PLAIN, GRADE_EMBED_COLOR
 
 GATHER_ITEMS_BY_SEASON = {
     "spring": [
@@ -99,18 +99,21 @@ class GatheringEngine:
 
         # PIL 카드 시도
         card_sent = False
+        season_kr = {"spring": "봄", "summer": "여름", "autumn": "가을", "winter": "겨울"}.get(season, season)
         if added:
             try:
                 import fishing_card
                 buf  = fishing_card.generate_gather_card(item["name"], count, grade, grade=grade)
                 file = discord.File(buf, filename="gather_result.png")
                 embed = discord.Embed(
-                    title=f"🌿 채집 결과 [{grade}]",
-                    color=0x228833,
+                    title=f"🌿 와! {item['name']}을(를) 채집했슴미댜!!",
+                    color=GRADE_EMBED_COLOR.get(grade, 0x228833),
                 )
                 embed.set_image(url="attachment://gather_result.png")
+                footer_parts = [f"계절: {season_kr}", f"{grade} 등급"]
                 if rank_msg:
-                    embed.set_footer(text=rank_msg)
+                    footer_parts.append(rank_msg)
+                embed.set_footer(text="  |  ".join(footer_parts))
                 await ctx.send(embed=embed, file=file)
                 card_sent = True
             except Exception:
@@ -118,7 +121,6 @@ class GatheringEngine:
 
         if not card_sent:
             grade_mark = GRADE_ICON_PLAIN.get(grade, "⚬")
-            season_kr  = {"spring": "봄", "summer": "여름", "autumn": "가을", "winter": "겨울"}.get(season, season)
             if added:
                 lines = [
                     header_box("🌿 채집 완료!"),
@@ -168,10 +170,15 @@ class GatheringEngine:
                 import fishing_card
                 buf  = fishing_card.generate_gather_card(item["name"], count, grade, grade=grade)
                 file = discord.File(buf, filename="mine_result.png")
-                embed = discord.Embed(title=f"⛏ 채광 결과 [{grade}]", color=0xaa8833)
+                embed = discord.Embed(
+                    title=f"⛏ 와! {item['name']}을(를) 캐냈슴미댜!!",
+                    color=GRADE_EMBED_COLOR.get(grade, 0xaa8833),
+                )
                 embed.set_image(url="attachment://mine_result.png")
+                footer_parts = [f"{grade} 등급"]
                 if rank_msg:
-                    embed.set_footer(text=rank_msg)
+                    footer_parts.append(rank_msg)
+                embed.set_footer(text="  |  ".join(footer_parts))
                 await ctx.send(embed=embed, file=file)
                 card_sent = True
             except Exception:

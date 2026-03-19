@@ -29,6 +29,15 @@ from metallurgy   import MetallurgyEngine
 from alarms       import setup_alarms
 from responses    import get_drider_response, get_hyness_response, get_majesty_response
 from items        import CONSUMABLES, COOKED_DISHES, ALL_ITEMS
+from village      import village_manager
+from gathering    import GatheringEngine
+from weather      import weather_system
+from potion       import PotionEngine
+from quest        import QuestManager
+from affinity     import AffinityManager
+from gacha        import GachaEngine
+from music        import MusicEngine
+from bulletin     import bulletin_board, weekly_fishing
 
 # ─── 상수 (환경변수로 관리) ────────────────────────────────────────────────
 TOKEN              = os.getenv("DISCORD_TOKEN", "")
@@ -58,6 +67,13 @@ battle_engine     = BattleEngine(shared_player, npc_manager)
 fishing_engine    = FishingEngine(shared_player)
 cooking_engine    = CookingEngine(shared_player)
 metallurgy_engine = MetallurgyEngine(shared_player)
+gathering_engine  = GatheringEngine(shared_player)
+potion_engine     = PotionEngine(shared_player)
+quest_manager     = QuestManager(shared_player)
+affinity_manager  = AffinityManager(shared_player)
+gacha_engine      = GachaEngine(shared_player)
+music_engine      = MusicEngine(shared_player)
+shared_player._affinity_manager = affinity_manager
 
 
 # ─── 이벤트 ──────────────────────────────────────────────────────────────
@@ -250,8 +266,7 @@ async def job_cmd(ctx, name: str = None):
     if not name:
         await ctx.send(ansi(f"  {C.RED}✖ /알바 [NPC이름] 형식으로 입력하셰요!{C.R}"))
         return
-    msg = npc_manager.start_job(name)
-    await ctx.send(msg)
+    await npc_manager.start_job_async(ctx, name)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -358,8 +373,7 @@ async def flee_cmd(ctx):
 async def fishing_cmd(ctx):
     if not await _check_channel(ctx):
         return
-    result = fishing_engine.fish()
-    await ctx.send(result)
+    await fishing_engine.fish(ctx)
 
 
 @bot.command(name="낚시목록")
@@ -453,7 +467,7 @@ async def help_cmd(ctx):
         color=EMBED_COLOR["help"],
     )
     embed.add_field(
-        name="👤 캐릭터",
+        name="👤 캐릭터 & 상태",
         value=(
             "`/상태창` — 캐릭터 상태 보기\n"
             "`/장비` — 장비창 보기\n"
@@ -464,12 +478,14 @@ async def help_cmd(ctx):
         inline=False,
     )
     embed.add_field(
-        name="🏘 마을",
+        name="🏘 마을 & NPC",
         value=(
             "`/공지` — 마을 공지 보기\n"
             "`/마을 [NPC이름]` — NPC 목록 / 대화\n"
             "`/대화 [NPC이름]` — NPC와 대화\n"
-            "`/알바 [NPC이름]` — 알바 진행"
+            "`/알바 [NPC이름]` — 알바 진행\n"
+            "`/마을상태` — 마을 레벨·기여도 확인\n"
+            "`/치료` — 치료사 방문"
         ),
         inline=False,
     )
@@ -494,26 +510,34 @@ async def help_cmd(ctx):
         inline=False,
     )
     embed.add_field(
-        name="🎣 낚시",
+        name="🌿 생활",
         value=(
-            "`/낚시` — 낚시하기\n"
-            "`/낚시목록` — 낚시 도감"
-        ),
-        inline=False,
-    )
-    embed.add_field(
-        name="🍳 요리",
-        value=(
+            "`/낚시` — 낚시하기 (타이밍 게임)\n"
+            "`/낚시터정보` — 낚시터·물고기 정보\n"
+            "`/채집` — 채집 (기력 15)\n"
+            "`/채광` — 채광 (기력 20)\n"
             "`/요리 [레시피ID]` — 요리하기\n"
-            "`/레시피` — 요리 레시피 목록"
+            "`/레시피` — 요리 레시피 목록\n"
+            "`/제련 [광석ID]` — 제련하기\n"
+            "`/제련목록` — 제련 목록\n"
+            "`/제조 [레시피ID]` — 포션 제조\n"
+            "`/날씨` — 현재 날씨 확인"
         ),
         inline=False,
     )
     embed.add_field(
-        name="⚒ 제련",
+        name="📋 소셜",
         value=(
-            "`/제련 [광석ID]` — 제련하기\n"
-            "`/제련목록` — 제련 레시피 목록"
+            "`/퀘스트` — 퀘스트 목록\n"
+            "`/퀘스트수락 [ID]` — 퀘스트 수락\n"
+            "`/퀘스트완료 [ID]` — 퀘스트 완료\n"
+            "`/뽑기` — 가챠 1회 (500G)\n"
+            "`/뽑기10` — 가챠 10회 (4500G)\n"
+            "`/작곡` — 곡 선택\n"
+            "`/연주 [곡ID]` — 연주 시작\n"
+            "`/게시판` — 마을 게시판\n"
+            "`/명예의전당` — 명예의 전당\n"
+            "`/낚시순위` — 주간 낚시 순위"
         ),
         inline=False,
     )
@@ -522,11 +546,172 @@ async def help_cmd(ctx):
         value=(
             "`/주사위 [면수]` — 주사위 굴리기\n"
             "`/저장` — 데이터 저장\n"
+            "`/공지` — 마을 공지\n"
             "`/도움말` — 이 도움말"
         ),
         inline=False,
     )
     embed.set_footer(text=FOOTERS["help"])
+    await ctx.send(embed=embed)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 신규 명령어 — 낚시터정보, 날씨, 채집, 채광, 제조
+# ═══════════════════════════════════════════════════════════════════════════
+
+@bot.command(name="낚시터정보")
+async def fish_spot_cmd(ctx):
+    if not await _check_channel(ctx):
+        return
+    result = fishing_engine.show_fish_guide()
+    await ctx.send(result)
+
+
+@bot.command(name="날씨")
+async def weather_cmd(ctx):
+    if not await _check_channel(ctx):
+        return
+    embed = weather_system.make_weather_embed()
+    await ctx.send(embed=embed)
+
+
+@bot.command(name="채집")
+async def gather_cmd(ctx):
+    if not await _check_channel(ctx):
+        return
+    await gathering_engine.gather(ctx)
+
+
+@bot.command(name="채광")
+async def mine_cmd(ctx):
+    if not await _check_channel(ctx):
+        return
+    await gathering_engine.mine(ctx)
+
+
+@bot.command(name="제조")
+async def craft_cmd(ctx, recipe_id: str = None):
+    if not await _check_channel(ctx):
+        return
+    if not recipe_id:
+        result = potion_engine.show_recipe_list()
+        await ctx.send(result)
+        return
+    result = potion_engine.craft(recipe_id)
+    await ctx.send(result)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 신규 명령어 — 퀘스트
+# ═══════════════════════════════════════════════════════════════════════════
+
+@bot.command(name="퀘스트")
+async def quest_cmd(ctx):
+    if not await _check_channel(ctx):
+        return
+    result = quest_manager.list_quests()
+    await ctx.send(result)
+
+
+@bot.command(name="퀘스트수락")
+async def quest_accept_cmd(ctx, quest_id: str = None):
+    if not await _check_channel(ctx):
+        return
+    if not quest_id:
+        await ctx.send(ansi(f"  {C.RED}✖ /퀘스트수락 [ID] 형식으로 입력하셰요!{C.R}"))
+        return
+    result = quest_manager.accept_quest(quest_id)
+    await ctx.send(result)
+
+
+@bot.command(name="퀘스트완료")
+async def quest_complete_cmd(ctx, quest_id: str = None):
+    if not await _check_channel(ctx):
+        return
+    if not quest_id:
+        await ctx.send(ansi(f"  {C.RED}✖ /퀘스트완료 [ID] 형식으로 입력하셰요!{C.R}"))
+        return
+    result = quest_manager.complete_quest(quest_id)
+    await ctx.send(result)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 신규 명령어 — 가챠
+# ═══════════════════════════════════════════════════════════════════════════
+
+@bot.command(name="뽑기")
+async def gacha_cmd(ctx, count: int = 1):
+    if not await _check_channel(ctx):
+        return
+    count   = max(1, min(count, 10))
+    results = gacha_engine.do_gacha(count)
+    embed   = gacha_engine.show_result(results)
+    await ctx.send(embed=embed)
+
+
+@bot.command(name="뽑기10")
+async def gacha10_cmd(ctx):
+    if not await _check_channel(ctx):
+        return
+    results = gacha_engine.do_gacha_10()
+    embed   = gacha_engine.show_result(results)
+    await ctx.send(embed=embed)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 신규 명령어 — 음악
+# ═══════════════════════════════════════════════════════════════════════════
+
+@bot.command(name="작곡")
+async def compose_cmd(ctx):
+    if not await _check_channel(ctx):
+        return
+    await music_engine.compose(ctx)
+
+
+@bot.command(name="연주")
+async def perform_cmd(ctx, song_id: str = None):
+    if not await _check_channel(ctx):
+        return
+    if not song_id:
+        await music_engine.compose(ctx)
+        return
+    await music_engine.perform(ctx, song_id)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 신규 명령어 — 게시판 & 마을
+# ═══════════════════════════════════════════════════════════════════════════
+
+@bot.command(name="게시판")
+async def board_cmd(ctx):
+    if not await _check_channel(ctx):
+        return
+    embed = bulletin_board.make_board_embed()
+    await ctx.send(embed=embed)
+
+
+@bot.command(name="명예의전당")
+async def hall_cmd(ctx):
+    if not await _check_channel(ctx):
+        return
+    embed = bulletin_board.make_hall_of_fame_embed()
+    await ctx.send(embed=embed)
+
+
+@bot.command(name="낚시순위")
+async def fishing_rank_cmd(ctx):
+    if not await _check_channel(ctx):
+        return
+    embed = weekly_fishing.make_rankings_embed()
+    await ctx.send(embed=embed)
+
+
+@bot.command(name="마을상태")
+async def village_status_cmd(ctx):
+    if not await _check_channel(ctx):
+        return
+    embed = village_manager.make_status_embed()
     await ctx.send(embed=embed)
 
 

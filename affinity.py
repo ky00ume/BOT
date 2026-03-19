@@ -9,6 +9,63 @@ AFFINITY_LEVELS = [
     {"level": 4, "name": "영혼의 동반자", "threshold": 700, "discount": 20},
 ]
 
+NPC_GIFT_PREFS = {
+    "크람": {
+        "loves":    ["iron_bar", "mithril_bar", "coal"],
+        "likes":    ["copper_bar", "tin_bar"],
+        "dislikes": ["gt_flower_01", "fragrant_flower"],
+        "default":  3,
+    },
+    "레이나": {
+        "loves":    ["lavender", "fragrant_flower", "healing_herb"],
+        "likes":    ["herb", "strawberry", "cherry"],
+        "dislikes": ["poison_herb", "toxic_mushroom", "slag"],
+        "default":  3,
+    },
+    "곤트": {
+        "loves":    ["gold_bar", "diamond"],
+        "likes":    ["silver_bar", "gold_ore"],
+        "dislikes": ["gt_herb_01", "gt_wood_01"],
+        "default":  3,
+    },
+    "엘리": {
+        "loves":    ["mana_herb", "mana_pool", "moonlight_dew"],
+        "likes":    ["mana_flower", "healing_herb"],
+        "dislikes": ["coal", "slag"],
+        "default":  3,
+    },
+    "그레고": {
+        "loves":    ["wp_sword_02", "ar_shield_02"],
+        "likes":    ["iron_bar", "copper_bar"],
+        "dislikes": ["poison_herb", "toxic_mushroom"],
+        "default":  3,
+    },
+    "마리": {
+        "loves":    ["ck_special_01", "honey", "butter"],
+        "likes":    ["herb", "mushroom", "egg"],
+        "dislikes": ["slag", "coal"],
+        "default":  3,
+    },
+    "피터": {
+        "loves":    ["fs_dragon_01", "fs_gold_eel_01"],
+        "likes":    ["fs_salmon_01", "fs_tuna_01"],
+        "dislikes": ["poison_herb"],
+        "default":  3,
+    },
+    "루카스": {
+        "loves":    ["wine", "honey"],
+        "likes":    ["gt_flower_01", "fragrant_flower"],
+        "dislikes": ["slag", "coal"],
+        "default":  3,
+    },
+    "나디아": {
+        "loves":    ["diamond", "eye_of_truth"],
+        "likes":    ["gold_bar", "mithril_bar"],
+        "dislikes": ["gt_herb_01"],
+        "default":  3,
+    },
+}
+
 
 def _calc_level(points: int) -> dict:
     current = AFFINITY_LEVELS[0]
@@ -84,3 +141,21 @@ class AffinityManager:
     def from_dict(self, data: dict):
         self.affinities = data.get("affinities", {})
         return self
+
+    def give_gift(self, npc_name: str, item_id: str) -> tuple:
+        """선물 처리. (amount, reaction_msg, leveled_up, lv_name) 반환."""
+        prefs = NPC_GIFT_PREFS.get(npc_name, {"default": 3})
+        if item_id in prefs.get("loves", []):
+            amount   = 15
+            reaction = "정말 좋아해요! 눈이 반짝반짝✨"
+        elif item_id in prefs.get("likes", []):
+            amount   = 8
+            reaction = "괜찮은 선물이네요~"
+        elif item_id in prefs.get("dislikes", []):
+            amount   = -5
+            reaction = "이건 좀..."
+        else:
+            amount   = prefs.get("default", 3)
+            reaction = "고마워요."
+        pts, leveled, lv_name = self.add_affinity(npc_name, amount)
+        return (amount, reaction, leveled, lv_name)

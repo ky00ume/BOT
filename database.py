@@ -287,6 +287,22 @@ def init_db():
             data         TEXT DEFAULT '{}'
         )
     """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS sheet_music (
+            id       INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id  INTEGER DEFAULT 0,
+            title    TEXT NOT NULL,
+            melody   TEXT NOT NULL,
+            created  TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS storage (
+            user_id       INTEGER PRIMARY KEY,
+            items         TEXT DEFAULT '{}',
+            max_capacity  INTEGER DEFAULT 20
+        )
+    """)
     conn.commit()
     conn.close()
 
@@ -367,3 +383,82 @@ def load_player_from_db(user_id):
         "inventory":  json.loads(row["inventory"]),
         "equipment":  json.loads(row["equipment"]),
     }
+
+
+# ─── 악보 DB 헬퍼 ────────────────────────────────────────────────────────────
+
+def save_sheet_music(user_id: int, title: str, melody: str):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO sheet_music (user_id, title, melody)
+        VALUES (?, ?, ?)
+    """, (user_id, title, melody))
+    conn.commit()
+    conn.close()
+
+
+def load_sheet_music_list(user_id: int) -> list:
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT id, title, melody, created FROM sheet_music WHERE user_id = ? ORDER BY id",
+            (user_id,)
+        )
+        rows = cursor.fetchall()
+        conn.close()
+        return [{"id": r["id"], "title": r["title"], "melody": r["melody"], "created": r["created"]} for r in rows]
+    except Exception:
+        return []
+
+
+def load_sheet_music(user_id: int, title_or_id: str) -> dict | None:
+    """제목 또는 숫자 ID로 악보를 조회합니다."""
+    if not title_or_id:
+        return None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        # 숫자 ID인 경우 (양수 정수만)
+        if title_or_id.isdigit() and int(title_or_id) > 0:
+            cursor.execute(
+                "SELECT id, title, melody FROM sheet_music WHERE user_id = ? AND id = ?",
+                (user_id, int(title_or_id))
+            )
+        else:
+            cursor.execute(
+                "SELECT id, title, melody FROM sheet_music WHERE user_id = ? AND title = ?",
+                (user_id, title_or_id)
+            )
+        row = cursor.fetchone()
+        conn.close()
+        if row:
+            return {"id": row["id"], "title": row["title"], "melody": row["melody"]}
+        return None
+    except Exception:
+        return None
+
+
+def delete_sheet_music(user_id: int, title_or_id: str) -> bool:
+    if not title_or_id:
+        return False
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        if title_or_id.isdigit() and int(title_or_id) > 0:
+            cursor.execute(
+                "DELETE FROM sheet_music WHERE user_id = ? AND id = ?",
+                (user_id, int(title_or_id))
+            )
+        else:
+            cursor.execute(
+                "DELETE FROM sheet_music WHERE user_id = ? AND title = ?",
+                (user_id, title_or_id)
+            )
+        affected = cursor.rowcount
+        conn.commit()
+        conn.close()
+        return affected > 0
+    except Exception:
+        return False

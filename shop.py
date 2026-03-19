@@ -1,10 +1,10 @@
-from items import WEAPONS, ARMORS, CONSUMABLES, COOKED_DISHES, ALL_ITEMS, TOOLS
+from items import WEAPONS, ARMORS, CONSUMABLES, COOKED_DISHES, ALL_ITEMS, TOOLS, GROCERIES
 from database import BAGS
 from ui_theme import C, section, divider, header_box, ansi, GRADE_ICON_PLAIN, EMBED_COLOR, FOOTERS
 
 NPC_CATALOGS = {
     "크람":   {**WEAPONS, **ARMORS},
-    "레이나": {**CONSUMABLES, **TOOLS},
+    "레이나": {**CONSUMABLES, **TOOLS, **GROCERIES},
     "곤트":   BAGS,
 }
 
@@ -24,15 +24,18 @@ def _find_in_dict(item_dict: dict, name_or_id: str) -> str | None:
     # 1. 정확히 ID로 매칭
     if name_or_id in item_dict:
         return name_or_id
-    # 2. 한글 이름으로 정확 매칭, 3. 부분 매칭 — 단일 순회
-    partial_match = None
+    # 2. 한글 이름으로 정확 매칭
+    # 3. 부분 매칭 — 이름 길이가 짧은(=더 정확한) 결과 우선
+    best_partial = None
+    best_partial_len = float('inf')
     for item_id, item_data in item_dict.items():
         item_name = item_data.get("name", "")
         if item_name == name_or_id:
-            return item_id
-        if partial_match is None and name_or_id in item_name:
-            partial_match = item_id
-    return partial_match
+            return item_id          # 정확 매칭 즉시 반환
+        if name_or_id in item_name and len(item_name) < best_partial_len:
+            best_partial = item_id
+            best_partial_len = len(item_name)
+    return best_partial
 
 
 class ShopManager:

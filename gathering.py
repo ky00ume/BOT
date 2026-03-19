@@ -17,6 +17,12 @@ GATHER_ITEMS_BY_SEASON = {
         {"id": "strawberry",     "name": "딸기",        "grade": "Normal",    "rate": 0.20},
         {"id": "cherry",         "name": "체리",        "grade": "Rare",      "rate": 0.07},
         {"id": "lettuce",        "name": "상추",        "grade": "Normal",    "rate": 0.18},
+        {"id": "wild_berry",     "name": "야생 열매",   "grade": "Normal",    "rate": 0.20},
+        {"id": "healing_root",   "name": "치유의 뿌리", "grade": "Rare",      "rate": 0.06},
+        {"id": "mana_flower",    "name": "마나꽃",      "grade": "Rare",      "rate": 0.05},
+        {"id": "antidote_herb",  "name": "해독초",      "grade": "Normal",    "rate": 0.10},
+        {"id": "wild_garlic",    "name": "산마늘",      "grade": "Normal",    "rate": 0.15},
+        {"id": "soybean",        "name": "대두",        "grade": "Normal",    "rate": 0.12},
     ],
     "summer": [
         {"id": "herb",           "name": "약초",        "grade": "Normal",    "rate": 0.40},
@@ -31,6 +37,12 @@ GATHER_ITEMS_BY_SEASON = {
         {"id": "tomato",         "name": "토마토",      "grade": "Normal",    "rate": 0.25},
         {"id": "cucumber",       "name": "오이",        "grade": "Normal",    "rate": 0.20},
         {"id": "onion",          "name": "양파",        "grade": "Normal",    "rate": 0.18},
+        {"id": "wild_berry",     "name": "야생 열매",   "grade": "Normal",    "rate": 0.18},
+        {"id": "blue_berry",     "name": "블루베리",    "grade": "Normal",    "rate": 0.15},
+        {"id": "energy_leaf",    "name": "원기잎",      "grade": "Normal",    "rate": 0.10},
+        {"id": "soybean",        "name": "대두",        "grade": "Normal",    "rate": 0.15},
+        {"id": "wheat",          "name": "밀",          "grade": "Normal",    "rate": 0.12},
+        {"id": "mana_flower",    "name": "마나꽃",      "grade": "Rare",      "rate": 0.04},
     ],
     "autumn": [
         # rates는 가중치 비율 (합이 1.0일 필요 없음, _pick_by_rate가 비례 계산)
@@ -45,6 +57,13 @@ GATHER_ITEMS_BY_SEASON = {
         {"id": "apple",          "name": "사과",        "grade": "Normal",    "rate": 0.30},
         {"id": "carrot",         "name": "당근",        "grade": "Normal",    "rate": 0.22},
         {"id": "potato",         "name": "감자",        "grade": "Normal",    "rate": 0.25},
+        {"id": "forest_nut",     "name": "숲 열매",     "grade": "Normal",    "rate": 0.25},
+        {"id": "golden_apple",   "name": "황금사과",    "grade": "Epic",      "rate": 0.005},
+        {"id": "rice",           "name": "쌀",          "grade": "Normal",    "rate": 0.20},
+        {"id": "wheat",          "name": "밀",          "grade": "Normal",    "rate": 0.18},
+        {"id": "pine_nut",       "name": "잣",          "grade": "Rare",      "rate": 0.05},
+        {"id": "healing_root",   "name": "치유의 뿌리", "grade": "Rare",      "rate": 0.04},
+        {"id": "energy_leaf",    "name": "원기잎",      "grade": "Normal",    "rate": 0.08},
     ],
     "winter": [
         {"id": "herb",           "name": "약초",        "grade": "Normal",    "rate": 0.30},
@@ -55,6 +74,10 @@ GATHER_ITEMS_BY_SEASON = {
         {"id": "poison_herb",    "name": "독초",        "grade": "Rare",      "rate": 0.07},
         {"id": "toxic_mushroom", "name": "독버섯",      "grade": "Normal",    "rate": 0.12},
         {"id": "lavender",       "name": "라벤더",      "grade": "Rare",      "rate": 0.05},
+        {"id": "antidote_herb",  "name": "해독초",      "grade": "Normal",    "rate": 0.08},
+        {"id": "moonlight_dew",  "name": "달빛 이슬",   "grade": "Epic",      "rate": 0.002},
+        {"id": "healing_root",   "name": "치유의 뿌리", "grade": "Rare",      "rate": 0.03},
+        {"id": "forest_nut",     "name": "숲 열매",     "grade": "Normal",    "rate": 0.10},
     ],
 }
 

@@ -1,5 +1,18 @@
 import random
 
+PET_RESPONSES = [
+    "츄라이더가 기분 좋게 꼬리를 흔든다! 🐱✨",
+    "부르르... 츄라이더가 그르렁거린다! 기분 좋은 모양! 😺",
+    "츄라이더: '츄아앗~! 더 해줘요~!' 💕",
+    "츄라이더가 머리를 비빈다! 너무 귀엽다... 🥰",
+    "츄라이더: '히히, 간지럽지만 좋아요~' ✨",
+    "츄라이더가 눈을 감고 편안한 표정을 짓는다... 😌💤",
+    "츄라이더: '오너님 손이 따뜻해요~!' 🌸",
+    "츄라이더가 앞발로 살짝 당신의 손을 잡는다! 🐾💕",
+    "츄라이더: '행복... 행복함미댜...!' 🌟",
+    "츄라이더가 감동해서 눈물이 글썽... '감사합미댜!' 🥹",
+]
+
 drider_responses = [
     "츄아앗! 뭔가 부를 것 같은 느낌이 들었슴미댜~",
     "맞슴미댜! 츄라이더 여기 있슴미댜!",
@@ -59,3 +72,7 @@ def get_hyness_response() -> str:
 
 def get_majesty_response() -> str:
     return random.choice(majesty_responses)
+
+
+def get_pet_response() -> str:
+    return random.choice(PET_RESPONSES)

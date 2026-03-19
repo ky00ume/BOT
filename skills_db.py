@@ -266,6 +266,28 @@ MASTERY_SKILLS = {
             "1":   {"str": 113, "will": 85},
         },
     },
+    "rest_mastery": {
+        "name": "휴식 마스터리",
+        "desc": "휴식 스킬 랭크업 시 의지·최대기력이 상승합니다.",
+        "stat_bonus": {
+            "연습": {"will": 1},
+            "F":   {"will": 1, "max_energy": 5},
+            "E":   {"will": 2, "max_energy": 5},
+            "D":   {"will": 2, "max_energy": 10},
+            "C":   {"will": 3, "max_energy": 10},
+            "B":   {"will": 4, "max_energy": 15},
+            "A":   {"will": 5, "max_energy": 20},
+            "9":   {"will": 6, "max_energy": 25},
+            "8":   {"will": 8, "max_energy": 30},
+            "7":   {"will": 10, "max_energy": 35},
+            "6":   {"will": 12, "max_energy": 40},
+            "5":   {"will": 15, "max_energy": 50},
+            "4":   {"will": 18, "max_energy": 60},
+            "3":   {"will": 22, "max_energy": 70},
+            "2":   {"will": 27, "max_energy": 85},
+            "1":   {"will": 33, "max_energy": 100},
+        },
+    },
 }
 
 OTHER_SKILLS = {
@@ -287,6 +309,12 @@ OTHER_SKILLS = {
     "cooking": {
         "name": "요리",
         "desc": "재료를 조합하여 음식을 만든다.",
+        "ranks": {r: {} for r in RANK_ORDER},
+    },
+    "rest": {
+        "name": "휴식",
+        "desc": "기력 회복 효율을 높입니다.",
+        "icon": "💤",
         "ranks": {r: {} for r in RANK_ORDER},
     },
 }

@@ -26,6 +26,7 @@ EMBED_COLOR = {
     "save":      0x708090,
     "heal":      0xCB7BA0,
     "system":    0x2F3136,
+    "rest":      0x7B68EE,
 }
 
 GRADE_EMBED_COLOR = {
@@ -136,4 +137,5 @@ FOOTERS = {
     "fishing":   "🎣 낚시는 인내임미댜~ 🎣",
     "cooking":   "🍳 요리로 힘을 키우셰요~ 🍳",
     "metallurgy": "⚒ 두드리면 강해짐미댜! ⚒",
+    "rest":      "💤 푹 쉬면 기력이 회복됨미댜~ 💤",
 }

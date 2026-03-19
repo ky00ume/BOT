@@ -168,6 +168,13 @@ class FishingView(discord.ui.View):
                 pass
 
             # PIL 카드
+            FLAVOR_TEXT = {
+                "Normal":    "평범한 녀석이지만 기분은 좋다!",
+                "Rare":      "오! 꽤 귀한 녀석인데?!",
+                "Epic":      "대박!! 이건 정말 레어한 녀석이다!!",
+                "Legendary": "전설의 물고기?! 이건 대단한 발견이다!!!",
+            }
+            flavor = FLAVOR_TEXT.get(grade, "")
             card_sent = False
             if added and hi > 0:
                 try:
@@ -177,7 +184,8 @@ class FishingView(discord.ui.View):
                     )
                     file = discord.File(buf, filename="fishing_result.png")
                     embed = discord.Embed(
-                        title=f"🎣 와! {caught_name}을(를) 낚았슴미댜!!",
+                        title=f"🎣 와! {caught_name}을(를) 낚았다!! [{grade}]",
+                        description=flavor,
                         color=GRADE_EMBED_COLOR.get(grade, 0x00aa44),
                     )
                     embed.set_image(url="attachment://fishing_result.png")
@@ -202,8 +210,8 @@ class FishingView(discord.ui.View):
                     if rank_msg:
                         desc += f"\n\n{rank_msg}"
                     embed = discord.Embed(
-                        title=f"🎣 와! {caught_name}을(를) 낚았슴미댜!!",
-                        description=desc,
+                        title=f"🎣 와! {caught_name}을(를) 낚았다!! [{grade}]",
+                        description=f"{desc}\n\n{flavor}" if flavor else desc,
                         color=embed_color,
                     )
                     embed.set_footer(text=f"📍 {self.spot_name}  |  {grade} 등급")

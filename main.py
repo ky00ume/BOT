@@ -4,6 +4,7 @@ import random
 import signal
 import sys
 import os
+import time as _time
 
 # .env 파일 지원 (python-dotenv 설치 시 자동 로드)
 try:
@@ -27,7 +28,7 @@ from fishing      import FishingEngine
 from cooking_db   import CookingEngine
 from metallurgy   import MetallurgyEngine
 from alarms       import setup_alarms
-from responses    import get_drider_response, get_hyness_response, get_majesty_response
+from responses    import get_drider_response, get_hyness_response, get_majesty_response, get_pet_response
 from items        import CONSUMABLES, COOKED_DISHES, ALL_ITEMS
 from village      import village_manager
 from gathering    import GatheringEngine
@@ -38,6 +39,8 @@ from affinity     import AffinityManager
 from gacha        import GachaEngine
 from music        import MusicEngine
 from bulletin     import bulletin_board, weekly_fishing
+from shop         import find_item_by_name
+from rest         import RestEngine
 
 # ─── 상수 (환경변수로 관리) ────────────────────────────────────────────────
 TOKEN              = os.getenv("DISCORD_TOKEN", "")
@@ -185,18 +188,19 @@ async def heal_cmd(ctx):
 
 
 @bot.command(name="먹기")
-async def eat_item(ctx, item_id: str = None):
+async def eat_item(ctx, item_name: str = None):
     if not await _check_channel(ctx):
         return
-    if not item_id:
-        await ctx.send(ansi(f"  {C.RED}✖ /먹기 [아이템ID] 형식으로 입력하셰요!{C.R}"))
+    if not item_name:
+        await ctx.send(ansi(f"  {C.RED}✖ /먹기 [아이템이름] 형식으로 입력하셰요!{C.R}"))
         return
-    if shared_player.inventory.get(item_id, 0) == 0:
-        await ctx.send(ansi(f"  {C.RED}✖ 인벤토리에 [{item_id}]가 없슴미댜!{C.R}"))
+    item_id = find_item_by_name(item_name)
+    if not item_id or shared_player.inventory.get(item_id, 0) == 0:
+        await ctx.send(ansi(f"  {C.RED}✖ 인벤토리에 [{item_name}]가 없슴미댜!{C.R}"))
         return
     item = EDIBLE_ITEMS.get(item_id)
     if not item:
-        await ctx.send(ansi(f"  {C.RED}✖ [{item_id}]은(는) 먹을 수 없는 아이템임미댜!{C.R}"))
+        await ctx.send(ansi(f"  {C.RED}✖ [{item_name}]은(는) 먹을 수 없는 아이템임미댜!{C.R}"))
         return
 
     shared_player.remove_item(item_id)
@@ -287,13 +291,13 @@ async def buy_list_cmd(ctx, npc_name: str = None):
 
 
 @bot.command(name="구매")
-async def buy_cmd(ctx, npc_name: str = None, item_id: str = None):
+async def buy_cmd(ctx, npc_name: str = None, item_name: str = None):
     if not await _check_channel(ctx):
         return
-    if not npc_name or not item_id:
-        await ctx.send(ansi(f"  {C.RED}✖ /구매 [NPC이름] [아이템ID] 형식으로 입력하셰요!{C.R}"))
+    if not npc_name or not item_name:
+        await ctx.send(ansi(f"  {C.RED}✖ /구매 [NPC이름] [아이템이름] 형식으로 입력하셰요!{C.R}"))
         return
-    msg = shop_manager.execute_buy(npc_name, item_id)
+    msg = shop_manager.execute_buy(npc_name, item_name)
     await ctx.send(msg)
 
 
@@ -306,13 +310,13 @@ async def sell_list_cmd(ctx):
 
 
 @bot.command(name="판매", aliases=["판매확정"])
-async def sell_cmd(ctx, item_id: str = None):
+async def sell_cmd(ctx, item_name: str = None):
     if not await _check_channel(ctx):
         return
-    if not item_id:
-        await ctx.send(ansi(f"  {C.RED}✖ /판매 [아이템ID] 형식으로 입력하셰요!{C.R}"))
+    if not item_name:
+        await ctx.send(ansi(f"  {C.RED}✖ /판매 [아이템이름] 형식으로 입력하셰요!{C.R}"))
         return
-    msg = shop_manager.sell_item(item_id)
+    msg = shop_manager.sell_item(item_name)
     await ctx.send(msg)
 
 
@@ -473,7 +477,9 @@ async def help_cmd(ctx):
             "`/장비` — 장비창 보기\n"
             "`/스왑` — 주·보조 무기 교환\n"
             "`/치료` — HP/MP 회복 (50G)\n"
-            "`/먹기 [ID]` — 아이템 섭취"
+            "`/먹기 [아이템이름]` — 아이템 섭취\n"
+            "`/휴식` — 기력 회복 (5분 쿨타임)\n"
+            "`/쓰담` — 츄라이더를 쓰다듬기 💕"
         ),
         inline=False,
     )
@@ -493,9 +499,9 @@ async def help_cmd(ctx):
         name="🛒 상점",
         value=(
             "`/구매목록 [NPC이름]` — NPC 판매 목록\n"
-            "`/구매 [NPC이름] [아이템ID]` — 구매\n"
+            "`/구매 [NPC이름] [아이템이름]` — 구매\n"
             "`/판매목록` — 인벤토리 판매 목록\n"
-            "`/판매 [아이템ID]` — 아이템 판매"
+            "`/판매 [아이템이름]` — 아이템 판매"
         ),
         inline=False,
     )
@@ -713,6 +719,74 @@ async def village_status_cmd(ctx):
         return
     embed = village_manager.make_status_embed()
     await ctx.send(embed=embed)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 신규 명령어 — 쓰담
+# ═══════════════════════════════════════════════════════════════════════════
+
+@bot.command(name="쓰담")
+async def pat_cmd(ctx):
+    if not await _check_channel(ctx):
+        return
+    msg = get_pet_response()
+    embed = discord.Embed(
+        title="🐱 쓰담쓰담...",
+        description=msg,
+        color=0xFFB6C1,
+    )
+    embed.set_footer(text="츄라이더는 언제나 쓰다듬어주면 좋아합니다! 💕")
+    await ctx.send(embed=embed)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 신규 명령어 — 휴식
+# ═══════════════════════════════════════════════════════════════════════════
+
+_rest_cooldowns: dict[int, float] = {}
+REST_COOLDOWN_SEC = 300  # 5분
+
+
+@bot.command(name="휴식")
+async def rest_cmd(ctx):
+    if not await _check_channel(ctx):
+        return
+
+    user_id = ctx.author.id
+    now = _time.time()
+
+    last_used = _rest_cooldowns.get(user_id, 0)
+    remaining = REST_COOLDOWN_SEC - (now - last_used)
+    if remaining > 0:
+        minutes = int(remaining // 60)
+        seconds = int(remaining % 60)
+        await ctx.send(ansi(
+            f"  {C.RED}💤 아직 쉴 수 없슴미댜! 남은 시간: {minutes}분 {seconds}초{C.R}"
+        ))
+        return
+
+    if shared_player.energy >= shared_player.max_energy:
+        await ctx.send(ansi(f"  {C.GREEN}💚 기력이 이미 가득 찼슴미댜!{C.R}"))
+        return
+
+    rest_engine = RestEngine(shared_player, channel=ctx.channel)
+
+    _rest_cooldowns[user_id] = now
+
+    embed = discord.Embed(
+        title="💤 휴식 시작!",
+        description=(
+            f"기력을 회복하기 시작했슴미댜...\n"
+            f"현재 기력: **{shared_player.energy}/{shared_player.max_energy}**\n\n"
+            f"2초마다 **+{rest_engine.get_recovery_per_tick()}** 회복\n"
+            "기력이 가득 차면 자동으로 완료됩니댜!"
+        ),
+        color=EMBED_COLOR["rest"],
+    )
+    embed.set_footer(text="💤 휴식 중에도 다른 활동이 가능합니댜!")
+    await ctx.send(embed=embed)
+
+    await rest_engine.start_rest()
 
 
 # ─── 종료 시그널 핸들러 ───────────────────────────────────────────────────

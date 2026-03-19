@@ -239,7 +239,7 @@ def generate_fishing_card(
         {"label": "보너스",   "value": f"+{bonus:,} G"},
         {"label": "순수익",   "value": f"{net_profit:,} G"},
     ]
-    return generate_card("낚시 결과", "🎣", rows, grade=grade)
+    return generate_card(f"와! {fish_name}을(를) 낚았다!!", "🎣", rows, grade=grade)
 
 
 def generate_cooking_card(
@@ -302,3 +302,21 @@ def generate_job_card(
         {"label": "스탯 상승", "value": stat_up or "없음"},
     ]
     return generate_card("알바 완료", "💼", rows, grade=grade)
+
+
+def generate_rest_card(
+    recovered: int,
+    current_energy: int,
+    max_energy: int,
+    elapsed_sec: float,
+    grade: str = "Normal",
+) -> io.BytesIO:
+    minutes = int(elapsed_sec // 60)
+    seconds = int(elapsed_sec % 60)
+    elapsed_str = f"{minutes}분 {seconds}초" if minutes else f"{seconds}초"
+    rows = [
+        {"label": "회복량",   "value": f"+{recovered} EN"},
+        {"label": "현재기력", "value": f"{current_energy}/{max_energy}"},
+        {"label": "소요시간", "value": elapsed_str},
+    ]
+    return generate_card("휴식 완료!", "💤", rows, grade=grade)

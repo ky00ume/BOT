@@ -1,44 +1,6 @@
-from items import WEAPONS, ARMORS, CONSUMABLES, COOKED_DISHES, ALL_ITEMS
+from items import WEAPONS, ARMORS, CONSUMABLES, COOKED_DISHES, ALL_ITEMS, TOOLS
 from database import BAGS
 from ui_theme import C, section, divider, header_box, ansi, GRADE_ICON_PLAIN, EMBED_COLOR, FOOTERS
-
-TOOLS = {
-    "tool_pot": {
-        "name":  "나무 냄비",
-        "type":  "tool",
-        "grade": "Normal",
-        "price": 500,
-        "desc":  "삶기·끓이기·찌기용",
-    },
-    "tool_pan": {
-        "name":  "프라이팬",
-        "type":  "tool",
-        "grade": "Normal",
-        "price": 800,
-        "desc":  "굽기·볶기·튀김용",
-    },
-    "tool_mortar": {
-        "name":  "절구",
-        "type":  "tool",
-        "grade": "Normal",
-        "price": 300,
-        "desc":  "약초 가공·포션 제조용",
-    },
-    "tool_dough": {
-        "name":  "반죽 틀",
-        "type":  "tool",
-        "grade": "Normal",
-        "price": 600,
-        "desc":  "반죽·굽기용",
-    },
-    "tool_ferment": {
-        "name":  "발효통",
-        "type":  "tool",
-        "grade": "Rare",
-        "price": 2000,
-        "desc":  "발효 요리 전용",
-    },
-}
 
 NPC_CATALOGS = {
     "크람":   {**WEAPONS, **ARMORS},

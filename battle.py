@@ -120,6 +120,7 @@ class BattleEngine:
             self.monster_hp = 0
             self.in_battle  = False
             reward = self._calc_reward(monster)
+            self._add_village_contribution_battle()
             lines.append(f"\n{header_box('🎉 전투 승리!')}")
             lines.append(f"  {C.GOLD}💰 +{reward['gold']}G{C.R}  {C.GREEN}EXP +{reward['exp']}{C.R}")
             for item_id, cnt in reward["items"].items():
@@ -192,3 +193,10 @@ class BattleEngine:
             self.player.mp    = self.player.max_mp
 
         return {"gold": gold, "exp": exp, "items": drops}
+
+    def _add_village_contribution_battle(self):
+        try:
+            from village import village_manager
+            village_manager.add_contribution(3, "battle")
+        except Exception:
+            pass

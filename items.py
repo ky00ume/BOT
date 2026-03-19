@@ -229,29 +229,66 @@ LOOT_ITEMS = {
 
 FISH_ITEMS = {
     "fs_carp_01": {
+        "name": "붕어",
+        "type": "fish",
+        "grade": "Normal",
+        "price": 5,
+        "desc": "강에서 잡은 붕어.",
+        "cookable": True,
+    },
+    "fs_carp_02": {
         "name": "잉어",
         "type": "fish",
         "grade": "Normal",
-        "price": 60,
+        "price": 15,
         "desc": "강에서 잡은 잉어.",
+        "cookable": True,
     },
     "fs_salmon_01": {
         "name": "연어",
         "type": "fish",
         "grade": "Rare",
-        "price": 180,
+        "price": 40,
         "desc": "싱싱한 연어.",
+        "cookable": True,
     },
     "fs_eel_01": {
         "name": "장어",
         "type": "fish",
         "grade": "Rare",
-        "price": 220,
+        "price": 60,
         "desc": "탱탱한 장어.",
+        "cookable": True,
+    },
+    "fs_gold_eel_01": {
+        "name": "황금장어",
+        "type": "fish",
+        "grade": "Legendary",
+        "price": 300,
+        "desc": "황금빛으로 빛나는 전설의 장어.",
+        "cookable": True,
+    },
+    "trash_tire_01": {
+        "name": "폐타이어",
+        "type": "loot",
+        "grade": "Normal",
+        "price": 1,
+        "desc": "낚시 중에 건진 폐타이어.",
+        "cookable": False,
     },
 }
 
 COOKED_DISHES = {
+    "simple_soup":      {"name": "단순 수프",  "type": "cooked", "grade": "Normal",    "price": 60,  "desc": "간단하게 끓인 수프.",                          "hp": 30,  "mp": 5,   "en": 10},
+    "coffee":           {"name": "커피",       "type": "cooked", "grade": "Normal",    "price": 80,  "desc": "진한 커피. EN을 회복.",                         "hp": 0,   "mp": 0,   "en": 30},
+    "potato_pancake":   {"name": "감자전",     "type": "cooked", "grade": "Normal",    "price": 90,  "desc": "바삭한 감자전.",                                "hp": 50,  "mp": 0,   "en": 15},
+    "tofu":             {"name": "두부",       "type": "cooked", "grade": "Normal",    "price": 70,  "desc": "부드러운 두부.",                                "hp": 25,  "mp": 10,  "en": 10},
+    "meat_stew":        {"name": "고기 스튜",  "type": "cooked", "grade": "Rare",      "price": 250, "desc": "진한 고기 스튜. HP 대량 회복.",                 "hp": 150, "mp": 20,  "en": 30},
+    "honey_milk":       {"name": "꿀 우유",    "type": "cooked", "grade": "Normal",    "price": 75,  "desc": "달콤한 꿀 우유. MP 회복.",                      "hp": 15,  "mp": 40,  "en": 10},
+    "mushroom_soup":    {"name": "버섯 수프",  "type": "cooked", "grade": "Normal",    "price": 85,  "desc": "향긋한 버섯 수프.",                             "hp": 35,  "mp": 20,  "en": 15},
+    "salt_grilled_fish":{"name": "소금구이",   "type": "cooked", "grade": "Normal",    "price": 30,  "desc": "생선 소금구이. 담백하고 맛있다.",               "hp": 45,  "mp": 0,   "en": 20},
+    "steamed_salmon":   {"name": "연어찜",     "type": "cooked", "grade": "Rare",      "price": 150, "desc": "부드러운 연어찜.",                              "hp": 90,  "mp": 15,  "en": 25},
+    "eel_special":      {"name": "장어 특선",  "type": "cooked", "grade": "Legendary", "price": 500, "desc": "황금장어로 만든 특선 요리. 모든 수치 대량 회복.", "hp": 350, "mp": 150, "en": 80},
     "ck_soup_01": {
         "name": "야채 수프",
         "type": "cooked",
@@ -286,6 +323,8 @@ COOKED_DISHES = {
 
 # 몬스터 드랍 아이템
 DROP_ITEMS = {
+    "m_meat": {"name": "몬스터 고기",   "type": "ingredient", "grade": "Normal", "price": 30,  "desc": "몬스터에게서 얻은 고기."},
+    "mp_potion_basic": {"name": "기초 MP 포션", "type": "consumable", "grade": "Normal", "price": 300, "desc": "MP를 회복시키는 포션.", "hp": 0, "mp": 80, "en": 0},
     "spider_web": {
         "name": "거미줄",
         "type": "loot",
@@ -715,6 +754,14 @@ BAR_ITEMS = {
     },
 }
 
+TOOLS = {
+    "tool_pot":     {"name": "나무 냄비", "type": "tool", "grade": "Normal", "price": 500,  "desc": "삶기·끓이기·찌기용"},
+    "tool_pan":     {"name": "프라이팬", "type": "tool", "grade": "Normal", "price": 800,  "desc": "굽기·볶기·튀김용"},
+    "tool_mortar":  {"name": "절구",     "type": "tool", "grade": "Normal", "price": 300,  "desc": "약초 가공·포션 제조용"},
+    "tool_dough":   {"name": "반죽 틀",  "type": "tool", "grade": "Normal", "price": 600,  "desc": "반죽·굽기용"},
+    "tool_ferment": {"name": "발효통",   "type": "tool", "grade": "Rare",   "price": 2000, "desc": "발효 요리 전용"},
+}
+
 ALL_ITEMS = {
     **WEAPONS,
     **ARMORS,
@@ -726,4 +773,5 @@ ALL_ITEMS = {
     **DROP_ITEMS,
     **INGREDIENTS,
     **BAR_ITEMS,
+    **TOOLS,
 }

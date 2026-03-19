@@ -279,8 +279,41 @@ def init_db():
             equipment   TEXT DEFAULT '{}'
         )
     """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS village (
+            id           INTEGER PRIMARY KEY DEFAULT 1,
+            contribution INTEGER DEFAULT 0,
+            level        INTEGER DEFAULT 1,
+            data         TEXT DEFAULT '{}'
+        )
+    """)
     conn.commit()
     conn.close()
+
+
+def save_village_data(contribution: int, level: int):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT OR REPLACE INTO village (id, contribution, level)
+        VALUES (1, ?, ?)
+    """, (contribution, level))
+    conn.commit()
+    conn.close()
+
+
+def load_village_data() -> dict:
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT contribution, level FROM village WHERE id = 1")
+        row = cursor.fetchone()
+        conn.close()
+        if not row:
+            return {"contribution": 0, "level": 1}
+        return {"contribution": row["contribution"], "level": row["level"]}
+    except Exception:
+        return {"contribution": 0, "level": 1}
 
 
 def save_player_to_db(player):

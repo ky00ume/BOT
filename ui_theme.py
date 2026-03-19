@@ -139,3 +139,39 @@ FOOTERS = {
     "metallurgy": "⚒ 두드리면 강해짐미댜! ⚒",
     "rest":      "💤 푹 쉬면 기력이 회복됨미댜~ 💤",
 }
+
+SPIDER_ART = {
+    "idle": (
+        "```\n"
+        "    🌙 ✨         ✦\n"
+        "  🌲  🕷️  🌲\n"
+        "  ～ ～🕸️～ ～\n"
+        " 🍃     🍃    🍃\n"
+        "```"
+    ),
+    "happy": "```\n   ✨ 🎉 ✨\n    \\🕷️/\n  ～🕸️🎶🕸️～\n    💕💕\n```",
+    "pet": "```\n   🤚✨\n    🕷️ ♡ ♡\n  ～🕸️～🕸️～\n    (기분 좋슴미댜~)\n```",
+    "sleep": "```\n   🌙  ⭐  ✨\n     💤🕷️💤\n  ═══🕸️═══\n   (새근새근...)\n```",
+    "rest": "```\n  🏠 ～～～\n   🕷️💤  ☕\n  ═══🕸️═══\n   (쉬는 중임미댜...)\n```",
+    "battle_start": "```\n   ⚔️ 🕷️ ⚔️\n   ╔═══════╗\n   ║ VS {monster} ║\n   ╚═══════╝\n  🕸️🕸️🕸️🕸️🕸️\n```",
+    "battle_win": "```\n   🎉✨🏆✨🎉\n     \\🕷️/\n   ═🕸️═🕸️═\n   승리임미댜!!!\n```",
+    "battle_lose": "```\n      💫\n    🕷️💦\n   ～～🕸️～～\n   (으으... 아팠슴미댜...)\n```",
+    "fishing_wait": "```\n   🕷️🎣        🌊\n   ｜         〰️\n  🪨～～～～～～🐟?\n```",
+    "fishing_bite": "```\n   🕷️❗🎣      💥\n   ｜       🐟!!\n  🪨～～💦～～～\n```",
+    "fishing_catch": "```\n  ✨🕷️✨\n   \\🎣/\n    🐟 GET!\n  🕸️═══🕸️\n```",
+    "shop": "```\n  🏪═══════🏪\n  ║ 🕷️💰     ║\n  ║  뭘 살까~  ║\n  ╚═══════╝\n```",
+    "travel": "```\n  🕷️ ─ ─ ─ → 🏘️\n  🕸️ ～～～  🌲🌲\n```",
+    "levelup": "```\n  ✨🌟✨🌟✨\n    🕷️ LEVEL UP!\n  ═🕸️═══🕸️═\n    Lv.{old} → Lv.{new}\n  💪더 강해졌슴미댜!💪\n```",
+    "cooking": "```\n  🕷️🍳 지글지글~\n   🔥🔥🔥\n  ═══🕸️═══\n```",
+    "gathering": "```\n  🌿🕷️🌿\n   ✂️ 슥슥\n  🕸️～～🕸️\n```",
+    "mining": "```\n  ⛏️🕷️💎\n   쨍! 쨍!\n  🪨🪨🪨\n```",
+}
+
+
+def spider_scene(scene_key: str, **kwargs) -> str:
+    """SPIDER_ART에서 scene_key에 해당하는 아트를 반환합니다."""
+    art = SPIDER_ART.get(scene_key, SPIDER_ART["idle"])
+    try:
+        return art.format(**kwargs)
+    except (KeyError, IndexError):
+        return art

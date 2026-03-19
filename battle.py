@@ -61,7 +61,11 @@ class BattleEngine:
         self.current_zone    = zone_key
         self.turn            = 1
 
+        from ui_theme import spider_scene
+        from skills_db import COMBAT_SKILLS, MAGIC_SKILLS, RECOVERY_SKILLS
+        scene = spider_scene("battle_start", monster=monster_data["name"])
         msg = (
+            f"{scene}\n"
             f"{header_box('⚔ 전투 시작!')}\n"
             f"  {C.RED}{monster_data['name']}{C.R} {C.DARK}Lv.{monster_data['level']}{C.R}이(가) 나타났슴미댜!\n"
             f"  {C.RED}HP{C.R} {bar(self.monster_hp, monster_data['hp'])} "
@@ -69,6 +73,28 @@ class BattleEngine:
             f"{divider()}\n"
             f"  {C.GREEN}/공격 [스킬]{C.R} 으로 공격, {C.GOLD}/도주{C.R} 로 도망!"
         )
+
+        # 보유 스킬 목록 패널
+        skill_lines = []
+        for sid, sdata in {**COMBAT_SKILLS, **MAGIC_SKILLS, **RECOVERY_SKILLS}.items():
+            rank = self.player.skill_ranks.get(sid, None)
+            if rank is None:
+                continue
+            name = sdata["name"]
+            mp_cost_data = sdata.get("mp_cost", 0)
+            if isinstance(mp_cost_data, dict):
+                mp = mp_cost_data.get(rank, "?")
+                skill_lines.append(f"  {C.CYAN}🕸️ {name}{C.R} {C.DARK}[{rank}]{C.R} {C.BLUE}MP:{mp}{C.R}")
+            else:
+                skill_lines.append(f"  {C.GREEN}🕸️ {name}{C.R} {C.DARK}[{rank}]{C.R}")
+
+        if skill_lines:
+            msg += f"\n{section('🕷️ 사용 가능 스킬')}\n"
+            msg += "\n".join(skill_lines)
+            msg += f"\n{divider()}"
+        else:
+            msg += f"\n  {C.DARK}(보유 전투 스킬 없음 — 기본 공격만 가능){C.R}"
+
         return True, msg
 
     def process_turn(self, skill_id: str = "smash") -> str:
@@ -114,15 +140,19 @@ class BattleEngine:
         train_msg = player.train_skill(skill_id, 10.0)
         if train_msg:
             lines.append(f"  {C.GOLD}{train_msg}{C.R}")
-
-        # 몬스터 사망 처리
         if self.monster_hp <= 0:
             self.monster_hp = 0
             self.in_battle  = False
             reward = self._calc_reward(monster)
             self._add_village_contribution_battle()
+            from ui_theme import spider_scene
+            lines.append(f"\n{spider_scene('battle_win')}")
             lines.append(f"\n{header_box('🎉 전투 승리!')}")
             lines.append(f"  {C.GOLD}💰 +{reward['gold']}G{C.R}  {C.GREEN}EXP +{reward['exp']}{C.R}")
+            if reward.get("leveled_up"):
+                lines.append(
+                    f"\n{spider_scene('levelup', old=reward['old_level'], new=reward['new_level'])}"
+                )
             for item_id, cnt in reward["items"].items():
                 from items import ALL_ITEMS
                 item_name = ALL_ITEMS.get(item_id, {}).get("name", item_id)
@@ -145,9 +175,22 @@ class BattleEngine:
 
         if player.hp <= 0:
             self.in_battle = False
+            from ui_theme import spider_scene
+            lines.append(f"\n{spider_scene('battle_lose')}")
             lines.append(f"\n{C.RED}💀 쓰러졌슴미댜...{C.R} HP를 회복하고 다시 도전하셰요!")
 
         self.turn += 1
+
+        # 턴 종료 후 스킬 힌트
+        if self.in_battle:
+            from skills_db import COMBAT_SKILLS, MAGIC_SKILLS, RECOVERY_SKILLS
+            hint_skills = []
+            for sid, sdata in {**COMBAT_SKILLS, **MAGIC_SKILLS, **RECOVERY_SKILLS}.items():
+                if self.player.skill_ranks.get(sid) is not None:
+                    hint_skills.append(sdata["name"])
+            if hint_skills:
+                lines.append(f"\n  {C.DARK}스킬: {' / '.join(hint_skills)}{C.R}")
+
         return ansi("\n".join(l for l in lines if l is not None))
 
     def flee(self) -> str:
@@ -183,6 +226,8 @@ class BattleEngine:
                     drops[item_id] = drops.get(item_id, 0) + 1
 
         # 레벨업 체크 (간단: exp >= level*100)
+        leveled_up = False
+        old_level = self.player.level
         level_thresh = self.player.level * 100
         if self.player.exp >= level_thresh:
             self.player.exp  -= level_thresh
@@ -191,8 +236,9 @@ class BattleEngine:
             self.player.hp    = self.player.max_hp
             self.player.max_mp += 5
             self.player.mp    = self.player.max_mp
+            leveled_up = True
 
-        return {"gold": gold, "exp": exp, "items": drops}
+        return {"gold": gold, "exp": exp, "items": drops, "leveled_up": leveled_up, "old_level": old_level, "new_level": self.player.level}
 
     def _add_village_contribution_battle(self):
         try:

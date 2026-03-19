@@ -413,6 +413,23 @@ class CookingEngine:
                 from items import ALL_ITEMS
                 result_name = ALL_ITEMS.get(result_id, {}).get("name", result_id)
                 lines.append(f"  {C.GREEN}✔ {result_name}{C.R} x{cnt} 완성!")
+                try:
+                    from collection import collection_manager
+                    is_new, total = collection_manager.register("요리", result_id, result_name)
+                    if is_new:
+                        lines.append(f"  📖✨ {C.GOLD}새로운 도감 등록! [{result_name}]{C.R}")
+                except Exception:
+                    pass
+                try:
+                    from achievements import achievement_manager
+                    achievement_manager.increment("items_cooked", 1)
+                except Exception:
+                    pass
+                try:
+                    from diary import diary_manager
+                    diary_manager.increment("items_cooked", 1)
+                except Exception:
+                    pass
 
             exp = recipe.get("exp", 10.0)
             rank_msg = self.player.train_skill("cooking", exp)

@@ -191,32 +191,38 @@ class Player:
     # ─── 저장 데이터 반환 ────────────────────────────────────────────────
     def get_save_data(self) -> dict:
         return {
-            "user_id":    0,
-            "name":       self.name,
-            "level":      self.level,
-            "hp":         self.hp,
-            "max_hp":     self.max_hp,
-            "mp":         self.mp,
-            "max_mp":     self.max_mp,
-            "energy":     self.energy,
-            "max_energy": self.max_energy,
-            "gold":       self.gold,
-            "base_stats": self.base_stats,
-            "inventory":  self.inventory,
-            "equipment":  self.equipment,
+            "user_id":       0,
+            "name":          self.name,
+            "level":         self.level,
+            "hp":            self.hp,
+            "max_hp":        self.max_hp,
+            "mp":            self.mp,
+            "max_mp":        self.max_mp,
+            "energy":        self.energy,
+            "max_energy":    self.max_energy,
+            "gold":          self.gold,
+            "base_stats":    self.base_stats,
+            "inventory":     self.inventory,
+            "equipment":     self.equipment,
+            "titles":        self.titles,
+            "current_title": self.current_title,
         }
 
     # ─── DB 데이터로부터 로드 ─────────────────────────────────────────────
     def load_from_dict(self, data: dict):
-        self.name       = data.get("name",       self.name)
-        self.level      = data.get("level",      self.level)
-        self.hp         = data.get("hp",         self.hp)
-        self.max_hp     = data.get("max_hp",     self.max_hp)
-        self.mp         = data.get("mp",         self.mp)
-        self.max_mp     = data.get("max_mp",     self.max_mp)
-        self.energy     = data.get("energy",     self.energy)
-        self.max_energy = data.get("max_energy", self.max_energy)
-        self.gold       = data.get("gold",       self.gold)
+        self.name          = data.get("name",          self.name)
+        self.level         = data.get("level",         self.level)
+        self.hp            = data.get("hp",            self.hp)
+        self.max_hp        = data.get("max_hp",        self.max_hp)
+        self.mp            = data.get("mp",            self.mp)
+        self.max_mp        = data.get("max_mp",        self.max_mp)
+        self.energy        = data.get("energy",        self.energy)
+        self.max_energy    = data.get("max_energy",    self.max_energy)
+        self.gold          = data.get("gold",          self.gold)
+        self.current_title = data.get("current_title", self.current_title)
+
+        if "titles" in data and isinstance(data["titles"], list):
+            self.titles = data["titles"]
 
         if "base_stats" in data and isinstance(data["base_stats"], dict):
             self.base_stats.update(data["base_stats"])

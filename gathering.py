@@ -127,6 +127,17 @@ class GatheringEngine:
         except Exception:
             pass
 
+        if added:
+            try:
+                from collection import collection_manager
+                is_new, total = collection_manager.register("채집", item["id"], item["name"], grade)
+                if is_new:
+                    await ctx.send(
+                        f"📖✨ **새로운 도감 등록!** 🌿 `{item['name']}` 이(가) 채집 도감에 추가됐슴미댜!"
+                    )
+            except Exception:
+                pass
+
         # PIL 카드 시도
         card_sent = False
         season_kr = {"spring": "봄", "summer": "여름", "autumn": "가을", "winter": "겨울"}.get(season, season)

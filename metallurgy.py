@@ -154,6 +154,14 @@ class MetallurgyEngine:
                 from items import ALL_ITEMS
                 out_name = ALL_ITEMS.get(out_id, {}).get("name", out_id)
                 lines.append(f"  {C.GREEN}✔ {out_name}{C.R} x{cnt} 제련 완료!")
+                try:
+                    from collection import collection_manager
+                    grade = ALL_ITEMS.get(out_id, {}).get("grade", "Normal")
+                    is_new, total = collection_manager.register("채광", out_id, out_name, grade)
+                    if is_new:
+                        lines.append(f"  📖✨ {C.GOLD}새로운 도감 등록! [{out_name}]{C.R}")
+                except Exception:
+                    pass
 
             exp = recipe.get("exp", 10.0)
             rank_msg = self.player.train_skill("metallurgy", exp)

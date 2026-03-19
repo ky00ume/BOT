@@ -22,7 +22,7 @@ GATHER_ITEMS_BY_SEASON = {
         {"id": "mushroom",     "name": "버섯",      "grade": "Normal",    "rate": 0.50},
         {"id": "gt_wood_01",   "name": "나무 조각", "grade": "Normal",    "rate": 0.25},
         {"id": "honey",        "name": "꿀",        "grade": "Normal",    "rate": 0.15},
-        {"id": "eye_of_truth", "name": "진실의 눈", "grade": "Epic",      "rate": 0.01},  # 약 1.1% 확률
+        {"id": "eye_of_truth", "name": "진실의 눈", "grade": "Epic",      "rate": 0.01},  # 가중치 0.01 (전체 합 대비 약 1.1%)
     ],
     "winter": [
         {"id": "herb",         "name": "약초",      "grade": "Normal",    "rate": 0.30},

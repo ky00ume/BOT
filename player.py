@@ -50,6 +50,8 @@ class Player:
 
         self.keywords = ["마을", "날씨", "소문"]  # 기본 키워드 3개로 시작
 
+        self._story_quest_manager = None  # StoryQuestManager (main.py에서 주입)
+
     def get_max_slots(self):
         extra = 0
         from database import BAGS
@@ -172,7 +174,7 @@ class Player:
         return "\n".join(messages) if messages else ""
 
     def get_save_data(self) -> dict:
-        return {
+        data = {
             "user_id":       0,
             "name":          self.name,
             "level":         self.level,
@@ -190,6 +192,11 @@ class Player:
             "current_title": self.current_title,
             "keywords":      self.keywords,
         }
+        # 스토리 퀘스트 데이터 포함
+        sq_mgr = getattr(self, "_story_quest_manager", None)
+        if sq_mgr is not None:
+            data["story_quest"] = sq_mgr.to_dict()
+        return data
 
     def load_from_dict(self, data: dict):
         self.name          = data.get("name",          self.name)
@@ -221,6 +228,12 @@ class Player:
             self.keywords = data["keywords"]
         elif not hasattr(self, "keywords") or self.keywords is None:
             self.keywords = ["마을", "날씨", "소문"]
+
+        # 스토리 퀘스트 복원
+        if "story_quest" in data and isinstance(data["story_quest"], dict):
+            sq_mgr = getattr(self, "_story_quest_manager", None)
+            if sq_mgr is not None:
+                sq_mgr.from_dict(data["story_quest"])
 
     def get_attack(self) -> int:
         base = 5 + self.base_stats.get("str", 10) // 2

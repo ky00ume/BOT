@@ -109,6 +109,10 @@ GATHERING_ITEMS = {
     # ── 기존 채집 아이템 ─────────────────────────────────────────────────────
     "gt_herb_01":      {"name": "들풀",          "type": "gathering", "grade": "Normal",    "price": 15,   "desc": "들판에서 채집한 풀."},
     "gt_wood_01":      {"name": "나무 조각",      "type": "gathering", "grade": "Normal",    "price": 20,   "desc": "숲에서 채집한 나무 조각."},
+    "wood_log":        {"name": "원목",            "type": "gathering", "grade": "Normal",    "price": 35,   "desc": "벌목으로 얻은 굵은 원목."},
+    "hardwood":        {"name": "단단한 목재",     "type": "gathering", "grade": "Rare",      "price": 120,  "desc": "단단하고 결이 고운 목재. 제작 재료."},
+    "ancient_wood":    {"name": "고대 목재",       "type": "gathering", "grade": "Epic",      "price": 500,  "desc": "수백 년 된 고대 나무에서 채취한 목재."},
+    "treant_core":     {"name": "나무정령 심장",   "type": "gathering", "grade": "Legendary", "price": 3000, "desc": "고대 트레언트의 심장. 강력한 마력이 깃들어 있다."},
     "gt_flower_01":    {"name": "들꽃",          "type": "gathering", "grade": "Normal",    "price": 25,   "desc": "들판에 핀 예쁜 꽃."},
     # ── 허브류 ────────────────────────────────────────────────────────────────
     "healing_herb":    {"name": "힐링허브",       "type": "gathering", "grade": "Normal",    "price": 40,   "desc": "상처를 치유하는 효능이 있는 허브.",    "hp": 20},

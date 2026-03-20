@@ -167,7 +167,7 @@ class GatheringEngine:
         if added:
             try:
                 import fishing_card
-                buf  = fishing_card.generate_gather_card(item["name"], count, grade, grade=grade)
+                buf  = fishing_card.generate_gather_card(item["name"], count, grade)
                 file = discord.File(buf, filename="gather_result.png")
                 embed = discord.Embed(
                     title=f"🌿 와! {item['name']}을(를) 채집했슴미댜!!",
@@ -232,7 +232,7 @@ class GatheringEngine:
         if added:
             try:
                 import fishing_card
-                buf  = fishing_card.generate_gather_card(item["name"], count, grade, grade=grade)
+                buf  = fishing_card.generate_gather_card(item["name"], count, grade)
                 file = discord.File(buf, filename="mine_result.png")
                 embed = discord.Embed(
                     title=f"⛏ 와! {item['name']}을(를) 캐냈슴미댜!!",
@@ -256,6 +256,80 @@ class GatheringEngine:
                     f"  힘(STR): {C.RED}{str_stat}{C.R}",
                     f"  {grade_mark} {C.WHITE}{item['name']}{C.R} x{count} 획득!",
                     f"  {C.GOLD}채광 숙련도 +12{C.R}",
+                ]
+                if rank_msg:
+                    lines.append(f"  {C.GOLD}{rank_msg}{C.R}")
+            else:
+                lines = [f"  {C.RED}✖ 인벤토리 부족으로 {item['name']}을(를) 담을 수 없슴미댜!{C.R}"]
+            await ctx.send(ansi("\n".join(lines)))
+
+    async def woodcut(self, ctx):
+        """벌목을 수행합니다."""
+        energy_cost = 18
+        if not self.player.consume_energy(energy_cost):
+            await ctx.send(ansi(
+                f"  {C.RED}✖ 기력이 부족함미댜! (필요: {energy_cost}, 보유: {self.player.energy}){C.R}"
+            ))
+            return
+
+        await ctx.send(ansi(f"  {C.GREEN}🪓 도끼를 휘둘렀슴미댜...{C.R}"))
+        await asyncio.sleep(random.uniform(3, 6))
+
+        str_stat = self.player.base_stats.get("str", 10)
+
+        # 힘 스탯에 따라 더 좋은 나무 획득 가능
+        wood_table = [
+            {"id": "gt_wood_01",  "name": "나무 조각",      "grade": "Normal",    "rate": 0.50, "str_req": 1},
+            {"id": "wood_log",    "name": "원목",            "grade": "Normal",    "rate": 0.35, "str_req": 5},
+            {"id": "hardwood",    "name": "단단한 목재",     "grade": "Rare",      "rate": 0.12, "str_req": 15},
+            {"id": "ancient_wood","name": "고대 목재",       "grade": "Epic",      "rate": 0.025,"str_req": 30},
+            {"id": "treant_core", "name": "나무정령 심장",   "grade": "Legendary", "rate": 0.005,"str_req": 50},
+        ]
+        available = [i for i in wood_table if str_stat >= i["str_req"]]
+        if not available:
+            available = [wood_table[0]]
+
+        item   = _pick_by_rate(available)
+        count  = random.randint(1, 3)
+        grade  = item["grade"]
+
+        added    = self.player.add_item(item["id"], count)
+        rank_msg = self.player.train_skill("woodcutting", 11.0)
+
+        try:
+            from village import village_manager
+            village_manager.add_contribution(2, "gathering")
+        except Exception:
+            pass
+
+        card_sent = False
+        if added:
+            try:
+                import fishing_card
+                buf  = fishing_card.generate_gather_card(item["name"], count, grade)
+                file = discord.File(buf, filename="woodcut_result.png")
+                embed = discord.Embed(
+                    title=f"🪓 와! {item['name']}을(를) 벌목했슴미댜!!",
+                    color=GRADE_EMBED_COLOR.get(grade, 0x8B4513),
+                )
+                embed.set_image(url="attachment://woodcut_result.png")
+                footer_parts = [f"힘(STR): {str_stat}", f"{grade} 등급"]
+                if rank_msg:
+                    footer_parts.append(rank_msg)
+                embed.set_footer(text="  |  ".join(footer_parts))
+                await ctx.send(embed=embed, file=file)
+                card_sent = True
+            except Exception:
+                pass
+
+        if not card_sent:
+            grade_mark = GRADE_ICON_PLAIN.get(grade, "⚬")
+            if added:
+                lines = [
+                    header_box("🪓 벌목 완료!"),
+                    f"  힘(STR): {C.RED}{str_stat}{C.R}",
+                    f"  {grade_mark} {C.WHITE}{item['name']}{C.R} x{count} 획득!",
+                    f"  {C.GOLD}벌목 숙련도 +11{C.R}",
                 ]
                 if rank_msg:
                     lines.append(f"  {C.GOLD}{rank_msg}{C.R}")

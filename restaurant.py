@@ -6,9 +6,9 @@ from ui_theme import C, ansi, header_box, divider, EMBED_COLOR, FOOTERS
 
 
 DELIVERY_MENU = {
-    "ck_soup_01":    {"name": "수프",        "delivery_price": 180,  "desc": "마리 식당 기본 메뉴"},
-    "ck_steak_01":   {"name": "스테이크",    "delivery_price": 350,  "desc": "마리 식당 인기 메뉴"},
-    "ck_special_01": {"name": "특제 요리",   "delivery_price": 600,  "desc": "마리 식당 특선 메뉴"},
+    "ck_soup_01":    {"name": "수프",        "delivery_price": 180,  "desc": "브룩샤 식당 기본 메뉴"},
+    "ck_steak_01":   {"name": "스테이크",    "delivery_price": 350,  "desc": "브룩샤 식당 인기 메뉴"},
+    "ck_special_01": {"name": "특제 요리",   "delivery_price": 600,  "desc": "브룩샤 식당 특선 메뉴"},
 }
 
 FOOD_BUFFS = {
@@ -23,11 +23,11 @@ class RestaurantEngine:
         self.player = player
 
     async def deliver_food(self, ctx, item_name: str = None):
-        """마리 식당에 요리를 납품합니다 (/납품 [요리이름])."""
+        """브룩샤 식당에 요리를 납품합니다 (/납품 [요리이름])."""
         if not item_name:
             lines = [
                 header_box("🍽 식당 납품 목록"),
-                f"  마리 식당에 납품 가능한 요리:",
+                f"  브룩샤 식당에 납품 가능한 요리:",
                 divider(),
             ]
             for item_id, info in DELIVERY_MENU.items():
@@ -54,8 +54,8 @@ class RestaurantEngine:
             return
 
         await ctx.send(ansi(
-            f"  {C.GOLD}🍽 마리 식당에 납품 중임미댜...{C.R}\n"
-            f"  {C.DARK}마리가 맛있게 쓰겠다고 했슴미댜~{C.R}"
+            f"  {C.GOLD}🍽 브룩샤 식당에 납품 중임미댜...{C.R}\n"
+            f"  {C.DARK}브룩샤가 맛있게 쓰겠다고 했슴미댜~{C.R}"
         ))
         await asyncio.sleep(2)
 
@@ -76,7 +76,7 @@ class RestaurantEngine:
         if not npc_name or not item_name:
             await ctx.send(ansi(
                 f"  {C.RED}✖ /선물 [NPC이름] [요리이름] 형식으로 입력하셰요!{C.R}\n"
-                f"  예시: /선물 마리 수프"
+                f"  예시: /선물 브룩샤 수프"
             ))
             return
 

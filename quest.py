@@ -12,7 +12,7 @@ QUEST_DB = {
         "reward_gold":  200,
         "reward_contrib": 30,
         "reward_title": "낚시 견습생",
-        "npc":          "피터",
+        "npc":          "실렌",
     },
     "q002": {
         "name":         "대장장이의 부탁",
@@ -23,7 +23,7 @@ QUEST_DB = {
         "reward_gold":  500,
         "reward_contrib": 50,
         "reward_title": None,
-        "npc":          "크람",
+        "npc":          "다몬",
     },
     "q003": {
         "name":         "몬스터 퇴치",
@@ -33,7 +33,7 @@ QUEST_DB = {
         "reward_gold":  350,
         "reward_contrib": 40,
         "reward_title": None,
-        "npc":          "그레고",
+        "npc":          "제블로어",
     },
     "q004": {
         "name":         "약초상의 의뢰",
@@ -44,7 +44,7 @@ QUEST_DB = {
         "reward_gold":  150,
         "reward_contrib": 20,
         "reward_title": None,
-        "npc":          "레이나",
+        "npc":          "오멜룸",
     },
     "q005": {
         "name":         "전설의 물고기",
@@ -55,7 +55,7 @@ QUEST_DB = {
         "reward_gold":  2000,
         "reward_contrib": 100,
         "reward_title": "전설의 낚시꾼",
-        "npc":          "피터",
+        "npc":          "실렌",
     },
 }
 

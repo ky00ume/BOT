@@ -10,58 +10,70 @@ AFFINITY_LEVELS = [
 ]
 
 NPC_GIFT_PREFS = {
-    "크람": {
+    "다몬": {
         "loves":    ["iron_bar", "mithril_bar", "coal"],
         "likes":    ["copper_bar", "tin_bar"],
         "dislikes": ["gt_flower_01", "fragrant_flower"],
         "default":  3,
     },
-    "레이나": {
+    "오멜룸": {
         "loves":    ["lavender", "fragrant_flower", "healing_herb"],
         "likes":    ["herb", "strawberry", "cherry"],
         "dislikes": ["poison_herb", "toxic_mushroom", "slag"],
         "default":  3,
     },
-    "곤트": {
+    "몰": {
         "loves":    ["gold_bar", "diamond"],
         "likes":    ["silver_bar", "gold_ore"],
         "dislikes": ["gt_herb_01", "gt_wood_01"],
         "default":  3,
     },
-    "엘리": {
+    "아라벨라": {
         "loves":    ["mana_herb", "mana_pool", "moonlight_dew"],
         "likes":    ["mana_flower", "healing_herb"],
         "dislikes": ["coal", "slag"],
         "default":  3,
     },
-    "그레고": {
+    "제블로어": {
         "loves":    ["wp_sword_02", "ar_shield_02"],
         "likes":    ["iron_bar", "copper_bar"],
         "dislikes": ["poison_herb", "toxic_mushroom"],
         "default":  3,
     },
-    "마리": {
+    "브룩샤": {
         "loves":    ["ck_special_01", "honey", "butter"],
         "likes":    ["herb", "mushroom", "egg"],
         "dislikes": ["slag", "coal"],
         "default":  3,
     },
-    "피터": {
+    "실렌": {
         "loves":    ["fs_dragon_01", "fs_gold_eel_01"],
         "likes":    ["fs_salmon_01", "fs_tuna_01"],
         "dislikes": ["poison_herb"],
         "default":  3,
     },
-    "루카스": {
+    "알피라": {
         "loves":    ["wine", "honey"],
         "likes":    ["gt_flower_01", "fragrant_flower"],
         "dislikes": ["slag", "coal"],
         "default":  3,
     },
-    "나디아": {
+    "엘레라신": {
         "loves":    ["diamond", "eye_of_truth"],
         "likes":    ["gold_bar", "mithril_bar"],
         "dislikes": ["gt_herb_01"],
+        "default":  3,
+    },
+    "게일의 환영": {
+        "loves":    ["mana_herb", "mp_crystal", "moonlight_dew"],
+        "likes":    ["mana_flower", "mana_pool"],
+        "dislikes": ["coal", "slag"],
+        "default":  3,
+    },
+    "카엘릭": {
+        "loves":    ["wp_sword_02", "iron_bar"],
+        "likes":    ["copper_bar", "ar_shield_02"],
+        "dislikes": ["gt_flower_01", "fragrant_flower"],
         "default":  3,
     },
 }

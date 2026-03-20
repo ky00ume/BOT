@@ -251,7 +251,7 @@ async def eat_item(ctx, *, item_name: str = None):
 
 @bot.command(name="납품")
 async def deliver_cmd(ctx, *, item_name: str = None):
-    """마리 식당에 요리를 납품합니다."""
+    """브룩샤 식당에 요리를 납품합니다."""
     if not await _check_channel(ctx):
         return
     await restaurant_engine.deliver_food(ctx, item_name)

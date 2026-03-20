@@ -729,7 +729,7 @@ MATERIALS = {
     "wheat":        {"name": "밀",      "type": "material", "grade": "Normal", "price": 12, "desc": "밀가루 원료."},
 }
 
-# 레이나 상점 식료품 카탈로그
+# 오멜룸 상점 식료품 카탈로그
 GROCERIES = {
     "salt":         {"name": "소금",      "type": "material", "grade": "Normal", "price": 10,  "desc": "기본 조미료."},
     "sugar":        {"name": "설탕",      "type": "material", "grade": "Normal", "price": 12,  "desc": "단맛 조미료."},

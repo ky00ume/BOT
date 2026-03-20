@@ -3,9 +3,9 @@ from database import BAGS
 from ui_theme import C, section, divider, header_box, ansi, GRADE_ICON_PLAIN, EMBED_COLOR, FOOTERS
 
 NPC_CATALOGS = {
-    "크람":   {**WEAPONS, **ARMORS},
-    "레이나": {**CONSUMABLES, **TOOLS, **GROCERIES},
-    "곤트":   BAGS,
+    "다몬":   {**WEAPONS, **ARMORS},
+    "오멜룸": {**CONSUMABLES, **TOOLS, **GROCERIES},
+    "몰":     BAGS,
 }
 
 

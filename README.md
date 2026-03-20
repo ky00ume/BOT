@@ -1,6 +1,6 @@
 # BOT
 
-A simple Discord bot built with [discord.py](https://discordpy.readthedocs.io/).
+A Discord bot built with [discord.py](https://discordpy.readthedocs.io/).
 
 ## Setup
 
@@ -10,21 +10,15 @@ A simple Discord bot built with [discord.py](https://discordpy.readthedocs.io/).
    pip install -r requirements.txt
    ```
 
-2. **Set your Discord bot token**
+2. **Configure environment variables**
 
    ```bash
-   export DISCORD_TOKEN=your_token_here
+   cp .env.example .env
+   # Edit .env and fill in your values
    ```
 
 3. **Run the bot**
 
    ```bash
-   python bot.py
+   python main.py
    ```
-
-## Commands
-
-| Command  | Description                  |
-|----------|------------------------------|
-| `!ping`  | Check the bot's latency.     |
-| `!hello` | The bot greets you.          |

@@ -352,7 +352,10 @@ def init_db():
             gold        INTEGER DEFAULT 500,
             base_stats  TEXT DEFAULT '{}',
             inventory   TEXT DEFAULT '{}',
-            equipment   TEXT DEFAULT '{}'
+            equipment   TEXT DEFAULT '{}',
+            keywords    TEXT DEFAULT '["마을","날씨","소문"]',
+            affinity_data  TEXT DEFAULT '{}',
+            daily_limits   TEXT DEFAULT '{}'
         )
     """)
     cursor.execute("""
@@ -411,12 +414,21 @@ def load_village_data() -> dict:
 def save_player_to_db(player):
     conn = get_db_connection()
     cursor = conn.cursor()
+    # 기존 테이블에 컬럼이 없을 경우 마이그레이션
+    _migrate_players_table(cursor)
     data = player.get_save_data()
+
+    # affinity 전체를 직렬화 (affinities + daily_limits + gift_history 포함)
+    aff_full = {}
+    aff_mgr = getattr(player, "_affinity_manager", None)
+    if aff_mgr:
+        aff_full = aff_mgr.to_dict()
+
     cursor.execute("""
         INSERT OR REPLACE INTO players
         (user_id, name, level, hp, max_hp, mp, max_mp, energy, max_energy,
-         gold, base_stats, inventory, equipment)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         gold, base_stats, inventory, equipment, keywords, affinity_data, daily_limits)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         data.get("user_id", 0),
         data.get("name", "모험가"),
@@ -431,34 +443,81 @@ def save_player_to_db(player):
         json.dumps(data.get("base_stats", {}), ensure_ascii=False),
         json.dumps(data.get("inventory", {}), ensure_ascii=False),
         json.dumps(data.get("equipment", {}), ensure_ascii=False),
+        json.dumps(data.get("keywords", ["마을", "날씨", "소문"]), ensure_ascii=False),
+        json.dumps(aff_full, ensure_ascii=False),
+        json.dumps(aff_full.get("daily_limits", {}), ensure_ascii=False),
     ))
     conn.commit()
     conn.close()
 
 
+def _migrate_players_table(cursor):
+    """기존 players 테이블에 새 컬럼이 없으면 추가합니다."""
+    try:
+        cursor.execute("PRAGMA table_info(players)")
+        columns = {row[1] for row in cursor.fetchall()}
+        if "keywords" not in columns:
+            cursor.execute(
+                "ALTER TABLE players ADD COLUMN keywords TEXT DEFAULT '[\"마을\",\"날씨\",\"소문\"]'"
+            )
+        if "affinity_data" not in columns:
+            cursor.execute(
+                "ALTER TABLE players ADD COLUMN affinity_data TEXT DEFAULT '{}'"
+            )
+        if "daily_limits" not in columns:
+            cursor.execute(
+                "ALTER TABLE players ADD COLUMN daily_limits TEXT DEFAULT '{}'"
+            )
+    except Exception:
+        pass
+
+
 def load_player_from_db(user_id):
     conn = get_db_connection()
     cursor = conn.cursor()
+    _migrate_players_table(cursor)
     cursor.execute("SELECT * FROM players WHERE user_id = ?", (user_id,))
     row = cursor.fetchone()
     conn.close()
     if not row:
         return None
-    return {
-        "user_id":    row["user_id"],
-        "name":       row["name"],
-        "level":      row["level"],
-        "hp":         row["hp"],
-        "max_hp":     row["max_hp"],
-        "mp":         row["mp"],
-        "max_mp":     row["max_mp"],
-        "energy":     row["energy"],
-        "max_energy": row["max_energy"],
-        "gold":       row["gold"],
-        "base_stats": json.loads(row["base_stats"]),
-        "inventory":  json.loads(row["inventory"]),
-        "equipment":  json.loads(row["equipment"]),
+
+    def _safe_json(val, default):
+        try:
+            if val is None:
+                return default
+            return json.loads(val)
+        except Exception:
+            return default
+
+    result = {
+        "user_id":      row["user_id"],
+        "name":         row["name"],
+        "level":        row["level"],
+        "hp":           row["hp"],
+        "max_hp":       row["max_hp"],
+        "mp":           row["mp"],
+        "max_mp":       row["max_mp"],
+        "energy":       row["energy"],
+        "max_energy":   row["max_energy"],
+        "gold":         row["gold"],
+        "base_stats":   _safe_json(row["base_stats"], {}),
+        "inventory":    _safe_json(row["inventory"], {}),
+        "equipment":    _safe_json(row["equipment"], {}),
     }
+
+    # 신규 컬럼은 없을 수도 있으므로 안전하게 접근
+    try:
+        result["keywords"] = _safe_json(row["keywords"], ["마을", "날씨", "소문"])
+    except (IndexError, KeyError):
+        result["keywords"] = ["마을", "날씨", "소문"]
+
+    try:
+        result["affinity_full"] = _safe_json(row["affinity_data"], {})
+    except (IndexError, KeyError):
+        result["affinity_full"] = {}
+
+    return result
 
 
 def save_sheet_music(user_id: int, title: str, melody: str):

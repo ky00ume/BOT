@@ -203,6 +203,41 @@ async def swap_cmd(ctx):
     await ctx.send(ansi(f"  {C.GREEN}✔{C.R} {msg}"))
 
 
+@bot.command(name="장착")
+async def equip_cmd(ctx, *, item_name: str = None):
+    if not await _check_channel(ctx):
+        return
+    if not item_name:
+        await ctx.send(ansi(f"  {C.RED}✖ /장착 [아이템이름] 형식으로 입력하셰요!{C.R}"))
+        return
+    item_id = find_item_by_name(item_name)
+    if not item_id:
+        await ctx.send(ansi(f"  {C.RED}✖ [{item_name}]을(를) 찾을 수 없슴미댜!{C.R}"))
+        return
+    if shared_player.inventory.get(item_id, 0) == 0:
+        await ctx.send(ansi(f"  {C.RED}✖ 인벤토리에 [{item_name}]가 없슴미댜!{C.R}"))
+        return
+    msg = shared_player.equip_item(item_id)
+    await ctx.send(ansi(f"  {C.GREEN}✔{C.R} {msg}"))
+
+
+@bot.command(name="벗기", aliases=["탈착", "장비해제"])
+async def unequip_cmd(ctx, slot: str = None):
+    if not await _check_channel(ctx):
+        return
+    if not slot:
+        await ctx.send(ansi(
+            f"  {C.RED}✖ /벗기 [슬롯] 형식으로 입력하셰요!{C.R}\n"
+            f"  {C.DARK}슬롯: main(주무기) sub(보조) body(갑옷) head(투구) hands(장갑) feet(신발){C.R}"
+        ))
+        return
+    msg = shared_player.unequip_item(slot.lower())
+    if "올바른 슬롯" in msg or "비어있" in msg:
+        await ctx.send(ansi(f"  {C.RED}✖ {msg}{C.R}"))
+    else:
+        await ctx.send(ansi(f"  {C.GREEN}✔{C.R} {msg}"))
+
+
 @bot.command(name="치료")
 async def heal_cmd(ctx):
     if not await _check_channel(ctx):
@@ -758,13 +793,20 @@ async def help_cmd(ctx):
         value=(
             "`/상태` — 캐릭터 상태 보기\n"
             "`/장비` — 장비창 보기\n"
+            "`/장착 [아이템이름]` — 장비 장착\n"
+            "`/벗기 [슬롯]` — 장비 탈착 (`/탈착` `/장비해제` 동일)\n"
             "`/스왑` — 주·보조 무기 교환\n"
             "`/치료` — HP/MP 회복 (50G)\n"
             "`/먹기 [아이템이름]` — 아이템 섭취\n"
             "`/휴식` — 기력 회복 (5분 쿨타임)\n"
             "`/쓰담` — 츄라이더를 쓰다듬기 💕 (`/복복` `/북북` `/쓰다듬` 등 동일)\n"
             "`/혼내기` — 츄라이더 혼내기 😤 (`/훈육` 동일)\n"
-            "`/버리기 [아이템이름] [수량]` — 아이템 버리기"
+            "`/버리기 [아이템이름] [수량]` — 아이템 버리기\n"
+            "`/타이틀 [이름]` — 보유 타이틀 목록/장착\n"
+            "`/업적` — 업적 목록 보기\n"
+            "`/도감 [카테고리]` — 도감 보기\n"
+            "`/일기 [날짜]` — 일기 보기\n"
+            "`/아이템목록` — 전체 아이템 목록(CSV)"
         ),
         inline=False,
     )
@@ -776,7 +818,8 @@ async def help_cmd(ctx):
             "`/대화 [NPC이름]` — NPC와 대화\n"
             "`/알바 [NPC이름]` — 알바 진행\n"
             "`/마을상태` — 마을 레벨·기여도 확인\n"
-            "`/치료` — 치료사 방문"
+            "`/치료` — 치료사 방문\n"
+            "`/이동 [장소]` — 맵 이동 (3분 쿨타임)"
         ),
         inline=False,
     )
@@ -786,7 +829,11 @@ async def help_cmd(ctx):
             "`/구매목록 [NPC이름]` — NPC 판매 목록\n"
             "`/구매 [NPC이름] [아이템이름]` — 구매\n"
             "`/판매목록` — 인벤토리 판매 목록\n"
-            "`/판매 [아이템이름]` — 아이템 판매"
+            "`/판매 [아이템이름]` — 아이템 판매\n"
+            "`/보관함` — 보관함 보기\n"
+            "`/보관함넣기 [아이템이름] [수량]` — 보관함에 넣기\n"
+            "`/보관함꺼내기 [아이템이름] [수량]` — 보관함에서 꺼내기\n"
+            "`/보관함업그레이드` — 보관함 확장"
         ),
         inline=False,
     )
@@ -796,7 +843,8 @@ async def help_cmd(ctx):
             "`/사냥터` — 사냥터 목록\n"
             "`/사냥 [사냥터이름]` — 전투 시작\n"
             "`/공격 [스킬ID]` — 공격 (기본: smash)\n"
-            "`/도주` — 전투 이탈"
+            "`/도주` — 전투 이탈\n"
+            "`/스킬 [스킬이름]` — 스킬 설명·효과 조회 (`/스킬조회` 동일)"
         ),
         inline=False,
     )
@@ -817,7 +865,9 @@ async def help_cmd(ctx):
             "`/제작 [장비ID]` — 장비 제작\n"
             "`/제작도감` — 제작 가능 장비 목록\n"
             "`/제조 [레시피ID]` — 포션 제조\n"
-            "`/날씨` — 현재 날씨 확인"
+            "`/물뜨기 [수량]` — 빈 병으로 물 뜨기\n"
+            "`/날씨` — 현재 날씨 확인\n"
+            "`/수련 [스탯]` — 훈련소 스탯 수련 (`/훈련소` `/학교` 동일)"
         ),
         inline=False,
     )
@@ -838,14 +888,23 @@ async def help_cmd(ctx):
         inline=False,
     )
     embed.add_field(
+        name="📖 스토리",
+        value=(
+            "`/스토리` — 스토리 퀘스트 저널\n"
+            "`/스토리퀘스트` — 다음 스토리 퀘스트 진행\n"
+            "`/스토리탐색` — 늪지대 탐색 (챕터 3 Q2)\n"
+            "`/스토리수집` — 재료 수집 (챕터 2 Q2)\n"
+            "`/스토리힌트` — 수집한 힌트 목록\n"
+            "`/그림자` — 그림자의 상태 확인"
+        ),
+        inline=False,
+    )
+    embed.add_field(
         name="🎲 기타",
         value=(
             "`/주사위 [면수]` — 주사위 굴리기\n"
             "`/저장` — 데이터 저장\n"
             "`/공지` — 마을 공지\n"
-            "`/이동 [장소]` — 맵 이동 (3분 쿨타임)\n"
-            "`/수련 [스탯]` — 훈련소 스탯 수련 (`/훈련소` `/학교` 동일)\n"
-            "`/스킬 [스킬이름]` — 스킬 설명·효과 조회\n"
             "`/도움말` — 이 도움말"
         ),
         inline=False,

@@ -207,6 +207,43 @@ class CraftingEngine:
     def __init__(self, player):
         self.player = player
 
+    def get_recipe_embeds(self) -> list:
+        """제작 레시피를 Discord Embed 목록으로 반환합니다 (10개씩 분할)."""
+        import discord
+        from items import ALL_ITEMS
+        rank = self.player.skill_ranks.get("crafting", "연습")
+        all_recipes = list(CRAFTING_RECIPES.items())
+        chunk_size = 10
+        embeds = []
+        for i in range(0, len(all_recipes), chunk_size):
+            chunk = all_recipes[i:i + chunk_size]
+            part  = i // chunk_size + 1
+            total = (len(all_recipes) + chunk_size - 1) // chunk_size
+            embed = discord.Embed(
+                title=f"🔨 제작 도감 ({part}/{total})",
+                color=0x8B6B3D,
+            )
+            for recipe_id, recipe in chunk:
+                rank_req  = recipe.get("rank_req", "연습")
+                unlocked  = _rank_gte(rank, rank_req)
+                status    = "✅" if unlocked else "🔒"
+                ing_parts = []
+                for ing_id, cnt in recipe["ingredients"].items():
+                    ing_name = ALL_ITEMS.get(ing_id, {}).get("name", ing_id)
+                    have     = self.player.inventory.get(ing_id, 0)
+                    ing_parts.append(f"{ing_name} x{cnt}({'있음' if have >= cnt else f'부족-{have}'})")
+                embed.add_field(
+                    name=f"{status} [{rank_req}] {recipe['name']}",
+                    value=f"재료: {', '.join(ing_parts)}\nID: `{recipe_id}`",
+                    inline=False,
+                )
+            embed.set_footer(text=f"제작: /제작 [결과물ID] 또는 /제작 [결과물이름]")
+            embeds.append(embed)
+        if not embeds:
+            empty = discord.Embed(title="🔨 제작 도감", description="레시피 없음", color=0x8B6B3D)
+            embeds.append(empty)
+        return embeds
+
     def show_recipe_list(self) -> str:
         rank = self.player.skill_ranks.get("crafting", "연습")
         lines = [header_box("🔨 제작 도감"), section("제작 레시피")]

@@ -811,3 +811,55 @@ STORY_QUEST_ITEMS = {
 }
 
 ALL_ITEMS.update(STORY_QUEST_ITEMS)
+
+# ─── 스킬북 ──────────────────────────────────────────────────────────────────
+# 훈련소(카엘릭) 및 마법학교(게일의 환영)에서 판매
+SKILL_BOOKS = {
+    "sb_windmill": {
+        "name":     "윈드밀 스킬북",
+        "type":     "skillbook",
+        "skill_id": "windmill",
+        "grade":    "Rare",
+        "price":    800,
+        "npc":      "카엘릭",
+        "desc":     "주변 적을 일제히 공격하는 광역 스킬 [윈드밀]을 습득한다.",
+    },
+    "sb_healing": {
+        "name":     "힐링 스킬북",
+        "type":     "skillbook",
+        "skill_id": "healing",
+        "grade":    "Rare",
+        "price":    1000,
+        "npc":      "게일의 환영",
+        "desc":     "HP를 회복하는 스킬 [힐링]을 습득한다.",
+    },
+    "sb_firebolt": {
+        "name":     "파이어볼트 스킬북",
+        "type":     "skillbook",
+        "skill_id": "firebolt",
+        "grade":    "Normal",
+        "price":    600,
+        "npc":      "게일의 환영",
+        "desc":     "불꽃 마법탄 스킬 [파이어볼트]를 습득한다.",
+    },
+    "sb_icebolt": {
+        "name":     "아이스볼트 스킬북",
+        "type":     "skillbook",
+        "skill_id": "icebolt",
+        "grade":    "Normal",
+        "price":    600,
+        "npc":      "게일의 환영",
+        "desc":     "얼음 마법탄 스킬 [아이스볼트]를 습득한다.",
+    },
+    "sb_lightningbolt": {
+        "name":     "라이트닝볼트 스킬북",
+        "type":     "skillbook",
+        "skill_id": "lightningbolt",
+        "grade":    "Rare",
+        "price":    800,
+        "npc":      "게일의 환영",
+        "desc":     "번개 마법탄 스킬 [라이트닝볼트]를 습득한다.",
+    },
+}
+
+ALL_ITEMS.update(SKILL_BOOKS)

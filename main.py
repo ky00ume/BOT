@@ -104,6 +104,11 @@ from training import TrainingSystem
 movement_system  = MovementSystem(shared_player)
 training_system  = TrainingSystem(shared_player)
 
+# 전투 스킬 역방향 맵핑 (이름 → ID)
+from skills_db import COMBAT_SKILLS as _CS, MAGIC_SKILLS as _MS, RECOVERY_SKILLS as _RS
+_ALL_BATTLE_SKILLS     = {**_CS, **_MS, **_RS}
+_SKILL_NAME_TO_ID: dict = {v["name"]: k for k, v in _ALL_BATTLE_SKILLS.items()}
+
 
 # ─── 이벤트 ──────────────────────────────────────────────────────────────
 @bot.event
@@ -457,7 +462,7 @@ async def notice_cmd(ctx):
 
 
 @bot.command(name="마을")
-async def village_cmd(ctx, name: str = None):
+async def village_cmd(ctx, *, name: str = None):
     if not await _check_channel(ctx):
         return
     if name:
@@ -468,7 +473,7 @@ async def village_cmd(ctx, name: str = None):
 
 
 @bot.command(name="대화")
-async def talk_cmd(ctx, name: str = None):
+async def talk_cmd(ctx, *, name: str = None):
     if not await _check_channel(ctx):
         return
     if not name:
@@ -479,7 +484,7 @@ async def talk_cmd(ctx, name: str = None):
 
 
 @bot.command(name="알바")
-async def job_cmd(ctx, name: str = None):
+async def job_cmd(ctx, *, name: str = None):
     if not await _check_channel(ctx):
         return
     if not name:
@@ -608,17 +613,25 @@ async def hunt_cmd(ctx, *, zone: str = None):
     if not zone:
         await ctx.send(ansi(f"  {C.RED}✖ /사냥 [사냥터이름] 형식으로 입력하셰요!{C.R}"))
         return
-    success, msg = battle_engine.start_encounter(zone)
-    await ctx.send(ansi(msg) if not msg.startswith("```") else msg)
+    success, result = battle_engine.start_encounter(zone)
+    if isinstance(result, discord.Embed):
+        await ctx.send(embed=result)
+    else:
+        await ctx.send(ansi(result) if not str(result).startswith("```") else result)
 
 
 @bot.command(name="공격")
-async def attack_cmd(ctx, skill_id: str = "smash"):
+async def attack_cmd(ctx, *, skill_input: str = "smash"):
     if not await _check_channel(ctx):
         return
     if not battle_engine.in_battle:
         await ctx.send(ansi(f"  {C.RED}✖ 현재 전투 중이 아님미댜! /사냥 으로 전투 시작.{C.R}"))
         return
+
+    # 스킬 이름 → ID 변환 (모듈 레벨 캐시 사용)
+    skill_id = skill_input.strip()
+    if skill_id not in _ALL_BATTLE_SKILLS:
+        skill_id = _SKILL_NAME_TO_ID.get(skill_id, skill_id)
 
     was_in_battle = battle_engine.in_battle
     result = battle_engine.process_turn(skill_id)
@@ -636,7 +649,10 @@ async def attack_cmd(ctx, skill_id: str = "smash"):
                 f"  🎀 타이틀 획득: **{ach.get('title', '')}**"
             )
 
-    await ctx.send(result if result.startswith("```") else ansi(result))
+    if isinstance(result, discord.Embed):
+        await ctx.send(embed=result)
+    else:
+        await ctx.send(ansi(result) if not str(result).startswith("```") else result)
 
 
 @bot.command(name="도주")
@@ -644,7 +660,10 @@ async def flee_cmd(ctx):
     if not await _check_channel(ctx):
         return
     result = battle_engine.flee()
-    await ctx.send(result if result.startswith("```") else ansi(result))
+    if isinstance(result, discord.Embed):
+        await ctx.send(embed=result)
+    else:
+        await ctx.send(ansi(str(result)))
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -695,14 +714,14 @@ async def recipe_cmd(ctx):
 # ═══════════════════════════════════════════════════════════════════════════
 
 @bot.command(name="제련")
-async def smelt_cmd(ctx, ore_id: str = None):
+async def smelt_cmd(ctx, *, ore_input: str = None):
     if not await _check_channel(ctx):
         return
-    if not ore_id:
+    if not ore_input:
         result = metallurgy_engine.show_recipe_list()
         await ctx.send(result)
         return
-    result = metallurgy_engine.smelt(ore_id)
+    result = metallurgy_engine.smelt(ore_input)
     await ctx.send(result)
 
 
@@ -735,12 +754,13 @@ async def mix_cmd(ctx, dish_id: str = None):
 # ═══════════════════════════════════════════════════════════════════════════
 
 @bot.command(name="제작")
-async def craft_item_cmd(ctx, result_id: str = None):
+async def craft_item_cmd(ctx, *, result_id: str = None):
     if not await _check_channel(ctx):
         return
     if not result_id:
-        result = crafting_engine.show_recipe_list()
-        await ctx.send(result)
+        embeds = crafting_engine.get_recipe_embeds()
+        for emb in embeds:
+            await ctx.send(embed=emb)
         return
     result = crafting_engine.craft(result_id)
     await ctx.send(result)
@@ -750,8 +770,9 @@ async def craft_item_cmd(ctx, result_id: str = None):
 async def craft_guide_cmd(ctx):
     if not await _check_channel(ctx):
         return
-    result = crafting_engine.show_recipe_list()
-    await ctx.send(result)
+    embeds = crafting_engine.get_recipe_embeds()
+    for emb in embeds:
+        await ctx.send(embed=emb)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -798,7 +819,7 @@ async def help_cmd(ctx):
             "`/스왑` — 주·보조 무기 교환\n"
             "`/치료` — HP/MP 회복 (50G)\n"
             "`/먹기 [아이템이름]` — 아이템 섭취\n"
-            "`/휴식` — 기력 회복 (5분 쿨타임)\n"
+            "`/휴식` — 기력 회복 (3분 쿨타임)\n"
             "`/쓰담` — 츄라이더를 쓰다듬기 💕 (`/복복` `/북북` `/쓰다듬` 등 동일)\n"
             "`/혼내기` — 츄라이더 혼내기 😤 (`/훈육` 동일)\n"
             "`/버리기 [아이템이름] [수량]` — 아이템 버리기\n"
@@ -1164,7 +1185,7 @@ async def pat_cmd(ctx):
 # ═══════════════════════════════════════════════════════════════════════════
 
 _rest_cooldowns: dict[int, float] = {}
-REST_COOLDOWN_SEC = 300  # 5분
+REST_COOLDOWN_SEC = 180  # 3분
 
 
 @bot.command(name="휴식")
@@ -1530,8 +1551,46 @@ async def skill_info_cmd(ctx, skill_name: str = None):
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# 신규 명령어 — 이동 시스템
+# 신규 명령어 — 스킬 습득 (스킬북 사용)
 # ═══════════════════════════════════════════════════════════════════════════
+
+@bot.command(name="스킬습득", aliases=["스킬사용", "스킬배우기"])
+async def learn_skill_cmd(ctx, *, book_name: str = None):
+    if not await _check_channel(ctx):
+        return
+    if not book_name:
+        await ctx.send(ansi(f"  {C.RED}✖ /스킬습득 [스킬북이름] 형식으로 입력하셰요!{C.R}"))
+        return
+    from items import ALL_ITEMS
+    from shop import find_item_by_name
+    item_id = find_item_by_name(book_name)
+    if not item_id:
+        await ctx.send(ansi(f"  {C.RED}✖ [{book_name}] 아이템을 찾을 수 없슴미댜!{C.R}"))
+        return
+    item = ALL_ITEMS.get(item_id, {})
+    if item.get("type") != "skillbook":
+        await ctx.send(ansi(f"  {C.RED}✖ [{item.get('name', item_id)}]은(는) 스킬북이 아님미댜!{C.R}"))
+        return
+    if shared_player.inventory.get(item_id, 0) < 1:
+        await ctx.send(ansi(f"  {C.RED}✖ [{item.get('name', item_id)}]이(가) 인벤토리에 없슴미댜!{C.R}"))
+        return
+    skill_id = item.get("skill_id")
+    if not skill_id:
+        await ctx.send(ansi(f"  {C.RED}✖ 이 스킬북에 연결된 스킬이 없슴미댜!{C.R}"))
+        return
+    if skill_id in shared_player.skill_ranks:
+        await ctx.send(ansi(f"  {C.GOLD}이미 [{item.get('name', item_id)}] 스킬을 보유하고 있슴미댜!{C.R}"))
+        return
+    shared_player.remove_item(item_id, 1)
+    shared_player.skill_ranks[skill_id] = "연습"
+    shared_player.skill_exp[skill_id] = 0.0
+    from skills_db import COMBAT_SKILLS, MAGIC_SKILLS, RECOVERY_SKILLS, OTHER_SKILLS
+    all_defs = {**COMBAT_SKILLS, **MAGIC_SKILLS, **RECOVERY_SKILLS, **OTHER_SKILLS}
+    skill_name = all_defs.get(skill_id, {}).get("name", skill_id)
+    await ctx.send(ansi(
+        f"  {C.GREEN}✔ [{skill_name}] 스킬을 습득했슴미댜! [연습 랭크]{C.R}\n"
+        f"  {C.DARK}/스킬 {skill_name} 으로 상세 확인{C.R}"
+    ))
 
 @bot.command(name="이동")
 async def move_cmd(ctx, *, destination: str = None):

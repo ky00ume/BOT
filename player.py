@@ -3,6 +3,48 @@ from skills_db import (
     COMBAT_SKILLS, MAGIC_SKILLS, RECOVERY_SKILLS, OTHER_SKILLS,
 )
 
+# ─── 레벨업 스탯 증가 테이블 ─────────────────────────────────────────────
+LEVEL_UP_TABLE = {
+    1:  {"max_hp": 10, "max_mp": 5,  "max_energy": 3, "str": 1},
+    2:  {"max_hp": 10, "max_mp": 5,  "max_energy": 3, "int": 1},
+    3:  {"max_hp": 12, "max_mp": 6,  "max_energy": 3, "dex": 1},
+    4:  {"max_hp": 12, "max_mp": 6,  "max_energy": 4, "will": 1},
+    5:  {"max_hp": 15, "max_mp": 8,  "max_energy": 4, "str": 1, "int": 1},
+    6:  {"max_hp": 15, "max_mp": 8,  "max_energy": 4, "dex": 1},
+    7:  {"max_hp": 18, "max_mp": 10, "max_energy": 5, "will": 1},
+    8:  {"max_hp": 18, "max_mp": 10, "max_energy": 5, "str": 1},
+    9:  {"max_hp": 20, "max_mp": 12, "max_energy": 5, "int": 1},
+    10: {"max_hp": 25, "max_mp": 15, "max_energy": 6, "str": 1, "int": 1, "dex": 1},
+    "_default": {"max_hp": 20, "max_mp": 12, "max_energy": 5, "str": 1},
+}
+
+
+def apply_level_up(player) -> dict:
+    """레벨업 시 스탯 증가를 적용하고 증가 내역 반환."""
+    gains = LEVEL_UP_TABLE.get(player.level, LEVEL_UP_TABLE["_default"])
+    result = {}
+    if "max_hp" in gains:
+        v = gains["max_hp"]
+        player.max_hp += v
+        player.hp = player.max_hp
+        result["max_hp"] = v
+    if "max_mp" in gains:
+        v = gains["max_mp"]
+        player.max_mp += v
+        player.mp = player.max_mp
+        result["max_mp"] = v
+    if "max_energy" in gains:
+        v = gains["max_energy"]
+        player.max_energy += v
+        player.energy = min(player.energy + v, player.max_energy)
+        result["max_energy"] = v
+    for stat in ("str", "int", "dex", "will", "luck"):
+        if stat in gains:
+            v = gains[stat]
+            player.base_stats[stat] = player.base_stats.get(stat, 0) + v
+            result[stat] = v
+    return result
+
 BASE_INVENTORY_SLOTS = 10
 
 _SLOT_NAMES = {
@@ -52,8 +94,17 @@ class Player:
         self.inventory = {}
         self.bags = []
 
-        self.skill_ranks = {}
-        self.skill_exp   = {}
+        # 기본 전투 스킬은 처음부터 연습 랭크로 습득
+        self.skill_ranks = {
+            "smash":   "연습",
+            "defense": "연습",
+            "counter": "연습",
+        }
+        self.skill_exp = {
+            "smash":   0.0,
+            "defense": 0.0,
+            "counter": 0.0,
+        }
 
         self._affinity_manager = None
 
@@ -199,6 +250,7 @@ class Player:
             "user_id":       0,
             "name":          self.name,
             "level":         self.level,
+            "exp":           self.exp,
             "hp":            self.hp,
             "max_hp":        self.max_hp,
             "mp":            self.mp,
@@ -212,6 +264,8 @@ class Player:
             "titles":        self.titles,
             "current_title": self.current_title,
             "keywords":      self.keywords,
+            "skill_ranks":   self.skill_ranks,
+            "skill_exp":     self.skill_exp,
         }
         # 스토리 퀘스트 데이터 포함
         sq_mgr = getattr(self, "_story_quest_manager", None)
@@ -222,6 +276,7 @@ class Player:
     def load_from_dict(self, data: dict):
         self.name          = data.get("name",          self.name)
         self.level         = data.get("level",         self.level)
+        self.exp           = data.get("exp",           self.exp)
         self.hp            = data.get("hp",            self.hp)
         self.max_hp        = data.get("max_hp",        self.max_hp)
         self.mp            = data.get("mp",            self.mp)
@@ -249,6 +304,14 @@ class Player:
             self.keywords = data["keywords"]
         elif not hasattr(self, "keywords") or self.keywords is None:
             self.keywords = ["마을", "날씨", "소문"]
+
+        if "skill_ranks" in data and isinstance(data["skill_ranks"], dict):
+            # 기본 스킬은 항상 최소 연습 랭크 보장
+            merged = {"smash": "연습", "defense": "연습", "counter": "연습"}
+            merged.update(data["skill_ranks"])
+            self.skill_ranks = merged
+        if "skill_exp" in data and isinstance(data["skill_exp"], dict):
+            self.skill_exp.update(data["skill_exp"])
 
         # 스토리 퀘스트 복원
         if "story_quest" in data and isinstance(data["story_quest"], dict):

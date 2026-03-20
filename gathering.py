@@ -129,7 +129,7 @@ class GatheringEngine:
 
     async def gather(self, ctx):
         """채집을 수행합니다."""
-        energy_cost = 15
+        energy_cost = 8
         if not self.player.consume_energy(energy_cost):
             await ctx.send(ansi(
                 f"  {C.RED}✖ 기력이 부족함미댜! (필요: {energy_cost}, 보유: {self.player.energy}){C.R}"
@@ -203,7 +203,7 @@ class GatheringEngine:
 
     async def mine(self, ctx):
         """채광을 수행합니다."""
-        energy_cost = 20
+        energy_cost = 10
         if not self.player.consume_energy(energy_cost):
             await ctx.send(ansi(
                 f"  {C.RED}✖ 기력이 부족함미댜! (필요: {energy_cost}, 보유: {self.player.energy}){C.R}"
@@ -283,7 +283,7 @@ class GatheringEngine:
 
     async def woodcut(self, ctx):
         """벌목을 수행합니다."""
-        energy_cost = 18
+        energy_cost = 9
         if not self.player.consume_energy(energy_cost):
             await ctx.send(ansi(
                 f"  {C.RED}✖ 기력이 부족함미댜! (필요: {energy_cost}, 보유: {self.player.energy}){C.R}"

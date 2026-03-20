@@ -14,7 +14,7 @@ CATEGORY_ICONS = {
 
 class CollectionManager:
     def __init__(self):
-        self._data: dict = {}  # {category: {item_id: {name, grade, best_size, count}}}
+        self._data: dict = {}
         self._load()
 
     def _load(self):
@@ -78,7 +78,6 @@ class CollectionManager:
             lines.append(f"  {C.DARK}(아직 등록된 항목이 없슴미댜!){C.R}")
             return ansi("\n".join(lines))
 
-        # 등급별로 정렬
         grade_order = {"Legendary": 0, "Epic": 1, "Rare": 2, "Normal": 3}
         items_sorted = sorted(
             cat_data.items(),
@@ -119,5 +118,4 @@ class CollectionManager:
         self._save()
 
 
-# 싱글턴 인스턴스
 collection_manager = CollectionManager()

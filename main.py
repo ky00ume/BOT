@@ -40,6 +40,7 @@ from gacha        import GachaEngine
 from music        import MusicEngine
 from bulletin     import bulletin_board, weekly_fishing
 from shop         import find_item_by_name
+from restaurant   import RestaurantEngine
 from rest         import RestEngine
 from crafting     import CraftingEngine
 from diary        import diary_manager
@@ -74,6 +75,7 @@ bot = commands.Bot(command_prefix="/", intents=intents)
 shared_player     = Player(name="츄라이더")
 npc_manager       = VillageNPC(shared_player)
 shop_manager      = ShopManager(shared_player)
+restaurant_engine = RestaurantEngine(shared_player)
 battle_engine     = BattleEngine(shared_player, npc_manager)
 fishing_engine    = FishingEngine(shared_player)
 cooking_engine    = CookingEngine(shared_player)
@@ -161,7 +163,7 @@ async def _check_channel(ctx) -> bool:
 # 캐릭터 명령어
 # ═══════════════════════════════════════════════════════════════════════════
 
-@bot.command(name="상태창")
+@bot.command(name="상태", aliases=["상태창"])
 async def status_cmd(ctx):
     if not await _check_channel(ctx):
         return
@@ -169,7 +171,7 @@ async def status_cmd(ctx):
     await ctx.send(embed=embed)
 
 
-@bot.command(name="장비")
+@bot.command(name="장비", aliases=["장비창"])
 async def equipment_cmd(ctx):
     if not await _check_channel(ctx):
         return
@@ -207,7 +209,7 @@ async def heal_cmd(ctx):
 
 
 @bot.command(name="먹기")
-async def eat_item(ctx, item_name: str = None):
+async def eat_item(ctx, *, item_name: str = None):
     if not await _check_channel(ctx):
         return
     if not item_name:
@@ -245,6 +247,22 @@ async def eat_item(ctx, item_name: str = None):
         f"  {C.GREEN}✔{C.R} {C.WHITE}{name}{C.R} 섭취!\n"
         f"  {' / '.join(effects) if effects else '효과 없음'}"
     ))
+
+
+@bot.command(name="납품")
+async def deliver_cmd(ctx, *, item_name: str = None):
+    """마리 식당에 요리를 납품합니다."""
+    if not await _check_channel(ctx):
+        return
+    await restaurant_engine.deliver_food(ctx, item_name)
+
+
+@bot.command(name="선물")
+async def gift_cmd(ctx, npc_name: str = None, *, item_name: str = None):
+    """NPC에게 요리/아이템을 선물합니다."""
+    if not await _check_channel(ctx):
+        return
+    await restaurant_engine.gift_food(ctx, npc_name, item_name)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -349,10 +367,11 @@ async def sell_list_cmd(ctx):
 
 
 @bot.command(name="판매", aliases=["판매확정"])
-async def sell_cmd(ctx, item_name: str = None, count_or_all: str = "1"):
+async def sell_cmd(ctx, *args):
     if not await _check_channel(ctx):
         return
-    if not item_name:
+    # 공백 포함 아이템명 지원: /판매 철 주괴 3 → item_name="철 주괴", count=3
+    if not args:
         # 인터랙티브 판매 UI
         from shop_ui import SellView
         view = SellView(shared_player, shop_manager)
@@ -362,6 +381,13 @@ async def sell_cmd(ctx, item_name: str = None, count_or_all: str = "1"):
         )
         view._message = msg
         return
+    # 마지막 인수가 숫자 또는 "전부"면 수량으로 처리
+    if args[-1] in ("전부",) or (len(args) > 1 and args[-1].isdigit()):
+        count_or_all = args[-1]
+        item_name    = " ".join(args[:-1])
+    else:
+        count_or_all = "1"
+        item_name    = " ".join(args)
     # 수량 파싱 ("전부" 또는 숫자)
     if count_or_all == "전부":
         item_id = find_item_by_name(item_name)
@@ -587,7 +613,7 @@ async def help_cmd(ctx):
     embed.add_field(
         name="👤 캐릭터 & 상태",
         value=(
-            "`/상태창` — 캐릭터 상태 보기\n"
+            "`/상태` — 캐릭터 상태 보기\n"
             "`/장비` — 장비창 보기\n"
             "`/스왑` — 주·보조 무기 교환\n"
             "`/치료` — HP/MP 회복 (50G)\n"
@@ -1162,41 +1188,6 @@ async def storage_upgrade_cmd(ctx):
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# 신규 명령어 — 선물 시스템
-# ═══════════════════════════════════════════════════════════════════════════
-
-@bot.command(name="선물")
-async def gift_cmd(ctx, npc_name: str = None, item_name: str = None):
-    if not await _check_channel(ctx):
-        return
-    if not npc_name or not item_name:
-        await ctx.send(ansi(f"  {C.RED}✖ /선물 [NPC이름] [아이템이름] 형식으로 입력하셰요!{C.R}"))
-        return
-    from database import NPC_DATA
-    if npc_name not in NPC_DATA:
-        await ctx.send(ansi(f"  {C.RED}✖ [{npc_name}]은(는) NPC가 아닌데요!{C.R}"))
-        return
-    item_id = find_item_by_name(item_name)
-    if not item_id or shared_player.inventory.get(item_id, 0) == 0:
-        await ctx.send(ansi(f"  {C.RED}✖ [{item_name}]이(가) 인벤토리에 없슴미댜!{C.R}"))
-        return
-    shared_player.remove_item(item_id, 1)
-    amount, reaction, leveled, lv_name = affinity_manager.give_gift(npc_name, item_id)
-    item_display = ALL_ITEMS.get(item_id, {}).get("name", item_id)
-    sign = "+" if amount >= 0 else ""
-    from ui_theme import header_box
-    lines = [
-        header_box(f"🎁 {npc_name}에게 선물"),
-        f"  {C.WHITE}{item_display}{C.R} → {C.GOLD}{npc_name}{C.R}",
-        f"  💬 \"{reaction}\"",
-        f"  {C.GREEN if amount >= 0 else C.RED}호감도 {sign}{amount}{C.R}",
-    ]
-    if leveled:
-        lines.append(f"  {C.GOLD}✨ 관계 변화! → [{lv_name}]{C.R}")
-    await ctx.send(ansi("\n".join(lines)))
-
-
-# ═══════════════════════════════════════════════════════════════════════════
 # 신규 명령어 — 버리기 (인벤토리 아이템 삭제)
 # ═══════════════════════════════════════════════════════════════════════════
 
@@ -1369,3 +1360,4 @@ async def train_cmd(ctx, *, stat: str = None):
 # ─── 봇 실행 ──────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     bot.run(TOKEN)
+___BEGIN___COMMAND_DONE_MARKER___0

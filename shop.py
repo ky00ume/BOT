@@ -20,18 +20,44 @@ def find_item_in_catalog(catalog: dict, name_or_id: str) -> str | None:
 
 
 def _find_in_dict(item_dict: dict, name_or_id: str) -> str | None:
-    """아이템 딕셔너리에서 ID 또는 이름(정확/부분)으로 아이템 ID를 반환합니다."""
-    # 1. 정확히 ID로 매칭
+    """아이템 딕셔너리에서 ID 또는 이름으로 아이템 ID를 반환합니다.
+
+    검색 우선순위:
+    1. ID 정확 매칭
+    2. 이름 정확 매칭
+    3. 모든 검색어 키워드가 아이템명에 포함되는 경우 (AND 매칭, 이름 짧은 것 우선)
+    4. 단일 키워드 부분 매칭 (이름 짧은 것 우선)
+    """
+    name_or_id = name_or_id.strip()
+    keywords = name_or_id.split()
+
+    # 1. ID 정확 매칭
     if name_or_id in item_dict:
         return name_or_id
-    # 2. 한글 이름으로 정확 매칭
-    # 3. 부분 매칭 — 이름 길이가 짧은(=더 정확한) 결과 우선
+
+    # 2. 이름 정확 매칭
+    for item_id, item_data in item_dict.items():
+        if item_data.get("name", "") == name_or_id:
+            return item_id
+
+    # 3. 모든 키워드 AND 매칭 (이름이 짧을수록 우선)
+    if keywords:
+        best_and = None
+        best_and_len = float('inf')
+        for item_id, item_data in item_dict.items():
+            item_name = item_data.get("name", "")
+            if all(kw in item_name for kw in keywords):
+                if len(item_name) < best_and_len:
+                    best_and = item_id
+                    best_and_len = len(item_name)
+        if best_and:
+            return best_and
+
+    # 4. 단일 부분 매칭 (이름이 짧을수록 우선)
     best_partial = None
     best_partial_len = float('inf')
     for item_id, item_data in item_dict.items():
         item_name = item_data.get("name", "")
-        if item_name == name_or_id:
-            return item_id          # 정확 매칭 즉시 반환
         if name_or_id in item_name and len(item_name) < best_partial_len:
             best_partial = item_id
             best_partial_len = len(item_name)
@@ -42,7 +68,6 @@ class ShopManager:
     def __init__(self, player):
         self.player = player
 
-    # ─── 판매목록 (플레이어 → NPC) ────────────────────────────────────────
     def show_sell_list(self) -> str:
         inventory = self.player.inventory
         if not inventory:
@@ -71,7 +96,6 @@ class ShopManager:
         lines.append(f"  {C.GREEN}/판매 [아이템이름]{C.R} 으로 판매")
         return ansi("\n".join(lines))
 
-    # ─── 판매 확정 ────────────────────────────────────────────────────────
     def sell_item(self, name_or_id: str, count: int = 1) -> str:
         item_id = find_item_by_name(name_or_id)
         if not item_id:
@@ -96,7 +120,6 @@ class ShopManager:
             f"  {C.GOLD}+{sell}G{C.R} (현재: {self.player.gold:,}G)"
         )
 
-    # ─── NPC 구매 목록 ────────────────────────────────────────────────────
     def show_buy_list(self, npc_name: str) -> str:
         catalog = NPC_CATALOGS.get(npc_name)
         if catalog is None:
@@ -127,7 +150,6 @@ class ShopManager:
         lines.append(f"  {C.GREEN}/구매 {npc_name} [아이템이름]{C.R} 으로 구매")
         return ansi("\n".join(lines))
 
-    # ─── 구매 실행 ────────────────────────────────────────────────────────
     def execute_buy(self, npc_name: str, name_or_id: str, count: int = 1) -> str:
         catalog = NPC_CATALOGS.get(npc_name)
         if catalog is None:
@@ -146,21 +168,18 @@ class ShopManager:
 
         price = item.get("price", 0)
 
-        # 호감도 할인
         discount = 0
         if hasattr(self.player, "_affinity_manager") and self.player._affinity_manager:
             aff = self.player._affinity_manager
             discount = getattr(aff, "get_shop_discount_pct", lambda n: 0)(npc_name)
         final_price = int(price * count * (1 - discount / 100))
 
-        # 골드 확인
         if self.player.gold < final_price:
             return ansi(
                 f"  {C.RED}✖ 골드가 부족함미댜!\n"
                 f"  필요: {final_price:,}G / 보유: {self.player.gold:,}G{C.R}"
             )
 
-        # 인벤토리 공간 확인
         used, max_slots = self.player.inventory_check()
         already_have = item_id in self.player.inventory
         if not already_have and used >= max_slots:
@@ -168,7 +187,6 @@ class ShopManager:
                 f"  {C.RED}✖ 인벤토리가 가득 찼슴미댜! ({used}/{max_slots}){C.R}"
             )
 
-        # 구매 처리
         self.player.gold -= final_price
         self.player.add_item(item_id, count)
 

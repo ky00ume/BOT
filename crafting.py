@@ -1,8 +1,6 @@
 """crafting.py — 장비 제작 시스템"""
 from ui_theme import C, header_box, divider, section, ansi, rank_badge
 
-# 제작 레시피 DB
-# 각 레시피: 재료 + 기술 랭크 요구 → 결과물
 CRAFTING_RECIPES = {
     # ── 검 계열 ────────────────────────────────────────────────────────────────
     "wp_sword_02": {
@@ -241,7 +239,6 @@ class CraftingEngine:
                 f"  {C.RED}✖ 제작 랭크 부족! (필요: {rank_req}, 현재: {rank}){C.R}"
             )
 
-        # 재료 확인
         ingredients = recipe["ingredients"]
         for ing_id, cnt in ingredients.items():
             if self.player.inventory.get(ing_id, 0) < cnt:
@@ -251,11 +248,9 @@ class CraftingEngine:
                     f"  {C.RED}✖ 재료가 부족함미댜! [{ing_name}] x{cnt} 필요{C.R}"
                 )
 
-        # 재료 소비
         for ing_id, cnt in ingredients.items():
             self.player.remove_item(ing_id, cnt)
 
-        # 제작 완료
         self.player.add_item(result_id, 1)
 
         from items import ALL_ITEMS

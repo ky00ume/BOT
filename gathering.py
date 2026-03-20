@@ -10,7 +10,6 @@ GATHER_ITEMS_BY_SEASON = {
         {"id": "gt_flower_01",   "name": "들꽃",        "grade": "Normal",    "rate": 0.30},
         {"id": "mushroom",       "name": "버섯",        "grade": "Normal",    "rate": 0.15},
         {"id": "mana_herb",      "name": "마나 허브",   "grade": "Rare",      "rate": 0.05},
-        # 봄 신규
         {"id": "healing_herb",   "name": "힐링허브",    "grade": "Normal",    "rate": 0.35},
         {"id": "lavender",       "name": "라벤더",      "grade": "Rare",      "rate": 0.08},
         {"id": "fragrant_flower","name": "향기로운꽃",  "grade": "Normal",    "rate": 0.25},
@@ -29,7 +28,6 @@ GATHER_ITEMS_BY_SEASON = {
         {"id": "mushroom",       "name": "버섯",        "grade": "Normal",    "rate": 0.35},
         {"id": "gt_wood_01",     "name": "나무 조각",   "grade": "Normal",    "rate": 0.20},
         {"id": "honey",          "name": "꿀",          "grade": "Normal",    "rate": 0.05},
-        # 여름 신규
         {"id": "mana_pool",      "name": "마나풀",      "grade": "Rare",      "rate": 0.06},
         {"id": "shiitake",       "name": "표고버섯",    "grade": "Normal",    "rate": 0.28},
         {"id": "grape",          "name": "포도",        "grade": "Normal",    "rate": 0.22},
@@ -45,12 +43,10 @@ GATHER_ITEMS_BY_SEASON = {
         {"id": "mana_flower",    "name": "마나꽃",      "grade": "Rare",      "rate": 0.04},
     ],
     "autumn": [
-        # rates는 가중치 비율 (합이 1.0일 필요 없음, _pick_by_rate가 비례 계산)
         {"id": "mushroom",       "name": "버섯",        "grade": "Normal",    "rate": 0.50},
         {"id": "gt_wood_01",     "name": "나무 조각",   "grade": "Normal",    "rate": 0.25},
         {"id": "honey",          "name": "꿀",          "grade": "Normal",    "rate": 0.15},
         {"id": "eye_of_truth",   "name": "진실의 눈",   "grade": "Epic",      "rate": 0.01},
-        # 가을 신규
         {"id": "pine_mushroom",  "name": "송이버섯",    "grade": "Rare",      "rate": 0.10},
         {"id": "reishi",         "name": "영지버섯",    "grade": "Epic",      "rate": 0.03},
         {"id": "glow_mushroom",  "name": "발광버섯",    "grade": "Rare",      "rate": 0.06},
@@ -70,7 +66,6 @@ GATHER_ITEMS_BY_SEASON = {
         {"id": "coal",           "name": "석탄",        "grade": "Normal",    "rate": 0.40},
         {"id": "mana_herb",      "name": "마나 허브",   "grade": "Rare",      "rate": 0.10},
         {"id": "diamond",        "name": "다이아몬드",  "grade": "Legendary", "rate": 0.005},
-        # 겨울 신규
         {"id": "poison_herb",    "name": "독초",        "grade": "Rare",      "rate": 0.07},
         {"id": "toxic_mushroom", "name": "독버섯",      "grade": "Normal",    "rate": 0.12},
         {"id": "lavender",       "name": "라벤더",      "grade": "Rare",      "rate": 0.05},
@@ -82,6 +77,7 @@ GATHER_ITEMS_BY_SEASON = {
 }
 
 MINE_ITEMS = [
+    # 일반 광석: str_req 만족 시 채굴 가능 (rank_req 없음 = 랭크 무관)
     {"id": "copper_ore",       "name": "구리 광석",      "grade": "Normal",    "rate": 0.40, "str_req": 5},
     {"id": "tin_ore",          "name": "주석 광석",      "grade": "Normal",    "rate": 0.30, "str_req": 5},
     {"id": "iron_ore",         "name": "철광석",         "grade": "Normal",    "rate": 0.30, "str_req": 8},
@@ -92,6 +88,14 @@ MINE_ITEMS = [
     {"id": "orichalcum_ore",   "name": "오리할콘 광석",  "grade": "Epic",      "rate": 0.003,"str_req": 40},
     {"id": "adamantium_ore",   "name": "아다만티움 광석","grade": "Legendary", "rate": 0.001,"str_req": 55},
     {"id": "dragonite_ore",    "name": "드래곤나이트 광석","grade": "Legendary","rate": 0.0005,"str_req": 70},
+    # 보석류 (채광 스킬 랭크 F 이상 필요, 랭크별 확률 차등)
+    {"id": "gem_ruby",      "name": "루비",        "grade": "Rare",      "rate": 0.020, "str_req": 10, "rank_req": "F"},
+    {"id": "gem_sapphire",  "name": "사파이어",    "grade": "Rare",      "rate": 0.018, "str_req": 12, "rank_req": "E"},
+    {"id": "gem_emerald",   "name": "에메랄드",    "grade": "Rare",      "rate": 0.015, "str_req": 15, "rank_req": "D"},
+    {"id": "gem_topaz",     "name": "토파즈",      "grade": "Rare",      "rate": 0.012, "str_req": 18, "rank_req": "C"},
+    {"id": "gem_amethyst",  "name": "자수정",      "grade": "Rare",      "rate": 0.012, "str_req": 18, "rank_req": "C"},
+    {"id": "gem_aquamarine","name": "아쿠아마린",  "grade": "Epic",      "rate": 0.006, "str_req": 25, "rank_req": "B"},
+    {"id": "gem_diamond",   "name": "다이아몬드",  "grade": "Legendary", "rate": 0.001, "str_req": 40, "rank_req": "A"},
     {"id": "sulfur",           "name": "유황",           "grade": "Normal",    "rate": 0.10, "str_req": 5},
 ]
 
@@ -161,7 +165,6 @@ class GatheringEngine:
             except Exception:
                 pass
 
-        # PIL 카드 시도
         card_sent = False
         season_kr = {"spring": "봄", "summer": "여름", "autumn": "가을", "winter": "겨울"}.get(season, season)
         if added:
@@ -212,6 +215,21 @@ class GatheringEngine:
 
         str_stat = self.player.base_stats.get("str", 10)
         available = [i for i in MINE_ITEMS if str_stat >= i["str_req"]]
+
+        # 채광 스킬 랭크에 따른 보석 필터링
+        mining_rank = self.player.skill_ranks.get("mining", "연습")
+        rank_order_local = ["연습", "F", "E", "D", "C", "B", "A", "9", "8", "7", "6", "5", "4", "3", "2", "1"]
+        rank_idx = rank_order_local.index(mining_rank) if mining_rank in rank_order_local else 0
+
+        def _rank_ok(item):
+            req = item.get("rank_req")
+            if not req:
+                return True
+            if req not in rank_order_local:
+                return True
+            return rank_idx >= rank_order_local.index(req)
+
+        available = [i for i in available if _rank_ok(i)]
         if not available:
             available = [MINE_ITEMS[0]]
 

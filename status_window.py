@@ -18,6 +18,15 @@ def create_status_embed(player) -> discord.Embed:
     gold  = getattr(player, "gold",         0)
     stats = getattr(player, "base_stats",   {})
     used, max_slots = player.inventory_check() if hasattr(player, "inventory_check") else (0, 10)
+    bags = getattr(player, "bags", [])
+    bag_name = ""
+    if bags:
+        try:
+            from database import BAGS
+            b = BAGS.get(bags[0], {})
+            bag_name = f"\n🎒 {b.get('name', bags[0])} (+{b.get('slots',0)}칸)"
+        except Exception:
+            pass
 
     exp_needed = level * 100
     exp_bar_width = 10
@@ -53,7 +62,7 @@ def create_status_embed(player) -> discord.Embed:
 
     embed.add_field(
         name="💰 소지금 / 인벤토리",
-        value=f"💰 **{gold:,}G**\n🎒 {used}/{max_slots} 슬롯",
+        value=f"💰 **{gold:,}G**\n🎒 {used}/{max_slots} 슬롯{bag_name}",
         inline=True,
     )
 

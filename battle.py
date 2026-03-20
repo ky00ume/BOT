@@ -189,6 +189,18 @@ class BattleEngine:
             reward = self._calc_reward(monster)
             self._add_village_contribution_battle()
 
+            # 라파엘 계약 처치 기록
+            monster_id = monster.get("id", "")
+            if monster_id:
+                try:
+                    from special_npc import SpecialNPCEncounterManager
+                    enc_mgr = SpecialNPCEncounterManager(self.player)
+                    contract_msg = enc_mgr.record_kill(monster_id)
+                    if contract_msg:
+                        embed.add_field(name="📜 계약 진행", value=contract_msg, inline=False)
+                except Exception:
+                    pass
+
             size      = monster.get("_size", "M")
             size_info = MONSTER_SIZES.get(size, MONSTER_SIZES["M"])
             embed.title = "🎉 전투 승리!"

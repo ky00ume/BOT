@@ -40,6 +40,15 @@ class VillageNPC:
 
     async def talk_to_npc_async(self, ctx, npc_name: str):
         """키워드 대화 시스템으로 NPC 대화를 처리합니다."""
+        # 특수 NPC는 직접 대화 불가 (인카운터 상태는 특수키워드 명령어로 대화)
+        SPECIAL_NPCS = {"라파엘", "카르니스", "루바토"}
+        if npc_name in SPECIAL_NPCS:
+            await ctx.send(ansi(
+                f"  {C.RED}✖ [{npc_name}]은(는) 직접 찾아갈 수 없슴미댜.\n"
+                f"  만남은 운명에 맡기셰요! (랜덤 인카운터로만 만날 수 있어요)\n"
+                f"  인카운터 중이라면 /특수키워드 {npc_name} [키워드] 를 사용하셰요.{C.R}"
+            ))
+            return
         from npc_conversation import ConversationManager
         aff_mgr = getattr(self.player, "_affinity_manager", None)
         conv = ConversationManager(self.player, aff_mgr)

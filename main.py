@@ -46,6 +46,7 @@ from crafting     import CraftingEngine
 from diary        import diary_manager
 from collection   import collection_manager
 from achievements import achievement_manager
+from special_npc  import SpecialNPCEncounterManager
 
 # ─── 상수 (환경변수로 관리) ────────────────────────────────────────────────
 TOKEN              = os.getenv("DISCORD_TOKEN", "")
@@ -88,6 +89,9 @@ gacha_engine      = GachaEngine(shared_player)
 music_engine      = MusicEngine(shared_player)
 crafting_engine   = CraftingEngine(shared_player)
 shared_player._affinity_manager = affinity_manager
+
+# 특수 NPC 인카운터 매니저 초기화
+encounter_manager = SpecialNPCEncounterManager(shared_player)
 
 # 스토리 퀘스트 매니저 초기화
 from story_quest import StoryQuestManager
@@ -483,6 +487,80 @@ async def talk_cmd(ctx, *, name: str = None):
     await npc_manager.talk_to_npc_async(ctx, name)
 
 
+@bot.command(name="특수키워드")
+async def special_keyword_cmd(ctx, npc_name: str = None, *, keyword: str = None):
+    """특수 NPC 인카운터 중 키워드 대화."""
+    if not await _check_channel(ctx):
+        return
+    if not npc_name or not keyword:
+        await ctx.send(ansi(f"  {C.RED}✖ /특수키워드 [NPC이름] [키워드] 형식으로 입력하셰요!{C.R}"))
+        return
+    from special_npc import SPECIAL_NPCS
+    if npc_name not in SPECIAL_NPCS:
+        await ctx.send(ansi(f"  {C.RED}✖ [{npc_name}]은(는) 특수 NPC가 아님미댜.{C.R}"))
+        return
+    active = encounter_manager.get_active_encounter()
+    if active != npc_name:
+        await ctx.send(ansi(
+            f"  {C.RED}✖ 현재 {npc_name}(이)가 근처에 없슴미댜. 인카운터를 기다리셰요!{C.R}"
+        ))
+        return
+    # 키워드 대화는 일반 대화 시스템 활용
+    from npc_conversation import ConversationManager
+    aff_mgr = getattr(shared_player, "_affinity_manager", None)
+    conv = ConversationManager(shared_player, aff_mgr)
+    await conv.send_conversation(ctx, npc_name)
+
+
+@bot.command(name="계약확인")
+async def contract_check_cmd(ctx):
+    """라파엘 계약 현황 확인."""
+    if not await _check_channel(ctx):
+        return
+    result = encounter_manager.check_contract_status()
+    await ctx.send(result)
+
+
+@bot.command(name="계약수락")
+async def contract_accept_cmd(ctx):
+    """라파엘 계약 수락."""
+    if not await _check_channel(ctx):
+        return
+    active = encounter_manager.get_active_encounter()
+    if active != "라파엘":
+        await ctx.send(ansi(f"  {C.RED}✖ 라파엘이 근처에 없슴미댜. 인카운터를 기다리셰요!{C.R}"))
+        return
+    result = encounter_manager.accept_contract()
+    await ctx.send(result)
+
+
+@bot.command(name="계약거절")
+async def contract_reject_cmd(ctx):
+    """라파엘 계약 거절."""
+    if not await _check_channel(ctx):
+        return
+    result = encounter_manager.reject_contract()
+    await ctx.send(result)
+
+
+@bot.command(name="계약완료")
+async def contract_complete_cmd(ctx):
+    """라파엘 계약 완료 보상 수령."""
+    if not await _check_channel(ctx):
+        return
+    result = encounter_manager.complete_contract()
+    await ctx.send(result)
+
+
+@bot.command(name="루바토버프")
+async def lubato_buff_cmd(ctx):
+    """루바토 인카운터 시 노래 버프 받기."""
+    if not await _check_channel(ctx):
+        return
+    result = encounter_manager.apply_lubato_buff()
+    await ctx.send(result)
+
+
 @bot.command(name="알바")
 async def job_cmd(ctx, *, name: str = None):
     if not await _check_channel(ctx):
@@ -490,7 +568,15 @@ async def job_cmd(ctx, *, name: str = None):
     if not name:
         await ctx.send(ansi(f"  {C.RED}✖ /알바 [NPC이름] 형식으로 입력하셰요!{C.R}"))
         return
+    # 다른 행동 시 인카운터 NPC 퇴장 처리
+    departure = encounter_manager.clear_encounter()
+    if departure:
+        await ctx.send(departure)
     await npc_manager.start_job_async(ctx, name)
+    # 인카운터 체크
+    enc_msg = encounter_manager.trigger_encounter()
+    if enc_msg:
+        await ctx.send(enc_msg)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -613,11 +699,20 @@ async def hunt_cmd(ctx, *, zone: str = None):
     if not zone:
         await ctx.send(ansi(f"  {C.RED}✖ /사냥 [사냥터이름] 형식으로 입력하셰요!{C.R}"))
         return
+    # 다른 행동 시 인카운터 NPC 퇴장 처리
+    departure = encounter_manager.clear_encounter()
+    if departure:
+        await ctx.send(departure)
     success, result = battle_engine.start_encounter(zone)
     if isinstance(result, discord.Embed):
         await ctx.send(embed=result)
     else:
         await ctx.send(ansi(result) if not str(result).startswith("```") else result)
+    # 인카운터 체크 (사냥 후)
+    if success:
+        enc_msg = encounter_manager.trigger_encounter()
+        if enc_msg:
+            await ctx.send(enc_msg)
 
 
 @bot.command(name="공격")
@@ -674,7 +769,13 @@ async def flee_cmd(ctx):
 async def fishing_cmd(ctx):
     if not await _check_channel(ctx):
         return
+    departure = encounter_manager.clear_encounter()
+    if departure:
+        await ctx.send(departure)
     await fishing_engine.fish(ctx)
+    enc_msg = encounter_manager.trigger_encounter()
+    if enc_msg:
+        await ctx.send(enc_msg)
 
 
 @bot.command(name="낚시목록")
@@ -991,14 +1092,26 @@ async def weather_cmd(ctx):
 async def gather_cmd(ctx):
     if not await _check_channel(ctx):
         return
+    departure = encounter_manager.clear_encounter()
+    if departure:
+        await ctx.send(departure)
     await gathering_engine.gather(ctx)
+    enc_msg = encounter_manager.trigger_encounter()
+    if enc_msg:
+        await ctx.send(enc_msg)
 
 
 @bot.command(name="채광")
 async def mine_cmd(ctx):
     if not await _check_channel(ctx):
         return
+    departure = encounter_manager.clear_encounter()
+    if departure:
+        await ctx.send(departure)
     await gathering_engine.mine(ctx)
+    enc_msg = encounter_manager.trigger_encounter()
+    if enc_msg:
+        await ctx.send(enc_msg)
 
 
 @bot.command(name="제조")

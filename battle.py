@@ -1,5 +1,5 @@
 import random
-from monsters_db import MONSTERS_DB
+from monsters_db import MONSTERS_DB, MONSTER_SIZES, roll_monster_size, apply_size_to_monster
 from ui_theme import C, bar, section, divider, header_box, ansi, EMBED_COLOR, FOOTERS
 
 
@@ -54,12 +54,17 @@ class BattleEngine:
                 f"  필요 기력: {C.WHITE}{energy_cost}{C.R}"
             )
 
-        monster_data = random.choice(zone["monsters"])
-        self.current_monster = dict(monster_data)
+        monster_base = random.choice(zone["monsters"])
+        size         = roll_monster_size()
+        monster_data = apply_size_to_monster(monster_base, size)
+        self.current_monster = monster_data
         self.monster_hp      = monster_data["hp"]
         self.in_battle       = True
         self.current_zone    = zone_key
         self.turn            = 1
+
+        size_info = MONSTER_SIZES[size]
+        size_label = f"{size_info['icon']} [{size}]"
 
         from ui_theme import spider_scene
         from skills_db import COMBAT_SKILLS, MAGIC_SKILLS, RECOVERY_SKILLS
@@ -67,7 +72,8 @@ class BattleEngine:
         msg = (
             f"{scene}\n"
             f"{header_box('⚔ 전투 시작!')}\n"
-            f"  {C.RED}{monster_data['name']}{C.R} {C.DARK}Lv.{monster_data['level']}{C.R}이(가) 나타났슴미댜!\n"
+            f"  {C.RED}{monster_data['name']}{C.R} {C.DARK}Lv.{monster_data['level']}{C.R}"
+            f" {C.GOLD}{size_label}{C.R}이(가) 나타났슴미댜!\n"
             f"  {C.RED}HP{C.R} {bar(self.monster_hp, monster_data['hp'])} "
             f"{C.WHITE}{self.monster_hp}/{monster_data['hp']}{C.R}\n"
             f"{divider()}\n"
@@ -147,7 +153,10 @@ class BattleEngine:
             self._add_village_contribution_battle()
             from ui_theme import spider_scene
             lines.append(f"\n{spider_scene('battle_win')}")
+            size = monster.get("_size", "M")
+            size_info = MONSTER_SIZES.get(size, MONSTER_SIZES["M"])
             lines.append(f"\n{header_box('🎉 전투 승리!')}")
+            lines.append(f"  {C.DARK}사이즈: {size_info['icon']} {size}{C.R}")
             lines.append(f"  {C.GOLD}💰 +{reward['gold']}G{C.R}  {C.GREEN}EXP +{reward['exp']}{C.R}")
             if reward.get("leveled_up"):
                 lines.append(

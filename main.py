@@ -28,7 +28,7 @@ from fishing      import FishingEngine
 from cooking_db   import CookingEngine
 from metallurgy   import MetallurgyEngine
 from alarms       import setup_alarms
-from responses    import get_drider_response, get_hyness_response, get_majesty_response, get_pet_response
+from responses    import get_drider_response, get_hyness_response, get_majesty_response, get_pet_response, get_scold_response
 from items        import CONSUMABLES, COOKED_DISHES, ALL_ITEMS, GATHERING_ITEMS
 from village      import village_manager
 from gathering    import GatheringEngine
@@ -92,6 +92,12 @@ shared_player._affinity_manager = affinity_manager
 # 보관함 엔진 초기화
 from storage import StorageEngine
 storage_engine = StorageEngine(shared_player)
+
+# 이동·훈련 시스템 초기화
+from movement import MovementSystem
+from training import TrainingSystem
+movement_system  = MovementSystem(shared_player)
+training_system  = TrainingSystem(shared_player)
 
 
 # ─── 이벤트 ──────────────────────────────────────────────────────────────
@@ -613,7 +619,9 @@ async def help_cmd(ctx):
             "`/치료` — HP/MP 회복 (50G)\n"
             "`/먹기 [아이템이름]` — 아이템 섭취\n"
             "`/휴식` — 기력 회복 (5분 쿨타임)\n"
-            "`/쓰담` — 츄라이더를 쓰다듬기 💕"
+            "`/쓰담` — 츄라이더를 쓰다듬기 💕 (`/복복` `/북북` `/쓰다듬` 등 동일)\n"
+            "`/혼내기` — 츄라이더 혼내기 😤 (`/훈육` 동일)\n"
+            "`/버리기 [아이템이름] [수량]` — 아이템 버리기"
         ),
         inline=False,
     )
@@ -656,6 +664,7 @@ async def help_cmd(ctx):
             "`/낚시도감` `/낚시터정보` — 낚시터·물고기 정보\n"
             "`/채집` — 채집 (기력 15)\n"
             "`/채광` — 채광 (기력 20)\n"
+            "`/벌목` — 벌목 (기력 18, 나무 획득)\n"
             "`/채집도감` — 채집 가능 아이템 목록\n"
             "`/요리 [레시피ID]` — 가열 요리\n"
             "`/혼합 [레시피ID]` — 혼합(비가열) 요리\n"
@@ -691,6 +700,9 @@ async def help_cmd(ctx):
             "`/주사위 [면수]` — 주사위 굴리기\n"
             "`/저장` — 데이터 저장\n"
             "`/공지` — 마을 공지\n"
+            "`/이동 [장소]` — 맵 이동 (3분 쿨타임)\n"
+            "`/수련 [스탯]` — 훈련소 스탯 수련 (`/훈련소` `/학교` 동일)\n"
+            "`/스킬 [스킬이름]` — 스킬 설명·효과 조회\n"
             "`/도움말` — 이 도움말"
         ),
         inline=False,
@@ -916,7 +928,7 @@ async def village_status_cmd(ctx):
 # 신규 명령어 — 쓰담
 # ═══════════════════════════════════════════════════════════════════════════
 
-@bot.command(name="쓰담")
+@bot.command(name="쓰담", aliases=["복복", "북북", "쓰다듬", "북북박박", "복복복", "복복박박"])
 async def pat_cmd(ctx):
     if not await _check_channel(ctx):
         return
@@ -1173,6 +1185,176 @@ async def storage_upgrade_cmd(ctx):
     if not await _check_channel(ctx):
         return
     await ctx.send(storage_engine.upgrade())
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 신규 명령어 — 버리기 (인벤토리 아이템 삭제)
+# ═══════════════════════════════════════════════════════════════════════════
+
+@bot.command(name="버리기")
+async def discard_cmd(ctx, item_name: str = None, count_str: str = "1"):
+    if not await _check_channel(ctx):
+        return
+    if not item_name:
+        await ctx.send(ansi(f"  {C.RED}✖ /버리기 [아이템이름] [수량] 형식으로 입력하셰요!{C.R}"))
+        return
+
+    item_id = find_item_by_name(item_name)
+    if not item_id:
+        await ctx.send(ansi(f"  {C.RED}✖ [{item_name}]을(를) 찾을 수 없슴미댜!{C.R}"))
+        return
+
+    have = shared_player.inventory.get(item_id, 0)
+    if have == 0:
+        await ctx.send(ansi(f"  {C.RED}✖ 인벤토리에 [{item_name}]이(가) 없슴미댜!{C.R}"))
+        return
+
+    count_str_lower = count_str.lower()
+    if count_str_lower == "전부":
+        count = have
+    else:
+        try:
+            count = max(1, int(count_str))
+        except ValueError:
+            await ctx.send(ansi(f"  {C.RED}✖ 수량은 숫자 또는 '전부'로 입력하셰요!{C.R}"))
+            return
+    count = min(count, have)
+
+    shared_player.remove_item(item_id, count)
+    item_display = ALL_ITEMS.get(item_id, {}).get("name", item_id)
+    await ctx.send(ansi(
+        f"  {C.GREEN}🗑️  {item_display}{C.R} x{count}을(를) 버렸슴미댜!"
+    ))
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 신규 명령어 — 혼내기 / 훈육 (츄라이더 사죄 반응)
+# ═══════════════════════════════════════════════════════════════════════════
+
+@bot.command(name="혼내기", aliases=["훈육"])
+async def scold_cmd(ctx):
+    if not await _check_channel(ctx):
+        return
+    msg = get_scold_response()
+    embed = discord.Embed(
+        title="😤 혼내기!",
+        description=msg,
+        color=0xFF4500,
+    )
+    embed.set_footer(text="츄라이더는 진심으로 반성하고 있습니다... 🙏")
+    await ctx.send(embed=embed)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 신규 명령어 — 벌목
+# ═══════════════════════════════════════════════════════════════════════════
+
+@bot.command(name="벌목")
+async def woodcut_cmd(ctx):
+    if not await _check_channel(ctx):
+        return
+    await gathering_engine.woodcut(ctx)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 신규 명령어 — 스킬 (스킬 설명/효과 조회)
+# ═══════════════════════════════════════════════════════════════════════════
+
+@bot.command(name="스킬", aliases=["스킬조회"])
+async def skill_info_cmd(ctx, skill_name: str = None):
+    if not await _check_channel(ctx):
+        return
+
+    from skills_db import COMBAT_SKILLS, MAGIC_SKILLS, RECOVERY_SKILLS, OTHER_SKILLS
+    from ui_theme import header_box, divider
+
+    ALL_SKILLS = {**COMBAT_SKILLS, **MAGIC_SKILLS, **RECOVERY_SKILLS, **OTHER_SKILLS}
+
+    if not skill_name:
+        # 전체 목록
+        lines = [header_box("📖 스킬 목록")]
+        for sid, sdata in ALL_SKILLS.items():
+            rank = shared_player.skill_ranks.get(sid)
+            mark = f"{C.GREEN}[{rank}]{C.R}" if rank else f"{C.DARK}[미습득]{C.R}"
+            lines.append(f"  {C.WHITE}{sdata['name']}{C.R} {mark}  {C.DARK}{sdata.get('desc','')}{C.R}")
+        lines.append(divider())
+        lines.append(f"  {C.GREEN}/스킬 [스킬이름]{C.R} 으로 상세 조회")
+        await ctx.send(ansi("\n".join(lines)))
+        return
+
+    # 이름으로 검색
+    found_id   = None
+    found_data = None
+    for sid, sdata in ALL_SKILLS.items():
+        if sdata["name"] == skill_name or sid == skill_name:
+            found_id   = sid
+            found_data = sdata
+            break
+
+    if not found_data:
+        await ctx.send(ansi(f"  {C.RED}✖ [{skill_name}] 스킬을 찾을 수 없슴미댜!{C.R}"))
+        return
+
+    rank = shared_player.skill_ranks.get(found_id)
+    lines = [
+        header_box(f"📖 {found_data['name']}"),
+        f"  {C.DARK}{found_data.get('desc','')}{C.R}",
+        divider(),
+        f"  내 랭크: {C.GREEN if rank else C.DARK}{rank or '미습득'}{C.R}",
+    ]
+
+    # 랭크별 수치 표시 (대표 수치)
+    for key in ("damage_bonus", "damage_reduce", "damage", "counter_multiplier", "aoe_multiplier", "heal", "restore_mp"):
+        table = found_data.get(key)
+        if isinstance(table, dict) and table:
+            lines.append(f"\n  {C.GOLD}◈ {key}{C.R}")
+            pairs = list(table.items())
+            # 현재 랭크 주변 3개만
+            if rank and rank in table:
+                idx = list(table.keys()).index(rank)
+                start = max(0, idx - 1)
+                pairs = list(table.items())[start:start+4]
+            for r, v in pairs:
+                marker = f"{C.GREEN}▶ {C.R}" if r == rank else "  "
+                lines.append(f"  {marker}{C.DARK}[{r}]{C.R} {C.WHITE}{v}{C.R}")
+
+    mp_cost = found_data.get("mp_cost")
+    if isinstance(mp_cost, dict) and rank and rank in mp_cost:
+        lines.append(f"\n  {C.BLUE}MP 소모: {mp_cost[rank]}{C.R} (현재 랭크)")
+    elif isinstance(mp_cost, (int, float)):
+        lines.append(f"\n  {C.BLUE}MP 소모: {mp_cost}{C.R}")
+
+    await ctx.send(ansi("\n".join(lines)))
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 신규 명령어 — 이동 시스템
+# ═══════════════════════════════════════════════════════════════════════════
+
+@bot.command(name="이동")
+async def move_cmd(ctx, *, destination: str = None):
+    if not await _check_channel(ctx):
+        return
+    if destination:
+        result = movement_system.move_to(ctx.author.id, destination)
+    else:
+        result = movement_system.show_map(ctx.author.id)
+    await ctx.send(result)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 신규 명령어 — 훈련소 (수련 시스템)
+# ═══════════════════════════════════════════════════════════════════════════
+
+@bot.command(name="수련", aliases=["훈련소", "학교"])
+async def train_cmd(ctx, *, stat: str = None):
+    if not await _check_channel(ctx):
+        return
+    if stat:
+        result = training_system.train(stat.strip())
+    else:
+        result = training_system.show_menu()
+    await ctx.send(result)
 
 
 # ─── 봇 실행 ──────────────────────────────────────────────────────────────

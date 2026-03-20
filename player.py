@@ -48,6 +48,8 @@ class Player:
 
         self._affinity_manager = None
 
+        self.keywords = ["마을", "날씨", "소문"]  # 기본 키워드 3개로 시작
+
     def get_max_slots(self):
         extra = 0
         from database import BAGS
@@ -186,6 +188,7 @@ class Player:
             "equipment":     self.equipment,
             "titles":        self.titles,
             "current_title": self.current_title,
+            "keywords":      self.keywords,
         }
 
     def load_from_dict(self, data: dict):
@@ -213,6 +216,11 @@ class Player:
             for slot, val in data["equipment"].items():
                 if slot in self.equipment:
                     self.equipment[slot] = val
+
+        if "keywords" in data and isinstance(data["keywords"], list):
+            self.keywords = data["keywords"]
+        elif not hasattr(self, "keywords") or self.keywords is None:
+            self.keywords = ["마을", "날씨", "소문"]
 
     def get_attack(self) -> int:
         base = 5 + self.base_stats.get("str", 10) // 2

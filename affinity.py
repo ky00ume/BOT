@@ -1,4 +1,5 @@
 """affinity.py — NPC 호감도 시스템"""
+import datetime
 from ui_theme import C, ansi, header_box, divider
 
 AFFINITY_LEVELS = [
@@ -90,9 +91,71 @@ def _calc_level(points: int) -> dict:
 
 
 class AffinityManager:
+    DAILY_TALK_LIMIT = 5   # NPC당 일일 대화 최대 횟수
+    DAILY_GIFT_LIMIT = 2   # NPC당 일일 선물 최대 횟수
+
     def __init__(self, player):
         self.player      = player
         self.affinities  = {}
+        # 일일 제한 구조: {"NPC이름": {"talk": 횟수, "gift": 횟수, "date": "YYYY-MM-DD"}}
+        self.daily_limits = {}
+        # 선물 반복 페널티 구조: {"NPC이름": {"item_id": 횟수}}
+        self.gift_history = {}
+
+    def _today(self) -> str:
+        return datetime.date.today().isoformat()
+
+    def _get_daily(self, npc_name: str) -> dict:
+        """오늘 날짜 기준으로 일일 제한 데이터를 반환합니다. 날짜가 다르면 초기화."""
+        today = self._today()
+        entry = self.daily_limits.get(npc_name)
+        if not entry or entry.get("date") != today:
+            entry = {"talk": 0, "gift": 0, "date": today}
+            self.daily_limits[npc_name] = entry
+        return entry
+
+    def check_talk_limit(self, npc_name: str) -> tuple:
+        """대화 가능 여부를 반환합니다. (가능: True, 남은 횟수) / (불가: False, 0)"""
+        daily = self._get_daily(npc_name)
+        used = daily.get("talk", 0)
+        remaining = self.DAILY_TALK_LIMIT - used
+        return (remaining > 0, max(0, remaining))
+
+    def record_talk(self, npc_name: str):
+        """대화 횟수를 기록합니다."""
+        daily = self._get_daily(npc_name)
+        daily["talk"] = daily.get("talk", 0) + 1
+
+    def check_gift_limit(self, npc_name: str) -> tuple:
+        """선물 가능 여부를 반환합니다. (가능: True, 남은 횟수) / (불가: False, 0)"""
+        daily = self._get_daily(npc_name)
+        used = daily.get("gift", 0)
+        remaining = self.DAILY_GIFT_LIMIT - used
+        return (remaining > 0, max(0, remaining))
+
+    def record_gift(self, npc_name: str):
+        """선물 횟수를 기록합니다."""
+        daily = self._get_daily(npc_name)
+        daily["gift"] = daily.get("gift", 0) + 1
+
+    def get_gift_repeat_multiplier(self, npc_name: str, item_id: str) -> float:
+        """선물 반복 페널티 배율을 반환합니다."""
+        npc_history = self.gift_history.get(npc_name, {})
+        count = npc_history.get(item_id, 0)
+        if count == 0:
+            return 1.0
+        elif count == 1:
+            return 0.7
+        elif count == 2:
+            return 0.4
+        else:
+            return 0.2
+
+    def record_gift_item(self, npc_name: str, item_id: str):
+        """선물 아이템 히스토리를 기록합니다."""
+        if npc_name not in self.gift_history:
+            self.gift_history[npc_name] = {}
+        self.gift_history[npc_name][item_id] = self.gift_history[npc_name].get(item_id, 0) + 1
 
     def add_affinity(self, npc_name: str, amount: int) -> tuple:
         old_points   = self.affinities.get(npc_name, 0)
@@ -146,25 +209,63 @@ class AffinityManager:
         return ansi("\n".join(lines))
 
     def to_dict(self) -> dict:
-        return {"affinities": self.affinities}
+        return {
+            "affinities":   self.affinities,
+            "daily_limits": self.daily_limits,
+            "gift_history": self.gift_history,
+        }
 
     def from_dict(self, data: dict):
-        self.affinities = data.get("affinities", {})
+        self.affinities   = data.get("affinities", {})
+        self.daily_limits = data.get("daily_limits", {})
+        self.gift_history = data.get("gift_history", {})
         return self
 
     def give_gift(self, npc_name: str, item_id: str) -> tuple:
+        """
+        선물 처리. 일일 제한, 반복 페널티, NPC별 고유 반응 대사 적용.
+        Returns: (amount, reaction, leveled, lv_name, limit_exceeded)
+        """
+        from npc_dialogue_db import NPC_GIFT_REACTIONS
+
+        # 특수 NPC 처리
+        special_npcs = {"라파엘", "카르니스", "루바토"}
+        if npc_name in special_npcs:
+            reactions = NPC_GIFT_REACTIONS.get(npc_name, {})
+            msg = reactions.get("special", "선물은 필요 없어.")
+            return (0, msg, False, self.get_level_name(npc_name), False)
+
+        # 일일 선물 제한 확인
+        allowed, remaining = self.check_gift_limit(npc_name)
+        if not allowed:
+            return (0, "오늘은 더 이상 선물을 받기 어려울 것 같아요.", False, self.get_level_name(npc_name), True)
+
         prefs = NPC_GIFT_PREFS.get(npc_name, {"default": 3})
+        reactions = NPC_GIFT_REACTIONS.get(npc_name, {})
+
         if item_id in prefs.get("loves", []):
-            amount   = 15
-            reaction = "정말 좋아해요! 눈이 반짝반짝✨"
+            base_amount = 15
+            reaction = reactions.get("loves", "정말 좋아해요! 눈이 반짝반짝✨")
         elif item_id in prefs.get("likes", []):
-            amount   = 8
-            reaction = "괜찮은 선물이네요~"
+            base_amount = 8
+            reaction = reactions.get("likes", "괜찮은 선물이네요~")
         elif item_id in prefs.get("dislikes", []):
-            amount   = -5
-            reaction = "이건 좀..."
+            base_amount = -5
+            reaction = reactions.get("dislikes", "이건 좀...")
         else:
-            amount   = prefs.get("default", 3)
-            reaction = "고마워요."
+            base_amount = prefs.get("default", 3)
+            reaction = reactions.get("default", "고마워요.")
+
+        # 반복 페널티 (싫어하는 선물은 페널티 없음)
+        if base_amount > 0:
+            multiplier = self.get_gift_repeat_multiplier(npc_name, item_id)
+            amount = max(1, int(base_amount * multiplier))
+        else:
+            amount = base_amount
+
+        # 기록
+        self.record_gift(npc_name)
+        self.record_gift_item(npc_name, item_id)
+
         pts, leveled, lv_name = self.add_affinity(npc_name, amount)
-        return (amount, reaction, leveled, lv_name)
+        return (amount, reaction, leveled, lv_name, False)

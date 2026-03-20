@@ -15,6 +15,7 @@ class VillageNPC:
         return random.choice(greetings)
 
     def talk_to_npc(self, npc_name: str) -> str:
+        """기본 인사 텍스트를 반환합니다. (키워드 UI는 talk_to_npc_async 사용)"""
         npc = NPC_DATA.get(npc_name)
         if not npc:
             return ansi(f"  {C.RED}✖ [{npc_name}]을(를) 찾을 수 없슴미댜.{C.R}")
@@ -36,6 +37,13 @@ class VillageNPC:
             lines.append(f"  {C.GREEN}/알바 {npc['name']}{C.R} 으로 알바 가능")
 
         return ansi("\n".join(lines))
+
+    async def talk_to_npc_async(self, ctx, npc_name: str):
+        """키워드 대화 시스템으로 NPC 대화를 처리합니다."""
+        from npc_conversation import ConversationManager
+        aff_mgr = getattr(self.player, "_affinity_manager", None)
+        conv = ConversationManager(self.player, aff_mgr)
+        await conv.send_conversation(ctx, npc_name)
 
     def start_job(self, npc_name: str) -> str:
         npc = NPC_DATA.get(npc_name)

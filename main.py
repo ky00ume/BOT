@@ -22,7 +22,7 @@ from database     import init_db, save_player_to_db, load_player_from_db
 from equipment_window import EquipmentWindow
 import status_window
 import status as status_mod
-from ui_theme     import C, ansi, EMBED_COLOR, FOOTERS
+from ui_theme     import C, ansi, EMBED_COLOR, FOOTERS, divider
 from town_notice  import send_town_notice, make_intro_embed, make_npc_embed, make_commands_embed
 from fishing      import FishingEngine
 from cooking_db   import CookingEngine
@@ -115,6 +115,12 @@ async def on_ready():
     loaded = load_player_from_db(0)
     if loaded:
         shared_player.load_from_dict(loaded)
+        # 호감도 데이터 복원 (affinity_full에 to_dict() 전체 포함)
+        aff_full = loaded.get("affinity_full", {})
+        if not aff_full:
+            # 구 버전 호환: affinity_data에 affinities만 있는 경우
+            aff_full = {"affinities": loaded.get("affinity_data", {})}
+        affinity_manager.from_dict(aff_full)
         print(f"[DB 로드] {shared_player.name} 데이터 복원 완료")
     else:
         print("[DB 로드] 저장 데이터 없음 — 기본 캐릭터로 시작")
@@ -259,10 +265,140 @@ async def deliver_cmd(ctx, *, item_name: str = None):
 
 @bot.command(name="선물")
 async def gift_cmd(ctx, npc_name: str = None, *, item_name: str = None):
-    """NPC에게 요리/아이템을 선물합니다."""
+    """NPC에게 아이템을 선물합니다. 아이템 이름 생략 시 인벤토리 선택 UI 표시."""
     if not await _check_channel(ctx):
         return
-    await restaurant_engine.gift_food(ctx, npc_name, item_name)
+
+    if not npc_name:
+        await ctx.send(ansi(
+            f"  {C.RED}✖ /선물 [NPC이름] 또는 /선물 [NPC이름] [아이템이름] 형식으로 입력하셰요!{C.R}\n"
+            f"  예시: /선물 다몬   또는   /선물 다몬 철 주괴"
+        ))
+        return
+
+    from database import NPC_DATA
+    npc = NPC_DATA.get(npc_name)
+    if not npc:
+        await ctx.send(ansi(f"  {C.RED}✖ [{npc_name}]을(를) 찾을 수 없슴미댜!{C.R}"))
+        return
+
+    # 특수 NPC 처리
+    special_npcs = {"라파엘", "카르니스", "루바토"}
+    if npc_name in special_npcs:
+        from npc_dialogue_db import NPC_GIFT_REACTIONS
+        reactions = NPC_GIFT_REACTIONS.get(npc_name, {})
+        msg = reactions.get("special", "선물은 필요 없어.")
+        await ctx.send(ansi(
+            f"  {C.GOLD}🎁 {npc['name']}{C.R}\n"
+            f"  {C.DARK}─────────────────────────────{C.R}\n"
+            f"  {C.WHITE}\"{msg}\"{C.R}"
+        ))
+        return
+
+    # 아이템 이름이 직접 주어진 경우: 기존 처리
+    if item_name:
+        await _process_gift(ctx, npc_name, item_name)
+        return
+
+    # 아이템 이름 없으면 인벤토리 Select UI 표시
+    inventory = shared_player.inventory
+    if not inventory:
+        await ctx.send(ansi(f"  {C.RED}✖ 인벤토리가 비어 있슴미댜!{C.R}"))
+        return
+
+    # 선물 가능 아이템 목록 (인벤토리 보유 아이템)
+    options = []
+    for item_id, count in list(inventory.items())[:25]:
+        item_info = ALL_ITEMS.get(item_id, {})
+        item_display = item_info.get("name", item_id)
+        options.append(discord.SelectOption(
+            label=f"{item_display} (x{count})",
+            value=item_id,
+            description=item_info.get("desc", "")[:100] if item_info.get("desc") else "",
+        ))
+
+    if not options:
+        await ctx.send(ansi(f"  {C.RED}✖ 선물할 수 있는 아이템이 없슴미댜!{C.R}"))
+        return
+
+    select = discord.ui.Select(
+        placeholder=f"{npc_name}에게 선물할 아이템을 선택하셰요",
+        options=options,
+    )
+
+    async def select_callback(interaction: discord.Interaction):
+        selected_item_id = select.values[0]
+        item_info = ALL_ITEMS.get(selected_item_id, {})
+        item_display = item_info.get("name", selected_item_id)
+        await interaction.response.defer()
+        await _process_gift_by_id(ctx, npc_name, selected_item_id, item_display)
+
+    select.callback = select_callback
+    view = discord.ui.View(timeout=60.0)
+    view.add_item(select)
+
+    await ctx.send(
+        ansi(
+            f"  {C.GOLD}🎁 {npc['name']}에게 선물{C.R}\n"
+            f"  {C.DARK}아래에서 선물할 아이템을 선택하셰요.{C.R}"
+        ),
+        view=view,
+    )
+
+
+async def _process_gift(ctx, npc_name: str, item_name: str):
+    """아이템 이름으로 선물을 처리합니다."""
+    item_id = find_item_by_name(item_name)
+    if not item_id:
+        await ctx.send(ansi(f"  {C.RED}✖ [{item_name}]을(를) 찾을 수 없슴미댜!{C.R}"))
+        return
+    item_info = ALL_ITEMS.get(item_id, {})
+    item_display = item_info.get("name", item_id)
+    await _process_gift_by_id(ctx, npc_name, item_id, item_display)
+
+
+async def _process_gift_by_id(ctx, npc_name: str, item_id: str, item_display: str):
+    """아이템 ID로 선물을 처리합니다."""
+    from database import NPC_DATA
+    npc = NPC_DATA.get(npc_name)
+    if not npc:
+        await ctx.send(ansi(f"  {C.RED}✖ [{npc_name}]을(를) 찾을 수 없슴미댜!{C.R}"))
+        return
+
+    if shared_player.inventory.get(item_id, 0) == 0:
+        await ctx.send(ansi(f"  {C.RED}✖ [{item_display}]이(가) 인벤토리에 없슴미댜!{C.R}"))
+        return
+
+    shared_player.remove_item(item_id, 1)
+    result = affinity_manager.give_gift(npc_name, item_id)
+    amount, reaction, leveled, lv_name, limit_exceeded = result
+
+    if limit_exceeded:
+        # 아이템은 이미 소비됨 — 환불
+        shared_player.add_item(item_id, 1)
+        await ctx.send(ansi(
+            f"  {C.GOLD}🎁 {npc['name']}{C.R}\n"
+            f"  {C.DARK}─────────────────────────────{C.R}\n"
+            f"  {C.RED}\"{reaction}\"{C.R}"
+        ))
+        return
+
+    pts = affinity_manager.affinities.get(npc_name, 0)
+    lines = [
+        f"  {C.GOLD}🎁 {npc['name']}에게 선물!{C.R}",
+        f"  {C.WHITE}{item_display}{C.R} 을(를) {npc['name']}에게 선물했슴미댜!",
+        f"  {C.DARK}─────────────────────────────{C.R}",
+        f"  {C.WHITE}\"{reaction}\"{C.R}",
+        f"  {C.DARK}─────────────────────────────{C.R}",
+    ]
+    if amount > 0:
+        lines.append(f"  {C.PINK}💖 호감도 +{amount}{C.R}  (현재 {pts}pt)")
+    elif amount < 0:
+        lines.append(f"  {C.RED}💔 호감도 {amount}{C.R}  (현재 {pts}pt)")
+    if leveled:
+        lines.append(f"  {C.PINK}✦ 호감도 단계 상승! → [{lv_name}]{C.R}")
+
+    await ctx.send(ansi("\n".join(lines)))
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -281,8 +417,7 @@ async def village_cmd(ctx, name: str = None):
     if not await _check_channel(ctx):
         return
     if name:
-        msg = npc_manager.talk_to_npc(name)
-        await ctx.send(msg)
+        await npc_manager.talk_to_npc_async(ctx, name)
     else:
         msg = npc_manager.list_npcs()
         await ctx.send(msg)
@@ -296,8 +431,7 @@ async def talk_cmd(ctx, name: str = None):
         msg = npc_manager.list_npcs()
         await ctx.send(msg)
         return
-    msg = npc_manager.talk_to_npc(name)
-    await ctx.send(msg)
+    await npc_manager.talk_to_npc_async(ctx, name)
 
 
 @bot.command(name="알바")

@@ -863,3 +863,7 @@ SKILL_BOOKS = {
 }
 
 ALL_ITEMS.update(SKILL_BOOKS)
+
+# ─── 가방 ──────────────────────────────────────────────────────────────────
+from database import BAGS
+ALL_ITEMS.update(BAGS)

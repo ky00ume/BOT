@@ -77,6 +77,24 @@ NPC_GIFT_PREFS = {
         "dislikes": ["gt_flower_01", "fragrant_flower"],
         "default":  3,
     },
+    "라파엘": {
+        "loves":    ["diamond", "eye_of_truth", "mithril_bar"],
+        "likes":    ["gold_bar", "mp_crystal"],
+        "dislikes": ["gt_flower_01", "gt_herb_01"],
+        "default":  2,
+    },
+    "카르니스": {
+        "loves":    ["moonlight_dew", "mana_herb"],
+        "likes":    ["healing_herb", "mana_flower"],
+        "dislikes": ["coal", "slag"],
+        "default":  2,
+    },
+    "루바토": {
+        "loves":    ["wine", "honey", "gt_flower_01"],
+        "likes":    ["fragrant_flower", "cherry"],
+        "dislikes": ["coal", "slag"],
+        "default":  3,
+    },
 }
 
 
@@ -228,12 +246,31 @@ class AffinityManager:
         """
         from npc_dialogue_db import NPC_GIFT_REACTIONS
 
-        # 특수 NPC 처리
+        # 특수 NPC 처리 - 이제 선물 선호도 지원
         special_npcs = {"라파엘", "카르니스", "루바토"}
         if npc_name in special_npcs:
+            # 특수 NPC도 일반 선물 시스템 사용 (선호도 기반)
             reactions = NPC_GIFT_REACTIONS.get(npc_name, {})
-            msg = reactions.get("special", "선물은 필요 없어.")
-            return (0, msg, False, self.get_level_name(npc_name), False)
+            prefs = NPC_GIFT_PREFS.get(npc_name, {"default": 2})
+            if item_id in prefs.get("loves", []):
+                reaction = reactions.get("loves", reactions.get("default", "..."))
+                amount = 15
+            elif item_id in prefs.get("likes", []):
+                reaction = reactions.get("likes", reactions.get("default", "..."))
+                amount = 8
+            elif item_id in prefs.get("dislikes", []):
+                reaction = reactions.get("dislikes", reactions.get("default", "..."))
+                amount = -3
+            else:
+                reaction = reactions.get("default", "...")
+                amount = prefs.get("default", 2)
+            if amount > 0:
+                pts, leveled, lv_name = self.add_affinity(npc_name, amount)
+            else:
+                pts = self.affinities.get(npc_name, 0)
+                leveled = False
+                lv_name = self.get_level_name(npc_name)
+            return (amount, reaction, leveled, lv_name, False)
 
         # 일일 선물 제한 확인
         allowed, remaining = self.check_gift_limit(npc_name)

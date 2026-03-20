@@ -158,10 +158,14 @@ class ShopManager:
             name  = item.get("name",  item_id)
             price = item.get("price", 0)
             desc  = item.get("desc",  "")
+            extra = ""
+            if item.get("type") == "bag":
+                extra = f"  (+{item.get('slots', 0)}칸)"
             lines.append(
-                f"  {icon} {C.WHITE}{name}{C.R}  {C.GOLD}{price:,}G{C.R}"
+                f"  {icon} {C.WHITE}{name}{C.R}  {C.GOLD}{price:,}G{C.R}{extra}"
             )
-            lines.append(f"    {C.DARK}ID: {item_id}  {desc}{C.R}")
+            if desc:
+                lines.append(f"    {C.DARK}{desc}{C.R}")
 
         lines.append(divider())
         lines.append(f"  {C.GREEN}/구매 {npc_name} [아이템이름]{C.R} 으로 구매")
@@ -197,6 +201,31 @@ class ShopManager:
                 f"  필요: {final_price:,}G / 보유: {self.player.gold:,}G{C.R}"
             )
 
+        name = item.get("name", item_id)
+        discount_str = f" ({discount}% 할인!)" if discount else ""
+
+        # ── 가방 특별 처리 ──────────────────────────────────────────────
+        if item.get("type") == "bag":
+            new_slots = item.get("slots", 0)
+            current_bags = getattr(self.player, "bags", [])
+            if current_bags:
+                cur_bag_id = current_bags[0]
+                cur_bag = BAGS.get(cur_bag_id, {})
+                cur_slots = cur_bag.get("slots", 0)
+                if new_slots <= cur_slots:
+                    return ansi(
+                        f"  {C.RED}✖ 이미 더 좋은 가방을 가지고 있슴미댜! "
+                        f"({cur_bag.get('name', cur_bag_id)}, +{cur_slots}칸){C.R}"
+                    )
+            self.player.gold -= final_price
+            self.player.bags = [item_id]
+            return ansi(
+                f"  {C.GREEN}✔{C.R} {C.WHITE}{name}{C.R} 구매 완료!{discount_str}\n"
+                f"  {C.RED}-{final_price:,}G{C.R} (현재: {C.GOLD}{self.player.gold:,}G{C.R})\n"
+                f"  {C.GOLD}🎒 현재 가방: {name} (+{new_slots}칸){C.R}"
+            )
+        # ──────────────────────────────────────────────────────────────────
+
         used, max_slots = self.player.inventory_check()
         already_have = item_id in self.player.inventory
         if not already_have and used >= max_slots:
@@ -207,8 +236,6 @@ class ShopManager:
         self.player.gold -= final_price
         self.player.add_item(item_id, count)
 
-        name = item.get("name", item_id)
-        discount_str = f" ({discount}% 할인!)" if discount else ""
         return ansi(
             f"  {C.GREEN}✔{C.R} {C.WHITE}{name}{C.R} x{count} 구매 완료!{discount_str}\n"
             f"  {C.RED}-{final_price:,}G{C.R} (현재: {C.GOLD}{self.player.gold:,}G{C.R})"

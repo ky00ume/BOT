@@ -92,7 +92,7 @@ class Player:
         }
 
         self.inventory = {}
-        self.bags = []
+        self.bags = ["bag_large"]  # 기본 가방
 
         # 기본 전투 스킬은 처음부터 연습 랭크로 습득
         self.skill_ranks = {
@@ -260,12 +260,15 @@ class Player:
             "gold":          self.gold,
             "base_stats":    self.base_stats,
             "inventory":     self.inventory,
+            "bags":          self.bags,
             "equipment":     self.equipment,
             "titles":        self.titles,
             "current_title": self.current_title,
             "keywords":      self.keywords,
             "skill_ranks":   self.skill_ranks,
             "skill_exp":     self.skill_exp,
+            "last_special_encounter": getattr(self, "last_special_encounter", None),
+            "rafael_contract": getattr(self, "rafael_contract", None),
         }
         # 스토리 퀘스트 데이터 포함
         sq_mgr = getattr(self, "_story_quest_manager", None)
@@ -295,6 +298,12 @@ class Player:
         if "inventory" in data and isinstance(data["inventory"], dict):
             self.inventory = data["inventory"]
 
+        if "bags" in data and isinstance(data["bags"], list):
+            self.bags = data["bags"]
+        elif not self.bags:
+            # 기존 데이터: bag_large 기본값 (가장 큰 가방)
+            self.bags = ["bag_large"]
+
         if "equipment" in data and isinstance(data["equipment"], dict):
             for slot, val in data["equipment"].items():
                 if slot in self.equipment:
@@ -318,6 +327,12 @@ class Player:
             sq_mgr = getattr(self, "_story_quest_manager", None)
             if sq_mgr is not None:
                 sq_mgr.from_dict(data["story_quest"])
+
+        # 인카운터 관련 데이터 복원
+        if "last_special_encounter" in data:
+            self.last_special_encounter = data["last_special_encounter"]
+        if "rafael_contract" in data:
+            self.rafael_contract = data["rafael_contract"]
 
     def get_attack(self) -> int:
         base = 5 + self.base_stats.get("str", 10) // 2

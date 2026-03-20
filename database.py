@@ -502,7 +502,7 @@ def _migrate_players_table(cursor):
             )
         if "skill_ranks" not in columns:
             cursor.execute(
-                "ALTER TABLE players ADD COLUMN skill_ranks TEXT DEFAULT '{\"smash\":\"연습\",\"defense\":\"연습\",\"counter\":\"연습\"}'"
+                "ALTER TABLE players ADD COLUMN skill_ranks TEXT DEFAULT '" + json.dumps({"smash": "연습", "defense": "연습", "counter": "연습"}, ensure_ascii=False) + "'"
             )
         if "skill_exp" not in columns:
             cursor.execute(

@@ -5,6 +5,7 @@ from ui_theme import C, bar_plain, ansi, EMBED_COLOR
 
 
 def _bar_text(current, max_val, width=10):
+    current = max(0, current)
     if max_val <= 0:
         filled = 0
     else:

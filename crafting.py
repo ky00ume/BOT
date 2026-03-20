@@ -240,8 +240,7 @@ class CraftingEngine:
             embed.set_footer(text=f"제작: /제작 [결과물ID] 또는 /제작 [결과물이름]")
             embeds.append(embed)
         if not embeds:
-            import discord as d
-            empty = d.Embed(title="🔨 제작 도감", description="레시피 없음", color=0x8B6B3D)
+            empty = discord.Embed(title="🔨 제작 도감", description="레시피 없음", color=0x8B6B3D)
             embeds.append(empty)
         return embeds
 

@@ -104,6 +104,11 @@ from training import TrainingSystem
 movement_system  = MovementSystem(shared_player)
 training_system  = TrainingSystem(shared_player)
 
+# 전투 스킬 역방향 맵핑 (이름 → ID)
+from skills_db import COMBAT_SKILLS as _CS, MAGIC_SKILLS as _MS, RECOVERY_SKILLS as _RS
+_ALL_BATTLE_SKILLS     = {**_CS, **_MS, **_RS}
+_SKILL_NAME_TO_ID: dict = {v["name"]: k for k, v in _ALL_BATTLE_SKILLS.items()}
+
 
 # ─── 이벤트 ──────────────────────────────────────────────────────────────
 @bot.event
@@ -623,15 +628,10 @@ async def attack_cmd(ctx, *, skill_input: str = "smash"):
         await ctx.send(ansi(f"  {C.RED}✖ 현재 전투 중이 아님미댜! /사냥 으로 전투 시작.{C.R}"))
         return
 
-    # 스킬 이름 → ID 변환
-    from skills_db import COMBAT_SKILLS, MAGIC_SKILLS, RECOVERY_SKILLS
-    all_battle_skills = {**COMBAT_SKILLS, **MAGIC_SKILLS, **RECOVERY_SKILLS}
+    # 스킬 이름 → ID 변환 (모듈 레벨 캐시 사용)
     skill_id = skill_input.strip()
-    if skill_id not in all_battle_skills:
-        for sid, sdata in all_battle_skills.items():
-            if sdata.get("name") == skill_id:
-                skill_id = sid
-                break
+    if skill_id not in _ALL_BATTLE_SKILLS:
+        skill_id = _SKILL_NAME_TO_ID.get(skill_id, skill_id)
 
     was_in_battle = battle_engine.in_battle
     result = battle_engine.process_turn(skill_id)

@@ -770,4 +770,44 @@ ALL_ITEMS = {
     **MATERIALS,
     **GROCERIES,
 }
-___BEGIN___COMMAND_DONE_MARKER___0
+
+# ── 스토리 퀘스트 아이템 ────────────────────────────────────────────────────
+STORY_QUEST_ITEMS = {
+    "sq_moonlantern_fragment": {
+        "name":  "문랜턴 파편",
+        "type":  "quest",
+        "grade": "Epic",
+        "price": 0,
+        "desc":  "그림자 저주를 막기 위해 제작된 문랜턴의 파편. 차갑고 텅 비어 있다.",
+    },
+    "sq_pixie_wing_dust": {
+        "name":  "픽시의 날개 가루",
+        "type":  "quest",
+        "grade": "Rare",
+        "price": 0,
+        "desc":  "방울숲 그림자 몬스터에게서 얻은 픽시의 날개 가루.",
+    },
+    "sq_repaired_moonlantern": {
+        "name":  "수리된 문랜턴 외형",
+        "type":  "quest",
+        "grade": "Epic",
+        "price": 0,
+        "desc":  "다몬과 오멜룸의 도움으로 수리된 문랜턴의 외형. 동력원만 있으면 완성된다.",
+    },
+    "sq_mole_map_piece": {
+        "name":  "몰의 지도 조각",
+        "type":  "quest",
+        "grade": "Normal",
+        "price": 0,
+        "desc":  "몰에게 받은 늪지대 지도 조각. 깊은 구역까지의 경로가 표시되어 있다.",
+    },
+    "sq_pixie_dust_handful": {
+        "name":  "한 줌의 픽시 가루",
+        "type":  "quest",
+        "grade": "Rare",
+        "price": 0,
+        "desc":  "픽시가 남긴 빛나는 가루. 비릿하고 따뜻한 냄새가 난다.",
+    },
+}
+
+ALL_ITEMS.update(STORY_QUEST_ITEMS)

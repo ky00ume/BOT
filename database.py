@@ -424,11 +424,15 @@ def save_player_to_db(player):
     if aff_mgr:
         aff_full = aff_mgr.to_dict()
 
+    # story_quest 직렬화
+    story_quest_json = json.dumps(data.get("story_quest", {}), ensure_ascii=False)
+
     cursor.execute("""
         INSERT OR REPLACE INTO players
         (user_id, name, level, hp, max_hp, mp, max_mp, energy, max_energy,
-         gold, base_stats, inventory, equipment, keywords, affinity_data, daily_limits)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         gold, base_stats, inventory, equipment, keywords, affinity_data, daily_limits,
+         story_quest)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         data.get("user_id", 0),
         data.get("name", "모험가"),
@@ -446,6 +450,7 @@ def save_player_to_db(player):
         json.dumps(data.get("keywords", ["마을", "날씨", "소문"]), ensure_ascii=False),
         json.dumps(aff_full, ensure_ascii=False),
         json.dumps(aff_full.get("daily_limits", {}), ensure_ascii=False),
+        story_quest_json,
     ))
     conn.commit()
     conn.close()
@@ -467,6 +472,10 @@ def _migrate_players_table(cursor):
         if "daily_limits" not in columns:
             cursor.execute(
                 "ALTER TABLE players ADD COLUMN daily_limits TEXT DEFAULT '{}'"
+            )
+        if "story_quest" not in columns:
+            cursor.execute(
+                "ALTER TABLE players ADD COLUMN story_quest TEXT DEFAULT '{}'"
             )
     except Exception:
         pass
@@ -516,6 +525,11 @@ def load_player_from_db(user_id):
         result["affinity_full"] = _safe_json(row["affinity_data"], {})
     except (IndexError, KeyError):
         result["affinity_full"] = {}
+
+    try:
+        result["story_quest"] = _safe_json(row["story_quest"], {})
+    except (IndexError, KeyError):
+        result["story_quest"] = {}
 
     return result
 

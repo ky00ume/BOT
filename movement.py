@@ -11,7 +11,7 @@ MAP_NODES = {
         "desc":              "모험가들이 모이는 평화로운 마을.",
         "level":             1,
         "hunting_available": False,
-        "adjacent":          ["방울숲"],
+        "adjacent":          ["방울숲", "늪지대"],
     },
     "방울숲": {
         "name":              "방울숲",
@@ -60,6 +60,15 @@ MAP_NODES = {
         "level":             35,
         "hunting_available": True,
         "adjacent":          ["용암 동굴"],
+    },
+    "늪지대": {
+        "name":              "늪지대",
+        "icon":              "🌫️",
+        "desc":              "안개와 진흙으로 뒤덮인 음습한 늪지대. 불쾌할 정도로 밝은 빛이 가끔 깜빡인다.",
+        "level":             1,
+        "hunting_available": False,  # 스토리 전용
+        "adjacent":          ["마을"],  # 성문 이벤트 후 접근
+        "story_locked":      True,   # 챕터 3 Q1 완료 전 잠김
     },
 }
 
@@ -130,6 +139,18 @@ class MovementSystem:
                 f"  {C.RED}✖ {dest_node['icon']} {dest_node['name']}은(는)"
                 f" Lv.{dest_node['level']} 이상 필요합미댜! (현재: Lv.{self.player.level}){C.R}"
             )
+
+        # 스토리 잠금 구역 체크
+        if dest_node.get("story_locked"):
+            sq_mgr = getattr(self.player, "_story_quest_manager", None)
+            unlocked = False
+            if sq_mgr is not None:
+                unlocked = sq_mgr.flags.get("늪지대_해금", False)
+            if not unlocked:
+                return ansi(
+                    f"  {C.RED}🔒 {dest_node['icon']} {dest_node['name']}은(는) 스토리 진행 후 입장 가능합미댜!{C.R}\n"
+                    f"  {C.DARK}(챕터 3 Q1 완료 후 접근 가능){C.R}"
+                )
 
         now  = time.time()
         last = self._cooldowns.get(user_id, 0)

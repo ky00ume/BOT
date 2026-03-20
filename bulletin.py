@@ -12,7 +12,7 @@ WEEKLY_FISHING_PATH = os.path.join(_DIR, "weekly_fishing.json")
 
 class BulletinBoard:
     def __init__(self):
-        self.entries = []   # list of dicts
+        self.entries = []
         self.load()
 
     def add_entry(self, category: str, player_name: str, content: str, value=None):
@@ -59,7 +59,6 @@ class BulletinBoard:
             description="최고 기록들이 여기에 새겨집니다!",
             color=0xffd700,
         )
-        # 카테고리별 최고 기록
         records = {}
         for e in self.entries:
             cat = e.get("category", "기타")
@@ -99,7 +98,7 @@ class BulletinBoard:
 
 class WeeklyFishing:
     def __init__(self):
-        self.records    = []   # list of {"player_name", "fish_name", "size_cm", "timestamp"}
+        self.records    = []
         self.week_start = None
         self.load()
         self.reset_if_new_week()

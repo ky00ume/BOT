@@ -68,7 +68,7 @@ class GachaEngine:
     def do_gacha(self, count: int = 1) -> list:
         cost = GACHA_COST * count
         if self.player.gold < cost:
-            return []   # 골드 부족
+            return []
 
         self.player.gold -= cost
         results = []
@@ -87,7 +87,6 @@ class GachaEngine:
         results   = []
         has_rare  = False
         for i in range(10):
-            # 마지막 뽑기에 희귀 미보장 시 보장
             guarantee = (i == 9 and not has_rare)
             grade     = self._pick_grade(guarantee_rare=guarantee)
             if grade != "Normal":
@@ -106,7 +105,6 @@ class GachaEngine:
             )
             return embed
 
-        # 가장 높은 등급의 색상 사용
         grade_order = ["Legendary", "Epic", "Rare", "Normal"]
         top_grade   = "Normal"
         for g in grade_order:

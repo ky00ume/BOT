@@ -5,8 +5,6 @@ from items import ALL_ITEMS
 
 
 class SellView(discord.ui.View):
-    """인터랙티브 판매 UI."""
-
     def __init__(self, player, shop_manager):
         super().__init__(timeout=60)
         self.player       = player
@@ -15,7 +13,6 @@ class SellView(discord.ui.View):
         self.sell_count   = 1
         self._message     = None
 
-        # 드롭다운: 인벤토리 아이템 (최대 25개)
         options = []
         for item_id, count in list(player.inventory.items())[:25]:
             item  = ALL_ITEMS.get(item_id, {})
@@ -39,13 +36,11 @@ class SellView(discord.ui.View):
             select.callback = self._on_select
             self.add_item(select)
 
-        # 수량 버튼
         for label, count in [("1개", 1), ("5개", 5), ("10개", 10), ("전부", -1)]:
             btn = discord.ui.Button(label=label, style=discord.ButtonStyle.secondary, custom_id=f"cnt_{count}")
             btn.callback = self._make_count_cb(count)
             self.add_item(btn)
 
-        # 판매 확정 / 취소
         confirm = discord.ui.Button(label="판매 확정", style=discord.ButtonStyle.danger, custom_id="sell_confirm")
         confirm.callback = self._on_confirm
         self.add_item(confirm)
@@ -57,7 +52,6 @@ class SellView(discord.ui.View):
     def _make_count_cb(self, count: int):
         async def cb(interaction: discord.Interaction):
             if count == -1:
-                # 전부
                 if self.selected_id:
                     self.sell_count = self.player.inventory.get(self.selected_id, 1)
                 else:
@@ -109,8 +103,6 @@ class SellView(discord.ui.View):
 
 
 class BuyView(discord.ui.View):
-    """인터랙티브 구매 UI."""
-
     def __init__(self, player, shop_manager, npc_name: str, catalog: dict):
         super().__init__(timeout=60)
         self.player       = player
@@ -121,7 +113,6 @@ class BuyView(discord.ui.View):
         self.buy_count    = 1
         self._message     = None
 
-        # 드롭다운: NPC 카탈로그 아이템 (최대 25개)
         options = []
         for item_id, item in list(catalog.items())[:25]:
             name  = item.get("name", item_id)
@@ -143,13 +134,11 @@ class BuyView(discord.ui.View):
             select.callback = self._on_select
             self.add_item(select)
 
-        # 수량 버튼
         for label, count in [("1개", 1), ("5개", 5), ("10개", 10)]:
             btn = discord.ui.Button(label=label, style=discord.ButtonStyle.secondary, custom_id=f"bcnt_{count}")
             btn.callback = self._make_count_cb(count)
             self.add_item(btn)
 
-        # 구매 확정 / 취소
         confirm = discord.ui.Button(label="구매 확정", style=discord.ButtonStyle.success, custom_id="buy_confirm")
         confirm.callback = self._on_confirm
         self.add_item(confirm)

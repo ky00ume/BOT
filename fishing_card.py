@@ -8,7 +8,6 @@ try:
 except ImportError:
     PIL_AVAILABLE = False
 
-# 등급별 타이틀 텍스트
 GRADE_TITLE_TEXT = {
     "Normal":    "🕷️ {name}을(를) 낚았슴미댜!",
     "Rare":      "🕷️✨ 오! {name} 발견임미댜!!",
@@ -17,7 +16,6 @@ GRADE_TITLE_TEXT = {
     "Fail":      "🕷️💦 이건... 쓰레기...",
 }
 
-# 등급별 그라데이션 (상단 RGB, 하단 RGB)
 GRADE_GRADIENTS = {
     "Normal":    ((22, 22, 58),   (10, 10, 38)),
     "Rare":      ((8,  55, 75),   (4,  38, 55)),
@@ -26,7 +24,6 @@ GRADE_GRADIENTS = {
     "Fail":      ((68, 18, 18),   (42, 8,  8)),
 }
 
-# 등급별 강조색 (테두리·라인·배지)
 GRADE_ACCENT_COLORS = {
     "Normal":    (100, 130, 255),
     "Rare":      (0,   200, 160),
@@ -35,7 +32,6 @@ GRADE_ACCENT_COLORS = {
     "Fail":      (220,  80,  80),
 }
 
-# 등급별 값 텍스트 색상
 GRADE_VALUE_COLORS = {
     "Normal":    (180, 200, 255),
     "Rare":      (100, 240, 190),
@@ -44,7 +40,6 @@ GRADE_VALUE_COLORS = {
     "Fail":      (255, 150, 150),
 }
 
-# 등급 표시 라벨
 GRADE_LABELS = {
     "Normal":    "★ NORMAL",
     "Rare":      "★★ RARE",
@@ -54,7 +49,6 @@ GRADE_LABELS = {
 }
 
 _FONT_CACHE: dict = {}
-
 _CORNER_RADIUS = 18
 
 
@@ -63,7 +57,6 @@ def _get_font(size: int):
         return None
     if size in _FONT_CACHE:
         return _FONT_CACHE[size]
-
     candidates = [
         "NanumGothic", "NanumGothic.ttf",
         "/usr/share/fonts/truetype/nanum/NanumGothic.ttf",
@@ -79,14 +72,12 @@ def _get_font(size: int):
             return font
         except (IOError, OSError):
             pass
-
     font = ImageFont.load_default()
     _FONT_CACHE[size] = font
     return font
 
 
-def _draw_gradient(img: "Image.Image", top_color: tuple, bottom_color: tuple) -> None:
-    """이미지에 상단→하단 RGB 그라데이션을 칠합니다."""
+def _draw_gradient(img, top_color: tuple, bottom_color: tuple) -> None:
     w, h = img.size
     draw = ImageDraw.Draw(img)
     tr, tg, tb = top_color[:3]
@@ -99,7 +90,7 @@ def _draw_gradient(img: "Image.Image", top_color: tuple, bottom_color: tuple) ->
         draw.line([(0, y), (w - 1, y)], fill=(r, g, b))
 
 
-def _text_width(draw: "ImageDraw.ImageDraw", text: str, font) -> int:
+def _text_width(draw, text: str, font) -> int:
     try:
         bb = draw.textbbox((0, 0), text, font=font)
         return bb[2] - bb[0]
@@ -116,35 +107,28 @@ def generate_card(
     height: int = 320,
     subtitle: str = None,
 ) -> io.BytesIO:
-    """
-    통일 카드 이미지를 생성하고 BytesIO로 반환합니다.
-    rows: [{"label": str, "value": str}, ...]
-    subtitle: 헤더 아래에 추가 표시될 작은 텍스트 (선택)
-    """
     if not PIL_AVAILABLE:
         raise RuntimeError("Pillow가 설치되지 않았슴미댜.")
 
-    top_col  = GRADE_GRADIENTS.get(grade, GRADE_GRADIENTS["Normal"])[0]
-    bot_col  = GRADE_GRADIENTS.get(grade, GRADE_GRADIENTS["Normal"])[1]
-    accent   = GRADE_ACCENT_COLORS.get(grade,  (100, 130, 255))
-    val_col  = GRADE_VALUE_COLORS.get(grade,   (180, 200, 255))
-    lbl_col  = (175, 180, 200)
-    txt_col  = (230, 232, 245)
+    top_col   = GRADE_GRADIENTS.get(grade, GRADE_GRADIENTS["Normal"])[0]
+    bot_col   = GRADE_GRADIENTS.get(grade, GRADE_GRADIENTS["Normal"])[1]
+    accent    = GRADE_ACCENT_COLORS.get(grade,  (100, 130, 255))
+    val_col   = GRADE_VALUE_COLORS.get(grade,   (180, 200, 255))
+    lbl_col   = (175, 180, 200)
+    txt_col   = (230, 232, 245)
     grade_lbl = GRADE_LABELS.get(grade, grade)
 
-    # ── 1. 배경: bg PNG 있으면 사용, 없으면 그라데이션 ─────────────────
     bg_path = os.path.join(os.path.dirname(__file__), "static", "cards", f"bg_{grade}.png")
     if os.path.isfile(bg_path):
         try:
             bg = Image.open(bg_path).convert("RGB").resize((width, height))
-        except (IOError, OSError, Exception):
+        except Exception:
             bg = Image.new("RGB", (width, height))
             _draw_gradient(bg, top_col, bot_col)
     else:
         bg = Image.new("RGB", (width, height))
         _draw_gradient(bg, top_col, bot_col)
 
-    # ── 2. 둥근 모서리 마스크 ────────────────────────────────────────
     mask = Image.new("L", (width, height), 0)
     ImageDraw.Draw(mask).rounded_rectangle(
         [0, 0, width - 1, height - 1], radius=_CORNER_RADIUS, fill=255
@@ -154,8 +138,6 @@ def generate_card(
     img = base
 
     draw = ImageDraw.Draw(img)
-
-    # ── 3. 테두리 ────────────────────────────────────────────────────
     draw.rounded_rectangle(
         [1, 1, width - 2, height - 2],
         radius=_CORNER_RADIUS - 1,
@@ -163,7 +145,6 @@ def generate_card(
         width=2,
     )
 
-    # ── 4. 폰트 ──────────────────────────────────────────────────────
     font_title    = _get_font(24)
     font_subtitle = _get_font(13)
     font_label    = _get_font(15)
@@ -171,7 +152,6 @@ def generate_card(
     font_grade    = _get_font(18)
     font_footer   = _get_font(12)
 
-    # ── 5. 헤더: 제목 + 등급 배지 ──────────────────────────────────
     HEADER_H = 62 if not subtitle else 80
     title_text = f"{icon}  {title}"
     draw.text((20, 16), title_text, font=font_title, fill=txt_col)
@@ -182,13 +162,11 @@ def generate_card(
     gw = _text_width(draw, grade_lbl, font_grade)
     draw.text((width - gw - 16, 20), grade_lbl, font=font_grade, fill=accent)
 
-    # ── 6. 장식 라인 ─────────────────────────────────────────────────
     line_y = HEADER_H
     draw.line([(16, line_y), (width - 16, line_y)], fill=accent, width=2)
     draw.ellipse([12, line_y - 3, 20, line_y + 3], fill=accent)
     draw.ellipse([width - 20, line_y - 3, width - 12, line_y + 3], fill=accent)
 
-    # ── 7. 반투명 정보 박스 ──────────────────────────────────────────
     BOTTOM_H = 52
     bx0, by0 = 16, HEADER_H + 8
     bx1, by1 = width - 16, height - BOTTOM_H - 4
@@ -200,12 +178,11 @@ def generate_card(
     img = Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
     draw = ImageDraw.Draw(img)
 
-    # ── 8. 행 데이터 ─────────────────────────────────────────────────
-    row_h   = max(28, (by1 - by0 - 12) // max(len(rows), 1))
-    row_h   = min(row_h, 34)
-    pad_l   = bx0 + 14
-    mid_x   = bx0 + (bx1 - bx0) // 2 + 10
-    y       = by0 + 10
+    row_h = max(28, (by1 - by0 - 12) // max(len(rows), 1))
+    row_h = min(row_h, 34)
+    pad_l = bx0 + 14
+    mid_x = bx0 + (bx1 - bx0) // 2 + 10
+    y     = by0 + 10
 
     for idx, row in enumerate(rows):
         label = row.get("label", "")
@@ -217,17 +194,16 @@ def generate_card(
         draw.text((mid_x,  y), str(value), font=font_value, fill=val_col)
         y += row_h
 
-    # ── 9. 하단 등급 배지 ────────────────────────────────────────────
     sep_y2 = height - BOTTOM_H
     draw.line([(16, sep_y2), (width - 16, sep_y2)], fill=accent, width=1)
 
-    badge_pad  = 12
-    badge_w    = _text_width(draw, grade_lbl, font_grade) + badge_pad * 2
-    badge_h    = BOTTOM_H - 14
-    badge_x0   = width // 2 - badge_w // 2
-    badge_y0   = sep_y2 + 6
-    badge_x1   = badge_x0 + badge_w
-    badge_y1   = badge_y0 + badge_h
+    badge_pad = 12
+    badge_w   = _text_width(draw, grade_lbl, font_grade) + badge_pad * 2
+    badge_h   = BOTTOM_H - 14
+    badge_x0  = width // 2 - badge_w // 2
+    badge_y0  = sep_y2 + 6
+    badge_x1  = badge_x0 + badge_w
+    badge_y1  = badge_y0 + badge_h
 
     ov2 = Image.new("RGBA", (width, height), (0, 0, 0, 0))
     r, g, b = accent
@@ -241,7 +217,6 @@ def generate_card(
     btext_y = badge_y0 + (badge_h - 18) // 2
     draw.text((btext_x, btext_y), grade_lbl, font=font_grade, fill=txt_col)
 
-    # ── 10. 거미줄 푸터 텍스트 ──────────────────────────────────────
     footer_text = "🕸️ 츄라이더의 기록 🕸️"
     fw = _text_width(draw, footer_text, font_footer)
     fx = (width - fw) // 2
@@ -286,23 +261,19 @@ def generate_card_v2(
     subtitle: str = None,
     spider_art_key: str = None,
 ) -> io.BytesIO:
-    """
-    generate_card의 확장판. spider_art_key를 지정하면 카드 오른쪽 하단 모서리에 거미 이모지 아트를 작게 렌더링합니다.
-    """
     buf = generate_card(title, icon, rows, grade=grade, width=width, height=height, subtitle=subtitle)
     if spider_art_key is None or not PIL_AVAILABLE:
         return buf
 
     from ui_theme import spider_scene
-    art_text = spider_scene(spider_art_key)
-    # art_text에서 ```코드블록 마커 제거 후 순수 텍스트만 추출
+    art_text  = spider_scene(spider_art_key)
     art_lines = [l for l in art_text.replace("```", "").strip().splitlines()]
 
     buf.seek(0)
-    img = Image.open(buf).convert("RGB")
+    img  = Image.open(buf).convert("RGB")
     draw = ImageDraw.Draw(img)
-    font_art = _get_font(10)
-    accent = GRADE_ACCENT_COLORS.get(grade, (100, 130, 255))
+    font_art  = _get_font(10)
+    accent    = GRADE_ACCENT_COLORS.get(grade, (100, 130, 255))
     art_color = tuple(min(255, c + 60) for c in accent)
 
     x_start = width - 130

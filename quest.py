@@ -63,7 +63,7 @@ QUEST_DB = {
 class QuestManager:
     def __init__(self, player):
         self.player           = player
-        self.active_quests    = {}   # quest_id: {"progress": int, "accepted_at": float}
+        self.active_quests    = {}
         self.completed_quests = set()
 
     def list_quests(self) -> str:
@@ -142,7 +142,6 @@ class QuestManager:
         q    = QUEST_DB[quest_id]
         prog = self.active_quests[quest_id]["progress"]
 
-        # 수집 퀘스트: 아이템 보유 확인
         if q["type"] == "collect":
             target_item  = q.get("target_item")
             target_count = q.get("target_count", 1)
@@ -162,7 +161,6 @@ class QuestManager:
                     f"  {C.RED}✖ 아직 목표 달성 못 함미댜! ({prog}/{target_count}){C.R}"
                 )
 
-        # 보상
         gold = q.get("reward_gold", 0)
         self.player.gold += gold
 
@@ -191,14 +189,12 @@ class QuestManager:
         return ansi("\n".join(lines))
 
     def update_kill_count(self, count: int = 1):
-        """진행 중인 kill 퀘스트 진행도를 갱신합니다."""
         for qid, info in list(self.active_quests.items()):
             q = QUEST_DB.get(qid)
             if q and q.get("type") == "kill":
                 info["progress"] = min(info["progress"] + count, q.get("target_count", 1))
 
     def update_collect_count(self, item_id: str, count: int = 1):
-        """진행 중인 collect 퀘스트 진행도를 갱신합니다."""
         for qid, info in list(self.active_quests.items()):
             q = QUEST_DB.get(qid)
             if q and q.get("type") == "collect" and q.get("target_item") == item_id:

@@ -25,11 +25,9 @@ VALID_NOTES_SET = set(NOTES)
 
 def parse_melody(melody_str: str) -> list | None:
     """한글 음계 문자열을 파싱합니다. 유효하지 않으면 None 반환."""
-    # 공백으로 구분된 경우
     if " " in melody_str:
         tokens = melody_str.split()
     else:
-        # 글자 단위로 분리 (도/레/미/파/솔/라/시 각 1글자)
         tokens = list(melody_str)
     if not tokens or len(tokens) > MAX_MELODY_LEN:
         return None
@@ -50,8 +48,6 @@ class NoteButton(discord.ui.Button):
 
 
 class MusicView(discord.ui.View):
-    """음표 버튼 UI — 타겟 시퀀스에 맞춰 버튼 클릭."""
-
     def __init__(self, target_sequence: list, song: dict, player):
         super().__init__(timeout=60)
         self.target   = target_sequence
@@ -67,10 +63,7 @@ class MusicView(discord.ui.View):
         self.entered.append(note)
         idx = len(self.entered) - 1
 
-        correct = (idx < len(self.target) and note == self.target[idx])
-
         if len(self.entered) >= len(self.target):
-            # 채점
             matches   = sum(1 for a, b in zip(self.entered, self.target) if a == b)
             pct       = int(matches / len(self.target) * 100)
             gold_earn = int(self.song["reward_gold"] * pct / 100)
@@ -139,7 +132,6 @@ class MusicEngine:
         self.player = player
 
     async def compose(self, ctx):
-        """곡 선택 임베드를 표시합니다."""
         embed = discord.Embed(
             title="🎵 작곡 & 연주",
             description="연주할 곡을 선택하세요!\n`/연주 [곡ID]` 로 연주 시작\n`/작곡 [곡이름] [멜로디]` 로 악보 저장",
@@ -159,7 +151,6 @@ class MusicEngine:
         await ctx.send(embed=embed)
 
     async def save_composition(self, ctx, title: str, melody_str: str):
-        """악보를 저장합니다."""
         notes = parse_melody(melody_str)
         if notes is None:
             valid = "/".join(NOTES)
@@ -177,7 +168,6 @@ class MusicEngine:
         ))
 
     async def show_sheet_list(self, ctx):
-        """저장된 악보 목록을 표시합니다."""
         from database import load_sheet_music_list
         sheets = load_sheet_music_list(0)
         if not sheets:
@@ -192,7 +182,6 @@ class MusicEngine:
         await ctx.send(ansi("\n".join(lines)))
 
     async def delete_sheet(self, ctx, title: str):
-        """악보를 삭제합니다."""
         from database import delete_sheet_music
         ok = delete_sheet_music(0, title)
         if ok:
@@ -201,13 +190,10 @@ class MusicEngine:
             await ctx.send(ansi(f"  {C.RED}✖ 악보 [{title}]을(를) 찾을 수 없슴미댜!{C.R}"))
 
     async def perform(self, ctx, song_id: str):
-        """지정한 곡을 연주합니다. 프리셋 곡 또는 유저 작곡 곡 지원."""
-        # 1. 프리셋 곡 확인
         song = _SONG_BY_ID.get(song_id)
         user_melody = None
 
         if not song:
-            # 2. 유저 작곡 악보 확인 (ID 숫자 또는 제목)
             from database import load_sheet_music
             sheet = load_sheet_music(0, song_id)
             if not sheet:
@@ -219,7 +205,6 @@ class MusicEngine:
                 ))
                 return
             user_melody = sheet["melody"].split()
-            # 유저 악보는 가상 song dict 사용
             song = {
                 "id": song_id,
                 "name": sheet["title"],

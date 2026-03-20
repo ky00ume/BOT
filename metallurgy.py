@@ -128,7 +128,6 @@ class MetallurgyEngine:
                 f"  {C.RED}✖ 제련술 랭크 부족! (필요: {rank_req}, 현재: {rank}){C.R}"
             )
 
-        # 재료 확인
         for ing_id, cnt in recipe["input"].items():
             if self.player.inventory.get(ing_id, 0) < cnt:
                 from items import ALL_ITEMS
@@ -137,11 +136,9 @@ class MetallurgyEngine:
                     f"  {C.RED}✖ 재료 부족! [{ing_name}] x{cnt} 필요{C.R}"
                 )
 
-        # 재료 소비
         for ing_id, cnt in recipe["input"].items():
             self.player.remove_item(ing_id, cnt)
 
-        # 성공률 (will 기반)
         will = self.player.base_stats.get("will", 10)
         success_rate = min(0.95, 0.60 + will * 0.01)
         success = random.random() < success_rate

@@ -5,11 +5,9 @@ import random
 from datetime import datetime
 
 DIARY_FILE = os.path.join(os.path.dirname(__file__), "diaries.json")
-MAX_DIARY_ENTRIES = 365  # 최대 보관 일기 수 (약 1년)
+MAX_DIARY_ENTRIES = 365
 
-# ─── 일기 템플릿 (플레이어 행동 기반) ────────────────────────────────────
 _DIARY_TEMPLATES = [
-    # 전투
     (
         "battles_won",
         1,
@@ -18,7 +16,6 @@ _DIARY_TEMPLATES = [
             "막상 싸울 땐 무서웠는데 이기고 나니까 기분이 좋슴미댜~~ 💪"
         ),
     ),
-    # 낚시
     (
         "fish_caught",
         1,
@@ -27,7 +24,6 @@ _DIARY_TEMPLATES = [
             "찌가 움직였을 때 심장이 두근두근했슴미댜 🎣"
         ),
     ),
-    # 골드
     (
         "gold_earned",
         1,
@@ -36,7 +32,6 @@ _DIARY_TEMPLATES = [
             "열심히 하면 언젠간 부자가 될 것 같슴미댜~ 💰"
         ),
     ),
-    # 요리
     (
         "items_cooked",
         1,
@@ -45,7 +40,6 @@ _DIARY_TEMPLATES = [
             "맛있는 걸 만들 때 제일 행복한 것 같슴미댜 🍳"
         ),
     ),
-    # 쓰다듬
     (
         "pet_count",
         1,
@@ -54,7 +48,6 @@ _DIARY_TEMPLATES = [
             "기분이 너무너무 좋슴미댜~ 히히 🕷️💕"
         ),
     ),
-    # 스킬 랭크업
     (
         "skill_rankups",
         1,
@@ -65,7 +58,6 @@ _DIARY_TEMPLATES = [
     ),
 ]
 
-# ─── 기본 일기 (특별한 일이 없을 때) ─────────────────────────────────────
 _DEFAULT_DIARY_ENTRIES = [
     "오늘은 특별한 일이 없었슴미댜. 그냥 마을을 산책하고, 거미줄을 다듬고, 맛있는 걸 먹었슴미댜. 평화로운 하루였슴미댜~ 🕸️",
     "오늘은 구름을 구경하며 쉬었슴미댜. 구름이 거미처럼 생긴 것도 있었슴미댜! 거짓말이 아님미댜~ 🌤️",
@@ -134,19 +126,16 @@ class DiaryManager:
 
         entries = self._load_diaries()
         entries.append({"date": date_str, "content": content})
-        # 최대 MAX_DIARY_ENTRIES개 보관
         if len(entries) > MAX_DIARY_ENTRIES:
             entries = entries[-MAX_DIARY_ENTRIES:]
         self._save_diaries(entries)
 
-        # 채널에 전송
         await channel.send(
             f"{_DIARY_ART}\n"
             f"**{content}**\n\n"
             f"🕷️ 츄라이더의 오늘 일기가 완성됐슴미댜! 📖✨"
         )
 
-        # 하루치 통계 초기화
         self._daily_stats = {}
 
     def get_diary_list(self, page: int = 0, per_page: int = 5) -> str:
@@ -156,7 +145,6 @@ class DiaryManager:
         if not entries:
             return ansi(f"  {C.DARK}아직 일기가 없슴미댜...{C.R}")
 
-        # 최신순 정렬
         entries = list(reversed(entries))
         start = page * per_page
         page_entries = entries[start:start + per_page]
@@ -164,7 +152,6 @@ class DiaryManager:
         lines = [header_box("📖 츄라이더 일기")]
         for e in page_entries:
             lines.append(f"  {C.GOLD}[{e['date']}]{C.R}")
-            # 내용이 길면 첫 줄만 표시
             preview = e.get("content", "").splitlines()[0] if e.get("content") else ""
             if len(preview) > 40:
                 preview = preview[:40] + "..."
@@ -190,5 +177,4 @@ class DiaryManager:
         return ansi(f"  {C.RED}✖ [{date_str}] 날짜의 일기를 찾을 수 없슴미댜!{C.R}")
 
 
-# 싱글턴 인스턴스
 diary_manager = DiaryManager()

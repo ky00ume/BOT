@@ -148,6 +148,14 @@ GATHERING_ITEMS = {
     # ── 채집 요리 재료 (신규) ────────────────────────────────────────────────
     "wild_garlic":     {"name": "산마늘",         "type": "gathering", "grade": "Normal",    "price": 15,   "desc": "향이 강한 산마늘."},
     "pine_nut":        {"name": "잣",             "type": "gathering", "grade": "Rare",      "price": 60,   "desc": "고소한 잣."},
+    # 보석 (채광)
+    "gem_ruby":       {"name": "루비",        "type": "gem", "grade": "Rare",      "price": 800,   "desc": "빨간 보석. 제련·장신구 재료."},
+    "gem_sapphire":   {"name": "사파이어",    "type": "gem", "grade": "Rare",      "price": 850,   "desc": "파란 보석. 마법 계열 재료."},
+    "gem_emerald":    {"name": "에메랄드",    "type": "gem", "grade": "Rare",      "price": 900,   "desc": "초록 보석. 회복 계열 재료."},
+    "gem_topaz":      {"name": "토파즈",      "type": "gem", "grade": "Rare",      "price": 750,   "desc": "노란 보석. 빛의 속성 재료."},
+    "gem_amethyst":   {"name": "자수정",      "type": "gem", "grade": "Rare",      "price": 750,   "desc": "보라색 보석. 마법 방어 재료."},
+    "gem_aquamarine": {"name": "아쿠아마린",  "type": "gem", "grade": "Epic",      "price": 1800,  "desc": "청록색 보석. 물의 속성 재료."},
+    "gem_diamond":    {"name": "다이아몬드",  "type": "gem", "grade": "Legendary", "price": 8000,  "desc": "완벽한 투명 보석. 최고급 재료."},
 }
 
 LOOT_ITEMS = {
@@ -758,3 +766,4 @@ ALL_ITEMS = {
     **MATERIALS,
     **GROCERIES,
 }
+___BEGIN___COMMAND_DONE_MARKER___0

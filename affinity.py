@@ -80,10 +80,9 @@ def _calc_level(points: int) -> dict:
 class AffinityManager:
     def __init__(self, player):
         self.player      = player
-        self.affinities  = {}   # npc_name: int (포인트)
+        self.affinities  = {}
 
     def add_affinity(self, npc_name: str, amount: int) -> tuple:
-        """호감도 추가. (new_points, leveled_up, new_level_name) 반환."""
         old_points   = self.affinities.get(npc_name, 0)
         old_lv       = _calc_level(old_points)
         new_points   = old_points + amount
@@ -114,7 +113,6 @@ class AffinityManager:
                 pts  = self.affinities.get(name, 0)
                 lv   = _calc_level(pts)
                 disc = lv["discount"]
-                # 다음 레벨까지 필요한 포인트
                 next_lv = None
                 for al in AFFINITY_LEVELS:
                     if al["threshold"] > pts:
@@ -143,7 +141,6 @@ class AffinityManager:
         return self
 
     def give_gift(self, npc_name: str, item_id: str) -> tuple:
-        """선물 처리. (amount, reaction_msg, leveled_up, lv_name) 반환."""
         prefs = NPC_GIFT_PREFS.get(npc_name, {"default": 3})
         if item_id in prefs.get("loves", []):
             amount   = 15

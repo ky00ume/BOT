@@ -385,8 +385,6 @@ def load_player_from_db(user_id):
     }
 
 
-# ─── 악보 DB 헬퍼 ────────────────────────────────────────────────────────────
-
 def save_sheet_music(user_id: int, title: str, melody: str):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -420,7 +418,6 @@ def load_sheet_music(user_id: int, title_or_id: str) -> dict | None:
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        # 숫자 ID인 경우 (양수 정수만)
         if title_or_id.isdigit() and int(title_or_id) > 0:
             cursor.execute(
                 "SELECT id, title, melody FROM sheet_music WHERE user_id = ? AND id = ?",

@@ -2,6 +2,7 @@
 import random
 from ui_theme import C, ansi, header_box, divider, rank_badge, GRADE_ICON_PLAIN
 
+
 POTION_RECIPES = {
     "hp_potion_basic": {
         "name":        "기초 HP 포션",
@@ -128,25 +129,21 @@ class PotionEngine:
         if not _rank_gte(rank, rank_req):
             return ansi(f"  {C.RED}✖ 연금술 랭크 부족! (필요: {rank_req}, 현재: {rank}){C.R}")
 
-        # 도구 확인
         tool_req = recipe.get("tool_req")
         if tool_req and self.player.inventory.get(tool_req, 0) == 0:
             from items import ALL_ITEMS
             tool_name = ALL_ITEMS.get(tool_req, {}).get("name", tool_req)
             return ansi(f"  {C.RED}✖ 도구 부족! [{tool_name}]이(가) 필요함미댜!{C.R}")
 
-        # 재료 확인
         for ing_id, cnt in recipe["ingredients"].items():
             if self.player.inventory.get(ing_id, 0) < cnt:
                 from items import ALL_ITEMS
                 ing_name = ALL_ITEMS.get(ing_id, {}).get("name", ing_id)
                 return ansi(f"  {C.RED}✖ 재료 부족! [{ing_name}] x{cnt} 필요{C.R}")
 
-        # 재료 소비
         for ing_id, cnt in recipe["ingredients"].items():
             self.player.remove_item(ing_id, cnt)
 
-        # DEX 기반 성공률
         dex          = self.player.base_stats.get("dex", 10)
         success_rate = min(0.95, 0.55 + dex * 0.015)
         success      = random.random() < success_rate

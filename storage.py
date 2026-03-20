@@ -73,7 +73,6 @@ class StorageEngine:
         return ansi("\n".join(lines))
 
     def deposit(self, item_id: str, count: int) -> str:
-        """인벤토리 → 보관함."""
         inventory = self.player.inventory
         have = inventory.get(item_id, 0)
         if have < count:
@@ -81,7 +80,6 @@ class StorageEngine:
             name = item.get("name", item_id)
             return ansi(f"  {C.RED}✖ [{name}] 인벤토리에 {count}개가 없슴미댜! (보유: {have}){C.R}")
 
-        # 용량 확인
         already = item_id in self.items
         if not already and len(self.items) >= self.max_capacity:
             return ansi(f"  {C.RED}✖ 보관함이 가득 찼슴미댜! ({len(self.items)}/{self.max_capacity}){C.R}")
@@ -98,7 +96,6 @@ class StorageEngine:
         )
 
     def withdraw(self, item_id: str, count: int) -> str:
-        """보관함 → 인벤토리."""
         have = self.items.get(item_id, 0)
         if have < count:
             item = ALL_ITEMS.get(item_id, {})
@@ -124,7 +121,6 @@ class StorageEngine:
         )
 
     def upgrade(self) -> str:
-        """보관함 용량 업그레이드."""
         cost = UPGRADE_TABLE.get(self.max_capacity)
         if cost is None:
             return ansi(f"  {C.GOLD}✔ 이미 최대 용량({MAX_CAPACITY}칸)임미댜!{C.R}")

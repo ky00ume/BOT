@@ -3,14 +3,12 @@ import random
 from discord.ext import tasks
 from datetime import datetime
 
-# ─── 스케줄 ──────────────────────────────────────────────────────────────
-MORNING_HOUR   = 8   # 출근 응원
-LUNCH_HOUR     = 12  # 점심
-EVENING_HOUR   = 18  # 저녁
-NIGHT_HOUR     = 23  # 취침 + 안녕히 주무세요
-DIARY_HOUR     = 22  # 일기 작성 (별도 처리)
+MORNING_HOUR   = 8
+LUNCH_HOUR     = 12
+EVENING_HOUR   = 18
+NIGHT_HOUR     = 23
+DIARY_HOUR     = 22
 
-# ─── 랜덤 자율 행동 메시지 (60% 확률, 30분~1시간마다) ─────────────────
 _RANDOM_EVENTS = [
     "🕷️ 츄라이더가 마을을 산책하다가 **10골드**를 주웠슴미댜!",
     "🕷️ 츄라이더가 지금 **목공을 연습**하고 있슴미댜...",
@@ -32,7 +30,6 @@ _RANDOM_EVENTS = [
     "🕷️ 츄라이더가 마을 도서관에서 **책을 빌려왔슴미댜**! 어떤 책인지 궁금하슴미댜~",
 ]
 
-# ─── 일일 장면 메시지 (하루 한 번) ────────────────────────────────────
 _DAILY_SCENES = [
     (
         "```\n"
@@ -105,7 +102,6 @@ def setup_alarms(bot, channel_id: int, drider_id: int, hyness_id: int = None, ma
 
         all_mentions = " ".join(m for m in [drider_mention, hyness_mention, majesty_mention] if m)
 
-        # ── 시간별 알람 (정각) ──────────────────────────────────────
         if minute == 0:
             if hour == MORNING_HOUR:
                 await channel.send(
@@ -139,17 +135,16 @@ def setup_alarms(bot, channel_id: int, drider_id: int, hyness_id: int = None, ma
                 )
             elif hour == NIGHT_HOUR:
                 await channel.send(
-                    f"🌙 {all_mentions}\n"
+                    f"🌙 {hyness_mention}\n"
                     "```\n"
                     "   🌙  ⭐  ✨\n"
                     "     💤🕷️💤\n"
-                    "  ═══🕸️═══\n"
+                    "  ～～🕸️～～\n"
                     "   (새근새근...)\n"
                     "```\n"
-                    "오늘도 수고 많으셨슴미댜! 🌙 편안한 밤 되셰요~ 안녕히 주무셰요! 💤"
+                    "하이네스, 영약 복용하셰요! 저희도 가치 잠미댜...zzz 💤"
                 )
             elif hour == DIARY_HOUR:
-                # 일기 시스템 트리거
                 try:
                     from diary import diary_manager
                     await diary_manager.write_and_send(channel)
@@ -158,14 +153,12 @@ def setup_alarms(bot, channel_id: int, drider_id: int, hyness_id: int = None, ma
                     print(f"[일기] 작성 중 오류 발생: {e}")
                     traceback.print_exc()
 
-        # ── 랜덤 자율 행동 (30분 또는 60분 단위, 60% 확률) ────────
         if minute in (0, 30) and minute != _last_random_minute:
             _last_random_minute = minute
             if random.random() < 0.60:
                 msg = random.choice(_RANDOM_EVENTS)
                 await channel.send(msg)
 
-        # ── 하루 한 번 장면 메시지 (오후 3시 정각) ─────────────────
         if hour == 15 and minute == 0 and today != _daily_scene_sent_date:
             _daily_scene_sent_date = today
             scene = random.choice(_DAILY_SCENES)

@@ -98,7 +98,6 @@ class VillageNPC:
         reward_gold = job.get("reward_gold", 100)
         reward_exp  = job.get("reward_exp",  10)
 
-        # 마을 기여도
         try:
             from village import village_manager
             village_manager.add_contribution(5, "job")
@@ -108,7 +107,6 @@ class VillageNPC:
         self.player.gold += reward_gold
         self.player.exp = getattr(self.player, "exp", 0.0) + reward_exp
 
-        # PIL 카드 시도
         card_sent = False
         try:
             import fishing_card

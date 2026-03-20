@@ -4,8 +4,6 @@ import os
 
 ACHIEVEMENTS_FILE = os.path.join(os.path.dirname(__file__), "achievements.json")
 
-# ─── 업적 정의 ────────────────────────────────────────────────────────────
-# {ach_id: {name, desc, counter_key, threshold, title}}
 ACHIEVEMENT_DEFS = {
     "first_blood":    {"name": "첫 승리",           "desc": "전투에서 첫 승리를 거두다.",          "counter_key": "battles_won",  "threshold": 1,     "title": "초보 전사"},
     "battle_10":      {"name": "싸움꾼",             "desc": "전투를 10번 이기다.",                 "counter_key": "battles_won",  "threshold": 10,    "title": "싸움꾼"},
@@ -53,7 +51,6 @@ class AchievementManager:
             pass
 
     def increment(self, counter_key: str, amount: int = 1) -> list[str]:
-        """카운터를 증가시키고 새로 달성된 업적 ID 목록을 반환합니다."""
         self._counters[counter_key] = self._counters.get(counter_key, 0) + amount
         newly_unlocked = []
 
@@ -71,7 +68,6 @@ class AchievementManager:
         return newly_unlocked
 
     def check_special(self, ach_id: str) -> bool:
-        """특정 업적을 직접 달성 처리합니다. 새로 달성 시 True 반환."""
         if ach_id in self._unlocked:
             return False
         self._unlocked.append(ach_id)
@@ -79,7 +75,6 @@ class AchievementManager:
         return True
 
     def get_unlocked_titles(self) -> list[str]:
-        """달성된 업적의 타이틀 목록을 반환합니다."""
         titles = []
         for ach_id in self._unlocked:
             ach = ACHIEVEMENT_DEFS.get(ach_id)
@@ -124,5 +119,4 @@ class AchievementManager:
         self._save()
 
 
-# 싱글턴 인스턴스
 achievement_manager = AchievementManager()

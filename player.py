@@ -298,10 +298,11 @@ class Player:
         if "inventory" in data and isinstance(data["inventory"], dict):
             self.inventory = data["inventory"]
 
-        if "bags" in data and isinstance(data["bags"], list):
-            self.bags = data["bags"]
-        elif not self.bags:
-            # 기존 데이터: bag_large 기본값 (가장 큰 가방)
+        bags_data = data.get("bags")
+        if isinstance(bags_data, list) and len(bags_data) > 0:
+            self.bags = bags_data
+        else:
+            # 기존 데이터 또는 빈 값: bag_large 기본값 (가장 큰 가방)
             self.bags = ["bag_large"]
 
         if "equipment" in data and isinstance(data["equipment"], dict):

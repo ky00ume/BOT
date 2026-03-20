@@ -1,4 +1,4 @@
-"""gacha.py — 곤트의 수상한 상자 (가챠)"""
+"""gacha.py — 몰의 수상한 상자 (가챠)"""
 import random
 import discord
 from ui_theme import C, ansi, header_box, divider, GRADE_ICON_PLAIN, EMBED_COLOR

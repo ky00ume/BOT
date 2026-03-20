@@ -1,6 +1,9 @@
 """story_quest.py — 스토리 퀘스트 엔진 (챕터 1~3)"""
 import datetime
-import pytz
+try:
+    import pytz
+except ImportError:
+    pytz = None
 
 
 class StoryQuestManager:

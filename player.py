@@ -5,6 +5,15 @@ from skills_db import (
 
 BASE_INVENTORY_SLOTS = 10
 
+_SLOT_NAMES = {
+    "main":  "주무기",
+    "sub":   "보조",
+    "body":  "갑옷",
+    "head":  "투구",
+    "hands": "장갑",
+    "feet":  "신발",
+}
+
 
 class Player:
     def __init__(self, name="모험가"):
@@ -120,6 +129,18 @@ class Player:
 
         self.equipment[slot] = item_id
         return f"[{item.get('name', item_id)}]을(를) 장착했슴미댜!"
+
+    def unequip_item(self, slot: str) -> str:
+        from items import ALL_ITEMS
+        if slot not in self.equipment:
+            return f"[{slot}]은(는) 올바른 슬롯이 아님미댜. (main/sub/body/head/hands/feet)"
+        eq_id = self.equipment.get(slot)
+        if not eq_id:
+            return f"[{_SLOT_NAMES.get(slot, slot)}] 슬롯이 비어있슴미댜."
+        item = ALL_ITEMS.get(eq_id, {})
+        self.add_item(eq_id)
+        self.equipment[slot] = None
+        return f"[{item.get('name', eq_id)}]을(를) 벗었슴미댜!"
 
     def swap_weapons(self) -> str:
         main = self.equipment.get("main")

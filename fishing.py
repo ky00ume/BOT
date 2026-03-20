@@ -141,7 +141,13 @@ class FishingView(discord.ui.View):
                     "🕷️ 철썩! ...돌멩이가 떨어진 것 같슴미댜...",
                 ]
                 if self._message:
-                    await self._message.channel.send(random.choice(fake_msgs))
+                    fake_embed = discord.Embed(
+                        title="🎣 낚시 중...",
+                        description=random.choice(fake_msgs),
+                        color=0x1a6ba0,
+                    )
+                    fake_embed.set_footer(text="⏱ 70초 안에 반응하셰요!")
+                    await self._message.edit(embed=fake_embed)
                 await asyncio.sleep(random.uniform(3.0, 8.0))
                 await self._trigger_bite()
             elif pattern == "double_fake":
@@ -151,7 +157,13 @@ class FishingView(discord.ui.View):
                         return
                     fake_msgs = ["🕷️ ...찌가! ...아, 아니었슴미댜;;", "🕷️ 또 움직...인 줄 알았슴미댜..."]
                     if self._message:
-                        await self._message.channel.send(random.choice(fake_msgs))
+                        fake_embed = discord.Embed(
+                            title="🎣 낚시 중...",
+                            description=random.choice(fake_msgs),
+                            color=0x1a6ba0,
+                        )
+                        fake_embed.set_footer(text="⏱ 70초 안에 반응하셰요!")
+                        await self._message.edit(embed=fake_embed)
                 await asyncio.sleep(random.uniform(2.0, 6.0))
                 await self._trigger_bite()
             elif pattern == "instant":

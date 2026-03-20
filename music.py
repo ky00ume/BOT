@@ -11,11 +11,27 @@ NOTE_EMOJIS = {
 }
 
 SONGS = [
-    {"id": "forest_song", "name": "방울숲의 노래", "length": 4, "reward_gold": 100,  "reward_contrib": 5},
-    {"id": "battle_hymn", "name": "전사의 찬가",   "length": 5, "reward_gold": 200,  "reward_contrib": 8},
-    {"id": "love_ballad", "name": "사랑의 발라드", "length": 6, "reward_gold": 300,  "reward_contrib": 10},
-    {"id": "epic_tale",   "name": "영웅의 이야기", "length": 8, "reward_gold": 500,  "reward_contrib": 15},
+    {"id": "forest_song", "name": "방울숲의 노래", "length": 4, "reward_gold": 30,  "reward_contrib": 5},
+    {"id": "battle_hymn", "name": "전사의 찬가",   "length": 5, "reward_gold": 60,  "reward_contrib": 8},
+    {"id": "love_ballad", "name": "사랑의 발라드", "length": 6, "reward_gold": 90,  "reward_contrib": 10},
+    {"id": "epic_tale",   "name": "영웅의 이야기", "length": 8, "reward_gold": 150, "reward_contrib": 15},
 ]
+
+# 청중 반응 티어 (정확도 기준)
+AUDIENCE_TIERS = [
+    # (min_pct, max_pct_exclusive, reactions, gold_multiplier)
+    (0,  50,  ["엉망이었다", "부끄러운 곡이었다", "삑사리가 났다"],           0.4),
+    (50, 75,  ["적당한 연주였다", "간신히 해낸 것 같다", "마음에 드는 곡이었다"], 1.0),
+    (75, 101, ["훌륭한 연주였다", "기분 좋게 연주했다", "환상적인 연주였다"],    1.6),
+]
+
+
+def _get_audience_reaction(pct: int) -> tuple:
+    """(반응 문자열, 골드 배율) 반환"""
+    for min_p, max_p, reactions, mult in AUDIENCE_TIERS:
+        if min_p <= pct < max_p:
+            return random.choice(reactions), mult
+    return "훌륭한 연주였다", 1.6
 
 _SONG_BY_ID = {s["id"]: s for s in SONGS}
 
@@ -66,8 +82,9 @@ class MusicView(discord.ui.View):
         if len(self.entered) >= len(self.target):
             matches   = sum(1 for a, b in zip(self.entered, self.target) if a == b)
             pct       = int(matches / len(self.target) * 100)
-            gold_earn = int(self.song["reward_gold"] * pct / 100)
-            contrib   = self.song["reward_contrib"] if pct >= 80 else 0
+            audience_reaction, gold_mult = _get_audience_reaction(pct)
+            gold_earn = int(self.song["reward_gold"] * gold_mult)
+            contrib   = self.song["reward_contrib"] if pct >= 75 else 0
 
             self.player.gold += gold_earn
             for child in self.children:
@@ -88,10 +105,11 @@ class MusicView(discord.ui.View):
                 description=(
                     f"**정확도: {pct}%**  ({matches}/{len(self.target)})\n\n"
                     f"{result_notes}\n\n"
+                    f"💬 청중: \"{audience_reaction}\"\n"
                     f"💰 획득 골드: **+{gold_earn:,}G**"
                     + (f"\n마을 기여도: +{contrib}" if contrib else "")
                 ),
-                color=0xffd700 if pct >= 80 else 0xaa6633,
+                color=0xffd700 if pct >= 75 else (0xaa6633 if pct >= 50 else 0x555555),
             )
             await interaction.response.edit_message(embed=embed, view=self)
             self.stop()
@@ -209,11 +227,11 @@ class MusicEngine:
                 "id": song_id,
                 "name": sheet["title"],
                 "length": len(user_melody),
-                "reward_gold": min(50 * len(user_melody), 500),
+                "reward_gold": min(15 * len(user_melody), 150),
                 "reward_contrib": min(len(user_melody), 10),
             }
 
-        energy_cost = 10
+        energy_cost = 5
         if not self.player.consume_energy(energy_cost):
             await ctx.send(ansi(
                 f"  {C.RED}✖ 기력이 부족함미댜! (필요: {energy_cost}){C.R}"

@@ -236,6 +236,15 @@ class ConversationManager:
             divider(),
             f"  {C.WHITE}\"{greeting}\"{C.R}",
             divider(),
+        ]
+
+        # 외형 묘사
+        appearance = npc.get("appearance")
+        if appearance:
+            lines.append(f"  {C.DARK}✦ 외형: {appearance}{C.R}")
+            lines.append(divider())
+
+        lines += [
             f"  {C.PINK}💖 호감도: {bar_str} {lv_name} ({aff_points}pt){C.R}",
             divider(),
         ]

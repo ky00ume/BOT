@@ -2,10 +2,18 @@ from items import WEAPONS, ARMORS, CONSUMABLES, COOKED_DISHES, ALL_ITEMS, TOOLS,
 from database import BAGS
 from ui_theme import C, section, divider, header_box, ansi, GRADE_ICON_PLAIN, EMBED_COLOR, FOOTERS
 
+# 스킬북 아이템 임포트 (있으면)
+try:
+    from items import SKILL_BOOKS
+except ImportError:
+    SKILL_BOOKS = {}
+
 NPC_CATALOGS = {
     "다몬":   {**WEAPONS, **ARMORS},
     "오멜룸": {**CONSUMABLES, **TOOLS, **GROCERIES},
     "몰":     BAGS,
+    "카엘릭": {k: v for k, v in SKILL_BOOKS.items() if v.get("npc") == "카엘릭"},
+    "게일의 환영": {k: v for k, v in SKILL_BOOKS.items() if v.get("npc") == "게일의 환영"},
 }
 
 
@@ -25,11 +33,14 @@ def _find_in_dict(item_dict: dict, name_or_id: str) -> str | None:
     검색 우선순위:
     1. ID 정확 매칭
     2. 이름 정확 매칭
-    3. 모든 검색어 키워드가 아이템명에 포함되는 경우 (AND 매칭, 이름 짧은 것 우선)
-    4. 단일 키워드 부분 매칭 (이름 짧은 것 우선)
+    3. 이름 공백 제거 후 정확 매칭
+    4. 모든 검색어 키워드가 아이템명에 포함되는 경우 (AND 매칭, 이름 짧은 것 우선)
+    5. 단일 키워드 부분 매칭 (이름 짧은 것 우선)
     """
     name_or_id = name_or_id.strip()
     keywords = name_or_id.split()
+    # 공백 제거 버전
+    normalized = name_or_id.replace(" ", "")
 
     # 1. ID 정확 매칭
     if name_or_id in item_dict:
@@ -40,7 +51,13 @@ def _find_in_dict(item_dict: dict, name_or_id: str) -> str | None:
         if item_data.get("name", "") == name_or_id:
             return item_id
 
-    # 3. 모든 키워드 AND 매칭 (이름이 짧을수록 우선)
+    # 3. 이름 공백 제거 후 정확 매칭 (예: "철주괴" → "철 주괴")
+    for item_id, item_data in item_dict.items():
+        item_name = item_data.get("name", "")
+        if item_name.replace(" ", "") == normalized:
+            return item_id
+
+    # 4. 모든 키워드 AND 매칭 (이름이 짧을수록 우선)
     if keywords:
         best_and = None
         best_and_len = float('inf')
@@ -53,7 +70,7 @@ def _find_in_dict(item_dict: dict, name_or_id: str) -> str | None:
         if best_and:
             return best_and
 
-    # 4. 단일 부분 매칭 (이름이 짧을수록 우선)
+    # 5. 단일 부분 매칭 (이름이 짧을수록 우선)
     best_partial = None
     best_partial_len = float('inf')
     for item_id, item_data in item_dict.items():

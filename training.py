@@ -12,8 +12,8 @@ STAT_TRAIN_CONFIG = {
 }
 
 # 수련 시 현재 스탯×10의 에너지 소비
-ENERGY_PER_POINT = 10
-MIN_ENERGY_COST  = 5  # 에너지 최소 소모량
+ENERGY_PER_POINT = 5
+MIN_ENERGY_COST  = 3  # 에너지 최소 소모량
 
 
 def _train_cost(stat_id: str, current_val: int) -> int:

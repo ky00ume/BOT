@@ -53,19 +53,19 @@ HUNTING_GROUNDS = {
         "name": "방울숲",
         "level_req": 1,
         "desc": "초보 모험가들이 자주 찾는 작은 숲.",
-        "energy_cost": 10,
+        "energy_cost": 5,
     },
     "고블린동굴": {
         "name": "고블린 동굴",
         "level_req": 5,
         "desc": "고블린 무리가 사는 어두운 동굴.",
-        "energy_cost": 20,
+        "energy_cost": 10,
     },
     "소금광산": {
         "name": "소금 광산",
         "level_req": 10,
         "desc": "소금 광물과 언데드가 서식하는 광산.",
-        "energy_cost": 30,
+        "energy_cost": 15,
     },
 }
 
@@ -75,6 +75,7 @@ NPC_DATA = {
         "role": "대장장이",
         "location": "비전 타운 광장",
         "desc": "차분하고 책임감 있는 티플링 대장장이. 말수는 적지만 솜씨는 마을 최고.",
+        "appearance": "단단하게 다져진 체격의 티플링. 짧고 거친 검은 머리카락, 진한 회색빛 피부, 곧게 뻗은 짙은 적갈색 뿔이 눈에 띈다. 불똥 자국이 남은 가죽 앞치마를 두르고, 맨팔에는 굵은 근육이 드러난다. 손은 항상 그을음으로 검게 물들어 있다.",
         "greetings": [
             "필요한 물건 있으면 말해. 쓸데없는 말은 빼고.",
             "...뭔가 필요한 게 있나? 조용히 골라.",
@@ -85,7 +86,7 @@ NPC_DATA = {
             "name": "단조 보조",
             "reward_gold": 150,
             "reward_exp": 20,
-            "energy_cost": 25,
+            "energy_cost": 12,
             "duration": "30분",
             "desc": "다몬의 대장간에서 쇠를 두드리는 일.",
         },
@@ -95,6 +96,7 @@ NPC_DATA = {
         "role": "약초상",
         "location": "비전 타운 시장",
         "desc": "이성적이고 차분한 약초상. 본능보다 이성을 따르는 걸 원칙으로 삼는다.",
+        "appearance": "중간 키에 날렵한 인상의 인물. 은은한 회색빛을 띤 창백한 피부, 단정하게 묶은 밝은 은발, 그리고 감정을 잘 드러내지 않는 옅은 회녹색 눈동자가 인상적이다. 여러 주머니가 달린 연초록색 약초상 코트를 입고, 허리에는 작은 약재 주머니들을 가득 매달고 있다.",
         "greetings": [
             "...생각보다 흥미로운 시간이군. 약초가 필요한가?",
             "본능이 속삭이지만, 지금 중요한 건 당신의 필요야.",
@@ -105,7 +107,7 @@ NPC_DATA = {
             "name": "약초 채집 보조",
             "reward_gold": 100,
             "reward_exp": 15,
-            "energy_cost": 20,
+            "energy_cost": 10,
             "duration": "30분",
             "desc": "오멜룸을 도와 약초를 채집하는 일.",
         },
@@ -115,6 +117,7 @@ NPC_DATA = {
         "role": "상인",
         "location": "비전 타운 상점가",
         "desc": "영리하고 능글맞은 젊은 상인. 겉으론 여유롭지만 언제나 한발 앞서 계산한다.",
+        "appearance": "날카로운 눈매와 약삭빠른 미소가 특징인 젊은 티플링. 구릿빛 피부에 짧게 다듬은 검은 머리, 작고 매끈한 짧은 뿔. 거래에 유리한 인상을 주는 고급스러운 조끼와 셔츠를 차려입었으며, 항상 어딘가에 숨겨진 주머니가 있어 보인다.",
         "greetings": [
             "뭐 살 거야? 어서 결정해, 시간은 돈이야.",
             "싸게 팔아줄 것 같지? 천만에. 하지만 그 정도는 해줄게~",
@@ -125,7 +128,7 @@ NPC_DATA = {
             "name": "짐 운반",
             "reward_gold": 120,
             "reward_exp": 12,
-            "energy_cost": 30,
+            "energy_cost": 15,
             "duration": "30분",
             "desc": "몰의 짐을 대신 날라주는 일.",
         },
@@ -135,6 +138,7 @@ NPC_DATA = {
         "role": "마법사",
         "location": "비전 타운 마법 연구소",
         "desc": "조용하고 사려 깊은 티플링 마법사. 힘의 출처에 불안감을 품고 있다.",
+        "appearance": "가냘프고 조용한 인상의 젊은 티플링. 짙은 보라빛이 감도는 피부에 가늘고 우아한 뿔, 크고 맑은 연보라색 눈동자가 인상적이다. 마법 문양이 수놓인 짙은 보라색 로브를 입고, 손에는 항상 마법 서적이나 작은 마법봉을 쥐고 있다.",
         "greetings": [
             "...주문을 연습 중이에요. 실수할 수도 있으니 조심해요.",
             "게일의 환영 교수님한테서 배우고 있어요. 배울 게 정말 많아요.",
@@ -145,7 +149,7 @@ NPC_DATA = {
             "name": "마법 실험 보조",
             "reward_gold": 200,
             "reward_exp": 30,
-            "energy_cost": 25,
+            "energy_cost": 12,
             "duration": "30분",
             "desc": "아라벨라의 마법 실험을 돕는 일.",
         },
@@ -155,6 +159,7 @@ NPC_DATA = {
         "role": "경비대장",
         "location": "비전 타운 성문",
         "desc": "과거의 실패를 가슴에 새긴 티플링 경비대장. 무엇보다 마을의 안전을 최우선으로 여긴다.",
+        "appearance": "다부지고 위엄 있는 체격의 중년 티플링. 깊은 구릿빛 피부, 이마에서 뒤로 굵게 뻗은 짙은 회색 뿔, 그리고 경계심이 서린 진한 호박색 눈동자. 낡았지만 잘 정돈된 경비대 갑옷을 걸치고, 허리에는 항상 검이 찼다. 얼굴의 작은 흉터가 과거의 전투를 말해준다.",
         "greetings": [
             "마을의 안전은 내 책임이오. 수상한 것이 보이면 즉시 신고하시오.",
             "우리는 한번 실패한 적 있소. 다시는 그런 일이 없도록 할 것이오.",
@@ -165,7 +170,7 @@ NPC_DATA = {
             "name": "순찰 보조",
             "reward_gold": 130,
             "reward_exp": 18,
-            "energy_cost": 28,
+            "energy_cost": 14,
             "duration": "30분",
             "desc": "제블로어를 도와 마을을 순찰하는 일.",
         },
@@ -175,6 +180,7 @@ NPC_DATA = {
         "role": "요리사",
         "location": "비전 타운 식당",
         "desc": "조용하고 섬세한 하프오크 요리사. 폭력과는 거리가 멀고, 오직 음식으로 마음을 전한다.",
+        "appearance": "건장하지만 온화한 인상의 하프오크. 짙은 황록빛 피부에 부드럽게 닳은 작은 송곳니, 요리 과정에서 생긴 작은 화상 자국이 양 손등에 있다. 깔끔한 흰 요리사 복장에 자수가 놓인 앞치마를 두르고, 두꺼운 손으로 세밀한 요리를 다루는 솜씨가 놀랍다.",
         "greetings": [
             "...어서 오세요. 뭐 드실 건가요?",
             "요리는 힘이 아니라 섬세함으로 하는 거예요. 저도 배웠어요.",
@@ -185,7 +191,7 @@ NPC_DATA = {
             "name": "주방 보조",
             "reward_gold": 110,
             "reward_exp": 14,
-            "energy_cost": 22,
+            "energy_cost": 11,
             "duration": "30분",
             "desc": "브룩샤의 식당에서 요리를 돕는 일.",
         },
@@ -195,6 +201,7 @@ NPC_DATA = {
         "role": "낚시꾼",
         "location": "비전 타운 강가",
         "desc": "지상에 적응 중인 드로우 낚시꾼. 말이 없고 사색적이지만, 강물을 바라보는 눈빛은 따뜻하다.",
+        "appearance": "조용한 움직임을 가진 드로우(다크엘프). 칠흑같이 짙은 흑자색 피부, 머리끝까지 내려오는 순백색의 긴 머리카락, 그리고 어둠에 익숙한 옅은 연보라색 눈동자. 지상의 강한 햇빛을 피해 챙 넓은 모자를 즐겨 쓰며, 낡고 편안한 낚시꾼 복장을 입고 있다.",
         "greetings": [
             "...강물은 언제 봐도 신기해. 언더다크엔 이런 게 없었으니.",
             "기다리는 법을 배웠어. 언더다크에선 기다림이 생존이었거든.",
@@ -205,7 +212,7 @@ NPC_DATA = {
             "name": "낚시 보조",
             "reward_gold": 90,
             "reward_exp": 10,
-            "energy_cost": 15,
+            "energy_cost": 7,
             "duration": "30분",
             "desc": "실렌을 도와 낚시하는 일.",
         },
@@ -215,6 +222,7 @@ NPC_DATA = {
         "role": "음유시인",
         "location": "비전 타운 광장",
         "desc": "밝고 감성적인 티플링 음유시인. 노래를 잃을까 두려워하면서도 매일 새로운 곡을 짓는다.",
+        "appearance": "밝고 생기 넘치는 인상의 젊은 티플링. 짙은 청보라빛 피부, 뿔은 부드럽게 뒤로 굽어있으며 끝이 조금 얇다. 따뜻한 노란빛이 도는 눈동자, 화려한 색채의 바드 의상을 걸치고 항상 류트를 들고 다닌다. BG3 원작의 알피라를 그대로 반영한 외형.",
         "greetings": [
             "♪ 오늘도 새로운 노래를 써봤는데... 어때요?",
             "음악이 없는 세상은 너무 쓸쓸해요~ 같이 즐겨요!",
@@ -225,7 +233,7 @@ NPC_DATA = {
             "name": "공연 보조",
             "reward_gold": 80,
             "reward_exp": 12,
-            "energy_cost": 18,
+            "energy_cost": 9,
             "duration": "30분",
             "desc": "알피라의 공연을 돕는 일.",
         },
@@ -235,6 +243,7 @@ NPC_DATA = {
         "role": "길드 마스터",
         "location": "비전 타운 모험가 길드",
         "desc": "냉정하고 효율적인 길드 마스터. 자헤이라라는 또 다른 이름을 가지고 있지만 쉽게 드러내지 않는다.",
+        "appearance": "단호하고 위압감 있는 인상의 하프엘프 여성. BG3의 자헤이라를 기반으로, 붉은빛이 도는 진한 갈색 피부, 짧게 땋아 올린 어두운 녹빛 머리카락, 날카로운 눈매에 냉정한 황금빛 눈동자. 실용적인 가죽 갑옷과 길드 마스터 망토를 걸쳤다.",
         "greetings": [
             "시간 낭비 없이 용건을 말해.",
             "길드의 원칙은 단순해. 실력으로 증명하거나, 아니면 물러나거나.",
@@ -245,7 +254,7 @@ NPC_DATA = {
             "name": "길드 잡무",
             "reward_gold": 160,
             "reward_exp": 25,
-            "energy_cost": 20,
+            "energy_cost": 10,
             "duration": "30분",
             "desc": "길드 사무소에서 잡무를 처리하는 일.",
         },
@@ -255,6 +264,7 @@ NPC_DATA = {
         "role": "마법학교 교수",
         "location": "비전 타운 마법학교",
         "desc": "기억을 기반으로 존재하는 게일의 환영. 완벽하고 정제된 태도로 마법을 가르친다.",
+        "appearance": "BG3 원작의 게일을 기반으로 한 반투명한 환영의 모습. 단정한 검은 머리카락, 따뜻한 갈색 눈동자, 인간 마법사의 인상적인 외모. 붉은빛 라이닝이 들어간 진한 청자색 로브를 걸쳤으며, 몸 일부가 마법의 빛으로 흐릿하게 투과되어 보인다. 마이스트라의 별 문양이 어딘가에 새겨져 있다.",
         "greetings": [
             "마법은 정확성과 우아함이 공존해야 해. 메모했나?",
             "나는 기억을 기반으로 존재하지. 하지만 지식은 진짜야.",
@@ -265,7 +275,7 @@ NPC_DATA = {
             "name": "수업 보조",
             "reward_gold": 180,
             "reward_exp": 28,
-            "energy_cost": 22,
+            "energy_cost": 11,
             "duration": "30분",
             "desc": "게일의 환영이 진행하는 마법 수업을 보조하는 일.",
         },
@@ -275,6 +285,7 @@ NPC_DATA = {
         "role": "교관",
         "location": "비전 타운 훈련소",
         "desc": "엄격하고 공정한 훈련 교관. 전투를 혐오하지만 그렇기에 누구보다 철저하게 가르친다.",
+        "appearance": "근육질의 다부진 체형을 가진 중년 인간 남성. 짧게 자른 회끗한 갈색 머리와 전투에서 얻은 여러 흉터, 그리고 언제나 긴장을 늦추지 않는 회색빛 눈동자가 인상적이다. 낡았지만 잘 유지된 훈련 코트와 팔을 덮는 가죽 팔보호대를 착용하고 있다.",
         "greetings": [
             "훈련은 선택이 아니야. 살고 싶으면 강해져.",
             "나는 전투가 싫어. 그래서 더 철저하게 가르치는 거야.",
@@ -285,7 +296,7 @@ NPC_DATA = {
             "name": "훈련 보조",
             "reward_gold": 140,
             "reward_exp": 22,
-            "energy_cost": 30,
+            "energy_cost": 15,
             "duration": "30분",
             "desc": "카엘릭의 훈련 수업을 보조하는 일.",
         },
@@ -295,6 +306,7 @@ NPC_DATA = {
         "role": "특수 NPC",
         "location": "랜덤 등장",
         "desc": "매혹적이고 교활한 악마 거래상. 항상 흥미로운 제안을 들고 나타난다.",
+        "appearance": "BG3 원작의 라파엘(캄비온). 완벽하게 차려입은 인간 모습에, 때때로 붉은 피부와 뿔, 날개의 진짜 모습이 비친다. 짧게 다듬은 붉은빛 갈색 머리, 언제나 여유로운 미소, 귀족적인 붉은색과 금색 의상. 악마적 매력이 넘쳐 경계가 느슨해지는 느낌을 준다.",
         "greetings": [
             "오, 당신이군. 마침 흥미로운 제안이 있는데 말이야...",
             "계약은 단순해. 내가 원하는 것, 당신이 원하는 것. 거래가 되지 않겠어?",
@@ -307,6 +319,7 @@ NPC_DATA = {
         "role": "특수 NPC",
         "location": "특정 지역 / 랜덤 등장",
         "desc": "집착적이고 불안정한 드라이더. 마제스티의 최측근으로, 절대적인 신념을 품고 있다.",
+        "appearance": "마제스티(루바토)의 최측근인 드라이더. 상반신은 인간 여성의 형태이며, 짧고 날카로운 흰 머리카락, 냉랭한 황금빛 눈동자, 창백한 피부를 지닌다. 하반신은 크고 위압적인 검은색 거미 몸체. 단단한 검은 갑옷 조각들이 거미 몸체를 부분적으로 덮고 있다.",
         "greetings": [
             "...",
             "무슨 볼일이야. 빨리 말해.",
@@ -319,6 +332,7 @@ NPC_DATA = {
         "role": "특수 NPC",
         "location": "랜덤 등장",
         "desc": "플레이어를 비추는 거울 같은 존재. 과거 선택의 잔재를 안고 살아가는 타브.",
+        "appearance": "회색 장발에 끝부분만 초록빛으로 그을린 것처럼 물들어 있다. 갈색 피부에 당근색의 굵고 짧은 뿔을 가진 티플링. 갈색 망토 아래에 초록색 셔츠를 입은 바드 복장. 류트를 항상 어깨에 메고 다니며, 눈빛에는 어딘가 먼 곳을 바라보는 듯한 깊이가 있다.",
         "greetings": [
             "...당신을 보면 이상하게 마음이 복잡해.",
             "나는 당신이 아니야. 하지만... 비슷한 선택을 했겠지.",
@@ -429,14 +443,15 @@ def save_player_to_db(player):
 
     cursor.execute("""
         INSERT OR REPLACE INTO players
-        (user_id, name, level, hp, max_hp, mp, max_mp, energy, max_energy,
+        (user_id, name, level, exp, hp, max_hp, mp, max_mp, energy, max_energy,
          gold, base_stats, inventory, equipment, keywords, affinity_data, daily_limits,
-         story_quest)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         story_quest, skill_ranks, skill_exp, titles, current_title)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         data.get("user_id", 0),
         data.get("name", "모험가"),
         data.get("level", 1),
+        data.get("exp", 0.0),
         data.get("hp", 100),
         data.get("max_hp", 100),
         data.get("mp", 50),
@@ -451,6 +466,10 @@ def save_player_to_db(player):
         json.dumps(aff_full, ensure_ascii=False),
         json.dumps(aff_full.get("daily_limits", {}), ensure_ascii=False),
         story_quest_json,
+        json.dumps(data.get("skill_ranks", {"smash": "연습", "defense": "연습", "counter": "연습"}), ensure_ascii=False),
+        json.dumps(data.get("skill_exp", {}), ensure_ascii=False),
+        json.dumps(data.get("titles", []), ensure_ascii=False),
+        data.get("current_title"),
     ))
     conn.commit()
     conn.close()
@@ -476,6 +495,22 @@ def _migrate_players_table(cursor):
         if "story_quest" not in columns:
             cursor.execute(
                 "ALTER TABLE players ADD COLUMN story_quest TEXT DEFAULT '{}'"
+            )
+        if "exp" not in columns:
+            cursor.execute(
+                "ALTER TABLE players ADD COLUMN exp REAL DEFAULT 0.0"
+            )
+        if "skill_ranks" not in columns:
+            cursor.execute(
+                "ALTER TABLE players ADD COLUMN skill_ranks TEXT DEFAULT '{\"smash\":\"연습\",\"defense\":\"연습\",\"counter\":\"연습\"}'"
+            )
+        if "skill_exp" not in columns:
+            cursor.execute(
+                "ALTER TABLE players ADD COLUMN skill_exp TEXT DEFAULT '{}'"
+            )
+        if "titles" not in columns:
+            cursor.execute(
+                "ALTER TABLE players ADD COLUMN titles TEXT DEFAULT '[]'"
             )
     except Exception:
         pass
@@ -530,6 +565,31 @@ def load_player_from_db(user_id):
         result["story_quest"] = _safe_json(row["story_quest"], {})
     except (IndexError, KeyError):
         result["story_quest"] = {}
+
+    try:
+        result["exp"] = row["exp"] if row["exp"] is not None else 0.0
+    except (IndexError, KeyError):
+        result["exp"] = 0.0
+
+    try:
+        result["skill_ranks"] = _safe_json(row["skill_ranks"], {"smash": "연습", "defense": "연습", "counter": "연습"})
+    except (IndexError, KeyError):
+        result["skill_ranks"] = {"smash": "연습", "defense": "연습", "counter": "연습"}
+
+    try:
+        result["skill_exp"] = _safe_json(row["skill_exp"], {})
+    except (IndexError, KeyError):
+        result["skill_exp"] = {}
+
+    try:
+        result["titles"] = _safe_json(row["titles"], [])
+    except (IndexError, KeyError):
+        result["titles"] = []
+
+    try:
+        result["current_title"] = row["current_title"]
+    except (IndexError, KeyError):
+        result["current_title"] = None
 
     return result
 

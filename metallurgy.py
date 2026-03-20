@@ -112,13 +112,47 @@ class MetallurgyEngine:
             lines.append(f"    {C.DARK}ID: {ore_id}  {recipe['desc']}{C.R}")
 
         lines.append(divider())
-        lines.append(f"  {C.GREEN}/제련 [광석ID]{C.R} 으로 제련하셰요!")
+        lines.append(f"  {C.GREEN}/제련 [광석이름 또는 ID]{C.R} 으로 제련하셰요!")
         return ansi("\n".join(lines))
 
-    def smelt(self, ore_id: str) -> str:
-        recipe = SMELT_RECIPES.get(ore_id)
+    def smelt(self, ore_input: str) -> str:
+        """ore_input: 레시피 키(ID), 광석 한글 이름, 또는 결과물 이름 중 하나."""
+        # 1. 직접 키 매칭
+        recipe = SMELT_RECIPES.get(ore_input)
+
+        # 2. 광석/결과물 이름으로 검색
+        if recipe is None:
+            from items import ALL_ITEMS
+            # 공백 제거 버전으로도 비교
+            inp_normalized = ore_input.replace(" ", "")
+            for key, rec in SMELT_RECIPES.items():
+                # 입력물(광석) 이름 매칭
+                for ing_id in rec["input"]:
+                    ing_name = ALL_ITEMS.get(ing_id, {}).get("name", "")
+                    if ing_name == ore_input or ing_name.replace(" ", "") == inp_normalized:
+                        recipe = rec
+                        ore_input = key
+                        break
+                if recipe:
+                    break
+                # 결과물(주괴) 이름 매칭
+                for out_id in rec["output"]:
+                    out_name = ALL_ITEMS.get(out_id, {}).get("name", "")
+                    if out_name == ore_input or out_name.replace(" ", "") == inp_normalized:
+                        recipe = rec
+                        ore_input = key
+                        break
+                if recipe:
+                    break
+                # 레시피 이름 매칭
+                rec_name = rec.get("name", "")
+                if rec_name == ore_input or rec_name.replace(" ", "") == inp_normalized:
+                    recipe = rec
+                    ore_input = key
+                    break
+
         if not recipe:
-            return ansi(f"  {C.RED}✖ [{ore_id}]은(는) 제련 레시피가 없슴미댜!{C.R}")
+            return ansi(f"  {C.RED}✖ [{ore_input}]은(는) 제련 레시피가 없슴미댜!\n  /제련목록 으로 레시피를 확인하셰요!{C.R}")
 
         rank     = self.player.skill_ranks.get("metallurgy", "연습")
         rank_req = recipe.get("rank_req", "연습")

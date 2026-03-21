@@ -489,10 +489,10 @@ async def special_keyword_cmd(ctx, npc_name: str = None, *, keyword: str = None)
             f"  {C.RED}✖ 현재 {npc_name}(이)가 근처에 없슴미댜. 인카운터를 기다리셰요!{C.R}"
         ))
         return
-    # 키워드 대화는 일반 대화 시스템 활용
+    # 특수 NPC도 동일한 임베드+버튼 대화 시스템 활용
     from npc_conversation import ConversationManager
     aff_mgr = getattr(shared_player, "_affinity_manager", None)
-    conv = ConversationManager(shared_player, aff_mgr)
+    conv = ConversationManager(shared_player, aff_mgr, npc_manager)
     await conv.send_conversation(ctx, npc_name)
 
 

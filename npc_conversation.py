@@ -167,8 +167,16 @@ class NPCConversationView(View):
         player_kws = getattr(self.player, "keywords", list(DEFAULT_KEYWORDS))
         available = get_available_keywords(self.npc_name, player_kws)
 
+        # 기능 버튼 수에 따라 키워드 버튼 최대 수 동적 계산 (Discord 한계: 25)
+        extra_count = (
+            (1 if npc.get("job") else 0) +
+            (1 if self.npc_name in __import__("shop").NPC_CATALOGS else 0) +
+            (1 if npc.get("train") else 0)
+        )
+        max_kw_buttons = max(0, 25 - extra_count)
+
         # 기본 키워드 버튼들 (마을, 날씨, 소문 및 해금된 키워드들)
-        for kw in available[:20]:  # Discord 버튼 한계 고려
+        for kw in available[:max_kw_buttons]:
             btn = Button(
                 label=kw,
                 style=discord.ButtonStyle.secondary,

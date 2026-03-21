@@ -524,6 +524,10 @@ def _migrate_players_table(cursor):
             cursor.execute(
                 "ALTER TABLE players ADD COLUMN last_special_encounter REAL DEFAULT NULL"
             )
+        if "current_title" not in columns:
+            cursor.execute(
+                "ALTER TABLE players ADD COLUMN current_title TEXT DEFAULT NULL"
+            )
         if "rafael_contract" not in columns:
             cursor.execute(
                 "ALTER TABLE players ADD COLUMN rafael_contract TEXT DEFAULT NULL"

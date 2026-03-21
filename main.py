@@ -28,7 +28,7 @@ from fishing      import FishingEngine
 from cooking_db   import CookingEngine
 from metallurgy   import MetallurgyEngine
 from alarms       import setup_alarms
-from responses    import get_pet_response, get_scold_response
+from responses    import get_pet_response, get_scold_response, HYNESS_PET_RESPONSES, MAJESTY_PET_RESPONSES, DRIDER_PET_RESPONSES, HYNESS_SCOLD_RESPONSES, MAJESTY_SCOLD_RESPONSES, DRIDER_SCOLD_RESPONSES
 from items        import CONSUMABLES, COOKED_DISHES, ALL_ITEMS, GATHERING_ITEMS
 from village      import village_manager
 from gathering    import GatheringEngine
@@ -151,7 +151,6 @@ async def on_ready():
     print("[봇 준비] 모든 시스템 초기화 완료!")
 
 
-@bot.event
 @bot.event
 async def on_message(message):
     if message.author.bot:
@@ -1254,7 +1253,6 @@ async def village_status_cmd(ctx):
 async def pat_cmd(ctx):
     if not await _check_channel(ctx):
         return
-    from responses import HYNESS_PET_RESPONSES, MAJESTY_PET_RESPONSES, DRIDER_PET_RESPONSES
     uid = ctx.author.id
     if uid == HYNESS_ID:
         msg = random.choice(HYNESS_PET_RESPONSES)
@@ -1566,7 +1564,6 @@ async def discard_cmd(ctx, item_name: str = None, count_str: str = "1"):
 async def scold_cmd(ctx):
     if not await _check_channel(ctx):
         return
-    from responses import HYNESS_SCOLD_RESPONSES, MAJESTY_SCOLD_RESPONSES, DRIDER_SCOLD_RESPONSES
     uid = ctx.author.id
     if uid == HYNESS_ID:
         msg = random.choice(HYNESS_SCOLD_RESPONSES)

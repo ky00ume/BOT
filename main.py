@@ -447,15 +447,14 @@ async def notice_cmd(ctx):
     await send_town_notice(ctx.channel)
 
 
-@bot.command(name="마을")
-async def village_cmd(ctx, *, name: str = None):
+@bot.command(name="비전타운", aliases=["마을"])
+async def vision_town_cmd(ctx):
     if not await _check_channel(ctx):
         return
-    if name:
-        await npc_manager.talk_to_npc_async(ctx, name)
-    else:
-        msg = npc_manager.list_npcs()
-        await ctx.send(msg)
+    from town_ui import VisionTownView, _make_town_embed
+    embed = _make_town_embed(village_manager)
+    view = VisionTownView(shared_player, affinity_manager, npc_manager, village_manager)
+    await ctx.send(embed=embed, view=view)
 
 
 @bot.command(name="대화")

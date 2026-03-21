@@ -1118,8 +1118,10 @@ async def craft_cmd(ctx, recipe_id: str = None):
 async def quest_cmd(ctx):
     if not await _check_channel(ctx):
         return
-    result = quest_manager.list_quests()
-    await ctx.send(result)
+    from quest_ui import QuestWindowView, make_quest_embed
+    embed = make_quest_embed(quest_manager)
+    view = QuestWindowView(quest_manager, shared_player)
+    await ctx.send(embed=embed, view=view)
 
 
 @bot.command(name="퀘스트수락")
@@ -1530,6 +1532,12 @@ async def discard_cmd(ctx, item_name: str = None, count_str: str = "1"):
     item_id = find_item_by_name(item_name)
     if not item_id:
         await ctx.send(ansi(f"  {C.RED}✖ [{item_name}]을(를) 찾을 수 없슴미댜!{C.R}"))
+        return
+
+    # 퀘스트 아이템 버리기 차단
+    from items import ALL_ITEMS as _ALL_ITEMS_CHECK
+    if _ALL_ITEMS_CHECK.get(item_id, {}).get("quest_locked"):
+        await ctx.send(ansi(f"  {C.RED}❌ 퀘스트 아이템은 버릴 수 없슴미댜!{C.R}"))
         return
 
     have = shared_player.inventory.get(item_id, 0)

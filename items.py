@@ -812,6 +812,23 @@ STORY_QUEST_ITEMS = {
 
 ALL_ITEMS.update(STORY_QUEST_ITEMS)
 
+# ─── 일반 의뢰 퀘스트 전용 아이템 (quest_locked=True: 버리기/판매/사용/장착 불가) ──
+QUEST_DELIVER_ITEMS = {
+    "sq_letter_from_damon":   {"name": "다몬의 편지",           "type": "quest", "grade": "Normal", "price": 0, "desc": "다몬이 브룩샤에게 보내는 편지. 퀘스트 아이템.", "quest_locked": True},
+    "sq_blueprint_damion":    {"name": "다몬의 무기 도면",       "type": "quest", "grade": "Normal", "price": 0, "desc": "다몬이 그린 무기 설계 도면. 퀘스트 아이템.", "quest_locked": True},
+    "sq_secret_order_damion": {"name": "다몬의 비밀 주문서",     "type": "quest", "grade": "Normal", "price": 0, "desc": "다몬의 비밀 의뢰서. 절대 열어보지 말 것. 퀘스트 아이템.", "quest_locked": True},
+    "sq_recipe_brooksha":     {"name": "브룩샤의 레시피",        "type": "quest", "grade": "Normal", "price": 0, "desc": "브룩샤의 특제 레시피. 퀘스트 아이템.", "quest_locked": True},
+    "sq_lunchbox_brooksha":   {"name": "브룩샤의 도시락",        "type": "quest", "grade": "Normal", "price": 0, "desc": "브룩샤가 만든 점심 도시락. 퀘스트 아이템.", "quest_locked": True},
+    "sq_special_ingredient":  {"name": "브룩샤의 특제 식재료",   "type": "quest", "grade": "Normal", "price": 0, "desc": "오멜룸이 조달한 특제 식재료. 퀘스트 아이템.", "quest_locked": True},
+    "sq_medicine_omelum":     {"name": "오멜룸의 약",            "type": "quest", "grade": "Normal", "price": 0, "desc": "오멜룸이 조제한 약. 퀘스트 아이템.", "quest_locked": True},
+    "sq_potion_sample":       {"name": "오멜룸의 포션 견본",     "type": "quest", "grade": "Normal", "price": 0, "desc": "오멜룸의 포션 견본. 퀘스트 아이템.", "quest_locked": True},
+    "sq_rare_reagent":        {"name": "희귀 시약",              "type": "quest", "grade": "Normal", "price": 0, "desc": "게일의 환영이 필요한 희귀 시약. 퀘스트 아이템.", "quest_locked": True},
+    "sq_training_report":     {"name": "카엘릭의 훈련 보고서",   "type": "quest", "grade": "Normal", "price": 0, "desc": "카엘릭의 수련생 훈련 보고서. 퀘스트 아이템.", "quest_locked": True},
+    "sq_weapon_check_order":  {"name": "무기 점검 의뢰서",       "type": "quest", "grade": "Normal", "price": 0, "desc": "카엘릭이 보내는 무기 점검 의뢰서. 퀘스트 아이템.", "quest_locked": True},
+    "sq_tactical_doc":        {"name": "기밀 전술 서류",         "type": "quest", "grade": "Normal", "price": 0, "desc": "카엘릭의 기밀 전술 서류. 절대 열어보지 말 것. 퀘스트 아이템.", "quest_locked": True},
+}
+ALL_ITEMS.update(QUEST_DELIVER_ITEMS)
+
 # ─── 스킬북 ──────────────────────────────────────────────────────────────────
 # 훈련소(카엘릭) 및 마법학교(게일의 환영)에서 판매
 SKILL_BOOKS = {

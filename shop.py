@@ -8,9 +8,16 @@ try:
 except ImportError:
     SKILL_BOOKS = {}
 
+# 브룩샤 판매 기초 요리 4종 (COOKED_DISHES에서 선정)
+_BROOKSHA_DISHES = {
+    k: v for k, v in COOKED_DISHES.items()
+    if k in ("simple_soup", "potato_pancake", "mushroom_soup", "tofu")
+}
+
 NPC_CATALOGS = {
     "다몬":   {**WEAPONS, **ARMORS},
-    "오멜룸": {**CONSUMABLES, **TOOLS, **GROCERIES},
+    "오멜룸": {**CONSUMABLES, **TOOLS},
+    "브룩샤": {**GROCERIES, **_BROOKSHA_DISHES},
     "몰":     BAGS,
     "카엘릭": {k: v for k, v in SKILL_BOOKS.items() if v.get("npc") == "카엘릭"},
     "게일의 환영": {k: v for k, v in SKILL_BOOKS.items() if v.get("npc") == "게일의 환영"},

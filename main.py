@@ -28,7 +28,7 @@ from fishing      import FishingEngine
 from cooking_db   import CookingEngine
 from metallurgy   import MetallurgyEngine
 from alarms       import setup_alarms
-from responses    import get_drider_response, get_hyness_response, get_majesty_response, get_pet_response, get_scold_response
+from responses    import get_pet_response, get_scold_response
 from items        import CONSUMABLES, COOKED_DISHES, ALL_ITEMS, GATHERING_ITEMS
 from village      import village_manager
 from gathering    import GatheringEngine
@@ -152,27 +152,10 @@ async def on_ready():
 
 
 @bot.event
+@bot.event
 async def on_message(message):
     if message.author.bot:
         return
-
-    content = message.content.lower()
-
-    # 츄라이더 응답
-    if "츄라이더" in content and message.author.id == DRIDER_ID:
-        await message.channel.send(get_drider_response())
-        return
-
-    # 하이네스 응답
-    if "하이네스" in content and message.author.id == HYNESS_ID:
-        await message.channel.send(get_hyness_response())
-        return
-
-    # 마제스티 응답
-    if "마제스티" in content and message.author.id == MAJESTY_ID:
-        await message.channel.send(get_majesty_response())
-        return
-
     await bot.process_commands(message)
 
 
@@ -480,11 +463,14 @@ async def village_cmd(ctx, *, name: str = None):
 async def talk_cmd(ctx, *, name: str = None):
     if not await _check_channel(ctx):
         return
-    if not name:
-        msg = npc_manager.list_npcs()
-        await ctx.send(msg)
+    if name:
+        await ctx.send(ansi(
+            f"  {C.RED}✖ /대화 [NPC이름] 형식은 더 이상 지원하지 않슴미댜!\n"
+            f"  {C.GREEN}/비전타운{C.R} 또는 {C.GREEN}/마을상태{C.R} 로 NPC에게 접근해주셰요."
+        ))
         return
-    await npc_manager.talk_to_npc_async(ctx, name)
+    msg = npc_manager.list_npcs()
+    await ctx.send(msg)
 
 
 @bot.command(name="특수키워드")
@@ -1268,7 +1254,16 @@ async def village_status_cmd(ctx):
 async def pat_cmd(ctx):
     if not await _check_channel(ctx):
         return
-    msg = get_pet_response()
+    from responses import HYNESS_PET_RESPONSES, MAJESTY_PET_RESPONSES, DRIDER_PET_RESPONSES
+    uid = ctx.author.id
+    if uid == HYNESS_ID:
+        msg = random.choice(HYNESS_PET_RESPONSES)
+    elif uid == MAJESTY_ID:
+        msg = random.choice(MAJESTY_PET_RESPONSES)
+    elif uid == DRIDER_ID:
+        msg = random.choice(DRIDER_PET_RESPONSES)
+    else:
+        msg = get_pet_response()
 
     # 업적 & 일기 카운터 증가
     newly_unlocked = achievement_manager.increment("pet_count", 1)
@@ -1571,7 +1566,16 @@ async def discard_cmd(ctx, item_name: str = None, count_str: str = "1"):
 async def scold_cmd(ctx):
     if not await _check_channel(ctx):
         return
-    msg = get_scold_response()
+    from responses import HYNESS_SCOLD_RESPONSES, MAJESTY_SCOLD_RESPONSES, DRIDER_SCOLD_RESPONSES
+    uid = ctx.author.id
+    if uid == HYNESS_ID:
+        msg = random.choice(HYNESS_SCOLD_RESPONSES)
+    elif uid == MAJESTY_ID:
+        msg = random.choice(MAJESTY_SCOLD_RESPONSES)
+    elif uid == DRIDER_ID:
+        msg = random.choice(DRIDER_SCOLD_RESPONSES)
+    else:
+        msg = get_scold_response()
     embed = discord.Embed(
         title="😤 혼내기!",
         description=msg,

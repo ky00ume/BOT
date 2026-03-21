@@ -753,6 +753,17 @@ GROCERIES = {
     "empty_bottle": {"name": "빈 병",     "type": "material", "grade": "Normal", "price": 15,  "desc": "물 뜨기용."},
 }
 
+# 벌목 아이템 ─────────────────────────────────────────────────────────────────
+WOODCUT_ITEMS = {
+    "scrap_branch":  {"name": "잡목 가지",   "type": "wood", "grade": "Normal",    "price": 8,    "desc": "F랭 벌목으로 얻는 잡목 가지."},
+    "worn_lumber":   {"name": "낡은 목재",   "type": "wood", "grade": "Normal",    "price": 20,   "desc": "E랭 벌목으로 얻는 낡은 목재."},
+    "hardwood":      {"name": "단단한 나무", "type": "wood", "grade": "Rare",      "price": 60,   "desc": "D랭 벌목으로 얻는 단단한 나무."},
+    "dark_lumber":   {"name": "흑목 원목",   "type": "wood", "grade": "Rare",      "price": 120,  "desc": "C랭 벌목으로 얻는 흑목 원목."},
+    "premium_wood":  {"name": "고급 원목",   "type": "wood", "grade": "Epic",      "price": 300,  "desc": "B랭 벌목으로 얻는 고급 원목."},
+    "rare_timber":   {"name": "희귀 목재",   "type": "wood", "grade": "Epic",      "price": 800,  "desc": "A랭 벌목으로 얻는 희귀 목재."},
+    "ancient_timber":{"name": "전설의 고목", "type": "wood", "grade": "Legendary", "price": 5000, "desc": "1랭 벌목으로 얻는 전설의 고목."},
+}
+
 ALL_ITEMS = {
     **WEAPONS,
     **ARMORS,
@@ -769,6 +780,7 @@ ALL_ITEMS = {
     **TOOLS,
     **MATERIALS,
     **GROCERIES,
+    **WOODCUT_ITEMS,
 }
 
 # ── 스토리 퀘스트 아이템 ────────────────────────────────────────────────────
@@ -811,6 +823,23 @@ STORY_QUEST_ITEMS = {
 }
 
 ALL_ITEMS.update(STORY_QUEST_ITEMS)
+
+# ─── 일반 의뢰 퀘스트 전용 아이템 (quest_locked=True: 버리기/판매/사용/장착 불가) ──
+QUEST_DELIVER_ITEMS = {
+    "sq_letter_from_damon":   {"name": "다몬의 편지",           "type": "quest", "grade": "Normal", "price": 0, "desc": "다몬이 브룩샤에게 보내는 편지. 퀘스트 아이템.", "quest_locked": True},
+    "sq_blueprint_damion":    {"name": "다몬의 무기 도면",       "type": "quest", "grade": "Normal", "price": 0, "desc": "다몬이 그린 무기 설계 도면. 퀘스트 아이템.", "quest_locked": True},
+    "sq_secret_order_damion": {"name": "다몬의 비밀 주문서",     "type": "quest", "grade": "Normal", "price": 0, "desc": "다몬의 비밀 의뢰서. 절대 열어보지 말 것. 퀘스트 아이템.", "quest_locked": True},
+    "sq_recipe_brooksha":     {"name": "브룩샤의 레시피",        "type": "quest", "grade": "Normal", "price": 0, "desc": "브룩샤의 특제 레시피. 퀘스트 아이템.", "quest_locked": True},
+    "sq_lunchbox_brooksha":   {"name": "브룩샤의 도시락",        "type": "quest", "grade": "Normal", "price": 0, "desc": "브룩샤가 만든 점심 도시락. 퀘스트 아이템.", "quest_locked": True},
+    "sq_special_ingredient":  {"name": "브룩샤의 특제 식재료",   "type": "quest", "grade": "Normal", "price": 0, "desc": "오멜룸이 조달한 특제 식재료. 퀘스트 아이템.", "quest_locked": True},
+    "sq_medicine_omelum":     {"name": "오멜룸의 약",            "type": "quest", "grade": "Normal", "price": 0, "desc": "오멜룸이 조제한 약. 퀘스트 아이템.", "quest_locked": True},
+    "sq_potion_sample":       {"name": "오멜룸의 포션 견본",     "type": "quest", "grade": "Normal", "price": 0, "desc": "오멜룸의 포션 견본. 퀘스트 아이템.", "quest_locked": True},
+    "sq_rare_reagent":        {"name": "희귀 시약",              "type": "quest", "grade": "Normal", "price": 0, "desc": "게일의 환영이 필요한 희귀 시약. 퀘스트 아이템.", "quest_locked": True},
+    "sq_training_report":     {"name": "카엘릭의 훈련 보고서",   "type": "quest", "grade": "Normal", "price": 0, "desc": "카엘릭의 수련생 훈련 보고서. 퀘스트 아이템.", "quest_locked": True},
+    "sq_weapon_check_order":  {"name": "무기 점검 의뢰서",       "type": "quest", "grade": "Normal", "price": 0, "desc": "카엘릭이 보내는 무기 점검 의뢰서. 퀘스트 아이템.", "quest_locked": True},
+    "sq_tactical_doc":        {"name": "기밀 전술 서류",         "type": "quest", "grade": "Normal", "price": 0, "desc": "카엘릭의 기밀 전술 서류. 절대 열어보지 말 것. 퀘스트 아이템.", "quest_locked": True},
+}
+ALL_ITEMS.update(QUEST_DELIVER_ITEMS)
 
 # ─── 스킬북 ──────────────────────────────────────────────────────────────────
 # 훈련소(카엘릭) 및 마법학교(게일의 환영)에서 판매

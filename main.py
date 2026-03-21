@@ -28,7 +28,7 @@ from fishing      import FishingEngine
 from cooking_db   import CookingEngine
 from metallurgy   import MetallurgyEngine
 from alarms       import setup_alarms
-from responses    import get_drider_response, get_hyness_response, get_majesty_response, get_pet_response, get_scold_response
+from responses    import get_pet_response, get_scold_response, HYNESS_PET_RESPONSES, MAJESTY_PET_RESPONSES, DRIDER_PET_RESPONSES, HYNESS_SCOLD_RESPONSES, MAJESTY_SCOLD_RESPONSES, DRIDER_SCOLD_RESPONSES
 from items        import CONSUMABLES, COOKED_DISHES, ALL_ITEMS, GATHERING_ITEMS
 from village      import village_manager
 from gathering    import GatheringEngine
@@ -155,24 +155,6 @@ async def on_ready():
 async def on_message(message):
     if message.author.bot:
         return
-
-    content = message.content.lower()
-
-    # 츄라이더 응답
-    if "츄라이더" in content and message.author.id == DRIDER_ID:
-        await message.channel.send(get_drider_response())
-        return
-
-    # 하이네스 응답
-    if "하이네스" in content and message.author.id == HYNESS_ID:
-        await message.channel.send(get_hyness_response())
-        return
-
-    # 마제스티 응답
-    if "마제스티" in content and message.author.id == MAJESTY_ID:
-        await message.channel.send(get_majesty_response())
-        return
-
     await bot.process_commands(message)
 
 
@@ -465,26 +447,28 @@ async def notice_cmd(ctx):
     await send_town_notice(ctx.channel)
 
 
-@bot.command(name="마을")
-async def village_cmd(ctx, *, name: str = None):
+@bot.command(name="비전타운", aliases=["마을"])
+async def vision_town_cmd(ctx):
     if not await _check_channel(ctx):
         return
-    if name:
-        await npc_manager.talk_to_npc_async(ctx, name)
-    else:
-        msg = npc_manager.list_npcs()
-        await ctx.send(msg)
+    from town_ui import VisionTownView, _make_town_embed
+    embed = _make_town_embed(village_manager)
+    view = VisionTownView(shared_player, affinity_manager, npc_manager, village_manager)
+    await ctx.send(embed=embed, view=view)
 
 
 @bot.command(name="대화")
 async def talk_cmd(ctx, *, name: str = None):
     if not await _check_channel(ctx):
         return
-    if not name:
-        msg = npc_manager.list_npcs()
-        await ctx.send(msg)
+    if name:
+        await ctx.send(ansi(
+            f"  {C.RED}✖ /대화 [NPC이름] 형식은 더 이상 지원하지 않슴미댜!\n"
+            f"  {C.GREEN}/비전타운{C.R} 또는 {C.GREEN}/마을상태{C.R} 로 NPC에게 접근해주셰요."
+        ))
         return
-    await npc_manager.talk_to_npc_async(ctx, name)
+    msg = npc_manager.list_npcs()
+    await ctx.send(msg)
 
 
 @bot.command(name="특수키워드")
@@ -505,10 +489,10 @@ async def special_keyword_cmd(ctx, npc_name: str = None, *, keyword: str = None)
             f"  {C.RED}✖ 현재 {npc_name}(이)가 근처에 없슴미댜. 인카운터를 기다리셰요!{C.R}"
         ))
         return
-    # 키워드 대화는 일반 대화 시스템 활용
+    # 특수 NPC도 동일한 임베드+버튼 대화 시스템 활용
     from npc_conversation import ConversationManager
     aff_mgr = getattr(shared_player, "_affinity_manager", None)
-    conv = ConversationManager(shared_player, aff_mgr)
+    conv = ConversationManager(shared_player, aff_mgr, npc_manager)
     await conv.send_conversation(ctx, npc_name)
 
 
@@ -1134,8 +1118,10 @@ async def craft_cmd(ctx, recipe_id: str = None):
 async def quest_cmd(ctx):
     if not await _check_channel(ctx):
         return
-    result = quest_manager.list_quests()
-    await ctx.send(result)
+    from quest_ui import QuestWindowView, make_quest_embed
+    embed = make_quest_embed(quest_manager)
+    view = QuestWindowView(quest_manager, shared_player)
+    await ctx.send(embed=embed, view=view)
 
 
 @bot.command(name="퀘스트수락")
@@ -1268,7 +1254,15 @@ async def village_status_cmd(ctx):
 async def pat_cmd(ctx):
     if not await _check_channel(ctx):
         return
-    msg = get_pet_response()
+    uid = ctx.author.id
+    if uid == HYNESS_ID:
+        msg = random.choice(HYNESS_PET_RESPONSES)
+    elif uid == MAJESTY_ID:
+        msg = random.choice(MAJESTY_PET_RESPONSES)
+    elif uid == DRIDER_ID:
+        msg = random.choice(DRIDER_PET_RESPONSES)
+    else:
+        msg = get_pet_response()
 
     # 업적 & 일기 카운터 증가
     newly_unlocked = achievement_manager.increment("pet_count", 1)
@@ -1540,6 +1534,12 @@ async def discard_cmd(ctx, item_name: str = None, count_str: str = "1"):
         await ctx.send(ansi(f"  {C.RED}✖ [{item_name}]을(를) 찾을 수 없슴미댜!{C.R}"))
         return
 
+    # 퀘스트 아이템 버리기 차단
+    from items import ALL_ITEMS as _ALL_ITEMS_CHECK
+    if _ALL_ITEMS_CHECK.get(item_id, {}).get("quest_locked"):
+        await ctx.send(ansi(f"  {C.RED}❌ 퀘스트 아이템은 버릴 수 없슴미댜!{C.R}"))
+        return
+
     have = shared_player.inventory.get(item_id, 0)
     if have == 0:
         await ctx.send(ansi(f"  {C.RED}✖ 인벤토리에 [{item_name}]이(가) 없슴미댜!{C.R}"))
@@ -1571,7 +1571,15 @@ async def discard_cmd(ctx, item_name: str = None, count_str: str = "1"):
 async def scold_cmd(ctx):
     if not await _check_channel(ctx):
         return
-    msg = get_scold_response()
+    uid = ctx.author.id
+    if uid == HYNESS_ID:
+        msg = random.choice(HYNESS_SCOLD_RESPONSES)
+    elif uid == MAJESTY_ID:
+        msg = random.choice(MAJESTY_SCOLD_RESPONSES)
+    elif uid == DRIDER_ID:
+        msg = random.choice(DRIDER_SCOLD_RESPONSES)
+    else:
+        msg = get_scold_response()
     embed = discord.Embed(
         title="😤 혼내기!",
         description=msg,

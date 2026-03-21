@@ -62,7 +62,7 @@ def create_status_embed(player) -> discord.Embed:
 
     embed.add_field(
         name="💰 소지금 / 인벤토리",
-        value=f"💰 **{gold:,}G**\n🎒 {used}/{max_slots} 슬롯{bag_name}",
+        value=f"💰 **{gold:,}G**\n🎒 {used}/{max_slots} 슬롯",
         inline=True,
     )
 

@@ -123,6 +123,74 @@ def _pick_by_rate(items: list) -> dict:
     return items[-1]
 
 
+# ── 벌목 랭크별 테이블 ────────────────────────────────────────────────────────
+WOODCUT_TABLE = {
+    "F": {
+        "id":            "scrap_branch",
+        "name":          "잡목 가지",
+        "grade":         "Normal",
+        "energy_cost":   10,
+        "exp":           5,
+        "rank_req_level": 1,
+        "desc":          "F랭 벌목: 잡목 가지를 채취합니다. (기력 10, EXP 5)",
+    },
+    "E": {
+        "id":            "worn_lumber",
+        "name":          "낡은 목재",
+        "grade":         "Normal",
+        "energy_cost":   12,
+        "exp":           8,
+        "rank_req_level": 5,
+        "desc":          "E랭 벌목: 낡은 목재를 채취합니다. (기력 12, EXP 8)",
+    },
+    "D": {
+        "id":            "hardwood",
+        "name":          "단단한 나무",
+        "grade":         "Rare",
+        "energy_cost":   15,
+        "exp":           12,
+        "rank_req_level": 10,
+        "desc":          "D랭 벌목: 단단한 나무를 채취합니다. (기력 15, EXP 12)",
+    },
+    "C": {
+        "id":            "dark_lumber",
+        "name":          "흑목 원목",
+        "grade":         "Rare",
+        "energy_cost":   18,
+        "exp":           18,
+        "rank_req_level": 20,
+        "desc":          "C랭 벌목: 흑목 원목을 채취합니다. (기력 18, EXP 18)",
+    },
+    "B": {
+        "id":            "premium_wood",
+        "name":          "고급 원목",
+        "grade":         "Epic",
+        "energy_cost":   20,
+        "exp":           25,
+        "rank_req_level": 30,
+        "desc":          "B랭 벌목: 고급 원목을 채취합니다. (기력 20, EXP 25)",
+    },
+    "A": {
+        "id":            "rare_timber",
+        "name":          "희귀 목재",
+        "grade":         "Epic",
+        "energy_cost":   22,
+        "exp":           35,
+        "rank_req_level": 45,
+        "desc":          "A랭 벌목: 희귀 목재를 채취합니다. (기력 22, EXP 35)",
+    },
+    "1": {
+        "id":            "ancient_timber",
+        "name":          "전설의 고목",
+        "grade":         "Legendary",
+        "energy_cost":   25,
+        "exp":           50,
+        "rank_req_level": 60,
+        "desc":          "1랭 벌목: 전설의 고목을 채취합니다. (기력 25, EXP 50)",
+    },
+}
+
+
 class GatheringEngine:
     def __init__(self, player):
         self.player = player

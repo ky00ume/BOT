@@ -753,6 +753,17 @@ GROCERIES = {
     "empty_bottle": {"name": "빈 병",     "type": "material", "grade": "Normal", "price": 15,  "desc": "물 뜨기용."},
 }
 
+# 벌목 아이템 ─────────────────────────────────────────────────────────────────
+WOODCUT_ITEMS = {
+    "scrap_branch":  {"name": "잡목 가지",   "type": "wood", "grade": "Normal",    "price": 8,    "desc": "F랭 벌목으로 얻는 잡목 가지."},
+    "worn_lumber":   {"name": "낡은 목재",   "type": "wood", "grade": "Normal",    "price": 20,   "desc": "E랭 벌목으로 얻는 낡은 목재."},
+    "hardwood":      {"name": "단단한 나무", "type": "wood", "grade": "Rare",      "price": 60,   "desc": "D랭 벌목으로 얻는 단단한 나무."},
+    "dark_lumber":   {"name": "흑목 원목",   "type": "wood", "grade": "Rare",      "price": 120,  "desc": "C랭 벌목으로 얻는 흑목 원목."},
+    "premium_wood":  {"name": "고급 원목",   "type": "wood", "grade": "Epic",      "price": 300,  "desc": "B랭 벌목으로 얻는 고급 원목."},
+    "rare_timber":   {"name": "희귀 목재",   "type": "wood", "grade": "Epic",      "price": 800,  "desc": "A랭 벌목으로 얻는 희귀 목재."},
+    "ancient_timber":{"name": "전설의 고목", "type": "wood", "grade": "Legendary", "price": 5000, "desc": "1랭 벌목으로 얻는 전설의 고목."},
+}
+
 ALL_ITEMS = {
     **WEAPONS,
     **ARMORS,
@@ -769,6 +780,7 @@ ALL_ITEMS = {
     **TOOLS,
     **MATERIALS,
     **GROCERIES,
+    **WOODCUT_ITEMS,
 }
 
 # ── 스토리 퀘스트 아이템 ────────────────────────────────────────────────────

@@ -2,6 +2,8 @@
 import time
 from ui_theme import C, ansi, header_box, divider, GRADE_ICON_PLAIN
 
+GOLD_TO_CONTRIBUTION_RATIO = 50  # gold ÷ ratio = village contribution points
+
 QUEST_DB = {
     # ── 다몬 (대장장이) ──────────────────────────────────────────────────────
     "q_damion_collect_easy": {
@@ -77,7 +79,7 @@ QUEST_DB = {
         "name":         "편지 전달",
         "npc":          "다몬",
         "type":         "deliver",
-        "difficulty":   "normal",
+        "difficulty":   "easy",
         "deliver_to":   "브룩샤",
         "quest_item":   "sq_letter_from_damon",
         "reward_gold":  600,
@@ -556,7 +558,7 @@ class QuestManager:
 
         try:
             from village import village_manager
-            village_manager.add_contribution(max(1, gold // 50))
+            village_manager.add_contribution(max(1, gold // GOLD_TO_CONTRIBUTION_RATIO))
         except Exception:
             pass
 

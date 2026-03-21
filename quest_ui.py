@@ -8,6 +8,8 @@ from quest import QUEST_DB
 DIFFICULTY_LABEL = {"easy": "⬜ 쉬움", "normal": "🟨 보통", "hard": "🟥 어려움"}
 TYPE_LABEL = {"collect": "📦 채집형", "kill": "⚔️ 처치형", "deliver": "📨 전달형"}
 
+MAX_SELECT_LABEL_LENGTH = 80  # Discord select menu label max length
+
 
 def make_quest_embed(quest_manager) -> discord.Embed:
     """퀘스트 목록 메인 임베드"""
@@ -99,7 +101,7 @@ class QuestWindowView(View):
             elif tp == "deliver":
                 ready = info.get("delivered", False)
             emoji = "✅" if ready else "🔄"
-            label = q["name"][:80]
+            label = q["name"][:MAX_SELECT_LABEL_LENGTH]
             options.append(discord.SelectOption(
                 label=label,
                 value=qid,
@@ -110,7 +112,7 @@ class QuestWindowView(View):
         # 수락 가능
         for qid, q in available[:15]:
             options.append(discord.SelectOption(
-                label=q["name"][:80],
+                label=q["name"][:MAX_SELECT_LABEL_LENGTH],
                 value=qid,
                 emoji="◽",
                 description=f"{q['npc']} | {DIFFICULTY_LABEL.get(q.get('difficulty','easy'), '')}",

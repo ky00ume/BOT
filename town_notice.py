@@ -20,6 +20,7 @@ def make_intro_embed() -> discord.Embed:
             "• `/장비` — 장비창 확인\n"
             "• `/장착 [아이템이름]` — 장비 장착\n"
             "• `/벗기 [슬롯]` — 장비 탈착\n"
+            "• `/비전타운` — 마을 이동·NPC 대화·탐험 (임베드+버튼 UI)\n"
             "• `/도움말` — 전체 명령어 목록\n"
             "• `/공지` — 이 공지를 다시 보기"
         ),
@@ -66,8 +67,11 @@ def make_npc_embed() -> discord.Embed:
     embed.add_field(
         name="💬 대화 & 알바",
         value=(
-            "`/대화 [NPC이름]` — NPC와 대화\n"
-            "`/알바 [NPC이름]` — NPC 알바 진행 (기력 소모, 골드·EXP 획득)"
+            "`/비전타운` → NPC 버튼으로 대화 (버튼+임베드 UI)\n"
+            "~~`/대화 [NPC이름]`~~ — 삭제됨 → `/비전타운` 사용\n"
+            "`/대화` (단독) — NPC 목록 확인은 유지\n"
+            "`/알바 [NPC이름]` — NPC 알바 진행 (기력 소모, 골드·EXP 획득)\n"
+            "⚠️ 호감도 일일 한도 달성 시 대화는 계속 가능 (대화 차단 없음)"
         ),
         inline=False,
     )
@@ -190,7 +194,8 @@ def make_commands_embed() -> discord.Embed:
     embed.add_field(
         name="🏘 마을 & NPC",
         value=(
-            "`/마을` `/대화 [NPC]`\n"
+            "`/비전타운` — 마을·월드맵·NPC 통합 UI\n"
+            "`/대화` — NPC 목록 확인\n"
             "`/알바 [NPC]` `/공지`\n"
             "`/마을상태` `/이동 [장소]`"
         ),
@@ -230,8 +235,8 @@ def make_commands_embed() -> discord.Embed:
     embed.add_field(
         name="📋 퀘스트 & 소셜",
         value=(
-            "`/퀘스트` `/퀘스트수락 [ID]`\n"
-            "`/퀘스트완료 [ID]`\n"
+            "`/퀘스트` — 퀘스트 목록 (채집·처치·전달형)\n"
+            "`/퀘스트수락 [ID]` `/퀘스트완료 [ID]`\n"
             "`/뽑기` `/뽑기10`\n"
             "`/작곡` `/연주 [ID]`\n"
             "`/게시판` `/명예의전당`\n"
@@ -260,9 +265,83 @@ def make_commands_embed() -> discord.Embed:
     return embed
 
 
+def make_patchnote_embed() -> discord.Embed:
+    embed = discord.Embed(
+        title="🛠️ 패치노트 — v0.5 (2026-03-21)",
+        description="비전 타운 봇 대규모 업데이트 내용임미댜!",
+        color=0xf0a500,
+    )
+    embed.add_field(
+        name="🏙️ 마을·탐험 시스템 전면 개편",
+        value=(
+            "• `/마을` 삭제 → **`/비전타운`** 으로 교체\n"
+            "• 마을·월드맵 임베드+버튼 UI 통합\n"
+            "• 사냥터·채집터·낚시터 버튼 이동 지원\n"
+            "• 실렌 낚시터에서 `[실렌]` 버튼으로 NPC 대화 연결"
+        ),
+        inline=False,
+    )
+    embed.add_field(
+        name="💬 NPC 대화 시스템 개편",
+        value=(
+            "• `/대화 [NPC이름]` 형식 **삭제** → `/비전타운` 버튼 사용\n"
+            "• NPC 대화 전면 임베드+버튼 UI로 교체\n"
+            "• 호감도 하루 한도 달성 시 대화 차단 없음 → 임베드 경고 표시로 변경"
+        ),
+        inline=False,
+    )
+    embed.add_field(
+        name="📋 퀘스트 시스템 전면 재설계",
+        value=(
+            "• 퀘스트 타입 3종: **채집형 / 처치형 / 전달형**\n"
+            "• 36개 퀘스트 추가 (NPC 4인 × 타입 3 × 난이도 3)\n"
+            "• 전달형 퀘스트 아이템(`sq_` 접두사) — 버리기·판매·장착 불가\n"
+            "• 퀘스트 UI → 셀렉트 메뉴+버튼 기반으로 개편"
+        ),
+        inline=False,
+    )
+    embed.add_field(
+        name="🛒 상점 배분 변경",
+        value=(
+            "• **오멜룸** 상점: 식료품 제거 → 소비품 + 도구\n"
+            "• **브룩샤** 상점 신설: 식료품 + 기초 요리 4종"
+        ),
+        inline=True,
+    )
+    embed.add_field(
+        name="🪓 벌목 시스템 업데이트",
+        value=(
+            "• 목재 7등급 아이템 추가\n"
+            "  잡목 가지(F) ~ 전설의 고목(1)\n"
+            "• 등급별 기력 소모 및 경험치 적용"
+        ),
+        inline=True,
+    )
+    embed.add_field(
+        name="🗣️ /쓰담·/훈육 대사 개편",
+        value=(
+            "• 캐릭터 ID별 맞춤 대사로 분기\n"
+            "  (HYNESS 10종 / MAJESTY 10종 / DRIDER 5종)"
+        ),
+        inline=True,
+    )
+    embed.add_field(
+        name="🔧 기타 수정",
+        value=(
+            "• 채팅 자연어 반응 완전 제거\n"
+            "• 인벤토리 슬롯에서 가방 이름 미표시\n"
+            "• [핫픽스] `/저장` 오류 수정 — `current_title` 컬럼 누락 버그 해결"
+        ),
+        inline=False,
+    )
+    embed.set_footer(text="✦ 비전 타운 봇 v0.5 패치노트 ✦")
+    return embed
+
+
 async def send_town_notice(channel):
-    """채널에 마을 공지 4장을 전송합니다."""
+    """채널에 마을 공지 5장을 전송합니다."""
     await channel.send(embed=make_intro_embed())
     await channel.send(embed=make_npc_embed())
     await channel.send(embed=make_life_embed())
     await channel.send(embed=make_commands_embed())
+    await channel.send(embed=make_patchnote_embed())

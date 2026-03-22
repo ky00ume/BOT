@@ -1,5 +1,5 @@
 from skills_db import (
-    RANK_ORDER, RANK_UP_THRESHOLD, MASTERY_SKILLS,
+    RANK_ORDER, RANK_UP_THRESHOLD, SKILL_RANK_THRESHOLD, MASTERY_SKILLS,
     COMBAT_SKILLS, MAGIC_SKILLS, RECOVERY_SKILLS, OTHER_SKILLS,
 )
 
@@ -111,6 +111,7 @@ class Player:
         self.keywords = ["마을", "날씨", "소문"]  # 기본 키워드 3개로 시작
 
         self._story_quest_manager = None  # StoryQuestManager (main.py에서 주입)
+        self._flags: dict = {}  # 1회성 이벤트 플래그 (예: levelup_potion_granted)
 
     def get_max_slots(self):
         extra = 0
@@ -209,8 +210,11 @@ class Player:
         current_rank = self.skill_ranks[skill_id]
         messages = []
 
+        # 스킬별 threshold 조회 (없으면 공통 RANK_UP_THRESHOLD 폴백)
+        skill_thresholds = SKILL_RANK_THRESHOLD.get(skill_id, RANK_UP_THRESHOLD)
+
         while True:
-            threshold = RANK_UP_THRESHOLD.get(current_rank)
+            threshold = skill_thresholds.get(current_rank, RANK_UP_THRESHOLD.get(current_rank))
             if threshold is None:
                 break
             if self.skill_exp[skill_id] < threshold:
@@ -269,6 +273,7 @@ class Player:
             "skill_exp":     self.skill_exp,
             "last_special_encounter": getattr(self, "last_special_encounter", None),
             "rafael_contract": getattr(self, "rafael_contract", None),
+            "_flags": getattr(self, "_flags", {}),
         }
         # 스토리 퀘스트 데이터 포함
         sq_mgr = getattr(self, "_story_quest_manager", None)
@@ -333,6 +338,9 @@ class Player:
             self.last_special_encounter = data["last_special_encounter"]
         if "rafael_contract" in data:
             self.rafael_contract = data["rafael_contract"]
+        # 1회성 플래그 복원
+        if "_flags" in data and isinstance(data["_flags"], dict):
+            self._flags = data["_flags"]
 
     def get_attack(self) -> int:
         base = 5 + self.base_stats.get("str", 10) // 2
@@ -341,6 +349,14 @@ class Player:
         if main_id:
             weapon = ALL_ITEMS.get(main_id, {})
             base += weapon.get("attack", 0)
+        # 타이틀 효과
+        try:
+            from title_data import get_title_effects
+            eff = get_title_effects(self.current_title)
+            base += eff.get("atk_bonus", 0)
+            base += eff.get("stat_bonus", {}).get("str", 0) // 2
+        except Exception:
+            pass
         return base
 
     def get_defense(self) -> int:
@@ -351,4 +367,11 @@ class Player:
             if eq_id:
                 armor = ALL_ITEMS.get(eq_id, {})
                 base += armor.get("defense", 0)
+        # 타이틀 효과
+        try:
+            from title_data import get_title_effects
+            eff = get_title_effects(self.current_title)
+            base += eff.get("def_bonus", 0)
+        except Exception:
+            pass
         return base

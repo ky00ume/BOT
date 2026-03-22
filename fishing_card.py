@@ -161,7 +161,7 @@ def generate_job_card(
         {"label": "알바",     "value": job_name},
         {"label": "결과",     "value": result},
         {"label": "수입",     "value": f"+{gold:,} G"},
-        {"label": "스탯 상승", "value": stat_up or "없음"},
+        {"label": "보상", "value": stat_up or "없음"},
     ]
     return generate_card("알바 완료", "💼", rows, grade=grade)
 

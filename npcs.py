@@ -1,6 +1,7 @@
 import random
 from database import NPC_DATA
 from ui_theme import C, section, divider, header_box, ansi, EMBED_COLOR, FOOTERS
+from job_data import get_random_job, DIFFICULTY_LABELS
 
 
 class VillageNPC:
@@ -30,9 +31,10 @@ class VillageNPC:
             f"  {C.DARK}{npc.get('desc','')}{C.R}",
         ]
 
-        job = npc.get("job")
+        job = get_random_job(npc_name)
         if job:
-            lines.append(f"\n  {C.GOLD}▸ 알바{C.R}: {C.WHITE}{job['name']}{C.R}")
+            diff_label = DIFFICULTY_LABELS.get(job.get("difficulty", "easy"), "쉬움")
+            lines.append(f"\n  {C.GOLD}▸ 알바{C.R}: {C.WHITE}{job['name']}{C.R} [{diff_label}]")
             lines.append(f"    {C.DARK}보상: {job['reward_gold']}G / EXP+{job['reward_exp']} / 기력 -{job['energy_cost']}{C.R}")
             lines.append(f"  {C.GREEN}/알바 {npc['name']}{C.R} 으로 알바 가능")
 
@@ -55,13 +57,14 @@ class VillageNPC:
         await conv.send_conversation(ctx, npc_name)
 
     def start_job(self, npc_name: str) -> str:
+        """동기 알바 처리 (deprecated — start_job_async 사용 권장)."""
         npc = NPC_DATA.get(npc_name)
         if not npc:
             return ansi(f"  {C.RED}✖ [{npc_name}]을(를) 찾을 수 없슴미댜.{C.R}")
 
-        job = npc.get("job")
+        job = get_random_job(npc_name)
         if not job:
-            return ansi(f"  {C.RED}✖ {npc['name']}은(는) 알바가 없슴미댜.{C.R}")
+            return ansi(f"  {C.RED}✖ {npc.get('name', npc_name)}은(는) 알바가 없슴미댜.{C.R}")
 
         energy_cost = job.get("energy_cost", 20)
         if not self.player.consume_energy(energy_cost):
@@ -92,9 +95,9 @@ class VillageNPC:
             await ctx.send(ansi(f"  {C.RED}✖ [{npc_name}]을(를) 찾을 수 없슴미댜.{C.R}"))
             return
 
-        job = npc.get("job")
+        job = get_random_job(npc_name)
         if not job:
-            await ctx.send(ansi(f"  {C.RED}✖ {npc['name']}은(는) 알바가 없슴미댜.{C.R}"))
+            await ctx.send(ansi(f"  {C.RED}✖ {npc.get('name', npc_name)}은(는) 알바가 없슴미댜.{C.R}"))
             return
 
         energy_cost = job.get("energy_cost", 20)
@@ -104,16 +107,50 @@ class VillageNPC:
             ))
             return
 
+        diff_label = DIFFICULTY_LABELS.get(job.get("difficulty", "easy"), "쉬움")
+        job_type   = job.get("type", "hunt")
+
+        # ── gather 유형: 인벤토리 아이템 확인 & 차감 ──────────────────
+        if job_type == "gather":
+            target_item  = job.get("target_item", "")
+            target_count = job.get("target_count", 1)
+            have = self.player.inventory.get(target_item, 0)
+            if have < target_count:
+                # 기력 환불
+                self.player.energy = min(
+                    getattr(self.player, "max_energy", 100),
+                    self.player.energy + energy_cost,
+                )
+                from items import ALL_ITEMS
+                item_name = ALL_ITEMS.get(target_item, {}).get("name", target_item)
+                await ctx.send(ansi(
+                    f"  {C.RED}✖ 재료가 부족함미댜! "
+                    f"{item_name} {target_count}개 필요 (보유: {have}개)\n"
+                    f"  기력이 환불되었슴미댜. {C.R}"
+                ))
+                return
+            self.player.remove_item(target_item, target_count)
+
+        # ── deliver 유형: 퀘스트 아이템 인벤토리에 추가 ──────────────────
+        elif job_type == "deliver":
+            deliver_item      = job.get("deliver_item", "")
+            deliver_item_name = job.get("deliver_item_name", deliver_item)
+            target_npc        = job.get("target_npc", "")
+            if deliver_item:
+                self.player.add_item(deliver_item, 1)
+
         await ctx.send(ansi(
-            f"  {C.GOLD}💼 {npc['name']} 알바 시작!{C.R}\n"
+            f"  {C.GOLD}💼 {npc['name']} 알바 시작! [{diff_label}]{C.R}\n"
             f"  {C.DARK}{job['name']} — {job.get('desc','')}{C.R}\n"
             f"  {C.RED}기력 -{energy_cost}{C.R}  ⏱ 잠시 기다려 주셰요..."
         ))
 
         await asyncio.sleep(3)
 
-        reward_gold = job.get("reward_gold", 100)
-        reward_exp  = job.get("reward_exp",  10)
+        reward_gold      = job.get("reward_gold", 100)
+        reward_exp       = job.get("reward_exp", 10)
+        reward_item      = job.get("reward_item")
+        reward_skill_exp = job.get("reward_skill_exp", {})
 
         try:
             from village import village_manager
@@ -121,18 +158,56 @@ class VillageNPC:
         except Exception:
             pass
 
-        self.player.gold += reward_gold
-        self.player.exp = getattr(self.player, "exp", 0.0) + reward_exp
+        # ── hunt 유형: 즉시 완료 처리 ──────────────────────────────────
+        if job_type == "hunt":
+            self.player.gold += reward_gold
+            self.player.exp = getattr(self.player, "exp", 0.0) + reward_exp
+            result_note = ""
+        elif job_type == "gather":
+            self.player.gold += reward_gold
+            self.player.exp = getattr(self.player, "exp", 0.0) + reward_exp
+            result_note = ""
+        else:  # deliver
+            # 전달형: 보상은 대상 NPC에게 전달 완료 후 지급 (여기선 안내만)
+            await ctx.send(ansi(
+                f"  {C.GOLD}📦 배달 아이템을 받았슴미댜!{C.R}\n"
+                f"  {C.WHITE}[{deliver_item_name}]{C.R} — "
+                f"**{target_npc}** 에게 전달해 주셰요.\n"
+                f"  {C.DARK}전달 완료 시 보상: {reward_gold}G / EXP +{reward_exp}{C.R}"
+            ))
+            return
 
+        # ── 스킬 경험치 보상 ─────────────────────────────────────────────
+        if reward_skill_exp:
+            skill_ranks_ref = getattr(self.player, "skill_ranks", {})
+            skill_exp_ref   = getattr(self.player, "skill_exp", {})
+            for skill_id, amount in reward_skill_exp.items():
+                if skill_id in skill_ranks_ref:
+                    skill_exp_ref[skill_id] = skill_exp_ref.get(skill_id, 0) + amount
+            if not hasattr(self.player, "skill_exp"):
+                self.player.skill_exp = skill_exp_ref
+
+        # ── 보상 아이템 지급 ──────────────────────────────────────────────
+        reward_item_line = ""
+        if reward_item:
+            self.player.add_item(reward_item, 1)
+            from items import ALL_ITEMS
+            item_name = ALL_ITEMS.get(reward_item, {}).get("name", reward_item)
+            reward_item_line = f"\n  {C.WHITE}🎁 {item_name} x1{C.R}"
+
+        # ── 결과 카드 / 텍스트 전송 ──────────────────────────────────────
         card_sent = False
         try:
             import fishing_card
             import discord
             buf  = fishing_card.generate_job_card(
-                job["name"], "완료!", reward_gold, f"EXP +{reward_exp}"
+                job["name"], f"완료! [{diff_label}]", reward_gold, f"EXP +{reward_exp}"
             )
             file = discord.File(buf, filename="job_result.png")
-            embed = discord.Embed(title=f"💼 {npc['name']} 알바 완료!", color=EMBED_COLOR.get("npc", 0x4A7856))
+            embed = discord.Embed(
+                title=f"💼 {npc['name']} 알바 완료! [{diff_label}]",
+                color=EMBED_COLOR.get("npc", 0x4A7856),
+            )
             embed.set_image(url="attachment://job_result.png")
             await ctx.send(embed=embed, file=file)
             card_sent = True
@@ -141,11 +216,13 @@ class VillageNPC:
 
         if not card_sent:
             lines = [
-                header_box(f"💼 {npc['name']} 알바 완료!"),
+                header_box(f"💼 {npc['name']} 알바 완료! [{diff_label}]"),
                 f"  {C.WHITE}{job['name']}{C.R}",
                 divider(),
                 f"  {C.GOLD}+{reward_gold}G{C.R}  {C.GREEN}EXP +{reward_exp}{C.R}",
             ]
+            if reward_item_line:
+                lines.append(reward_item_line)
             await ctx.send(ansi("\n".join(lines)))
 
     def list_npcs(self) -> str:

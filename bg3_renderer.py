@@ -589,70 +589,96 @@ class BG3Renderer:
                            gold, exp, exp_needed,
                            stats: dict,
                            inv_used, inv_max) -> io.BytesIO:
-        W,H = 560,420
-        img = _make_base(W,H,"status")
+        W = 480
+        PAD = 20; HH = 68
+
+        # ── 폰트 (모바일 가독성 우선 — 큰 사이즈) ────────────
+        fN  = _f(28, True)   # 이름
+        fT  = _f(15)         # 칭호
+        fLb = _f(14, True)   # HP/MP/EN 라벨
+        fBv = _f(14)         # 바 수치
+        fSec= _f(14, True)   # 섹션 헤더
+        fSt = _f(15)         # 스탯 이름
+        fV  = _f(17, True)   # 스탯 값
+        fFt = _f(15, True)   # 하단
+
+        # ── 높이 계산 (세로 배치) ─────────────────────────────
+        # 헤더(68) + 바간격(16) + 바3줄(108) + 구분(14) + EXP(36)
+        # + 구분+헤더(36) + 스탯5줄(150) + 하단(56)
+        H = HH + 16 + 108 + 14 + 36 + 36 + 150 + 56
+        img = _make_base(W, H, "status")
         d   = ImageDraw.Draw(img)
-        fN=_f(26,True); fT=_f(13); fSec=_f(13,True)
-        fSt=_f(13); fV=_f(15,True); fLb=_f(11)
-        PAD=22; HH=74
 
-        # 헤더
-        hdr=Image.new("RGBA",(W,H),(0,0,0,0))
-        _gv(hdr,0,0,W,HH, (*C.BG3,230),(0,0,0,0))
-        img.alpha_composite(hdr); d=ImageDraw.Draw(img)
-        _notxt(d,(PAD,12), f"Lv.{level}  {name}", fN, C.TXT_HI)
-        # 칭호: None이면 표시 안 함
+        # ── 헤더 ──────────────────────────────────────────────
+        hdr = Image.new("RGBA", (W, H), (0,0,0,0))
+        _gv(hdr, 0, 0, W, HH, (*C.BG3, 230), (0,0,0,0))
+        img.alpha_composite(hdr); d = ImageDraw.Draw(img)
+        _notxt(d, (PAD, 10), f"Lv.{level}  {name}", fN, C.TXT_HI)
         if title_str and str(title_str) != "None":
-            _notxt(d,(PAD+2,48), f"✦ {title_str}", fT, C.GOLD_MID)
-        _orn(img,d,PAD,HH,W-PAD)
+            _notxt(d, (PAD+2, 42), f"✦ {title_str}", fT, C.GOLD_MID)
+        _orn(img, d, PAD, HH, W-PAD)
 
-        # ── 게이지 바 ──────────────────────────────────────
-        BW=200; BH=18; BX=PAD+48; LX=PAD+4
-        bars=[("HP",hp,max_hp,C.HP),("MP",mp,max_mp,C.MP),("EN",en,max_en,C.EN)]
-        by = HH+22
-        for lbl,cur,mx2,cols in bars:
-            _notxt(d,(LX,by+2),lbl,fLb,C.TXT_LBL)
-            _bar_A(img,d,BX,by,BW,BH,cur,mx2,cols,show_val=True)
-            d=ImageDraw.Draw(img); by+=34
+        # ── 게이지 바 (전체 폭 사용) ─────────────────────────
+        BW = W - PAD*2 - 56; BH = 20; BX = PAD + 50; LX = PAD + 4
+        bars = [("HP", hp, max_hp, C.HP), ("MP", mp, max_mp, C.MP), ("EN", en, max_en, C.EN)]
+        by = HH + 16
+        for lbl, cur, mx2, cols in bars:
+            _notxt(d, (LX, by+3), lbl, fLb, C.TXT_LBL)
+            _bar_A(img, d, BX, by, BW, BH, cur, mx2, cols, show_val=False)
+            d = ImageDraw.Draw(img)
+            # 수치를 바 안쪽 오른편에 표시
+            vtxt = f"{cur}/{mx2}"
+            vw = _tw(d, vtxt, fBv)
+            _notxt(d, (BX + BW - vw - 6, by+3), vtxt, fBv, C.TXT_HI)
+            by += 36
 
-        _orn(img,d,PAD,by+4,W//2-10,color=C.GOLD_LO); by+=16
-        _notxt(d,(LX,by+2),"EXP",fLb,C.TXT_LBL)
-        _bar_A(img,d,BX,by,BW,BH,int(exp),exp_needed,C.EXP,show_val=True)
-        d=ImageDraw.Draw(img)
+        # EXP 바
+        _orn(img, d, PAD, by+2, W-PAD, color=C.GOLD_LO); by += 14
+        _notxt(d, (LX, by+3), "EXP", fLb, C.TXT_LBL)
+        _bar_A(img, d, BX, by, BW, BH, int(exp), exp_needed, C.EXP, show_val=False)
+        d = ImageDraw.Draw(img)
+        vtxt = f"{int(exp)}/{exp_needed}"
+        vw = _tw(d, vtxt, fBv)
+        _notxt(d, (BX + BW - vw - 6, by+3), vtxt, fBv, C.TXT_HI)
+        by += 36
 
-        # ── 스탯 (오른쪽) ────────────────────────────────────
-        RX=W//2+50; RY=HH+14
-        _notxt(d,(RX,RY),"[ 기본 스탯 ]",fSec,C.GOLD_MID)
-        _orn(img,d,RX,RY+22,W-PAD,color=C.GOLD_LO)
+        # ── 구분선 + 스탯 (바 아래에 배치) ────────────────────
+        _orn(img, d, PAD, by, W-PAD)
+        by += 10
+        _notxt(d, (PAD+8, by), "[ 기본 스탯 ]", fSec, C.GOLD_MID)
+        by += 26
 
-        STAT_DATA=[
-            ("str","힘",  stats.get("str",0)),
-            ("dex","민첩",stats.get("dex",0)),
-            ("int","지력",stats.get("int",0)),
-            ("will","의지",stats.get("will",0)),
-            ("luck","운", stats.get("luck",0)),
+        STAT_DATA = [
+            ("str",  "힘",   stats.get("str", 0)),
+            ("dex",  "민첩", stats.get("dex", 0)),
+            ("int",  "지력", stats.get("int", 0)),
+            ("will", "의지", stats.get("will", 0)),
+            ("luck", "운",   stats.get("luck", 0)),
         ]
-        IS=24; sy=RY+32
-        for sk,sname,val in STAT_DATA:
-            _paste_stat_icon(img,d, sk, RX, sy-1, IS)
-            d=ImageDraw.Draw(img)
-            text_y = sy + (IS - _th(d,"가",fSt)) // 2
-            _notxt(d,(RX+IS+10, text_y), sname, fSt, C.TXT_LBL)
-            vt=str(val); vw=_tw(d,vt,fV)
-            _notxt(d,(W-PAD-vw-6, text_y), vt, fV, C.TXT_HI)
-            # 점선 리더 (텍스트 중앙 정렬)
-            leader_y = text_y + _th(d,"가",fSt) // 2
-            lx2=RX+IS+10+_tw(d,sname,fSt)+8; rx2=W-PAD-vw-14
-            if rx2>lx2:
-                for dx in range(lx2,rx2,7): d.point((dx,leader_y),fill=C.SEP)
-            sy+=32
+        IS = 22  # 아이콘 크기
+        for sk, sname, val in STAT_DATA:
+            _paste_stat_icon(img, d, sk, PAD+8, by, IS)
+            d = ImageDraw.Draw(img)
+            text_y = by + (IS - _th(d, "가", fSt)) // 2
+            _notxt(d, (PAD+8+IS+10, text_y), sname, fSt, C.TXT_LBL)
+            vt = str(val); vw = _tw(d, vt, fV)
+            _notxt(d, (W-PAD-vw-8, text_y), vt, fV, C.TXT_HI)
+            # 점선 리더
+            leader_y = text_y + _th(d, "가", fSt) // 2
+            lx2 = PAD+8+IS+10+_tw(d, sname, fSt)+8
+            rx2 = W-PAD-vw-16
+            if rx2 > lx2:
+                for dx in range(lx2, rx2, 7):
+                    d.point((dx, leader_y), fill=C.SEP)
+            by += 30
 
-        # 하단 골드/인벤
-        _orn(img,d,PAD,H-56,W-PAD)
-        _notxt(d,(PAD+16,H-44), f"{gold:,} G", fV, C.GOLD_HI)
-        it=f"{inv_used} / {inv_max} 슬롯"
-        _notxt(d,(W//2+22,H-44), it, fV, C.TXT_MID)
-        _orn(img,d,PAD,H-18,W-PAD,color=C.GOLD_LO)
+        # ── 하단 골드/인벤 ────────────────────────────────────
+        _orn(img, d, PAD, H-50, W-PAD)
+        _notxt(d, (PAD+12, H-38), f"◆ {gold:,} G", fFt, C.GOLD_HI)
+        it = f"{inv_used} / {inv_max} 슬롯"
+        iw = _tw(d, it, fFt)
+        _notxt(d, (W-PAD-iw-12, H-38), it, fFt, C.TXT_MID)
+        _orn(img, d, PAD, H-14, W-PAD, color=C.GOLD_LO)
 
         _gold_frame(img); return _to_buf(img)
 

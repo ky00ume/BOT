@@ -19,8 +19,10 @@ from npcs         import VillageNPC
 from shop         import ShopManager
 from battle       import BattleEngine
 from database     import init_db, save_player_to_db, load_player_from_db
-from equipment_window import EquipmentWindow
+from equipment_window import EquipmentWindow, create_equipment_image
 import status_window
+from status_window import create_status_image
+from town_ui import create_town_banner, create_hunting_banner, create_gathering_banner, create_fishing_banner
 import status as status_mod
 from ui_theme     import C, ansi, EMBED_COLOR, FOOTERS, divider
 from town_notice  import send_town_notice, make_intro_embed, make_npc_embed, make_commands_embed
@@ -114,6 +116,23 @@ _ALL_BATTLE_SKILLS     = {**_CS, **_MS, **_RS}
 _SKILL_NAME_TO_ID: dict = {v["name"]: k for k, v in _ALL_BATTLE_SKILLS.items()}
 
 
+
+# ─── BG3 UI 이미지 전송 헬퍼 ────────────────────────────────────────────
+async def _send_image(ctx, buf, filename: str = "ui.png"):
+    """BytesIO 버퍼를 discord.File로 전송"""
+    import io
+    buf.seek(0)
+    await ctx.send(file=discord.File(fp=buf, filename=filename))
+
+
+async def _send_image_with_text(ctx, buf, text: str = None, filename: str = "ui.png"):
+    """이미지 + 텍스트 함께 전송"""
+    import io
+    buf.seek(0)
+    await ctx.send(content=text,
+                   file=discord.File(fp=buf, filename=filename))
+
+
 # ─── 이벤트 ──────────────────────────────────────────────────────────────
 @bot.event
 async def on_ready():
@@ -173,17 +192,25 @@ async def _check_channel(ctx) -> bool:
 async def status_cmd(ctx):
     if not await _check_channel(ctx):
         return
-    embed = status_window.create_status_embed(shared_player)
-    await ctx.send(embed=embed)
+    try:
+        buf = create_status_image(shared_player)
+        await _send_image(ctx, buf, 'status.png')
+    except Exception:
+        embed = status_window.create_status_embed(shared_player)
+        await ctx.send(embed=embed)
 
 
 @bot.command(name="장비", aliases=["장비창"])
 async def equipment_cmd(ctx):
     if not await _check_channel(ctx):
         return
-    ew = EquipmentWindow(shared_player)
-    embed = ew.create_embed()
-    await ctx.send(embed=embed)
+    try:
+        buf = create_equipment_image(shared_player)
+        await _send_image(ctx, buf, 'equipment.png')
+    except Exception:
+        ew = EquipmentWindow(shared_player)
+        embed = ew.create_embed()
+        await ctx.send(embed=embed)
 
 
 @bot.command(name="스왑")
@@ -452,6 +479,12 @@ async def vision_town_cmd(ctx):
     if not await _check_channel(ctx):
         return
     from town_ui import VisionTownView, _make_town_embed
+    # BG3 마을 배너
+    try:
+        _bnr = create_town_banner('비전타운')
+        await _send_image(ctx, _bnr, 'banner_town.png')
+    except Exception:
+        pass
     embed = _make_town_embed(village_manager)
     view = VisionTownView(shared_player, affinity_manager, npc_manager, village_manager)
     await ctx.send(embed=embed, view=view)
@@ -688,10 +721,32 @@ async def hunt_cmd(ctx, *, zone: str = None):
     if departure:
         await ctx.send(departure)
     success, result = battle_engine.start_encounter(zone)
-    if isinstance(result, discord.Embed):
-        await ctx.send(embed=result)
+    # BG3 배너: 사냥터 진입
+    try:
+        from monsters_db import MONSTERS_DB as _MDB
+        _zd = _MDB.get(zone, {})
+        banner_buf = create_hunting_banner(zone, _zd.get('name', zone), _zd.get('desc', ''))
+        await _send_image(ctx, banner_buf, 'banner_hunting.png')
+    except Exception:
+        pass
+    # 전투 시작 카드
+    if success:
+        try:
+            _bimg = battle_engine.build_battle_image()
+            if _bimg:
+                await _send_image(ctx, _bimg, 'battle.png')
+            else:
+                raise Exception('no image')
+        except Exception:
+            if isinstance(result, discord.Embed):
+                await ctx.send(embed=result)
+            else:
+                await ctx.send(ansi(result) if not str(result).startswith('```') else result)
     else:
-        await ctx.send(ansi(result) if not str(result).startswith("```") else result)
+        if isinstance(result, discord.Embed):
+            await ctx.send(embed=result)
+        else:
+            await ctx.send(ansi(result) if not str(result).startswith('```') else result)
     # 인카운터 체크 (사냥 후)
     if success:
         enc_msg = encounter_manager.trigger_encounter()
@@ -728,10 +783,25 @@ async def attack_cmd(ctx, *, skill_input: str = "smash"):
                 f"  🎀 타이틀 획득: **{ach.get('title', '')}**"
             )
 
-    if isinstance(result, discord.Embed):
-        await ctx.send(embed=result)
-    else:
-        await ctx.send(ansi(result) if not str(result).startswith("```") else result)
+    # BG3 전투 카드
+    try:
+        _sname = _ALL_BATTLE_SKILLS.get(skill_id, {}).get('name', skill_id)
+        _bimg = battle_engine.build_battle_image(_sname)
+        if _bimg:
+            await _send_image(ctx, _bimg, 'battle.png')
+        else:
+            raise Exception('no image')
+    except Exception:
+        if isinstance(result, discord.Embed):
+            await ctx.send(embed=result)
+        else:
+            await ctx.send(ansi(result) if not str(result).startswith('```') else result)
+    # 전투 종료 텍스트 (승리/패배)
+    if not battle_engine.in_battle:
+        if isinstance(result, discord.Embed):
+            await ctx.send(embed=result)
+        else:
+            await ctx.send(ansi(result) if not str(result).startswith('```') else result)
 
 
 @bot.command(name="도주")
@@ -753,6 +823,14 @@ async def flee_cmd(ctx):
 async def fishing_cmd(ctx):
     if not await _check_channel(ctx):
         return
+    # BG3 낚시터 배너
+    try:
+        _loc = getattr(shared_player, 'current_location', '지하 강')
+        from town_ui import create_fishing_banner
+        _buf = create_fishing_banner(_loc, _loc, '')
+        await _send_image(ctx, _buf, 'banner_fishing.png')
+    except Exception:
+        pass
     departure = encounter_manager.clear_encounter()
     if departure:
         await ctx.send(departure)
@@ -1719,6 +1797,18 @@ async def move_cmd(ctx, *, destination: str = None):
         return
     if destination:
         result = movement_system.move_to(ctx.author.id, destination)
+        # BG3 이동 배너
+        try:
+            from town_ui import create_location_banner
+            from database import HUNTING_GROUNDS, GATHERING_SPOTS
+            if destination in HUNTING_GROUNDS:
+                _zd = HUNTING_GROUNDS[destination]
+                _buf = create_location_banner(_zd.get('name',destination), _zd.get('desc',''), 'hunting', destination)
+            else:
+                _buf = create_location_banner(destination, '', 'town', destination)
+            await _send_image(ctx, _buf, 'banner_move.png')
+        except Exception:
+            pass
     else:
         result = movement_system.show_map(ctx.author.id)
     await ctx.send(result)

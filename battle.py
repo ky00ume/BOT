@@ -1,5 +1,7 @@
 import random
+import io
 import discord
+from bg3_renderer import get_renderer
 from monsters_db import MONSTERS_DB, MONSTER_SIZES, roll_monster_size, apply_size_to_monster
 from ui_theme import C, bar_plain, ansi, EMBED_COLOR
 
@@ -23,6 +25,33 @@ class BattleEngine:
         self.current_monster = None
         self.monster_hp      = 0
         self.turn            = 0
+
+    def build_battle_image(self, action_name: str = "",
+                           dmg: int = 0, is_crit: bool = False) -> io.BytesIO:
+        """현재 전투 상태를 BG3 스타일 이미지로 반환"""
+        if not self.in_battle or not self.current_monster:
+            return None
+        from monsters_db import MONSTER_SIZES
+        size_label = ""
+        if hasattr(self, '_last_size'):
+            si = MONSTER_SIZES.get(self._last_size, {})
+            size_label = f"{si.get('icon','')} [{self._last_size}]"
+        return get_renderer().render_battle_card(
+            monster_name=self.current_monster.get("name","?"),
+            monster_level=self.current_monster.get("level",1),
+            monster_hp=max(0,self.monster_hp),
+            monster_max_hp=self.current_monster.get("hp",1),
+            danger=self.current_monster.get("danger","보통"),
+            turn=self.turn,
+            player_hp=self.player.hp,
+            player_max_hp=self.player.max_hp,
+            player_mp=self.player.mp,
+            player_max_mp=self.player.max_mp,
+            last_action=action_name,
+            last_dmg=dmg,
+            is_crit=is_crit,
+            size_label=size_label,
+        )
 
     @property
     def zone_list(self):

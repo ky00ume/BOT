@@ -1,3 +1,4 @@
 discord.py>=2.0.0
 pytz>=2021.1
 python-dotenv
+Pillow>=9.0.0

@@ -729,6 +729,31 @@ MATERIALS = {
     "wheat":        {"name": "밀",      "type": "material", "grade": "Normal", "price": 12, "desc": "밀가루 원료."},
 }
 
+# ─── 산책·돌봄 시스템 재료 아이템 ─────────────────────────────────────────────
+# Phase B(산책 시스템)에서 드롭될 재료 아이템 DB. 현재는 아이템 정의만 존재.
+WALK_MATERIALS = {
+    # 의상 제작 재료
+    "mat_silk_thread":   {"name": "비단실",        "type": "material", "grade": "Normal", "price": 0, "desc": "부드럽고 윤기 있는 비단실. 의장 제작에 쓰인다."},
+    "mat_ribbon_scrap":  {"name": "리본 조각",      "type": "material", "grade": "Normal", "price": 0, "desc": "예쁜 색상의 리본 조각. 장식용 의장 재료."},
+    "mat_soft_cotton":   {"name": "부드러운 솜",    "type": "material", "grade": "Normal", "price": 0, "desc": "솜처럼 포근한 천 조각."},
+    "mat_leather_piece": {"name": "가죽 조각",      "type": "material", "grade": "Normal", "price": 0, "desc": "튼튼한 가죽 조각. 신발·가방 제작 재료."},
+    "mat_shiny_button":  {"name": "반짝이 단추",    "type": "material", "grade": "Normal", "price": 0, "desc": "빛나는 금속 단추. 장식에 쓰인다."},
+    "mat_magic_thread":  {"name": "마법실",         "type": "material", "grade": "Rare",   "price": 0, "desc": "마력이 깃든 실. 희귀 의장 제작에 필요."},
+    "mat_wood_scrap":    {"name": "나무 조각",       "type": "material", "grade": "Normal", "price": 0, "desc": "잘 다듬어진 나무 조각. 장난감 제작 재료."},
+    "mat_feather":       {"name": "깃털",            "type": "material", "grade": "Normal", "price": 0, "desc": "가볍고 색깔 있는 깃털."},
+    "mat_flower_petal":  {"name": "꽃잎",            "type": "material", "grade": "Normal", "price": 0, "desc": "산책 중 발견한 예쁜 꽃잎."},
+    # 간식 제작 재료
+    "mat_wheat":         {"name": "밀 (간식용)",     "type": "material", "grade": "Normal", "price": 0, "desc": "간식 제작용 밀."},
+    "mat_sugar":         {"name": "설탕 (간식용)",   "type": "material", "grade": "Normal", "price": 0, "desc": "간식 제작용 설탕."},
+    "mat_butter":        {"name": "버터 (간식용)",   "type": "material", "grade": "Normal", "price": 0, "desc": "간식 제작용 버터."},
+    "mat_milk":          {"name": "우유 (간식용)",   "type": "material", "grade": "Normal", "price": 0, "desc": "간식 제작용 우유."},
+    "mat_honey":         {"name": "꿀",              "type": "material", "grade": "Normal", "price": 0, "desc": "달콤한 꿀. 산책 중 채집."},
+    "mat_cocoa":         {"name": "코코아",           "type": "material", "grade": "Normal", "price": 0, "desc": "코코아 파우더. 초콜릿 재료."},
+    "mat_fruit":         {"name": "과일",             "type": "material", "grade": "Normal", "price": 0, "desc": "신선한 과일. 산책 중 채집."},
+    "mat_salt":          {"name": "소금 (간식용)",   "type": "material", "grade": "Normal", "price": 0, "desc": "간식 제작용 소금."},
+    "mat_magic_dust":    {"name": "마법 가루",        "type": "material", "grade": "Rare",   "price": 0, "desc": "마법 마카롱 제작에 쓰이는 신비한 가루."},
+}
+
 # 오멜룸 상점 식료품 카탈로그
 GROCERIES = {
     "salt":         {"name": "소금",      "type": "material", "grade": "Normal", "price": 10,  "desc": "기본 조미료."},
@@ -781,6 +806,7 @@ ALL_ITEMS = {
     **MATERIALS,
     **GROCERIES,
     **WOODCUT_ITEMS,
+    **WALK_MATERIALS,
 }
 
 # ── 스토리 퀘스트 아이템 ────────────────────────────────────────────────────
@@ -909,3 +935,8 @@ SPECIAL_USE_ITEMS = {
     },
 }
 ALL_ITEMS.update(SPECIAL_USE_ITEMS)
+
+# ─── 의장·간식 아이템 ─────────────────────────────────────────────────────────
+from costume_data import COSTUME_ITEMS, SNACK_ITEMS
+ALL_ITEMS.update(COSTUME_ITEMS)
+ALL_ITEMS.update(SNACK_ITEMS)

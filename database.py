@@ -446,8 +446,9 @@ def save_player_to_db(player):
         (user_id, name, level, exp, hp, max_hp, mp, max_mp, energy, max_energy,
          gold, base_stats, inventory, equipment, keywords, affinity_data, daily_limits,
          story_quest, skill_ranks, skill_exp, titles, current_title, bags,
-         last_special_encounter, rafael_contract)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         last_special_encounter, rafael_contract,
+         fatigue, condition, stability, costume, care_flags)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         data.get("user_id", 0),
         data.get("name", "모험가"),
@@ -474,6 +475,11 @@ def save_player_to_db(player):
         json.dumps(data.get("bags", ["bag_large"]), ensure_ascii=False),
         data.get("last_special_encounter"),
         json.dumps(data.get("rafael_contract"), ensure_ascii=False) if data.get("rafael_contract") else None,
+        data.get("fatigue", 0),
+        data.get("condition", 50),
+        data.get("stability", 50),
+        json.dumps(data.get("costume", {}), ensure_ascii=False),
+        json.dumps(data.get("_flags", {}), ensure_ascii=False),
     ))
     conn.commit()
     conn.close()
@@ -531,6 +537,26 @@ def _migrate_players_table(cursor):
         if "rafael_contract" not in columns:
             cursor.execute(
                 "ALTER TABLE players ADD COLUMN rafael_contract TEXT DEFAULT NULL"
+            )
+        if "fatigue" not in columns:
+            cursor.execute(
+                "ALTER TABLE players ADD COLUMN fatigue INTEGER DEFAULT 0"
+            )
+        if "condition" not in columns:
+            cursor.execute(
+                "ALTER TABLE players ADD COLUMN condition INTEGER DEFAULT 50"
+            )
+        if "stability" not in columns:
+            cursor.execute(
+                "ALTER TABLE players ADD COLUMN stability INTEGER DEFAULT 50"
+            )
+        if "costume" not in columns:
+            cursor.execute(
+                "ALTER TABLE players ADD COLUMN costume TEXT DEFAULT '{}'"
+            )
+        if "care_flags" not in columns:
+            cursor.execute(
+                "ALTER TABLE players ADD COLUMN care_flags TEXT DEFAULT '{}'"
             )
     except Exception:
         pass
@@ -625,6 +651,31 @@ def load_player_from_db(user_id):
         result["rafael_contract"] = _safe_json(row["rafael_contract"], None)
     except (IndexError, KeyError):
         result["rafael_contract"] = None
+
+    try:
+        result["fatigue"] = row["fatigue"] if row["fatigue"] is not None else 0
+    except (IndexError, KeyError):
+        result["fatigue"] = 0
+
+    try:
+        result["condition"] = row["condition"] if row["condition"] is not None else 50
+    except (IndexError, KeyError):
+        result["condition"] = 50
+
+    try:
+        result["stability"] = row["stability"] if row["stability"] is not None else 50
+    except (IndexError, KeyError):
+        result["stability"] = 50
+
+    try:
+        result["costume"] = _safe_json(row["costume"], {})
+    except (IndexError, KeyError):
+        result["costume"] = {}
+
+    try:
+        result["_flags"] = _safe_json(row["care_flags"], {})
+    except (IndexError, KeyError):
+        result["_flags"] = {}
 
     return result
 

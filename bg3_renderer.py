@@ -73,13 +73,42 @@ def _find_fonts():
                 pass
     else:  # Linux / macOS
         linux_paths = [
+            # Serif (우선)
             "/usr/share/fonts/opentype/noto/NotoSerifCJK-Regular.ttc",
             "/usr/share/fonts/opentype/noto/NotoSerifCJK-Bold.ttc",
-            "/usr/share/fonts/truetype/google-fonts/Lora-Variable.ttf",
-            "/usr/share/fonts/truetype/liberation/LiberationSerif-Bold.ttf",
             "/usr/share/fonts/noto-cjk/NotoSerifCJK-Regular.ttc",
             "/usr/share/fonts/noto-cjk/NotoSerifCJK-Bold.ttc",
+            # Sans (fallback — 한글 지원이면 충분)
+            "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+            "/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc",
+            "/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc",
+            "/usr/share/fonts/noto-cjk/NotoSansCJK-Bold.ttc",
+            "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+            "/usr/share/fonts/truetype/noto/NotoSansCJK-Bold.ttc",
+            # 기타
+            "/usr/share/fonts/truetype/google-fonts/Lora-Variable.ttf",
+            "/usr/share/fonts/truetype/liberation/LiberationSerif-Bold.ttf",
         ]
+        # 추가: /usr/share/fonts 하위 재귀 탐색 (위 고정 경로에 없을 때)
+        _extra_dirs = [
+            "/usr/share/fonts/truetype",
+            "/usr/share/fonts/opentype",
+            "/usr/local/share/fonts",
+            os.path.expanduser("~/.local/share/fonts"),
+        ]
+        for _ed in _extra_dirs:
+            if not os.path.isdir(_ed):
+                continue
+            try:
+                for _root, _dirs, _files in os.walk(_ed):
+                    for _fn in _files:
+                        _fl = _fn.lower()
+                        if "noto" in _fl and "cjk" in _fl and _fl.endswith((".ttc", ".ttf", ".otf")):
+                            _fp = os.path.join(_root, _fn)
+                            if _fp not in linux_paths:
+                                linux_paths.append(_fp)
+            except OSError:
+                pass
         for p in linux_paths:
             if os.path.isfile(p):
                 fl = os.path.basename(p).lower()
@@ -560,7 +589,7 @@ class BG3Renderer:
                            gold, exp, exp_needed,
                            stats: dict,
                            inv_used, inv_max) -> io.BytesIO:
-        W,H = 480,420
+        W,H = 560,420
         img = _make_base(W,H,"status")
         d   = ImageDraw.Draw(img)
         fN=_f(26,True); fT=_f(13); fSec=_f(13,True)
@@ -572,11 +601,13 @@ class BG3Renderer:
         _gv(hdr,0,0,W,HH, (*C.BG3,230),(0,0,0,0))
         img.alpha_composite(hdr); d=ImageDraw.Draw(img)
         _notxt(d,(PAD,12), f"Lv.{level}  {name}", fN, C.TXT_HI)
-        _notxt(d,(PAD+2,48), f"✦ {title_str}", fT, C.GOLD_MID)
+        # 칭호: None이면 표시 안 함
+        if title_str and str(title_str) != "None":
+            _notxt(d,(PAD+2,48), f"✦ {title_str}", fT, C.GOLD_MID)
         _orn(img,d,PAD,HH,W-PAD)
 
-        # ── 게이지 바 (시안 A) ──────────────────────────────
-        BW=170; BH=18; BX=PAD+48; LX=PAD+4
+        # ── 게이지 바 ──────────────────────────────────────
+        BW=200; BH=18; BX=PAD+48; LX=PAD+4
         bars=[("HP",hp,max_hp,C.HP),("MP",mp,max_mp,C.MP),("EN",en,max_en,C.EN)]
         by = HH+22
         for lbl,cur,mx2,cols in bars:
@@ -584,13 +615,13 @@ class BG3Renderer:
             _bar_A(img,d,BX,by,BW,BH,cur,mx2,cols,show_val=True)
             d=ImageDraw.Draw(img); by+=34
 
-        _orn(img,d,PAD,by+4,W//2+60,color=C.GOLD_LO); by+=16
+        _orn(img,d,PAD,by+4,W//2-10,color=C.GOLD_LO); by+=16
         _notxt(d,(LX,by+2),"EXP",fLb,C.TXT_LBL)
         _bar_A(img,d,BX,by,BW,BH,int(exp),exp_needed,C.EXP,show_val=True)
         d=ImageDraw.Draw(img)
 
         # ── 스탯 (오른쪽) ────────────────────────────────────
-        RX=W//2+16; RY=HH+14
+        RX=W//2+50; RY=HH+14
         _notxt(d,(RX,RY),"[ 기본 스탯 ]",fSec,C.GOLD_MID)
         _orn(img,d,RX,RY+22,W-PAD,color=C.GOLD_LO)
 

@@ -38,7 +38,7 @@ def generate_card(
     icon: str,
     rows: list,
     grade: str = "Normal",
-    width: int = 520,
+    width: int = 480,
     height: int = 320,
     subtitle: str = None,
 ) -> io.BytesIO:
@@ -92,7 +92,7 @@ def generate_card_v2(
     icon: str,
     rows: list,
     grade: str = "Normal",
-    width: int = 520,
+    width: int = 480,
     height: int = 320,
     subtitle: str = None,
     spider_art_key: str = None,

@@ -70,6 +70,8 @@ class Player:
         self.max_energy     = 100
         self.gold           = 500
         self.fatigue        = 0
+        self.condition      = 50   # 컨디션 0~100, 기본 50
+        self.stability      = 50   # 안정감 0~100, 기본 50
         self.current_title  = "비전의 탑 신입"
         self.talent         = "초보 모험가"
         self.titles         = ["비전의 탑 신입"]
@@ -89,6 +91,15 @@ class Player:
             "head":  None,
             "hands": None,
             "feet":  None,
+        }
+
+        self.costume = {
+            "costume_main":  None,
+            "costume_sub":   None,
+            "costume_body":  None,
+            "costume_head":  None,
+            "costume_hands": None,
+            "costume_feet":  None,
         }
 
         self.inventory = {}
@@ -201,6 +212,76 @@ class Player:
         self.equipment["sub"]  = main
         return "주·보조 슬롯을 교환했슴미댜!"
 
+    # ─── 의장(코스튬) 슬롯 ─────────────────────────────────────────────────
+    _COSTUME_SLOT_MAP = {
+        "main":  "costume_main",
+        "sub":   "costume_sub",
+        "body":  "costume_body",
+        "head":  "costume_head",
+        "hands": "costume_hands",
+        "feet":  "costume_feet",
+    }
+    _COSTUME_SLOT_NAMES = {
+        "costume_main":  "의장 주무기",
+        "costume_sub":   "의장 보조",
+        "costume_body":  "의장 갑옷",
+        "costume_head":  "의장 투구",
+        "costume_hands": "의장 장갑",
+        "costume_feet":  "의장 신발",
+    }
+
+    def equip_costume(self, item_id: str) -> str:
+        from items import ALL_ITEMS
+        item = ALL_ITEMS.get(item_id)
+        if not item:
+            return f"[{item_id}] 아이템을 찾을 수 없슴미댜."
+
+        item_type = item.get("type")
+        if item_type not in ("weapon", "armor"):
+            return f"[{item.get('name', item_id)}]은(는) 의장으로 장착할 수 없는 아이템임미댜."
+
+        eq_slot = item.get("slot")
+        if not eq_slot:
+            return f"[{item.get('name', item_id)}]의 슬롯 정보가 없슴미댜."
+
+        costume_slot = self._COSTUME_SLOT_MAP.get(eq_slot)
+        if not costume_slot:
+            return f"[{eq_slot}]에 대응하는 의장 슬롯이 없슴미댜."
+
+        prev = self.costume.get(costume_slot)
+        if prev:
+            self.add_item(prev)
+
+        if item_id in self.inventory:
+            self.remove_item(item_id)
+
+        self.costume[costume_slot] = item_id
+        slot_name = self._COSTUME_SLOT_NAMES.get(costume_slot, costume_slot)
+        return f"[{item.get('name', item_id)}]을(를) {slot_name}에 의장으로 장착했슴미댜!"
+
+    def unequip_costume(self, slot_input: str) -> str:
+        from items import ALL_ITEMS
+        # "main" → "costume_main" 도 허용
+        if not slot_input.startswith("costume_"):
+            slot = self._COSTUME_SLOT_MAP.get(slot_input)
+            if slot is None:
+                valid = ", ".join(self._COSTUME_SLOT_MAP.keys())
+                return f"[{slot_input}]은(는) 올바른 의장 슬롯이 아님미댜. ({valid})"
+        else:
+            slot = slot_input
+            if slot not in self.costume:
+                valid = ", ".join(self._COSTUME_SLOT_MAP.keys())
+                return f"[{slot_input}]은(는) 올바른 의장 슬롯이 아님미댜. ({valid})"
+        eq_id = self.costume.get(slot)
+        if not eq_id:
+            slot_name = self._COSTUME_SLOT_NAMES.get(slot, slot)
+            return f"[{slot_name}] 슬롯이 비어있슴미댜."
+        item = ALL_ITEMS.get(eq_id, {})
+        self.add_item(eq_id)
+        self.costume[slot] = None
+        slot_name = self._COSTUME_SLOT_NAMES.get(slot, slot)
+        return f"[{item.get('name', eq_id)}]을(를) {slot_name}에서 해제했슴미댜!"
+
     def train_skill(self, skill_id: str, amount: float) -> str:
         if skill_id not in self.skill_ranks:
             self.skill_ranks[skill_id] = "연습"
@@ -262,10 +343,14 @@ class Player:
             "energy":        self.energy,
             "max_energy":    self.max_energy,
             "gold":          self.gold,
+            "fatigue":       self.fatigue,
+            "condition":     self.condition,
+            "stability":     self.stability,
             "base_stats":    self.base_stats,
             "inventory":     self.inventory,
             "bags":          self.bags,
             "equipment":     self.equipment,
+            "costume":       self.costume,
             "titles":        self.titles,
             "current_title": self.current_title,
             "keywords":      self.keywords,
@@ -292,6 +377,9 @@ class Player:
         self.energy        = data.get("energy",        self.energy)
         self.max_energy    = data.get("max_energy",    self.max_energy)
         self.gold          = data.get("gold",          self.gold)
+        self.fatigue       = data.get("fatigue",       getattr(self, "fatigue", 0))
+        self.condition     = data.get("condition",     getattr(self, "condition", 50))
+        self.stability     = data.get("stability",     getattr(self, "stability", 50))
         self.current_title = data.get("current_title", self.current_title)
 
         if "titles" in data and isinstance(data["titles"], list):
@@ -313,6 +401,11 @@ class Player:
             for slot, val in data["equipment"].items():
                 if slot in self.equipment:
                     self.equipment[slot] = val
+
+        if "costume" in data and isinstance(data["costume"], dict):
+            for slot, val in data["costume"].items():
+                if slot in self.costume:
+                    self.costume[slot] = val
 
         if "keywords" in data and isinstance(data["keywords"], list):
             self.keywords = data["keywords"]
@@ -349,6 +442,11 @@ class Player:
         if main_id:
             weapon = ALL_ITEMS.get(main_id, {})
             base += weapon.get("attack", 0)
+        # 의장 주무기 공격력 합산
+        costume_main_id = self.costume.get("costume_main")
+        if costume_main_id:
+            costume_weapon = ALL_ITEMS.get(costume_main_id, {})
+            base += costume_weapon.get("attack", 0)
         # 타이틀 효과
         try:
             from title_data import get_title_effects
@@ -367,6 +465,12 @@ class Player:
             if eq_id:
                 armor = ALL_ITEMS.get(eq_id, {})
                 base += armor.get("defense", 0)
+        # 의장 방어구 방어력 합산
+        for cslot in ("costume_sub", "costume_body", "costume_head", "costume_hands", "costume_feet"):
+            ceq_id = self.costume.get(cslot)
+            if ceq_id:
+                citem = ALL_ITEMS.get(ceq_id, {})
+                base += citem.get("defense", 0)
         # 타이틀 효과
         try:
             from title_data import get_title_effects

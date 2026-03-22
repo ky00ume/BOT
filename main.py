@@ -111,6 +111,10 @@ from training import TrainingSystem
 movement_system  = MovementSystem(shared_player)
 training_system  = TrainingSystem(shared_player)
 
+# 탐험 엔진 초기화
+from adventure import AdventureEngine
+adventure_engine = AdventureEngine(shared_player)
+
 # 전투 스킬 역방향 맵핑 (이름 → ID)
 from skills_db import COMBAT_SKILLS as _CS, MAGIC_SKILLS as _MS, RECOVERY_SKILLS as _RS
 _ALL_BATTLE_SKILLS     = {**_CS, **_MS, **_RS}
@@ -655,12 +659,33 @@ async def hunt_cmd(ctx, *, zone: str = None):
     # 전투 시작 카드
     if success:
         _bimg = battle_engine.build_battle_image()
+
+        async def _on_battle_end(won: bool):
+            if won:
+                newly_unlocked = achievement_manager.increment("battles_won", 1)
+                diary_manager.increment("battles_won", 1)
+                _killed_zone    = battle_engine.current_zone
+                _killed_monster = battle_engine.current_monster.get("id", "") if battle_engine.current_monster else ""
+                quest_manager.update_kill_count(1, zone=_killed_zone, monster_id=_killed_monster)
+                for ach_id in newly_unlocked:
+                    from achievements import ACHIEVEMENT_DEFS
+                    ach = ACHIEVEMENT_DEFS.get(ach_id, {})
+                    await ctx.send(
+                        f"🏆✨ **업적 달성!** [{ach.get('name', ach_id)}]\n"
+                        f"  {ach.get('desc', '')}\n"
+                        f"  🎀 타이틀 획득: **{ach.get('title', '')}**"
+                    )
+
+        from battle_view import BattleView
+        view = BattleView(battle_engine, ctx, on_battle_end=_on_battle_end)
         if _bimg:
-            await _send_image(ctx, _bimg, 'battle.png')
+            _bimg.seek(0)
+            await ctx.send(file=discord.File(fp=_bimg, filename='battle.png'), view=view)
         elif isinstance(result, io.BytesIO):
-            await _send_image(ctx, result, 'battle.png')
+            result.seek(0)
+            await ctx.send(file=discord.File(fp=result, filename='battle.png'), view=view)
         else:
-            await _send_msg_card(ctx, "전투 시작", str(result), system_key="battle")
+            await ctx.send(str(result), view=view)
     else:
         if isinstance(result, io.BytesIO):
             await _send_image(ctx, result, 'battle.png')
@@ -733,6 +758,128 @@ async def flee_cmd(ctx):
         await _send_image(ctx, result, 'flee.png')
     else:
         await _send_msg_card(ctx, "도주", str(result), system_key="battle")
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 탐험 명령어
+# ═══════════════════════════════════════════════════════════════════════════
+
+@bot.command(name="탐험")
+async def adventure_cmd(ctx, *, zone: str = None):
+    if not await _check_channel(ctx):
+        return
+    if not zone:
+        from adventure_data import ADVENTURE_SCENARIOS
+        avail_zones = list(ADVENTURE_SCENARIOS.keys())
+        await ctx.send(ansi(
+            f"  {C.GOLD}탐험 가능한 지역{C.R}\n"
+            + "\n".join(f"  {C.GREEN}/탐험 {z}{C.R}" for z in avail_zones)
+        ))
+        return
+
+    departure = encounter_manager.clear_encounter()
+    if departure:
+        await ctx.send(departure)
+
+    result = adventure_engine.start_adventure(zone)
+    if not result["ok"]:
+        await _send_msg_card(ctx, "탐험 오류", result["error"], system_key="battle", grade="Fail")
+        return
+
+    # 숨겨진 트리거
+    if result.get("hidden"):
+        hidden = result["hidden"]
+        event  = hidden.get("event", {})
+        reward = event.get("reward", {})
+        rparts = []
+        if reward.get("gold"):   rparts.append(f"+{reward['gold']}G")
+        if reward.get("exp"):    rparts.append(f"+{reward['exp']} EXP")
+        if reward.get("item"):
+            from items import ALL_ITEMS
+            iname = ALL_ITEMS.get(reward["item"], {}).get("name", reward["item"])
+            rparts.append(f"{iname} 획득")
+        await _send_msg_card(
+            ctx,
+            f"✨ {event.get('title', '숨겨진 이벤트')}",
+            f"{event.get('desc', '')}\n\n🎁 {', '.join(rparts)}",
+            system_key="battle",
+        )
+        return
+
+    # NPC 인카운터
+    if result.get("npc"):
+        npc = result["npc"]
+        from adventure import NPCInteractionView
+        view = NPCInteractionView(adventure_engine, npc)
+        embed = discord.Embed(
+            title=f"👤 {npc['race']} — {npc['name']} ({npc['type']})",
+            description=f"{npc['desc']}\n\n{npc.get('greeting', '')}",
+            color=0x8B4513,
+        )
+        await ctx.send(embed=embed, view=view)
+        return
+
+    # 시나리오 탐험
+    scenario  = result["scenario"]
+    step_data = result["step_data"]
+    if not scenario or not step_data:
+        await _send_msg_card(ctx, "탐험", "이 지역에는 탐험할 것이 없슴미댜.", system_key="battle")
+        return
+
+    from adventure import AdventureView
+
+    async def _on_adv_end(adv_result: dict):
+        # 탐험 후 랜덤 이벤트 (10%)
+        post_evt = adventure_engine.post_adventure_event(zone)
+        if post_evt:
+            await ctx.send(f"📬 {post_evt.get('text', '')}")
+
+    view = AdventureView(
+        adventure_engine=adventure_engine,
+        step_data=step_data,
+        scenario_title=scenario.get("title", "탐험"),
+        on_end=_on_adv_end,
+        zone_name=zone,
+    )
+    await ctx.send(
+        f"📖 **[{scenario.get('title', '탐험')}]** — {zone}\n\n{step_data['desc']}",
+        view=view,
+    )
+
+
+# ─── 의장(코스튬) 명령어 ────────────────────────────────────────────────
+
+@bot.command(name="의장장착")
+async def equip_costume_cmd(ctx, *, item_name: str = None):
+    if not await _check_channel(ctx):
+        return
+    if not item_name:
+        await _send_msg_card(ctx, "의장 장착", "/의장장착 [아이템이름] 형식으로 입력하셰요!", system_key="battle", grade="Fail")
+        return
+    from items import ALL_ITEMS
+    # 이름으로 아이템 ID 검색
+    item_id = None
+    for iid, idata in ALL_ITEMS.items():
+        if idata.get("name") == item_name or iid == item_name:
+            item_id = iid
+            break
+    if not item_id:
+        await _send_msg_card(ctx, "의장 장착", f"[{item_name}] 아이템을 찾을 수 없슴미댜.", system_key="battle", grade="Fail")
+        return
+    msg = shared_player.equip_costume(item_id)
+    await _send_msg_card(ctx, "의장 장착", msg, system_key="battle")
+
+
+@bot.command(name="의장해제")
+async def unequip_costume_cmd(ctx, *, slot: str = None):
+    if not await _check_channel(ctx):
+        return
+    if not slot:
+        slots = "main / sub / body / head / hands / feet"
+        await _send_msg_card(ctx, "의장 해제", f"/의장해제 [슬롯] 형식으로 입력하셰요!\n슬롯: {slots}", system_key="battle", grade="Fail")
+        return
+    msg = shared_player.unequip_costume(slot)
+    await _send_msg_card(ctx, "의장 해제", msg, system_key="battle")
 
 
 # ═══════════════════════════════════════════════════════════════════════════

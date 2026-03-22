@@ -167,13 +167,13 @@ async def on_ready():
     if not alarm_loop.is_running():
         alarm_loop.start()
 
-    # ── 레벨업 포션 1회성 지급 (츄라이더용) ─────────────────────────────────
+    # ── 레벨업 사탕 1회성 지급 (츄라이더용) ─────────────────────────────────
     if not getattr(shared_player, "_flags", {}).get("levelup_potion_granted", False):
         if not hasattr(shared_player, "_flags"):
             shared_player._flags = {}
         shared_player._flags["levelup_potion_granted"] = True
         shared_player.add_item("levelup_potion", 1)
-        print("[이벤트] 레벨업 포션 1회 지급 완료")
+        print("[이벤트] 레벨업 사탕 1회 지급 완료")
 
     print("[봇 준비] 모든 시스템 초기화 완료!")
 
@@ -296,7 +296,7 @@ async def eat_item(ctx, *, item_name: str = None):
         await ctx.send(ansi(f"  {C.RED}✖ 인벤토리에 [{item_name}]가 없슴미댜!{C.R}"))
         return
 
-    # 레벨업 포션 특별 처리
+    # 레벨업 사탕 특별 처리
     if item_id == "levelup_potion":
         shared_player.remove_item(item_id, 1)
         old_level = shared_player.level
@@ -307,7 +307,7 @@ async def eat_item(ctx, *, item_name: str = None):
             f"+{v} {k}" for k, v in gains.items()
         )
         await ctx.send(ansi(
-            f"  {C.GOLD}✨ 레벨업 포션 사용!{C.R}\n"
+            f"  {C.GOLD}✨ 레벨업 사탕 사용!{C.R}\n"
             f"  {C.WHITE}레벨 {old_level} → {shared_player.level}{C.R}\n"
             f"  {C.GREEN}{gain_str}{C.R}"
         ))

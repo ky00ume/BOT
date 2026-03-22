@@ -897,14 +897,14 @@ ALL_ITEMS.update(SKILL_BOOKS)
 from database import BAGS
 ALL_ITEMS.update(BAGS)
 
-# ─── 특수 아이템 (레벨업 포션) ───────────────────────────────────────────────
+# ─── 특수 아이템 (레벨업 사탕) ───────────────────────────────────────────────
 SPECIAL_USE_ITEMS = {
     "levelup_potion": {
-        "name":  "레벨업 포션",
+        "name":  "레벨업 사탕",
         "type":  "special",
         "grade": "Legendary",
         "price": 0,
-        "desc":  "사용하면 레벨이 1 오르는 특별한 포션.",
+        "desc":  "사용하면 레벨이 1 오르는 특별한 사탕.",
         "sellable": False,
     },
 }

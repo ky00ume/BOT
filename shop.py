@@ -8,17 +8,36 @@ try:
 except ImportError:
     SKILL_BOOKS = {}
 
-# 브룩샤 판매 기초 요리 4종 (COOKED_DISHES에서 선정)
+# ── 포션/연금술 재료 전용 카탈로그 (오멜룸) ─────────────────────────────────
+_OMELUM_POTIONS = {k: v for k, v in CONSUMABLES.items()}
+_OMELUM_POTIONS.update({
+    k: v for k, v in ALL_ITEMS.items()
+    if v.get("type") == "gathering" and k in (
+        "herb", "mana_herb", "water", "healing_root", "mana_flower",
+        "energy_leaf", "antidote_herb", "moonlight_dew", "honey",
+    )
+})
+_OMELUM_TOOLS = {"tool_mortar": TOOLS["tool_mortar"]}
+
+# ── 브룩샤 카탈로그: 식재료(조미료) + 요리 완성품 ────────────────────────────
+# 빈 병은 브룩샤에서 제거, 몰로 이전
+_BROOKSHA_GROCERIES = {k: v for k, v in GROCERIES.items() if k != "empty_bottle"}
 _BROOKSHA_DISHES = {
     k: v for k, v in COOKED_DISHES.items()
-    if k in ("simple_soup", "potato_pancake", "mushroom_soup", "tofu")
+    if k in ("simple_soup", "potato_pancake", "mushroom_soup", "tofu",
+             "mushroom_soup", "honey_milk", "ck_soup_01", "ck_steak_01")
 }
+
+# ── 몰 카탈로그: 도구 + 빈 병 + 가방 ──────────────────────────────────────
+_MOL_CATALOG = {**TOOLS}
+_MOL_CATALOG["empty_bottle"] = GROCERIES["empty_bottle"]
+_MOL_CATALOG.update(BAGS)
 
 NPC_CATALOGS = {
     "다몬":   {**WEAPONS, **ARMORS},
-    "오멜룸": {**CONSUMABLES, **TOOLS},
-    "브룩샤": {**GROCERIES, **_BROOKSHA_DISHES},
-    "몰":     BAGS,
+    "오멜룸": {**_OMELUM_POTIONS, **_OMELUM_TOOLS},
+    "브룩샤": {**_BROOKSHA_GROCERIES, **_BROOKSHA_DISHES},
+    "몰":     _MOL_CATALOG,
     "카엘릭": {k: v for k, v in SKILL_BOOKS.items() if v.get("npc") == "카엘릭"},
     "게일의 환영": {k: v for k, v in SKILL_BOOKS.items() if v.get("npc") == "게일의 환영"},
 }

@@ -167,6 +167,14 @@ async def on_ready():
     if not alarm_loop.is_running():
         alarm_loop.start()
 
+    # ── 레벨업 포션 1회성 지급 (츄라이더용) ─────────────────────────────────
+    if not getattr(shared_player, "_flags", {}).get("levelup_potion_granted", False):
+        if not hasattr(shared_player, "_flags"):
+            shared_player._flags = {}
+        shared_player._flags["levelup_potion_granted"] = True
+        shared_player.add_item("levelup_potion", 1)
+        print("[이벤트] 레벨업 포션 1회 지급 완료")
+
     print("[봇 준비] 모든 시스템 초기화 완료!")
 
 
@@ -287,6 +295,24 @@ async def eat_item(ctx, *, item_name: str = None):
     if not item_id or shared_player.inventory.get(item_id, 0) == 0:
         await ctx.send(ansi(f"  {C.RED}✖ 인벤토리에 [{item_name}]가 없슴미댜!{C.R}"))
         return
+
+    # 레벨업 포션 특별 처리
+    if item_id == "levelup_potion":
+        shared_player.remove_item(item_id, 1)
+        old_level = shared_player.level
+        shared_player.level += 1
+        from player import apply_level_up
+        gains = apply_level_up(shared_player)
+        gain_str = ", ".join(
+            f"+{v} {k}" for k, v in gains.items()
+        )
+        await ctx.send(ansi(
+            f"  {C.GOLD}✨ 레벨업 포션 사용!{C.R}\n"
+            f"  {C.WHITE}레벨 {old_level} → {shared_player.level}{C.R}\n"
+            f"  {C.GREEN}{gain_str}{C.R}"
+        ))
+        return
+
     item = EDIBLE_ITEMS.get(item_id)
     if not item:
         await ctx.send(ansi(f"  {C.RED}✖ [{item_name}]은(는) 먹을 수 없는 아이템임미댜!{C.R}"))
@@ -474,7 +500,7 @@ async def notice_cmd(ctx):
     await send_town_notice(ctx.channel)
 
 
-@bot.command(name="비전타운", aliases=["마을"])
+@bot.command(name="비전타운")
 async def vision_town_cmd(ctx):
     if not await _check_channel(ctx):
         return
@@ -599,96 +625,6 @@ async def job_cmd(ctx, *, name: str = None):
 # ═══════════════════════════════════════════════════════════════════════════
 # 상점 명령어
 # ═══════════════════════════════════════════════════════════════════════════
-
-@bot.command(name="구매목록")
-async def buy_list_cmd(ctx, npc_name: str = None):
-    if not await _check_channel(ctx):
-        return
-    if not npc_name:
-        from shop import NPC_CATALOGS
-        names = ", ".join(NPC_CATALOGS.keys())
-        await ctx.send(ansi(f"  {C.GOLD}상점 NPC: {names}{C.R}\n  {C.GREEN}/구매목록 [NPC이름]{C.R} 으로 확인하셰요!"))
-        return
-    msg = shop_manager.show_buy_list(npc_name)
-    await ctx.send(msg)
-
-
-@bot.command(name="구매")
-async def buy_cmd(ctx, npc_name: str = None, item_name: str = None, count: int = 1):
-    if not await _check_channel(ctx):
-        return
-    if not npc_name:
-        await ctx.send(ansi(f"  {C.RED}✖ /구매 [NPC이름] [아이템이름] [수량] 형식으로 입력하셰요!{C.R}"))
-        return
-    if not item_name:
-        # 인터랙티브 UI 표시
-        from shop import NPC_CATALOGS
-        from shop_ui import BuyView
-        catalog = NPC_CATALOGS.get(npc_name)
-        if not catalog:
-            available = ", ".join(NPC_CATALOGS.keys())
-            await ctx.send(ansi(
-                f"  {C.RED}✖ [{npc_name}]은(는) 상점 NPC가 아님미댜!\n"
-                f"  상점 NPC: {available}{C.R}"
-            ))
-            return
-        view = BuyView(shared_player, shop_manager, npc_name, catalog)
-        msg  = await ctx.send(
-            ansi(f"  {C.GOLD}🛒 {npc_name} 상점{C.R}  —  아이템을 선택하셰요!"),
-            view=view
-        )
-        view._message = msg
-        return
-    count = max(1, min(count, 999))
-    msg = shop_manager.execute_buy(npc_name, item_name, count)
-    await ctx.send(msg)
-
-
-@bot.command(name="판매목록")
-async def sell_list_cmd(ctx):
-    if not await _check_channel(ctx):
-        return
-    msg = shop_manager.show_sell_list()
-    await ctx.send(msg)
-
-
-@bot.command(name="판매", aliases=["판매확정"])
-async def sell_cmd(ctx, *args):
-    if not await _check_channel(ctx):
-        return
-    # 공백 포함 아이템명 지원: /판매 철 주괴 3 → item_name="철 주괴", count=3
-    if not args:
-        # 인터랙티브 판매 UI
-        from shop_ui import SellView
-        view = SellView(shared_player, shop_manager)
-        msg  = await ctx.send(
-            ansi(f"  {C.GOLD}🏪 판매 UI{C.R}  —  아이템을 선택하셰요!"),
-            view=view
-        )
-        view._message = msg
-        return
-    # 마지막 인수가 숫자 또는 "전부"면 수량으로 처리
-    if args[-1] in ("전부",) or (len(args) > 1 and args[-1].isdigit()):
-        count_or_all = args[-1]
-        item_name    = " ".join(args[:-1])
-    else:
-        count_or_all = "1"
-        item_name    = " ".join(args)
-    # 수량 파싱 ("전부" 또는 숫자)
-    if count_or_all == "전부":
-        item_id = find_item_by_name(item_name)
-        count   = shared_player.inventory.get(item_id, 0) if item_id else 0
-        if count == 0:
-            await ctx.send(ansi(f"  {C.RED}✖ [{item_name}]이(가) 인벤토리에 없슴미댜!{C.R}"))
-            return
-    else:
-        try:
-            count = max(1, int(count_or_all))
-        except ValueError:
-            count = 1
-    msg = shop_manager.sell_item(item_name, count)
-    await ctx.send(msg)
-
 
 # ═══════════════════════════════════════════════════════════════════════════
 # 전투 명령어
@@ -849,96 +785,6 @@ async def fish_guide_cmd(ctx):
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# 요리 명령어
-# ═══════════════════════════════════════════════════════════════════════════
-
-@bot.command(name="요리")
-async def cook_cmd(ctx, dish_id: str = None):
-    if not await _check_channel(ctx):
-        return
-    if not dish_id:
-        result = cooking_engine.show_recipe_list(method_filter="cook")
-        await ctx.send(result)
-        return
-    result = cooking_engine.cook(dish_id, force_method="cook")
-    await ctx.send(result)
-
-
-@bot.command(name="레시피")
-async def recipe_cmd(ctx):
-    if not await _check_channel(ctx):
-        return
-    result = cooking_engine.show_recipe_list()
-    await ctx.send(result)
-
-
-# ═══════════════════════════════════════════════════════════════════════════
-# 제련 명령어
-# ═══════════════════════════════════════════════════════════════════════════
-
-@bot.command(name="제련")
-async def smelt_cmd(ctx, *, ore_input: str = None):
-    if not await _check_channel(ctx):
-        return
-    if not ore_input:
-        result = metallurgy_engine.show_recipe_list()
-        await ctx.send(result)
-        return
-    result = metallurgy_engine.smelt(ore_input)
-    await ctx.send(result)
-
-
-@bot.command(name="제련목록")
-async def smelt_list_cmd(ctx):
-    if not await _check_channel(ctx):
-        return
-    result = metallurgy_engine.show_recipe_list()
-    await ctx.send(result)
-
-
-# ═══════════════════════════════════════════════════════════════════════════
-# 혼합 요리 명령어 (비가열)
-# ═══════════════════════════════════════════════════════════════════════════
-
-@bot.command(name="혼합", aliases=["믹스"])
-async def mix_cmd(ctx, dish_id: str = None):
-    if not await _check_channel(ctx):
-        return
-    if not dish_id:
-        result = cooking_engine.show_recipe_list(method_filter="mix")
-        await ctx.send(result)
-        return
-    result = cooking_engine.cook(dish_id, force_method="mix")
-    await ctx.send(result)
-
-
-# ═══════════════════════════════════════════════════════════════════════════
-# 장비 제작 명령어
-# ═══════════════════════════════════════════════════════════════════════════
-
-@bot.command(name="제작")
-async def craft_item_cmd(ctx, *, result_id: str = None):
-    if not await _check_channel(ctx):
-        return
-    if not result_id:
-        embeds = crafting_engine.get_recipe_embeds()
-        for emb in embeds:
-            await ctx.send(embed=emb)
-        return
-    result = crafting_engine.craft(result_id)
-    await ctx.send(result)
-
-
-@bot.command(name="제작도감")
-async def craft_guide_cmd(ctx):
-    if not await _check_channel(ctx):
-        return
-    embeds = crafting_engine.get_recipe_embeds()
-    for emb in embeds:
-        await ctx.send(embed=emb)
-
-
-# ═══════════════════════════════════════════════════════════════════════════
 # 기타 명령어
 # ═══════════════════════════════════════════════════════════════════════════
 
@@ -969,7 +815,8 @@ async def help_cmd(ctx):
     if not await _check_channel(ctx):
         return
     embed = discord.Embed(
-        title="📖 비전 타운 봇 도움말",
+        title="📖 비전 타운 봇 도움말 (v2.0 개편)",
+        description="✨ 대부분의 기능이 임베드+드롭다운 UI로 전환되었습니다!",
         color=EMBED_COLOR["help"],
     )
     embed.add_field(
@@ -978,19 +825,14 @@ async def help_cmd(ctx):
             "`/상태` — 캐릭터 상태 보기\n"
             "`/장비` — 장비창 보기\n"
             "`/장착 [아이템이름]` — 장비 장착\n"
-            "`/벗기 [슬롯]` — 장비 탈착 (`/탈착` `/장비해제` 동일)\n"
+            "`/벗기 [슬롯]` — 장비 탈착\n"
             "`/스왑` — 주·보조 무기 교환\n"
             "`/치료` — HP/MP 회복 (50G)\n"
             "`/먹기 [아이템이름]` — 아이템 섭취\n"
-            "`/휴식` — 기력 회복 (3분 쿨타임)\n"
-            "`/쓰담` — 츄라이더를 쓰다듬기 💕 (`/복복` `/북북` `/쓰다듬` 등 동일)\n"
-            "`/혼내기` — 츄라이더 혼내기 😤 (`/훈육` 동일)\n"
-            "`/버리기 [아이템이름] [수량]` — 아이템 버리기\n"
-            "`/타이틀 [이름]` — 보유 타이틀 목록/장착\n"
+            "`/휴식` — 기력 회복\n"
+            "`/타이틀 [이름]` — 보유 타이틀 목록/장착 (타이틀 효과 표시)\n"
             "`/업적` — 업적 목록 보기\n"
-            "`/도감 [카테고리]` — 도감 보기\n"
-            "`/일기 [날짜]` — 일기 보기\n"
-            "`/아이템목록` — 전체 아이템 목록(CSV)"
+            "`/도감 [카테고리]` — 도감 보기"
         ),
         inline=False,
     )
@@ -998,26 +840,33 @@ async def help_cmd(ctx):
         name="🏘 마을 & NPC",
         value=(
             "`/공지` — 마을 공지 보기\n"
-            "`/마을 [NPC이름]` — NPC 목록 / 대화\n"
-            "`/대화 [NPC이름]` — NPC와 대화\n"
-            "`/알바 [NPC이름]` — 알바 진행\n"
+            "`/비전타운` — 마을 입장 (NPC 목록/대화/구매 UI)\n"
+            "  ↳ NPC 선택 → 대화 키워드 클릭 → [구매] 버튼으로 드롭다운 구매\n"
+            "`/알바 [NPC이름]` — 알바 진행 (NPC당 9개, 완전 랜덤)\n"
             "`/마을상태` — 마을 레벨·기여도 확인\n"
-            "`/치료` — 치료사 방문\n"
-            "`/이동 [장소]` — 맵 이동 (3분 쿨타임)"
+            "`/이동 [장소]` — 맵 이동"
         ),
         inline=False,
     )
     embed.add_field(
-        name="🛒 상점",
+        name="📚 스킬 창 (NEW)",
         value=(
-            "`/구매목록 [NPC이름]` — NPC 판매 목록\n"
-            "`/구매 [NPC이름] [아이템이름]` — 구매\n"
-            "`/판매목록` — 인벤토리 판매 목록\n"
-            "`/판매 [아이템이름]` — 아이템 판매\n"
-            "`/보관함` — 보관함 보기\n"
-            "`/보관함넣기 [아이템이름] [수량]` — 보관함에 넣기\n"
-            "`/보관함꺼내기 [아이템이름] [수량]` — 보관함에서 꺼내기\n"
-            "`/보관함업그레이드` — 보관함 확장"
+            "`/스킬` — **스킬 창 UI** 열기\n"
+            "  ↳ 카테고리 드롭다운: 전투 / 마법 / 생활\n"
+            "  ↳ 생활 스킬 선택 → 레시피 드롭다운 → 재료 현황 확인 → [제작 실행]\n"
+            "  ↳ 힐링(마법): 전투 밖에서도 [사용] 버튼으로 HP 회복 가능\n"
+            "  ↳ **인벤토리에서 스킬북 옆 [읽기] 버튼**으로 스킬 습득"
+        ),
+        inline=False,
+    )
+    embed.add_field(
+        name="🎒 인벤토리",
+        value=(
+            "`/인벤토리` 또는 `/가방` — 인벤토리 보기\n"
+            "  ↳ 미습득 스킬북 → **[{스킬북이름} 읽기] 버튼** 자동 표시\n"
+            "  ↳ 이미 습득한 스킬북 → **(습득한 스킬)** 표시\n"
+            "  ↳ **[판매] 버튼** — 드롭다운으로 아이템/수량 선택 후 판매\n"
+            "`/버리기 [아이템이름] [수량]` — 아이템 버리기"
         ),
         inline=False,
     )
@@ -1027,65 +876,31 @@ async def help_cmd(ctx):
             "`/사냥터` — 사냥터 목록\n"
             "`/사냥 [사냥터이름]` — 전투 시작\n"
             "`/공격 [스킬ID]` — 공격 (기본: smash)\n"
-            "`/도주` — 전투 이탈\n"
-            "`/스킬 [스킬이름]` — 스킬 설명·효과 조회 (`/스킬조회` 동일)"
+            "`/도주` — 전투 이탈"
         ),
         inline=False,
     )
     embed.add_field(
         name="🌿 생활",
         value=(
-            "`/낚시` — 낚시하기 (타이밍 게임)\n"
-            "`/낚시도감` `/낚시터정보` — 낚시터·물고기 정보\n"
+            "`/낚시` — 낚시하기\n"
             "`/채집` — 채집 (기력 15)\n"
             "`/채광` — 채광 (기력 20)\n"
-            "`/벌목` — 벌목 (기력 18, 나무 획득)\n"
-            "`/채집도감` — 채집 가능 아이템 목록\n"
-            "`/요리 [레시피ID]` — 가열 요리\n"
-            "`/혼합 [레시피ID]` — 혼합(비가열) 요리\n"
-            "`/레시피` — 요리 레시피 목록\n"
-            "`/제련 [광석ID]` — 제련하기\n"
-            "`/제련목록` — 제련 목록\n"
-            "`/제작 [장비ID]` — 장비 제작\n"
-            "`/제작도감` — 제작 가능 장비 목록\n"
-            "`/제조 [레시피ID]` — 포션 제조\n"
+            "`/벌목` — 벌목 (기력 18)\n"
             "`/물뜨기 [수량]` — 빈 병으로 물 뜨기\n"
             "`/날씨` — 현재 날씨 확인\n"
-            "`/수련 [스탯]` — 훈련소 스탯 수련 (`/훈련소` `/학교` 동일)"
+            "`/수련 [스탯]` — 훈련소 스탯 수련"
         ),
         inline=False,
     )
     embed.add_field(
-        name="📋 소셜",
+        name="📋 소셜·기타",
         value=(
             "`/퀘스트` — 퀘스트 목록\n"
-            "`/퀘스트수락 [ID]` — 퀘스트 수락\n"
-            "`/퀘스트완료 [ID]` — 퀘스트 완료\n"
-            "`/뽑기` — 가챠 1회 (500G)\n"
-            "`/뽑기10` — 가챠 10회 (4500G)\n"
-            "`/작곡` — 곡 선택\n"
-            "`/연주 [곡ID]` — 연주 시작\n"
+            "`/뽑기` / `/뽑기10` — 가챠\n"
+            "`/작곡` / `/연주 [곡ID]` — 음악\n"
             "`/게시판` — 마을 게시판\n"
-            "`/명예의전당` — 명예의 전당\n"
-            "`/낚시순위` — 주간 낚시 순위"
-        ),
-        inline=False,
-    )
-    embed.add_field(
-        name="📖 스토리",
-        value=(
-            "`/스토리` — 스토리 퀘스트 저널\n"
-            "`/스토리퀘스트` — 다음 스토리 퀘스트 진행\n"
-            "`/스토리탐색` — 늪지대 탐색 (챕터 3 Q2)\n"
-            "`/스토리수집` — 재료 수집 (챕터 2 Q2)\n"
-            "`/스토리힌트` — 수집한 힌트 목록\n"
-            "`/그림자` — 그림자의 상태 확인"
-        ),
-        inline=False,
-    )
-    embed.add_field(
-        name="🎲 기타",
-        value=(
+            "`/스토리` — 스토리 퀘스트\n"
             "`/주사위 [면수]` — 주사위 굴리기\n"
             "`/저장` — 데이터 저장\n"
             "`/공지` — 마을 공지\n"
@@ -1093,7 +908,7 @@ async def help_cmd(ctx):
         ),
         inline=False,
     )
-    embed.set_footer(text=FOOTERS["help"])
+    embed.set_footer(text="🎉 v2.0 개편: 텍스트 명령어 최소화, 드롭다운+버튼 UI 중심으로 전환되었습니다!")
     await ctx.send(embed=embed)
 
 
@@ -1174,18 +989,6 @@ async def mine_cmd(ctx):
     enc_msg = encounter_manager.trigger_encounter()
     if enc_msg:
         await ctx.send(enc_msg)
-
-
-@bot.command(name="제조")
-async def craft_cmd(ctx, recipe_id: str = None):
-    if not await _check_channel(ctx):
-        return
-    if not recipe_id:
-        result = potion_engine.show_recipe_list()
-        await ctx.send(result)
-        return
-    result = potion_engine.craft(recipe_id)
-    await ctx.send(result)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -1467,25 +1270,37 @@ async def achievements_cmd(ctx):
 async def title_cmd(ctx, *, title_name: str = None):
     if not await _check_channel(ctx):
         return
+    from title_data import format_title_effects, get_title_desc
     owned_titles = achievement_manager.get_unlocked_titles()
     # 기본 타이틀도 항상 포함
     if shared_player.current_title not in owned_titles:
         owned_titles = [shared_player.current_title] + owned_titles
 
     if not title_name:
-        # 목록 표시
-        lines = [f"  {C.GOLD}🎀 보유 타이틀 목록{C.R}"]
+        # 목록 표시 (임베드로 효과 포함)
+        embed = discord.Embed(
+            title="🎀 보유 타이틀 목록",
+            color=EMBED_COLOR.get("status", 0x5865F2),
+        )
         for t in owned_titles:
-            marker = f"{C.GREEN}▶{C.R}" if t == shared_player.current_title else "  "
-            lines.append(f"  {marker} {C.WHITE}{t}{C.R}")
-        lines.append(f"\n  {C.GREEN}/타이틀 [이름]{C.R} 으로 장착!")
-        await ctx.send(ansi("\n".join(lines)))
+            marker = "▶ (장착중)" if t == shared_player.current_title else ""
+            effect_str = format_title_effects(t)
+            desc_str = get_title_desc(t)
+            embed.add_field(
+                name=f"{'✨ ' if marker else '  '}{t} {marker}",
+                value=f"설명: {desc_str}\n효과: **{effect_str}**",
+                inline=False,
+            )
+        embed.set_footer(text="/타이틀 [이름] 으로 장착!")
+        await ctx.send(embed=embed)
     else:
         # 장착
         if title_name in owned_titles:
             shared_player.current_title = title_name
+            effect_str = format_title_effects(title_name)
             await ctx.send(ansi(
-                f"  {C.GREEN}✔ [{title_name}] 타이틀을 장착했슴미댜! 🎀{C.R}"
+                f"  {C.GREEN}✔ [{title_name}] 타이틀을 장착했슴미댜! 🎀{C.R}\n"
+                f"  효과: {effect_str}"
             ))
         else:
             await ctx.send(ansi(
@@ -1596,6 +1411,105 @@ async def storage_upgrade_cmd(ctx):
 
 
 # ═══════════════════════════════════════════════════════════════════════════
+# 인벤토리 명령어 (스킬북 [읽기] 버튼 + [판매] 버튼 포함)
+# ═══════════════════════════════════════════════════════════════════════════
+
+@bot.command(name="인벤토리", aliases=["가방", "소지품"])
+async def inventory_cmd(ctx):
+    if not await _check_channel(ctx):
+        return
+    from items import ALL_ITEMS, SKILL_BOOKS
+    from shop import ShopManager
+    from shop_ui import SellView
+    inventory = shared_player.inventory
+    used, max_slots = shared_player.inventory_check()
+
+    embed = discord.Embed(
+        title=f"🎒 인벤토리 ({used}/{max_slots})",
+        color=EMBED_COLOR.get("status", 0x5865F2),
+    )
+    embed.description = f"💰 소지금: **{shared_player.gold:,}G**"
+
+    if not inventory:
+        embed.add_field(name="📦 아이템", value="인벤토리가 비어있슴미댜.", inline=False)
+    else:
+        lines = []
+        for item_id, count in list(inventory.items())[:50]:
+            item = ALL_ITEMS.get(item_id, {})
+            name = item.get("name", item_id)
+            # 스킬북: 이미 습득했으면 (습득한 스킬) 표시
+            if item.get("type") == "skillbook":
+                skill_id = item.get("skill_id", "")
+                if skill_id in shared_player.skill_ranks:
+                    name = f"~~{name}~~ *(습득한 스킬)*"
+            lines.append(f"• **{name}** ×{count}")
+        embed.add_field(name="📦 아이템", value="\n".join(lines) if lines else "없음", inline=False)
+
+    view = discord.ui.View(timeout=120.0)
+
+    # 미습득 스킬북 [읽기] 버튼들
+    for item_id, count in inventory.items():
+        item = ALL_ITEMS.get(item_id, {})
+        if item.get("type") != "skillbook":
+            continue
+        skill_id = item.get("skill_id", "")
+        if skill_id in shared_player.skill_ranks:
+            continue
+        book_name = item.get("name", item_id)
+
+        async def make_read_callback(_item_id=item_id, _skill_id=skill_id, _book_name=book_name):
+            async def callback(interaction: discord.Interaction):
+                if shared_player.inventory.get(_item_id, 0) < 1:
+                    await interaction.response.send_message(
+                        f"❌ [{_book_name}]이(가) 인벤토리에 없슴미댜!", ephemeral=True
+                    )
+                    return
+                if _skill_id in shared_player.skill_ranks:
+                    await interaction.response.send_message(
+                        f"✅ 이미 [{_book_name}] 스킬을 보유하고 있슴미댜!", ephemeral=True
+                    )
+                    return
+                shared_player.remove_item(_item_id, 1)
+                shared_player.skill_ranks[_skill_id] = "연습"
+                shared_player.skill_exp[_skill_id] = 0.0
+                from skills_db import COMBAT_SKILLS, MAGIC_SKILLS, RECOVERY_SKILLS, OTHER_SKILLS
+                all_defs = {**COMBAT_SKILLS, **MAGIC_SKILLS, **RECOVERY_SKILLS, **OTHER_SKILLS}
+                skill_name = all_defs.get(_skill_id, {}).get("name", _skill_id)
+                await interaction.response.send_message(
+                    f"✅ [{skill_name}] 스킬을 습득했슴미댜! [연습 랭크]",
+                    ephemeral=False,
+                )
+            return callback
+
+        btn = discord.ui.Button(
+            label=f"{book_name} 읽기",
+            style=discord.ButtonStyle.primary,
+            emoji="📖",
+        )
+        btn.callback = await make_read_callback()
+        view.add_item(btn)
+        if len(view.children) >= 4:  # 최대 4개 읽기 버튼
+            break
+
+    # [판매] 버튼
+    sell_btn = discord.ui.Button(label="판매", style=discord.ButtonStyle.danger, emoji="🏪")
+    async def sell_callback(interaction: discord.Interaction):
+        sm = ShopManager(shared_player)
+        sell_view = SellView(shared_player, sm)
+        sell_embed = discord.Embed(
+            title="🏪 아이템 판매",
+            description=f"💰 소지금: **{shared_player.gold:,}G**\n판매할 아이템을 선택하세요.",
+            color=0xFF6B35,
+        )
+        msg = await interaction.response.send_message(embed=sell_embed, view=sell_view, ephemeral=False)
+        sell_view._message = msg
+    sell_btn.callback = sell_callback
+    view.add_item(sell_btn)
+
+    await ctx.send(embed=embed, view=view)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
 # 신규 명령어 — 버리기 (인벤토리 아이템 삭제)
 # ═══════════════════════════════════════════════════════════════════════════
 
@@ -1682,114 +1596,22 @@ async def woodcut_cmd(ctx):
 # 신규 명령어 — 스킬 (스킬 설명/효과 조회)
 # ═══════════════════════════════════════════════════════════════════════════
 
-@bot.command(name="스킬", aliases=["스킬조회"])
-async def skill_info_cmd(ctx, skill_name: str = None):
+@bot.command(name="스킬", aliases=["스킬창"])
+async def skill_ui_cmd(ctx):
+    """스킬 창 UI — 임베드+드롭다운으로 전투/마법/생활 스킬 관리."""
     if not await _check_channel(ctx):
         return
+    from skill_ui import SkillMainView, make_skill_main_embed
+    embed = make_skill_main_embed(shared_player)
+    view = SkillMainView(
+        shared_player,
+        potion_engine=potion_engine,
+        crafting_engine=crafting_engine,
+        cooking_engine=cooking_engine,
+        metallurgy_engine=metallurgy_engine,
+    )
+    await ctx.send(embed=embed, view=view)
 
-    from skills_db import COMBAT_SKILLS, MAGIC_SKILLS, RECOVERY_SKILLS, OTHER_SKILLS
-    from ui_theme import header_box, divider
-
-    ALL_SKILLS = {**COMBAT_SKILLS, **MAGIC_SKILLS, **RECOVERY_SKILLS, **OTHER_SKILLS}
-
-    if not skill_name:
-        # 전체 목록
-        lines = [header_box("📖 스킬 목록")]
-        for sid, sdata in ALL_SKILLS.items():
-            rank = shared_player.skill_ranks.get(sid)
-            mark = f"{C.GREEN}[{rank}]{C.R}" if rank else f"{C.DARK}[미습득]{C.R}"
-            lines.append(f"  {C.WHITE}{sdata['name']}{C.R} {mark}  {C.DARK}{sdata.get('desc','')}{C.R}")
-        lines.append(divider())
-        lines.append(f"  {C.GREEN}/스킬 [스킬이름]{C.R} 으로 상세 조회")
-        await ctx.send(ansi("\n".join(lines)))
-        return
-
-    # 이름으로 검색
-    found_id   = None
-    found_data = None
-    for sid, sdata in ALL_SKILLS.items():
-        if sdata["name"] == skill_name or sid == skill_name:
-            found_id   = sid
-            found_data = sdata
-            break
-
-    if not found_data:
-        await ctx.send(ansi(f"  {C.RED}✖ [{skill_name}] 스킬을 찾을 수 없슴미댜!{C.R}"))
-        return
-
-    rank = shared_player.skill_ranks.get(found_id)
-    lines = [
-        header_box(f"📖 {found_data['name']}"),
-        f"  {C.DARK}{found_data.get('desc','')}{C.R}",
-        divider(),
-        f"  내 랭크: {C.GREEN if rank else C.DARK}{rank or '미습득'}{C.R}",
-    ]
-
-    # 랭크별 수치 표시 (대표 수치)
-    for key in ("damage_bonus", "damage_reduce", "damage", "counter_multiplier", "aoe_multiplier", "heal", "restore_mp"):
-        table = found_data.get(key)
-        if isinstance(table, dict) and table:
-            lines.append(f"\n  {C.GOLD}◈ {key}{C.R}")
-            pairs = list(table.items())
-            # 현재 랭크 주변 3개만
-            if rank and rank in table:
-                idx = list(table.keys()).index(rank)
-                start = max(0, idx - 1)
-                pairs = list(table.items())[start:start+4]
-            for r, v in pairs:
-                marker = f"{C.GREEN}▶ {C.R}" if r == rank else "  "
-                lines.append(f"  {marker}{C.DARK}[{r}]{C.R} {C.WHITE}{v}{C.R}")
-
-    mp_cost = found_data.get("mp_cost")
-    if isinstance(mp_cost, dict) and rank and rank in mp_cost:
-        lines.append(f"\n  {C.BLUE}MP 소모: {mp_cost[rank]}{C.R} (현재 랭크)")
-    elif isinstance(mp_cost, (int, float)):
-        lines.append(f"\n  {C.BLUE}MP 소모: {mp_cost}{C.R}")
-
-    await ctx.send(ansi("\n".join(lines)))
-
-
-# ═══════════════════════════════════════════════════════════════════════════
-# 신규 명령어 — 스킬 습득 (스킬북 사용)
-# ═══════════════════════════════════════════════════════════════════════════
-
-@bot.command(name="스킬습득", aliases=["스킬사용", "스킬배우기"])
-async def learn_skill_cmd(ctx, *, book_name: str = None):
-    if not await _check_channel(ctx):
-        return
-    if not book_name:
-        await ctx.send(ansi(f"  {C.RED}✖ /스킬습득 [스킬북이름] 형식으로 입력하셰요!{C.R}"))
-        return
-    from items import ALL_ITEMS
-    from shop import find_item_by_name
-    item_id = find_item_by_name(book_name)
-    if not item_id:
-        await ctx.send(ansi(f"  {C.RED}✖ [{book_name}] 아이템을 찾을 수 없슴미댜!{C.R}"))
-        return
-    item = ALL_ITEMS.get(item_id, {})
-    if item.get("type") != "skillbook":
-        await ctx.send(ansi(f"  {C.RED}✖ [{item.get('name', item_id)}]은(는) 스킬북이 아님미댜!{C.R}"))
-        return
-    if shared_player.inventory.get(item_id, 0) < 1:
-        await ctx.send(ansi(f"  {C.RED}✖ [{item.get('name', item_id)}]이(가) 인벤토리에 없슴미댜!{C.R}"))
-        return
-    skill_id = item.get("skill_id")
-    if not skill_id:
-        await ctx.send(ansi(f"  {C.RED}✖ 이 스킬북에 연결된 스킬이 없슴미댜!{C.R}"))
-        return
-    if skill_id in shared_player.skill_ranks:
-        await ctx.send(ansi(f"  {C.GOLD}이미 [{item.get('name', item_id)}] 스킬을 보유하고 있슴미댜!{C.R}"))
-        return
-    shared_player.remove_item(item_id, 1)
-    shared_player.skill_ranks[skill_id] = "연습"
-    shared_player.skill_exp[skill_id] = 0.0
-    from skills_db import COMBAT_SKILLS, MAGIC_SKILLS, RECOVERY_SKILLS, OTHER_SKILLS
-    all_defs = {**COMBAT_SKILLS, **MAGIC_SKILLS, **RECOVERY_SKILLS, **OTHER_SKILLS}
-    skill_name = all_defs.get(skill_id, {}).get("name", skill_id)
-    await ctx.send(ansi(
-        f"  {C.GREEN}✔ [{skill_name}] 스킬을 습득했슴미댜! [연습 랭크]{C.R}\n"
-        f"  {C.DARK}/스킬 {skill_name} 으로 상세 확인{C.R}"
-    ))
 
 @bot.command(name="이동")
 async def move_cmd(ctx, *, destination: str = None):

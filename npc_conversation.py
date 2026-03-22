@@ -326,7 +326,8 @@ class NPCConversationView(View):
 
     async def _buy_callback(self, interaction: discord.Interaction):
         from shop import NPC_CATALOGS
-        from ui_theme import GRADE_ICON_PLAIN, EMBED_COLOR as _EC
+        from shop_ui import BuyView
+        from database import NPC_DATA
         catalog = NPC_CATALOGS.get(self.npc_name)
         if not catalog:
             await interaction.response.send_message("이 NPC는 상점이 없슴미댜.", ephemeral=True)
@@ -334,19 +335,26 @@ class NPCConversationView(View):
         npc = NPC_DATA.get(self.npc_name, {})
         embed = discord.Embed(
             title=f"🛒 {npc.get('name', self.npc_name)} 상점",
-            color=_EC.get("shop", 0xFFD700),
+            description=f"💰 소지금: **{self.player.gold:,}G**",
+            color=0xFFD700,
         )
         lines = []
         for item_id, item in list(catalog.items())[:20]:
+            from ui_theme import GRADE_ICON_PLAIN
             grade = item.get("grade", "Normal")
             icon = GRADE_ICON_PLAIN.get(grade, "⚬")
             name = item.get("name", item_id)
             price = item.get("price", 0)
             extra = f" (+{item.get('slots',0)}칸)" if item.get("type") == "bag" else ""
             lines.append(f"{icon} **{name}**{extra} — {price:,}G")
-        embed.description = "\n".join(lines) if lines else "상품이 없슴미댜."
-        embed.set_footer(text="/구매 [NPC이름] [아이템이름] 으로 구매하셰요!")
-        await interaction.response.send_message(embed=embed, ephemeral=False)
+        embed.add_field(name="📦 판매 상품", value="\n".join(lines) if lines else "상품이 없슴미댜.", inline=False)
+        embed.set_footer(text="아래 드롭다운에서 상품과 수량을 선택하세요.")
+
+        from shop import ShopManager
+        shop_mgr = ShopManager(self.player)
+        view = BuyView(self.player, shop_mgr, self.npc_name, catalog)
+        msg = await interaction.response.send_message(embed=embed, view=view)
+        view._message = msg
 
     async def _train_callback(self, interaction: discord.Interaction):
         npc = NPC_DATA.get(self.npc_name, {})

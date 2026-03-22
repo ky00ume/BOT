@@ -1,7 +1,25 @@
-"""shop_ui.py — discord.ui.View 기반 인터랙티브 구매/판매 UI"""
+"""shop_ui.py — discord.ui.View 기반 인터랙티브 구매/판매 UI (PIL 이미지 출력)"""
 import discord
-from ui_theme import C, ansi, header_box, divider, GRADE_ICON_PLAIN, EMBED_COLOR
 from items import ALL_ITEMS
+from bg3_renderer import get_renderer
+
+GRADE_ICON_PLAIN = {
+    "Normal":    "⚬",
+    "Rare":      "◆",
+    "Epic":      "❖",
+    "Legendary": "✦",
+}
+
+
+def _result_card(title, rows, grade="Normal"):
+    """render_card wrapper for shop result feedback."""
+    buf = get_renderer().render_card(
+        title=title,
+        rows=rows,
+        system_key="shop",
+        grade=grade,
+    )
+    return discord.File(buf, filename="shop_result.png")
 
 
 class SellView(discord.ui.View):
@@ -67,27 +85,61 @@ class SellView(discord.ui.View):
 
     async def _on_confirm(self, interaction: discord.Interaction):
         if not self.selected_id:
-            await interaction.response.send_message(
-                ansi(f"  {C.RED}✖ 아이템을 먼저 선택하셰요!{C.R}"), ephemeral=True
+            file = _result_card(
+                "오류",
+                [{"label": "안내", "value": "아이템을 먼저 선택하셰요!"}],
+                grade="Fail",
             )
+            await interaction.response.send_message(file=file, ephemeral=True)
             return
+
         count = self.sell_count
         if count == -1:
             count = self.player.inventory.get(self.selected_id, 1)
-        item  = ALL_ITEMS.get(self.selected_id, {})
-        name  = item.get("name", self.selected_id)
-        msg   = self.shop_manager.sell_item(name, count)
+
+        item = ALL_ITEMS.get(self.selected_id, {})
+        name = item.get("name", self.selected_id)
+        have = self.player.inventory.get(self.selected_id, 0)
+
+        if have < count:
+            file = _result_card(
+                "오류",
+                [{"label": "아이템", "value": name},
+                 {"label": "안내", "value": "수량이 부족하거나 없슴미댜!"}],
+                grade="Fail",
+            )
+            await interaction.response.send_message(file=file, ephemeral=True)
+            return
+
+        price = item.get("price", 0)
+        sell_total = (price // 2) * count
+
+        # Execute the actual sell operation
+        self.shop_manager.sell_item(name, count)
+
         for child in self.children:
             child.disabled = True
-        await interaction.response.edit_message(content=msg, view=self)
+
+        file = _result_card(
+            "판매 완료",
+            [{"label": "아이템", "value": name},
+             {"label": "수량", "value": str(count)},
+             {"label": "획득", "value": f"+{sell_total:,}G"},
+             {"label": "소지금", "value": f"{self.player.gold:,}G"}],
+            grade="Normal",
+        )
+        await interaction.response.edit_message(content=None, attachments=[file], view=self)
         self.stop()
 
     async def _on_cancel(self, interaction: discord.Interaction):
         for child in self.children:
             child.disabled = True
-        await interaction.response.edit_message(
-            content=ansi(f"  {C.DARK}판매를 취소했슴미댜.{C.R}"), view=self
+        file = _result_card(
+            "취소",
+            [{"label": "안내", "value": "판매를 취소했슴미댜."}],
+            grade="Normal",
         )
+        await interaction.response.edit_message(content=None, attachments=[file], view=self)
         self.stop()
 
     async def on_timeout(self):
@@ -95,9 +147,12 @@ class SellView(discord.ui.View):
             child.disabled = True
         if self._message:
             try:
-                await self._message.edit(
-                    content=ansi(f"  {C.DARK}⏰ 판매 시간이 만료됐슴미댜.{C.R}"), view=self
+                file = _result_card(
+                    "시간 만료",
+                    [{"label": "안내", "value": "판매 시간이 만료됐슴미댜."}],
+                    grade="Fail",
                 )
+                await self._message.edit(content=None, attachments=[file], view=self)
             except Exception:
                 pass
 
@@ -159,24 +214,66 @@ class BuyView(discord.ui.View):
 
     async def _on_confirm(self, interaction: discord.Interaction):
         if not self.selected_id:
-            await interaction.response.send_message(
-                ansi(f"  {C.RED}✖ 아이템을 먼저 선택하셰요!{C.R}"), ephemeral=True
+            file = _result_card(
+                "오류",
+                [{"label": "안내", "value": "아이템을 먼저 선택하셰요!"}],
+                grade="Fail",
             )
+            await interaction.response.send_message(file=file, ephemeral=True)
             return
+
         item = self.catalog.get(self.selected_id, {})
         name = item.get("name", self.selected_id)
-        msg  = self.shop_manager.execute_buy(self.npc_name, name, self.buy_count)
+        price = item.get("price", 0)
+        grade = item.get("grade", "Normal")
+
+        # Calculate discount
+        discount = 0
+        if hasattr(self.player, "_affinity_manager") and self.player._affinity_manager:
+            aff = self.player._affinity_manager
+            discount = getattr(aff, "get_shop_discount_pct", lambda n: 0)(self.npc_name)
+        final_price = int(price * self.buy_count * (1 - discount / 100))
+
+        # Gold check
+        if self.player.gold < final_price:
+            file = _result_card(
+                "오류",
+                [{"label": "안내", "value": "골드가 부족함미댜!"},
+                 {"label": "필요", "value": f"{final_price:,}G"},
+                 {"label": "보유", "value": f"{self.player.gold:,}G"}],
+                grade="Fail",
+            )
+            await interaction.response.send_message(file=file, ephemeral=True)
+            return
+
+        # Execute the actual buy operation
+        self.shop_manager.execute_buy(self.npc_name, name, self.buy_count)
+
         for child in self.children:
             child.disabled = True
-        await interaction.response.edit_message(content=msg, view=self)
+
+        rows = [
+            {"label": "아이템", "value": name},
+            {"label": "수량", "value": str(self.buy_count)},
+            {"label": "금액", "value": f"-{final_price:,}G"},
+            {"label": "소지금", "value": f"{self.player.gold:,}G"},
+        ]
+        if discount:
+            rows.insert(2, {"label": "할인", "value": f"{discount}%"})
+
+        file = _result_card("구매 완료", rows, grade=grade)
+        await interaction.response.edit_message(content=None, attachments=[file], view=self)
         self.stop()
 
     async def _on_cancel(self, interaction: discord.Interaction):
         for child in self.children:
             child.disabled = True
-        await interaction.response.edit_message(
-            content=ansi(f"  {C.DARK}구매를 취소했슴미댜.{C.R}"), view=self
+        file = _result_card(
+            "취소",
+            [{"label": "안내", "value": "구매를 취소했슴미댜."}],
+            grade="Normal",
         )
+        await interaction.response.edit_message(content=None, attachments=[file], view=self)
         self.stop()
 
     async def on_timeout(self):
@@ -184,8 +281,11 @@ class BuyView(discord.ui.View):
             child.disabled = True
         if self._message:
             try:
-                await self._message.edit(
-                    content=ansi(f"  {C.DARK}⏰ 구매 시간이 만료됐슴미댜.{C.R}"), view=self
+                file = _result_card(
+                    "시간 만료",
+                    [{"label": "안내", "value": "구매 시간이 만료됐슴미댜."}],
+                    grade="Fail",
                 )
+                await self._message.edit(content=None, attachments=[file], view=self)
             except Exception:
                 pass

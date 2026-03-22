@@ -1,13 +1,9 @@
 """
-ui_theme.py — 비전 타운 봇 UI 테마 (BG3 스타일 적용)
+ui_theme.py — 비전 타운 봇 UI 테마 (레거시 호환용)
 
-하위호환 정책:
-  - 모든 기존 함수 시그니처 100% 유지
-  - ANSI 색상 코드 그대로 유지 (터미널/코드블록용)
-  - EMBED_COLOR / GRADE_EMBED_COLOR → BG3 팔레트로 교체
-  - FOOTERS → 시스템 메시지 항목만 중립 말투 교체
-             (NPC 대사·스토리 텍스트는 각 전용 파일에서 관리)
-  - SPIDER_ART → 원본 유지 (캐릭터 고유 표현)
+NOTE: 메인 UI는 bg3_renderer.py (PIL 이미지 기반)으로 전환됨.
+      이 파일은 하위 모듈(fishing.py, crafting.py 등)의 내부 로직에서
+      아직 참조하고 있어 유지함. 점진적으로 제거 예정.
 """
 
 ESC = "\u001b"

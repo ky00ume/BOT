@@ -1,8 +1,8 @@
-"""town_ui.py — 비전타운 / 비전의 땅 임베드+버튼 UI 시스템"""
+"""town_ui.py — 비전타운 / 비전의 땅 이미지+버튼 UI 시스템 (임베드 제거, PIL 이미지 전용)"""
 import discord
 import io
 from discord.ui import View, Button
-from ui_theme import EMBED_COLOR
+from bg3_renderer import get_renderer
 
 
 # ── 비전타운 묘사 ────────────────────────────────────────────────────────────
@@ -85,95 +85,32 @@ FISHING_ZONE_DATA = {
 }
 
 
-def _make_town_embed(village_manager=None) -> discord.Embed:
-    """비전타운 메인 임베드"""
-    embed = discord.Embed(
-        title="🏘️ 비전타운 — [언더다크] 시작의 마을",
-        description=VISION_TOWN_DESC,
-        color=EMBED_COLOR.get("npc", 0x4A7856),
+# ── 헬퍼 함수 ─────────────────────────────────────────────────────────────────
+
+def _strip_town_prefix(label: str) -> str:
+    """버튼 라벨에서 '비전 타운 ' 접두사를 제거한다. DB 값은 변경하지 않는다."""
+    prefix = "비전 타운 "
+    if label.startswith(prefix):
+        return label[len(prefix):]
+    return label
+
+
+def _render_banner(location_name: str, description: str,
+                   zone_type: str = "town", zone_id: str = None) -> discord.File:
+    """bg3_renderer를 호출하여 배너 이미지를 discord.File로 반환한다."""
+    buf = get_renderer().render_location_banner(
+        location_name=location_name,
+        description=description,
+        zone_type=zone_type,
+        zone_id=zone_id,
     )
-    if village_manager:
-        lv = getattr(village_manager, "level", 1)
-        contrib = getattr(village_manager, "contribution", 0)
-        embed.add_field(name="🏙️ 마을 정보", value=f"레벨: **{lv}** | 기여도: **{contrib}**", inline=False)
-    embed.set_footer(text="건물 버튼을 눌러 NPC를 만나보세요!")
-    return embed
+    return discord.File(buf, filename="banner.png")
 
 
-def _make_worldmap_embed() -> discord.Embed:
-    """비전의 땅 임베드"""
-    embed = discord.Embed(
-        title="🗺️ 비전의 땅 — [언더다크] 돌의 세계",
-        description=UNDERDARK_DESC,
-        color=EMBED_COLOR.get("help", 0x2F4F4F),
-    )
-    embed.add_field(
-        name="⚔️ 사냥터",
-        value=" · ".join(f"{v['emoji']} {k}" for k, v in HUNTING_ZONE_DATA.items()),
-        inline=False,
-    )
-    embed.add_field(
-        name="🌿 채집터",
-        value=" · ".join(f"{v['emoji']} {k}" for k, v in GATHERING_ZONE_DATA.items()),
-        inline=False,
-    )
-    embed.add_field(
-        name="🎣 낚시터",
-        value=" · ".join(f"{v['emoji']} {k}" for k, v in FISHING_ZONE_DATA.items()),
-        inline=False,
-    )
-    embed.set_footer(text="버튼을 눌러 이동하세요!")
-    return embed
-
-
-def _make_hunting_zone_embed(zone_name: str) -> discord.Embed:
-    zone = HUNTING_ZONE_DATA.get(zone_name, {})
-    lv_min, lv_max = zone.get("level_range", (1, 10))
-    embed = discord.Embed(
-        title=f"{zone.get('emoji', '⚔️')} {zone.get('name', zone_name)} — 사냥터",
-        description=zone.get("desc", ""),
-        color=EMBED_COLOR.get("battle", 0xFF4500),
-    )
-    embed.add_field(name="⚔️ 레벨 범위", value=f"Lv.{lv_min} ~ {lv_max}", inline=True)
-    monsters = zone.get("monsters", [])
-    if monsters:
-        embed.add_field(name="👾 출몰 몬스터", value=" · ".join(monsters), inline=False)
-    embed.set_footer(text="[사냥] 버튼으로 전투 시작 | [돌아간다]로 복귀")
-    return embed
-
-
-def _make_gathering_zone_embed(zone_name: str) -> discord.Embed:
-    zone = GATHERING_ZONE_DATA.get(zone_name, {})
-    embed = discord.Embed(
-        title=f"{zone.get('emoji', '🌿')} {zone.get('name', zone_name)} — 채집터",
-        description=zone.get("desc", ""),
-        color=EMBED_COLOR.get("gathering", 0x2A6A3A),
-    )
-    items = zone.get("items", [])
-    if items:
-        embed.add_field(name="🌿 획득 가능 아이템", value=" · ".join(items), inline=False)
-    embed.set_footer(text="[채집] 또는 [채광] 버튼으로 수집 | [돌아간다]로 복귀")
-    return embed
-
-
-def _make_fishing_zone_embed(zone_name: str) -> discord.Embed:
-    zone = FISHING_ZONE_DATA.get(zone_name, {})
-    embed = discord.Embed(
-        title=f"{zone.get('emoji', '🎣')} {zone.get('name', zone_name)} — 낚시터",
-        description=zone.get("desc", ""),
-        color=EMBED_COLOR.get("fishing", 0x1A6878),
-    )
-    fish = zone.get("fish", [])
-    if fish:
-        embed.add_field(name="🐟 획득 가능 어종", value=" · ".join(fish), inline=False)
-    if zone.get("has_silen"):
-        embed.add_field(name="👤 특수", value="🌊 실렌이 낚시터를 지키고 있다.", inline=False)
-    embed.set_footer(text="[낚시] 버튼으로 낚시 시작 | [돌아간다]로 복귀")
-    return embed
-
+# ── Views ─────────────────────────────────────────────────────────────────────
 
 class VisionTownView(View):
-    """비전타운 메인 뷰"""
+    """비전타운 메인 뷰 (이미지 + 버튼)"""
 
     def __init__(self, player, aff_manager, npc_manager_ref, village_manager=None):
         super().__init__(timeout=300.0)
@@ -192,7 +129,7 @@ class VisionTownView(View):
             if loc and loc not in locations_seen:
                 locations_seen.add(loc)
                 btn = Button(
-                    label=loc[:20],
+                    label=_strip_town_prefix(loc)[:20],
                     style=discord.ButtonStyle.secondary,
                     emoji="🏠",
                 )
@@ -202,6 +139,29 @@ class VisionTownView(View):
         leave_btn = Button(label="마을을 나간다", style=discord.ButtonStyle.danger, emoji="🗺️")
         leave_btn.callback = self._leave_callback
         self.add_item(leave_btn)
+
+    def _make_banner_file(self) -> discord.File:
+        """비전타운 배너 이미지를 생성한다."""
+        return _render_banner(
+            location_name="비전 타운",
+            description=VISION_TOWN_DESC,
+            zone_type="town",
+            zone_id="비전타운",
+        )
+
+    async def send(self, channel_or_interaction, edit=False):
+        """뷰를 전송하거나 기존 메시지를 편집한다."""
+        file = self._make_banner_file()
+        if edit and isinstance(channel_or_interaction, discord.Interaction):
+            await channel_or_interaction.response.edit_message(
+                attachments=[file], embed=None, view=self,
+            )
+        elif isinstance(channel_or_interaction, discord.Interaction):
+            await channel_or_interaction.response.send_message(
+                file=file, view=self,
+            )
+        else:
+            await channel_or_interaction.send(file=file, view=self)
 
     def _make_location_callback(self, location: str):
         async def callback(interaction: discord.Interaction):
@@ -225,13 +185,12 @@ class VisionTownView(View):
         return callback
 
     async def _leave_callback(self, interaction: discord.Interaction):
-        embed = _make_worldmap_embed()
         view = WorldMapView(self.player, self.aff_manager, self.npc_manager_ref)
-        await interaction.response.edit_message(embed=embed, view=view)
+        await view.send(interaction, edit=True)
 
 
 class WorldMapView(View):
-    """비전의 땅 세계지도 뷰"""
+    """비전의 땅 세계지도 뷰 (이미지 + 버튼)"""
 
     def __init__(self, player, aff_manager, npc_manager_ref):
         super().__init__(timeout=300.0)
@@ -261,40 +220,59 @@ class WorldMapView(View):
             btn.callback = self._make_fishing_callback(zone_name)
             self.add_item(btn)
 
+    def _make_banner_file(self) -> discord.File:
+        """비전의 땅 배너 이미지를 생성한다."""
+        return _render_banner(
+            location_name="비전의 땅",
+            description=UNDERDARK_DESC,
+            zone_type="town",
+            zone_id="비전의땅",
+        )
+
+    async def send(self, channel_or_interaction, edit=False):
+        """뷰를 전송하거나 기존 메시지를 편집한다."""
+        file = self._make_banner_file()
+        if edit and isinstance(channel_or_interaction, discord.Interaction):
+            await channel_or_interaction.response.edit_message(
+                attachments=[file], embed=None, view=self,
+            )
+        elif isinstance(channel_or_interaction, discord.Interaction):
+            await channel_or_interaction.response.send_message(
+                file=file, view=self,
+            )
+        else:
+            await channel_or_interaction.send(file=file, view=self)
+
     async def _back_to_town(self, interaction: discord.Interaction):
         from village import village_manager as vm
-        embed = _make_town_embed(vm)
         view = VisionTownView(self.player, self.aff_manager, self.npc_manager_ref, vm)
-        await interaction.response.edit_message(embed=embed, view=view)
+        await view.send(interaction, edit=True)
 
     def _make_hunting_callback(self, zone_name: str):
         async def callback(interaction: discord.Interaction):
-            embed = _make_hunting_zone_embed(zone_name)
             view = HuntingZoneView(zone_name, self.player, self.aff_manager, self.npc_manager_ref)
-            await interaction.response.edit_message(embed=embed, view=view)
+            await view.send(interaction, edit=True)
         return callback
 
     def _make_gather_callback(self, zone_name: str):
         async def callback(interaction: discord.Interaction):
-            embed = _make_gathering_zone_embed(zone_name)
             view = GatheringZoneView(zone_name, self.player, self.aff_manager, self.npc_manager_ref)
-            await interaction.response.edit_message(embed=embed, view=view)
+            await view.send(interaction, edit=True)
         return callback
 
     def _make_fishing_callback(self, zone_name: str):
         async def callback(interaction: discord.Interaction):
-            embed = _make_fishing_zone_embed(zone_name)
             zone = FISHING_ZONE_DATA.get(zone_name, {})
             view = FishingZoneView(
                 zone_name, zone.get("has_silen", False),
                 self.player, self.aff_manager, self.npc_manager_ref,
             )
-            await interaction.response.edit_message(embed=embed, view=view)
+            await view.send(interaction, edit=True)
         return callback
 
 
 class HuntingZoneView(View):
-    """사냥터 상세 뷰"""
+    """사냥터 상세 뷰 (이미지 + 버튼)"""
 
     def __init__(self, zone_name: str, player, aff_manager, npc_manager_ref):
         super().__init__(timeout=300.0)
@@ -313,6 +291,28 @@ class HuntingZoneView(View):
         back_btn.callback = self._back_callback
         self.add_item(back_btn)
 
+    def _make_banner_file(self) -> discord.File:
+        zone = HUNTING_ZONE_DATA.get(self.zone_name, {})
+        return _render_banner(
+            location_name=zone.get("name", self.zone_name),
+            description=zone.get("desc", ""),
+            zone_type="hunting",
+            zone_id=self.zone_name,
+        )
+
+    async def send(self, channel_or_interaction, edit=False):
+        file = self._make_banner_file()
+        if edit and isinstance(channel_or_interaction, discord.Interaction):
+            await channel_or_interaction.response.edit_message(
+                attachments=[file], embed=None, view=self,
+            )
+        elif isinstance(channel_or_interaction, discord.Interaction):
+            await channel_or_interaction.response.send_message(
+                file=file, view=self,
+            )
+        else:
+            await channel_or_interaction.send(file=file, view=self)
+
     async def _hunt_callback(self, interaction: discord.Interaction):
         await interaction.response.defer()
         from main import battle_engine, encounter_manager
@@ -330,13 +330,12 @@ class HuntingZoneView(View):
                 await interaction.channel.send(enc_msg)
 
     async def _back_callback(self, interaction: discord.Interaction):
-        embed = _make_worldmap_embed()
         view = WorldMapView(self.player, self.aff_manager, self.npc_manager_ref)
-        await interaction.response.edit_message(embed=embed, view=view)
+        await view.send(interaction, edit=True)
 
 
 class GatheringZoneView(View):
-    """채집터 상세 뷰"""
+    """채집터 상세 뷰 (이미지 + 버튼)"""
 
     def __init__(self, zone_name: str, player, aff_manager, npc_manager_ref):
         super().__init__(timeout=300.0)
@@ -359,6 +358,28 @@ class GatheringZoneView(View):
         back_btn.callback = self._back_callback
         self.add_item(back_btn)
 
+    def _make_banner_file(self) -> discord.File:
+        zone = GATHERING_ZONE_DATA.get(self.zone_name, {})
+        return _render_banner(
+            location_name=zone.get("name", self.zone_name),
+            description=zone.get("desc", ""),
+            zone_type="gathering",
+            zone_id=self.zone_name,
+        )
+
+    async def send(self, channel_or_interaction, edit=False):
+        file = self._make_banner_file()
+        if edit and isinstance(channel_or_interaction, discord.Interaction):
+            await channel_or_interaction.response.edit_message(
+                attachments=[file], embed=None, view=self,
+            )
+        elif isinstance(channel_or_interaction, discord.Interaction):
+            await channel_or_interaction.response.send_message(
+                file=file, view=self,
+            )
+        else:
+            await channel_or_interaction.send(file=file, view=self)
+
     async def _gather_callback(self, interaction: discord.Interaction):
         await interaction.response.defer()
         from main import gathering_engine
@@ -370,13 +391,12 @@ class GatheringZoneView(View):
         await gathering_engine.mine(interaction.channel)
 
     async def _back_callback(self, interaction: discord.Interaction):
-        embed = _make_worldmap_embed()
         view = WorldMapView(self.player, self.aff_manager, self.npc_manager_ref)
-        await interaction.response.edit_message(embed=embed, view=view)
+        await view.send(interaction, edit=True)
 
 
 class FishingZoneView(View):
-    """낚시터 상세 뷰"""
+    """낚시터 상세 뷰 (이미지 + 버튼)"""
 
     def __init__(self, zone_name: str, has_silen: bool, player, aff_manager, npc_manager_ref):
         super().__init__(timeout=300.0)
@@ -401,6 +421,28 @@ class FishingZoneView(View):
         back_btn.callback = self._back_callback
         self.add_item(back_btn)
 
+    def _make_banner_file(self) -> discord.File:
+        zone = FISHING_ZONE_DATA.get(self.zone_name, {})
+        return _render_banner(
+            location_name=zone.get("name", self.zone_name),
+            description=zone.get("desc", ""),
+            zone_type="fishing",
+            zone_id=self.zone_name,
+        )
+
+    async def send(self, channel_or_interaction, edit=False):
+        file = self._make_banner_file()
+        if edit and isinstance(channel_or_interaction, discord.Interaction):
+            await channel_or_interaction.response.edit_message(
+                attachments=[file], embed=None, view=self,
+            )
+        elif isinstance(channel_or_interaction, discord.Interaction):
+            await channel_or_interaction.response.send_message(
+                file=file, view=self,
+            )
+        else:
+            await channel_or_interaction.send(file=file, view=self)
+
     async def _fish_callback(self, interaction: discord.Interaction):
         await interaction.response.defer()
         from main import fishing_engine, encounter_manager
@@ -419,21 +461,20 @@ class FishingZoneView(View):
         await conv.send_conversation(interaction.channel, "실렌")
 
     async def _back_callback(self, interaction: discord.Interaction):
-        embed = _make_worldmap_embed()
         view = WorldMapView(self.player, self.aff_manager, self.npc_manager_ref)
-        await interaction.response.edit_message(embed=embed, view=view)
+        await view.send(interaction, edit=True)
 
 
-# ── BG3 스타일 배너 이미지 생성 함수 ─────────────────────────────
+# ── 하위 호환 배너 생성 함수 ─────────────────────────────────────────────────
+
 def create_location_banner(location_name: str, description: str,
                             zone_type: str = "town",
                             zone_id: str = None) -> io.BytesIO:
     """
-    장소 배너 이미지 (BG3 스타일).
+    장소 배너 이미지 (BG3 스타일). 하위 호환용.
     zone_type: 'town' | 'hunting' | 'gathering' | 'fishing'
     zone_id:   static/banners/{zone_type}/{zone_id}.png 파일명
     """
-    from bg3_renderer import get_renderer
     return get_renderer().render_location_banner(
         location_name=location_name,
         description=description,
@@ -443,8 +484,7 @@ def create_location_banner(location_name: str, description: str,
 
 
 def create_town_banner(zone_id: str = "비전타운") -> io.BytesIO:
-    """비전타운 배너 단축 함수"""
-    from bg3_renderer import get_renderer
+    """비전타운 배너 단축 함수 (하위 호환용)"""
     return get_renderer().render_location_banner(
         location_name="비전 타운",
         description=(
@@ -458,8 +498,7 @@ def create_town_banner(zone_id: str = "비전타운") -> io.BytesIO:
 
 def create_hunting_banner(zone_key: str, zone_name: str,
                            zone_desc: str) -> io.BytesIO:
-    """사냥터 배너 단축 함수"""
-    from bg3_renderer import get_renderer
+    """사냥터 배너 단축 함수 (하위 호환용)"""
     return get_renderer().render_location_banner(
         location_name=zone_name,
         description=zone_desc,
@@ -470,8 +509,7 @@ def create_hunting_banner(zone_key: str, zone_name: str,
 
 def create_gathering_banner(zone_key: str, zone_name: str,
                              zone_desc: str) -> io.BytesIO:
-    """채집터 배너 단축 함수"""
-    from bg3_renderer import get_renderer
+    """채집터 배너 단축 함수 (하위 호환용)"""
     return get_renderer().render_location_banner(
         location_name=zone_name,
         description=zone_desc,
@@ -482,8 +520,7 @@ def create_gathering_banner(zone_key: str, zone_name: str,
 
 def create_fishing_banner(zone_key: str, zone_name: str,
                            zone_desc: str) -> io.BytesIO:
-    """낚시터 배너 단축 함수"""
-    from bg3_renderer import get_renderer
+    """낚시터 배너 단축 함수 (하위 호환용)"""
     return get_renderer().render_location_banner(
         location_name=zone_name,
         description=zone_desc,

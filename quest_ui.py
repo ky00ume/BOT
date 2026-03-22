@@ -1,19 +1,19 @@
-"""quest_ui.py — 마비노기식 임베드 퀘스트 창 UI"""
+"""quest_ui.py — 마비노기식 PIL 이미지 퀘스트 창 UI"""
 import discord
 from discord.ui import View, Button, Select
-from ui_theme import EMBED_COLOR
+from bg3_renderer import get_renderer
 from quest import QUEST_DB
 
 
-DIFFICULTY_LABEL = {"easy": "⬜ 쉬움", "normal": "🟨 보통", "hard": "🟥 어려움"}
-TYPE_LABEL = {"collect": "📦 채집형", "kill": "⚔️ 처치형", "deliver": "📨 전달형"}
+DIFFICULTY_LABEL = {"easy": "쉬움", "normal": "보통", "hard": "어려움"}
+TYPE_LABEL = {"collect": "채집형", "kill": "처치형", "deliver": "전달형"}
 
 MAX_SELECT_LABEL_LENGTH = 80  # Discord select menu label max length
 
 
-def make_quest_embed(quest_manager) -> discord.Embed:
-    """퀘스트 목록 메인 임베드"""
-    active    = [(qid, QUEST_DB[qid]) for qid in quest_manager.active_quests if qid in QUEST_DB]
+def _make_quest_list_image(quest_manager) -> discord.File:
+    """퀘스트 목록 메인 이미지 생성"""
+    active = [(qid, QUEST_DB[qid]) for qid in quest_manager.active_quests if qid in QUEST_DB]
     completable = []
     for qid, q in active:
         info = quest_manager.active_quests[qid]
@@ -31,41 +31,125 @@ def make_quest_embed(quest_manager) -> discord.Embed:
 
     completable_ids = {qid for qid, _ in completable}
     in_progress = [(qid, q) for qid, q in active if qid not in completable_ids]
-    available   = [(qid, QUEST_DB[qid]) for qid in QUEST_DB
-                   if qid not in quest_manager.completed_quests and qid not in quest_manager.active_quests]
+    available = [(qid, QUEST_DB[qid]) for qid in QUEST_DB
+                 if qid not in quest_manager.completed_quests and qid not in quest_manager.active_quests]
 
-    embed = discord.Embed(
-        title="📋 퀘스트 목록",
-        color=EMBED_COLOR.get("quest", 0xD4AF37),
+    rows = []
+
+    # 완료 가능
+    for _, q in completable:
+        rows.append({"label": "완료 가능", "value": f"{q['name']} — {q['npc']}", "color": (100, 255, 100)})
+
+    # 진행 중
+    for qid, q in in_progress:
+        info = quest_manager.active_quests[qid]
+        tp = q["type"]
+        if tp in ("collect", "kill"):
+            prog = info["progress"]
+            tot = q.get("target_count", 1)
+            rows.append({"label": "진행 중", "value": f"{q['name']} ({prog}/{tot})", "color": (255, 220, 100)})
+        elif tp == "deliver":
+            state = "전달 완료" if info.get("delivered") else "전달 중"
+            rows.append({"label": "진행 중", "value": f"{q['name']} [{state}]", "color": (255, 220, 100)})
+
+    # 수락 가능
+    for _, q in available[:10]:
+        diff = DIFFICULTY_LABEL.get(q.get("difficulty", "easy"), "")
+        rows.append({"label": "수락 가능", "value": f"{q['name']} — {q['npc']} | {diff}"})
+
+    if len(available) > 10:
+        rows.append({"label": "기타", "value": f"...외 {len(available) - 10}개"})
+
+    if not rows:
+        rows.append({"label": "안내", "value": "현재 퀘스트가 없습니다."})
+
+    # 높이를 행 수에 맞춰 동적으로 계산
+    h = max(260, 140 + len(rows) * 34)
+
+    r = get_renderer()
+    buf = r.render_card(
+        title="퀘스트 목록",
+        rows=rows,
+        grade="Normal",
+        system_key="quest",
+        footer="셀렉트 메뉴에서 퀘스트를 선택하세요",
+        w=600,
+        h=h,
     )
+    return discord.File(buf, filename="quest_list.png")
 
-    if completable:
-        lines = [f"✅ **{q['name']}** — {q['npc']}" for _, q in completable]
-        embed.add_field(name="🎉 완료 가능", value="\n".join(lines), inline=False)
 
-    if in_progress:
-        lines = []
-        for qid, q in in_progress:
-            info = quest_manager.active_quests[qid]
-            tp = q["type"]
-            if tp in ("collect", "kill"):
-                prog = info["progress"]
-                tot  = q.get("target_count", 1)
-                lines.append(f"🔄 **{q['name']}** ({prog}/{tot})")
-            elif tp == "deliver":
-                state = "전달 완료" if info.get("delivered") else "전달 중"
-                lines.append(f"🔄 **{q['name']}** [{state}]")
-        embed.add_field(name="📝 진행 중", value="\n".join(lines), inline=False)
+def _make_quest_detail_image(quest_id, quest_manager, player) -> discord.File:
+    """퀘스트 상세 이미지 생성"""
+    q = QUEST_DB.get(quest_id, {})
+    info = quest_manager.active_quests.get(quest_id, {})
+    is_active = quest_id in quest_manager.active_quests
 
-    if available:
-        lines = [f"◽ **{q['name']}** — {q['npc']} | {DIFFICULTY_LABEL.get(q.get('difficulty','easy'), '')}"
-                 for _, q in available[:10]]
-        if len(available) > 10:
-            lines.append(f"...외 {len(available)-10}개")
-        embed.add_field(name="📜 수락 가능", value="\n".join(lines), inline=False)
+    rows = [
+        {"label": "설명", "value": q.get("desc", "")},
+        {"label": "의뢰 NPC", "value": q.get("npc", "")},
+        {"label": "타입", "value": TYPE_LABEL.get(q.get("type", ""), q.get("type", ""))},
+        {"label": "난이도", "value": DIFFICULTY_LABEL.get(q.get("difficulty", "easy"), "")},
+    ]
 
-    embed.set_footer(text="셀렉트 메뉴에서 퀘스트를 선택하세요 | [📖 메인 스토리] 버튼으로 스토리 확인")
-    return embed
+    tp = q.get("type", "")
+    if is_active:
+        prog = info.get("progress", 0)
+        if tp == "collect":
+            have = player.inventory.get(q.get("target_item", ""), 0)
+            total = q.get("target_count", 1)
+            rows.append({"label": "진행 상황", "value": f"{have}/{total}", "color": (100, 220, 255)})
+        elif tp == "kill":
+            total = q.get("target_count", 1)
+            rows.append({"label": "진행 상황", "value": f"{prog}/{total}", "color": (100, 220, 255)})
+        elif tp == "deliver":
+            state = "전달 완료 — 의뢰자에게 귀환하세요" if info.get("delivered") else "목표 NPC에게 전달하세요"
+            rows.append({"label": "진행 상황", "value": state, "color": (100, 220, 255)})
+
+    # 보상
+    reward_parts = []
+    reward_parts.append(f"{q.get('reward_gold', 0):,}G")
+    reward_parts.append(f"{q.get('reward_exp', 0)} EXP")
+    if q.get("reward_item"):
+        from items import ALL_ITEMS
+        item_name = ALL_ITEMS.get(q["reward_item"], {}).get("name", q["reward_item"])
+        reward_parts.append(item_name)
+    rows.append({"label": "보상", "value": " | ".join(reward_parts), "color": (255, 215, 0)})
+
+    h = max(300, 140 + len(rows) * 34)
+
+    r = get_renderer()
+    buf = r.render_card(
+        title=q.get("name", quest_id),
+        rows=rows,
+        grade="Normal",
+        subtitle=f"퀘스트 상세",
+        system_key="quest",
+        footer="✦ 비전 타운 ✦",
+        w=600,
+        h=h,
+    )
+    return discord.File(buf, filename="quest_detail.png")
+
+
+def _make_result_image(title, quest_name, result_text) -> discord.File:
+    """퀘스트 액션 결과 이미지 생성"""
+    rows = [
+        {"label": "퀘스트", "value": quest_name},
+        {"label": "결과", "value": result_text, "color": (100, 255, 100)},
+    ]
+    r = get_renderer()
+    buf = r.render_card(
+        title=title,
+        rows=rows,
+        grade="Normal",
+        subtitle=quest_name,
+        system_key="quest",
+        footer="✦ 비전 타운 ✦",
+        w=560,
+        h=260,
+    )
+    return discord.File(buf, filename="quest_result.png")
 
 
 class QuestWindowView(View):
@@ -82,7 +166,7 @@ class QuestWindowView(View):
         """퀘스트 Select Menu 구성"""
         self.clear_items()
 
-        active    = [(qid, QUEST_DB[qid]) for qid in self.quest_manager.active_quests if qid in QUEST_DB]
+        active = [(qid, QUEST_DB[qid]) for qid in self.quest_manager.active_quests if qid in QUEST_DB]
         available = [(qid, QUEST_DB[qid]) for qid in QUEST_DB
                      if qid not in self.quest_manager.completed_quests
                      and qid not in self.quest_manager.active_quests]
@@ -115,7 +199,7 @@ class QuestWindowView(View):
                 label=q["name"][:MAX_SELECT_LABEL_LENGTH],
                 value=qid,
                 emoji="◽",
-                description=f"{q['npc']} | {DIFFICULTY_LABEL.get(q.get('difficulty','easy'), '')}",
+                description=f"{q['npc']} | {DIFFICULTY_LABEL.get(q.get('difficulty', 'easy'), '')}",
             ))
 
         if not options:
@@ -139,53 +223,18 @@ class QuestWindowView(View):
         if qid == "_none":
             await interaction.response.defer()
             return
-        embed, view = self._build_detail_view(qid)
-        await interaction.response.edit_message(embed=embed, view=view)
-
-    def _build_detail_view(self, quest_id: str):
-        q = QUEST_DB.get(quest_id, {})
-        info = self.quest_manager.active_quests.get(quest_id, {})
-        is_active = quest_id in self.quest_manager.active_quests
-
-        embed = discord.Embed(
-            title=f"📋 {q.get('name', quest_id)}",
-            color=EMBED_COLOR.get("quest", 0xD4AF37),
+        file = _make_quest_detail_image(qid, self.quest_manager, self.player)
+        detail_view = QuestDetailView(qid, self.quest_manager, self.player)
+        await interaction.response.edit_message(
+            attachments=[file], embed=None, view=detail_view, content=None,
         )
-        embed.add_field(name="📄 설명", value=q.get("desc", ""), inline=False)
-        embed.add_field(name="👤 의뢰 NPC", value=q.get("npc", ""), inline=True)
-        embed.add_field(name="📂 타입", value=TYPE_LABEL.get(q.get("type", ""), q.get("type", "")), inline=True)
-        embed.add_field(name="⚡ 난이도", value=DIFFICULTY_LABEL.get(q.get("difficulty", "easy"), ""), inline=True)
-
-        tp = q.get("type", "")
-        if is_active:
-            prog = info.get("progress", 0)
-            if tp == "collect":
-                have = self.player.inventory.get(q.get("target_item", ""), 0)
-                total = q.get("target_count", 1)
-                embed.add_field(name="📊 진행 상황", value=f"{have}/{total}", inline=False)
-            elif tp == "kill":
-                total = q.get("target_count", 1)
-                embed.add_field(name="📊 진행 상황", value=f"{prog}/{total}", inline=False)
-            elif tp == "deliver":
-                state = "✅ 전달 완료 — 의뢰자에게 귀환하세요" if info.get("delivered") else "⏳ 목표 NPC에게 아르바이트를 눌러 전달하세요"
-                embed.add_field(name="📊 진행 상황", value=state, inline=False)
-
-        reward_parts = [f"💰 {q.get('reward_gold', 0):,}G", f"✨ {q.get('reward_exp', 0)} EXP"]
-        if q.get("reward_item"):
-            from items import ALL_ITEMS
-            item_name = ALL_ITEMS.get(q["reward_item"], {}).get("name", q["reward_item"])
-            reward_parts.append(f"📦 {item_name}")
-        embed.add_field(name="🎁 보상", value=" | ".join(reward_parts), inline=False)
-
-        detail_view = QuestDetailView(quest_id, self.quest_manager, self.player)
-        return embed, detail_view
 
     async def _story_callback(self, interaction: discord.Interaction):
         from story_quest_ui import make_story_journal_embed
         from main import story_quest_manager
         embed = make_story_journal_embed(story_quest_manager)
         back_view = StoryBackView(self.quest_manager, self.player)
-        await interaction.response.edit_message(embed=embed, view=back_view)
+        await interaction.response.edit_message(embed=embed, view=back_view, attachments=[])
 
 
 class QuestDetailView(View):
@@ -232,22 +281,36 @@ class QuestDetailView(View):
         self.add_item(back_btn)
 
     async def _accept_callback(self, interaction: discord.Interaction):
+        q = QUEST_DB.get(self.quest_id, {})
         result = self.quest_manager.accept_quest(self.quest_id)
         self._build()
-        await interaction.response.edit_message(content=result, view=self)
+        file = _make_result_image("퀘스트 수락", q.get("name", self.quest_id), result)
+        await interaction.response.edit_message(
+            attachments=[file], embed=None, view=self, content=None,
+        )
 
     async def _complete_callback(self, interaction: discord.Interaction):
+        q = QUEST_DB.get(self.quest_id, {})
         result = self.quest_manager.complete_quest(self.quest_id)
-        await interaction.response.edit_message(content=result, view=None)
+        file = _make_result_image("퀘스트 완료", q.get("name", self.quest_id), result)
+        await interaction.response.edit_message(
+            attachments=[file], embed=None, view=None, content=None,
+        )
 
     async def _abandon_callback(self, interaction: discord.Interaction):
+        q = QUEST_DB.get(self.quest_id, {})
         result = self.quest_manager.abandon_quest(self.quest_id)
-        await interaction.response.edit_message(content=result, view=None)
+        file = _make_result_image("퀘스트 포기", q.get("name", self.quest_id), result)
+        await interaction.response.edit_message(
+            attachments=[file], embed=None, view=None, content=None,
+        )
 
     async def _back_callback(self, interaction: discord.Interaction):
         qw = QuestWindowView(self.quest_manager, self.player)
-        embed = make_quest_embed(self.quest_manager)
-        await interaction.response.edit_message(embed=embed, view=qw, content=None)
+        file = _make_quest_list_image(self.quest_manager)
+        await interaction.response.edit_message(
+            attachments=[file], embed=None, view=qw, content=None,
+        )
 
 
 class StoryBackView(View):
@@ -263,5 +326,7 @@ class StoryBackView(View):
 
     async def _back_callback(self, interaction: discord.Interaction):
         qw = QuestWindowView(self.quest_manager, self.player)
-        embed = make_quest_embed(self.quest_manager)
-        await interaction.response.edit_message(embed=embed, view=qw)
+        file = _make_quest_list_image(self.quest_manager)
+        await interaction.response.edit_message(
+            attachments=[file], embed=None, view=qw,
+        )

@@ -1,11 +1,11 @@
-"""npc_conversation.py — 마비노기식 NPC 키워드 대화 시스템 (임베드+버튼 UI)"""
+"""npc_conversation.py — 마비노기식 NPC 키워드 대화 시스템 (PIL 이미지+버튼 UI)"""
 import random
 import io
 import discord
 from discord.ui import View, Button
 from database import NPC_DATA
 from npc_dialogue_db import NPC_KEYWORDS, DEFAULT_KEYWORDS, AFFINITY_UNLOCK_KEYWORDS
-from ui_theme import C, ansi, EMBED_COLOR
+from bg3_renderer import get_renderer
 
 
 def _get_affinity_level_name(aff_manager, npc_name: str) -> str:
@@ -65,72 +65,29 @@ def get_available_keywords(npc_name: str, player_keywords: list) -> list:
     return result
 
 
-def _build_affinity_bar(aff_manager, npc_name: str) -> str:
-    aff_points = _get_affinity_points(aff_manager, npc_name)
-    lv_name = _get_affinity_level_name(aff_manager, npc_name)
-    from affinity import AFFINITY_LEVELS
-    next_lv = None
-    for al in AFFINITY_LEVELS:
-        if al["threshold"] > aff_points:
-            next_lv = al
-            break
-    bar_max = next_lv["threshold"] if next_lv else max(aff_points + 1, 1)
-    bar_filled = min(10, int(aff_points / max(bar_max, 1) * 10))
-    bar_str = "█" * bar_filled + "░" * (10 - bar_filled)
-    return f"`{bar_str}` **{lv_name}** ({aff_points}pt)"
-
-
-
-def build_npc_dialogue_image(npc_name: str, aff_manager,
-                              portrait_type: str = "npc",
-                              portrait_id: str = None) -> io.BytesIO:
-    """NPC 대화 UI — BG3 스타일 PIL 이미지 반환"""
-    from bg3_renderer import get_renderer
-    from database import NPC_DATA
-    import random
-    npc      = NPC_DATA.get(npc_name, {})
+def _render_greeting_image(npc_name: str, aff_manager, show_limit_warning: bool = False) -> io.BytesIO:
+    """NPC 인사 이미지를 PIL로 생성합니다."""
+    npc = NPC_DATA.get(npc_name, {})
     greeting = random.choice(npc.get("greetings", ["..."]))
-    role     = npc.get("role", "???")
-    aff_pts  = _get_affinity_points(aff_manager, npc_name)
-    aff_lv   = _get_affinity_level_name(aff_manager, npc_name)
-    pid      = portrait_id or npc_name
+    role = npc.get("role", "???")
+    aff_pts = _get_affinity_points(aff_manager, npc_name)
+    aff_lv = _get_affinity_level_name(aff_manager, npc_name)
+
+    if show_limit_warning:
+        greeting += f"\n(오늘의 최대 호감도 획득량을 달성했슴미댜! 현재 {aff_pts}pt)"
+
     return get_renderer().render_npc_dialogue(
         npc_name=npc.get("name", npc_name),
         npc_role=role,
         greeting=greeting,
         affinity_pts=aff_pts,
         affinity_level=aff_lv,
-        portrait_type=portrait_type,
-        portrait_id=pid,
+        portrait_type="npc",
+        portrait_id=npc_name,
     )
 
 
-def _build_greeting_embed(npc_name: str, aff_manager, show_limit_warning: bool = False) -> discord.Embed:
-    """NPC 인사 임베드를 생성합니다."""
-    npc = NPC_DATA.get(npc_name, {})
-    greeting = random.choice(npc.get("greetings", ["..."]))
-    aff_bar = _build_affinity_bar(aff_manager, npc_name)
-
-    embed = discord.Embed(
-        title=f"💬 {npc.get('name', npc_name)} — [{npc.get('role', '???')}] {npc.get('location', '???')}",
-        color=EMBED_COLOR.get("npc", 0x4A7856),
-    )
-    appearance = npc.get("appearance")
-    if appearance:
-        embed.description = f"*{appearance}*"
-    embed.add_field(name="💬 인사", value=f'"{greeting}"', inline=False)
-    embed.add_field(name="💖 호감도", value=aff_bar, inline=False)
-    if show_limit_warning:
-        pts = _get_affinity_points(aff_manager, npc_name)
-        embed.add_field(
-            name="⚠️ 알림",
-            value=f"⚠️ 오늘의 최대 호감도 획득량을 달성했슴미댜! (현재 {pts}pt)",
-            inline=False,
-        )
-    return embed
-
-
-def _build_keyword_response_embed(
+def _render_keyword_response_image(
     npc_name: str,
     keyword: str,
     response_text: str,
@@ -140,43 +97,36 @@ def _build_keyword_response_embed(
     unlocked: list,
     leveled: bool,
     lv_name: str,
-) -> discord.Embed:
-    """키워드 응답 임베드를 생성합니다."""
+) -> io.BytesIO:
+    """키워드 응답 이미지를 PIL로 생성합니다."""
     npc = NPC_DATA.get(npc_name, {})
-    aff_bar = _build_affinity_bar(aff_manager, npc_name)
+    aff_pts = _get_affinity_points(aff_manager, npc_name)
+    aff_lv = _get_affinity_level_name(aff_manager, npc_name)
 
-    embed = discord.Embed(
-        title=f"💬 {npc.get('name', npc_name)} — [{npc.get('role', '???')}] {npc.get('location', '???')}",
-        color=EMBED_COLOR.get("npc", 0x4A7856),
-    )
-    embed.add_field(
-        name=f"[{keyword}]",
-        value=f'"{response_text}"',
-        inline=False,
-    )
-    embed.add_field(name="💖 호감도", value=aff_bar, inline=False)
+    rows = [
+        {"label": "대사", "value": response_text},
+        {"label": "호감도", "value": f"{aff_lv} ({aff_pts}pt)"},
+    ]
 
-    extras = []
     if not show_limit_warning and aff_gain > 0:
-        extras.append(f"💖 호감도 +{aff_gain}")
+        rows.append({"label": "호감도 변화", "value": f"+{aff_gain}"})
     if leveled:
-        extras.append(f"✦ 호감도 단계 상승! → [{lv_name}]")
+        rows.append({"label": "단계 상승", "value": f"→ [{lv_name}]"})
     if unlocked:
-        extras.append(f"🔓 새 키워드 획득: {', '.join(f'[{k}]' for k in unlocked)}")
-    if extras:
-        embed.add_field(name="📢", value="  |  ".join(extras), inline=False)
+        rows.append({"label": "새 키워드", "value": ", ".join(f"[{k}]" for k in unlocked)})
     if show_limit_warning:
-        pts = _get_affinity_points(aff_manager, npc_name)
-        embed.add_field(
-            name="⚠️ 알림",
-            value=f"⚠️ 오늘의 최대 호감도 획득량을 달성했슴미댜! (현재 {pts}pt)",
-            inline=False,
-        )
-    return embed
+        rows.append({"label": "알림", "value": f"오늘의 최대 호감도 달성! (현재 {aff_pts}pt)"})
+
+    return get_renderer().render_card(
+        title=npc.get("name", npc_name),
+        subtitle=f"[{keyword}]",
+        rows=rows,
+        system_key="npc",
+    )
 
 
 class NPCConversationView(View):
-    """NPC 대화 임베드+버튼 View"""
+    """NPC 대화 이미지+버튼 View"""
 
     def __init__(self, npc_name: str, player, aff_manager, npc_manager_ref=None):
         super().__init__(timeout=180.0)
@@ -299,18 +249,19 @@ class NPCConversationView(View):
                     player_kws.append(new_kw)
                     unlocked.append(new_kw)
 
-        # 임베드 갱신
-        embed = _build_keyword_response_embed(
+        # PIL 이미지로 응답 생성
+        buf = _render_keyword_response_image(
             self.npc_name, keyword, response_text,
             self.aff_manager, aff_gain, show_limit_warning,
             unlocked, leveled, lv_name,
         )
+        file = discord.File(buf, filename="npc_response.png")
 
         # 새 키워드가 해금됐으면 버튼 재구성
         if unlocked or leveled:
             self._build_buttons()
 
-        await interaction.response.edit_message(embed=embed, view=self)
+        await interaction.response.edit_message(attachments=[file], embed=None, view=self)
 
     async def _job_callback(self, interaction: discord.Interaction):
         await interaction.response.defer()
@@ -359,12 +310,14 @@ class NPCConversationView(View):
     async def _train_callback(self, interaction: discord.Interaction):
         npc = NPC_DATA.get(self.npc_name, {})
         train_info = npc.get("train", {})
-        embed = discord.Embed(
-            title=f"⚔️ {npc.get('name', self.npc_name)} 수련",
-            description=train_info.get("desc", "수련을 받을 수 있슴미댜."),
-            color=EMBED_COLOR.get("battle", 0xFF4500),
+
+        buf = get_renderer().render_card(
+            title=f"{npc.get('name', self.npc_name)} 수련",
+            rows=[{"label": "설명", "value": train_info.get("desc", "수련을 받을 수 있슴미댜.")}],
+            system_key="battle",
         )
-        await interaction.response.send_message(embed=embed, ephemeral=False)
+        file = discord.File(buf, filename="npc_train.png")
+        await interaction.response.send_message(file=file, ephemeral=False)
 
 
 class ConversationManager:
@@ -376,24 +329,11 @@ class ConversationManager:
         self.npc_manager_ref = npc_manager_ref
 
     async def send_conversation(self, ctx, npc_name: str):
-        """대화 명령어 실행 — BG3 초상화 이미지 + 임베드 + 버튼 전송"""
+        """대화 명령어 실행 — BG3 스타일 PIL 이미지 + 버튼 전송"""
         npc = NPC_DATA.get(npc_name)
         if not npc:
-            await ctx.send(ansi(f"  {C.RED}✖ [{npc_name}]을(를) 찾을 수 없슴미댜.{C.R}"))
+            await ctx.send(f"[{npc_name}]을(를) 찾을 수 없슴미댜.")
             return
-
-        # BG3 대화 UI 이미지 (초상화 + 대사창)
-        try:
-            buf = build_npc_dialogue_image(
-                npc_name=npc_name,
-                aff_manager=self.aff_manager,
-                portrait_type='npc',
-                portrait_id=npc_name,
-            )
-            import discord as _disc
-            await ctx.send(file=_disc.File(fp=buf, filename='npc_dialogue.png'))
-        except Exception:
-            pass
 
         # 일일 제한 확인 (차단 없음, 경고만)
         show_limit_warning = False
@@ -402,6 +342,9 @@ class ConversationManager:
             if not allowed:
                 show_limit_warning = True
 
-        embed = _build_greeting_embed(npc_name, self.aff_manager, show_limit_warning)
+        # BG3 대화 UI 이미지 (초상화 + 대사창)
+        buf = _render_greeting_image(npc_name, self.aff_manager, show_limit_warning)
+        file = discord.File(buf, filename="npc_dialogue.png")
+
         view = NPCConversationView(npc_name, self.player, self.aff_manager, self.npc_manager_ref)
-        await ctx.send(embed=embed, view=view)
+        await ctx.send(file=file, view=view)

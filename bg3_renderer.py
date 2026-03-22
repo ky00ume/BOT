@@ -513,7 +513,7 @@ class BG3Renderer:
                     grade="Normal", subtitle=None,
                     system_key="system",
                     footer="✦ 비전 타운 ✦",
-                    w=560, h=340) -> io.BytesIO:
+                    w=480, h=340) -> io.BytesIO:
         w = min(w, _MAX_IMG_DIM); h = min(h, _MAX_IMG_DIM)
         title = str(title)[:200]; subtitle = str(subtitle)[:200] if subtitle else None
         img = _make_base(w,h, system_key, grade)
@@ -560,7 +560,7 @@ class BG3Renderer:
                            gold, exp, exp_needed,
                            stats: dict,
                            inv_used, inv_max) -> io.BytesIO:
-        W,H = 600,410
+        W,H = 480,420
         img = _make_base(W,H,"status")
         d   = ImageDraw.Draw(img)
         fN=_f(26,True); fT=_f(13); fSec=_f(13,True)
@@ -576,7 +576,7 @@ class BG3Renderer:
         _orn(img,d,PAD,HH,W-PAD)
 
         # ── 게이지 바 (시안 A) ──────────────────────────────
-        BW=220; BH=20; BX=PAD+52; LX=PAD+4
+        BW=170; BH=18; BX=PAD+48; LX=PAD+4
         bars=[("HP",hp,max_hp,C.HP),("MP",mp,max_mp,C.MP),("EN",en,max_en,C.EN)]
         by = HH+22
         for lbl,cur,mx2,cols in bars:
@@ -590,7 +590,7 @@ class BG3Renderer:
         d=ImageDraw.Draw(img)
 
         # ── 스탯 (오른쪽) ────────────────────────────────────
-        RX=W//2+58; RY=HH+14
+        RX=W//2+16; RY=HH+14
         _notxt(d,(RX,RY),"[ 기본 스탯 ]",fSec,C.GOLD_MID)
         _orn(img,d,RX,RY+22,W-PAD,color=C.GOLD_LO)
 
@@ -625,6 +625,82 @@ class BG3Renderer:
 
         _gold_frame(img); return _to_buf(img)
 
+    # ─── 장비창 ────────────────────────────────────────────────
+    def render_equipment_card(self, name, slots, attack, defense,
+                               magic_attack=0) -> io.BytesIO:
+        """
+        장비창 카드 렌더링.
+        slots: [{"slot_name": str, "item_name": str|None, "grade": str, "stats_text": str}, ...]
+        """
+        W, H = 560, 420
+        img = _make_base(W, H, "equipment")
+        d   = ImageDraw.Draw(img)
+        fN  = _f(22, True); fSec = _f(13, True)
+        fL  = _f(13); fV = _f(14, True); fF = _f(11)
+        PAD = 22; HH = 60
+
+        # 헤더
+        hdr = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        _gv(hdr, 0, 0, W, HH, (*C.BG3, 225), (0, 0, 0, 0))
+        img.alpha_composite(hdr); d = ImageDraw.Draw(img)
+        _notxt(d, (PAD, 15), f"⚔ {name}의 장비창", fN, C.TXT_HI)
+        _orn(img, d, PAD, HH, W - PAD)
+
+        # 콘텐츠 영역
+        FH = 40; CT = HH + 10; CB = H - FH - 6
+        _rr(img, PAD, CT, W - PAD, CB, 8, fill=(*C.BG2, 115))
+        d = ImageDraw.Draw(img)
+
+        cy = CT + 12
+        mx_col = PAD + 100
+
+        for slot in slots:
+            sname = slot.get("slot_name", "")
+            iname = slot.get("item_name")
+            grade = slot.get("grade", "Normal")
+            stats = slot.get("stats_text", "")
+
+            if cy > CT + 12:
+                d.line([(PAD + 16, cy - 4), (W - PAD - 16, cy - 4)],
+                       fill=C.SEP, width=1)
+
+            _notxt(d, (PAD + 16, cy), f"[{sname}]", fL, C.GOLD_MID)
+
+            if iname:
+                col = C.RARITY.get(grade, (155, 155, 155))
+                display = iname
+                if stats:
+                    display += f"  {stats}"
+                _notxt(d, (mx_col, cy), display, fV, col)
+            else:
+                _notxt(d, (mx_col, cy), "— 비어있음 —", fV, C.TXT_LO)
+            cy += 32
+
+        # 전투 스탯 구분선
+        cy += 8
+        _orn(img, d, PAD + 16, cy, W - PAD - 16, color=C.GOLD_LO)
+        cy += 14
+        _notxt(d, (PAD + 16, cy), "[ 전투 스탯 ]", fSec, C.GOLD_MID)
+        cy += 26
+        _notxt(d, (PAD + 16, cy), "공격력:", fL, C.TXT_LBL)
+        _notxt(d, (mx_col, cy), str(attack), fV, C.TXT_HI)
+        cy += 26
+        _notxt(d, (PAD + 16, cy), "방어력:", fL, C.TXT_LBL)
+        _notxt(d, (mx_col, cy), str(defense), fV, C.TXT_HI)
+        if magic_attack:
+            cy += 26
+            _notxt(d, (PAD + 16, cy), "마공력:", fL, C.TXT_LBL)
+            _notxt(d, (mx_col, cy), str(magic_attack), fV, C.TXT_HI)
+
+        # 푸터
+        footer = "✦ 장비 정보 ✦"
+        sy = H - FH
+        _orn(img, d, PAD, sy, W - PAD, color=C.GOLD_LO)
+        fw = _tw(d, footer, fF); fh = _th(d, footer, fF)
+        _notxt(d, (W // 2 - fw // 2, sy + (FH - fh) // 2), footer, fF, C.TXT_LO)
+
+        _gold_frame(img); return _to_buf(img)
+
     # ─── NPC 대화 ────────────────────────────────────────────────
     def render_npc_dialogue(self,
                             npc_name, npc_role, greeting,
@@ -635,7 +711,7 @@ class BG3Renderer:
         portrait_type: 'npc' | 'animal' | 'monster'
         portrait_id:   파일명 (확장자 제외). None이면 플레이스홀더
         """
-        W,H = 660,235
+        W,H = 480,235
         img = _make_base(W,H,"npc")
         d   = ImageDraw.Draw(img)
         PW=172; fN=_f(19,True); fR=_f(12); fD=_f(13); fA=_f(12); fP=_f(11)
@@ -690,7 +766,7 @@ class BG3Renderer:
                            player_mp, player_max_mp,
                            last_action="", last_dmg=0,
                            is_crit=False, size_label="") -> io.BytesIO:
-        W,H=560,310
+        W,H=480,310
         img=_make_base(W,H,"battle"); d=ImageDraw.Draw(img)
         fB=_f(20,True); fM=_f(14,True); fS=_f(12); fL=_f(11); PAD=20
 
@@ -743,7 +819,7 @@ class BG3Renderer:
         zone_id:   파일명 (확장자 제외, 예: '비전타운', '고블린동굴')
                    None이면 플레이스홀더 표시
         """
-        W=700; SH=200; TH=148; H=SH+TH
+        W=480; SH=160; TH=130; H=SH+TH
         img=Image.new("RGBA",(W,H),(0,0,0,0))
 
         # ── 상단 씬 이미지 슬롯 ─────────────────────────────
@@ -799,6 +875,69 @@ class BG3Renderer:
         r=Image.new("RGBA",(W,H),(0,0,0,0)); r.paste(img,mask=mk); img=r
 
         _gold_frame(img); return _to_buf(img)
+
+    # ─── 범용 결과 카드 ────────────────────────────────────────────
+    def render_result_card(self, title, subtitle=None, rows=None,
+                           system_key="system", grade="Normal",
+                           footer="✦ 비전 타운 ✦") -> io.BytesIO:
+        """낚시/요리/제련/채집/전투결과 등 범용 결과 카드"""
+        rows = rows or []
+        return self.render_card(title, rows, grade=grade, subtitle=subtitle,
+                                system_key=system_key, footer=footer)
+
+    # ─── 전투 결과 카드 ────────────────────────────────────────────
+    def render_battle_result(self, title, is_victory=True,
+                             rewards_rows=None, level_up_info=None) -> io.BytesIO:
+        """전투 승리/패배 결과"""
+        rows = rewards_rows or []
+        if level_up_info:
+            rows.append({"label": "레벨 업!", "value": level_up_info, "color": C.GOLD_HI})
+        grade = "Legendary" if is_victory else "Fail"
+        sys_key = "battle"
+        footer = "전투 승리!" if is_victory else "전투 패배..."
+        return self.render_card(title, rows, grade=grade, subtitle=None,
+                                system_key=sys_key, footer=footer)
+
+    # ─── 퀘스트 카드 ──────────────────────────────────────────────
+    def render_quest_card(self, quest_name, npc_name="", quest_type="",
+                          difficulty="", description="",
+                          progress_cur=0, progress_max=0,
+                          rewards=None) -> io.BytesIO:
+        """퀘스트 정보 카드"""
+        rows = []
+        if npc_name:
+            rows.append({"label": "NPC", "value": npc_name})
+        if quest_type:
+            rows.append({"label": "유형", "value": quest_type})
+        if difficulty:
+            rows.append({"label": "난이도", "value": difficulty})
+        if description:
+            rows.append({"label": "내용", "value": description[:60]})
+        if progress_max > 0:
+            rows.append({"label": "진행", "value": f"{progress_cur}/{progress_max}"})
+        if rewards:
+            rw_parts = []
+            if rewards.get("gold"): rw_parts.append(f"{rewards['gold']}G")
+            if rewards.get("exp"):  rw_parts.append(f"{rewards['exp']}EXP")
+            if rewards.get("item"): rw_parts.append(rewards["item"])
+            if rw_parts:
+                rows.append({"label": "보상", "value": " / ".join(rw_parts)})
+        return self.render_card(quest_name, rows, grade="Normal",
+                                system_key="quest", footer="퀘스트")
+
+    # ─── 상점 카드 ────────────────────────────────────────────────
+    def render_shop_card(self, shop_name, npc_name="",
+                         items=None) -> io.BytesIO:
+        """상점 목록 카드"""
+        rows = []
+        if npc_name:
+            rows.append({"label": "상인", "value": npc_name})
+        for it in (items or [])[:8]:
+            name = it.get("name", "?")
+            price = it.get("price", 0)
+            rows.append({"label": name, "value": f"{price:,}G"})
+        return self.render_card(shop_name, rows, grade="Normal",
+                                system_key="shop", footer="상점")
 
 
 # ══════════════════════════════════════════════════════════════════

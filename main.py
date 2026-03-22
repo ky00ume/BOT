@@ -20,10 +20,9 @@ from npcs         import VillageNPC
 from shop         import ShopManager
 from battle       import BattleEngine
 from database     import init_db, save_player_to_db, load_player_from_db
-from equipment_window import EquipmentWindow, create_equipment_image
-import status_window
+from equipment_window import create_equipment_image
 from status_window import create_status_image
-from town_ui import create_town_banner, create_hunting_banner, create_gathering_banner, create_fishing_banner
+import io
 import status as status_mod
 from bg3_renderer import get_renderer
 from ui_theme     import C, ansi, EMBED_COLOR, FOOTERS, divider
@@ -129,7 +128,6 @@ async def _send_image(ctx, buf, filename: str = "ui.png"):
 
 async def _send_image_with_text(ctx, buf, text: str = None, filename: str = "ui.png"):
     """이미지 + 텍스트 함께 전송"""
-    import io
     buf.seek(0)
     await ctx.send(content=text,
                    file=discord.File(fp=buf, filename=filename))
@@ -213,25 +211,16 @@ async def _check_channel(ctx) -> bool:
 async def status_cmd(ctx):
     if not await _check_channel(ctx):
         return
-    try:
-        buf = create_status_image(shared_player)
-        await _send_image(ctx, buf, 'status.png')
-    except Exception:
-        embed = status_window.create_status_embed(shared_player)
-        await ctx.send(embed=embed)
+    buf = create_status_image(shared_player)
+    await _send_image(ctx, buf, 'status.png')
 
 
 @bot.command(name="장비", aliases=["장비창"])
 async def equipment_cmd(ctx):
     if not await _check_channel(ctx):
         return
-    try:
-        buf = create_equipment_image(shared_player)
-        await _send_image(ctx, buf, 'equipment.png')
-    except Exception:
-        ew = EquipmentWindow(shared_player)
-        embed = ew.create_embed()
-        await ctx.send(embed=embed)
+    buf = create_equipment_image(shared_player)
+    await _send_image(ctx, buf, 'equipment.png')
 
 
 @bot.command(name="스왑")
@@ -517,16 +506,9 @@ async def notice_cmd(ctx):
 async def vision_town_cmd(ctx):
     if not await _check_channel(ctx):
         return
-    from town_ui import VisionTownView, _make_town_embed
-    # BG3 마을 배너
-    try:
-        _bnr = create_town_banner('비전타운')
-        await _send_image(ctx, _bnr, 'banner_town.png')
-    except Exception:
-        pass
-    embed = _make_town_embed(village_manager)
+    from town_ui import VisionTownView
     view = VisionTownView(shared_player, affinity_manager, npc_manager, village_manager)
-    await ctx.send(embed=embed, view=view)
+    await view.send(ctx)
 
 
 @bot.command(name="대화")
@@ -670,14 +652,6 @@ async def hunt_cmd(ctx, *, zone: str = None):
     if departure:
         await ctx.send(departure)
     success, result = battle_engine.start_encounter(zone)
-    # BG3 배너: 사냥터 진입
-    try:
-        from monsters_db import MONSTERS_DB as _MDB
-        _zd = _MDB.get(zone, {})
-        banner_buf = create_hunting_banner(zone, _zd.get('name', zone), _zd.get('desc', ''))
-        await _send_image(ctx, banner_buf, 'banner_hunting.png')
-    except Exception:
-        pass
     # 전투 시작 카드
     if success:
         _bimg = battle_engine.build_battle_image()
@@ -765,14 +739,7 @@ async def flee_cmd(ctx):
 async def fishing_cmd(ctx):
     if not await _check_channel(ctx):
         return
-    # BG3 낚시터 배너
-    try:
-        _loc = getattr(shared_player, 'current_location', '지하 강')
-        from town_ui import create_fishing_banner
-        _buf = create_fishing_banner(_loc, _loc, '')
-        await _send_image(ctx, _buf, 'banner_fishing.png')
-    except Exception:
-        pass
+    # 낚시 시작
     departure = encounter_manager.clear_encounter()
     if departure:
         await ctx.send(departure)
@@ -1005,10 +972,10 @@ async def mine_cmd(ctx):
 async def quest_cmd(ctx):
     if not await _check_channel(ctx):
         return
-    from quest_ui import QuestWindowView, make_quest_embed
-    embed = make_quest_embed(quest_manager)
+    from quest_ui import QuestWindowView, _make_quest_list_image
+    file = _make_quest_list_image(quest_manager)
     view = QuestWindowView(quest_manager, shared_player)
-    await ctx.send(embed=embed, view=view)
+    await ctx.send(file=file, view=view)
 
 
 @bot.command(name="퀘스트수락")
@@ -1625,18 +1592,6 @@ async def move_cmd(ctx, *, destination: str = None):
         return
     if destination:
         result = movement_system.move_to(ctx.author.id, destination)
-        # BG3 이동 배너
-        try:
-            from town_ui import create_location_banner
-            from database import HUNTING_GROUNDS, GATHERING_SPOTS
-            if destination in HUNTING_GROUNDS:
-                _zd = HUNTING_GROUNDS[destination]
-                _buf = create_location_banner(_zd.get('name',destination), _zd.get('desc',''), 'hunting', destination)
-            else:
-                _buf = create_location_banner(destination, '', 'town', destination)
-            await _send_image(ctx, _buf, 'banner_move.png')
-        except Exception:
-            pass
     else:
         result = movement_system.show_map(ctx.author.id)
     await _send_msg_card(ctx, "이동", str(result), system_key="system")
@@ -1666,9 +1621,9 @@ async def story_cmd(ctx):
     """현재 스토리 퀘스트 저널 표시 (챕터/퀘스트 진행도)."""
     if not await _check_channel(ctx):
         return
-    from story_quest_ui import make_story_journal_embed
-    embed = make_story_journal_embed(story_quest_manager)
-    await ctx.send(embed=embed)
+    from story_quest_ui import make_story_journal_image
+    file = make_story_journal_image(story_quest_manager)
+    await ctx.send(file=file)
 
 
 @bot.command(name="스토리퀘스트")
@@ -2134,9 +2089,9 @@ async def story_hints_cmd(ctx):
     """수집한 힌트 목록을 표시합니다."""
     if not await _check_channel(ctx):
         return
-    from story_quest_ui import make_hints_embed
-    embed = make_hints_embed(story_quest_manager)
-    await ctx.send(embed=embed)
+    from story_quest_ui import make_hints_image
+    file = make_hints_image(story_quest_manager)
+    await ctx.send(file=file)
 
 
 @bot.command(name="그림자")

@@ -5,6 +5,7 @@ import signal
 import sys
 import os
 import time as _time
+import io
 
 # .env 파일 지원 (python-dotenv 설치 시 자동 로드)
 try:
@@ -24,6 +25,7 @@ import status_window
 from status_window import create_status_image
 from town_ui import create_town_banner, create_hunting_banner, create_gathering_banner, create_fishing_banner
 import status as status_mod
+from bg3_renderer import get_renderer
 from ui_theme     import C, ansi, EMBED_COLOR, FOOTERS, divider
 from town_notice  import send_town_notice, make_intro_embed, make_npc_embed, make_commands_embed
 from fishing      import FishingEngine
@@ -131,6 +133,17 @@ async def _send_image_with_text(ctx, buf, text: str = None, filename: str = "ui.
     buf.seek(0)
     await ctx.send(content=text,
                    file=discord.File(fp=buf, filename=filename))
+
+
+async def _send_msg_card(ctx, title, message, system_key="system", grade="Normal"):
+    """간단한 메시지를 BG3 스타일 이미지 카드로 전송"""
+    buf = get_renderer().render_result_card(
+        title=title,
+        rows=[{"label": "내용", "value": str(message)}],
+        system_key=system_key,
+        grade=grade,
+    )
+    await _send_image(ctx, buf, 'message.png')
 
 
 # ─── 이벤트 ──────────────────────────────────────────────────────────────
@@ -667,22 +680,18 @@ async def hunt_cmd(ctx, *, zone: str = None):
         pass
     # 전투 시작 카드
     if success:
-        try:
-            _bimg = battle_engine.build_battle_image()
-            if _bimg:
-                await _send_image(ctx, _bimg, 'battle.png')
-            else:
-                raise Exception('no image')
-        except Exception:
-            if isinstance(result, discord.Embed):
-                await ctx.send(embed=result)
-            else:
-                await ctx.send(ansi(result) if not str(result).startswith('```') else result)
-    else:
-        if isinstance(result, discord.Embed):
-            await ctx.send(embed=result)
+        _bimg = battle_engine.build_battle_image()
+        if _bimg:
+            await _send_image(ctx, _bimg, 'battle.png')
+        elif isinstance(result, io.BytesIO):
+            await _send_image(ctx, result, 'battle.png')
         else:
-            await ctx.send(ansi(result) if not str(result).startswith('```') else result)
+            await _send_msg_card(ctx, "전투 시작", str(result), system_key="battle")
+    else:
+        if isinstance(result, io.BytesIO):
+            await _send_image(ctx, result, 'battle.png')
+        else:
+            await _send_msg_card(ctx, "전투 오류", str(result), system_key="battle", grade="Fail")
     # 인카운터 체크 (사냥 후)
     if success:
         enc_msg = encounter_manager.trigger_encounter()
@@ -695,7 +704,7 @@ async def attack_cmd(ctx, *, skill_input: str = "smash"):
     if not await _check_channel(ctx):
         return
     if not battle_engine.in_battle:
-        await ctx.send(ansi(f"  {C.RED}✖ 현재 전투 중이 아님미댜! /사냥 으로 전투 시작.{C.R}"))
+        await _send_msg_card(ctx, "오류", "현재 전투 중이 아님미댜! /사냥 으로 전투 시작.", system_key="battle", grade="Fail")
         return
 
     # 스킬 이름 → ID 변환 (모듈 레벨 캐시 사용)
@@ -720,24 +729,21 @@ async def attack_cmd(ctx, *, skill_input: str = "smash"):
             )
 
     # BG3 전투 카드
-    try:
-        _sname = _ALL_BATTLE_SKILLS.get(skill_id, {}).get('name', skill_id)
+    _sname = _ALL_BATTLE_SKILLS.get(skill_id, {}).get('name', skill_id)
+    if battle_engine.in_battle:
         _bimg = battle_engine.build_battle_image(_sname)
         if _bimg:
             await _send_image(ctx, _bimg, 'battle.png')
+        elif isinstance(result, io.BytesIO):
+            await _send_image(ctx, result, 'battle.png')
         else:
-            raise Exception('no image')
-    except Exception:
-        if isinstance(result, discord.Embed):
-            await ctx.send(embed=result)
-        else:
-            await ctx.send(ansi(result) if not str(result).startswith('```') else result)
-    # 전투 종료 텍스트 (승리/패배)
+            await _send_msg_card(ctx, "전투", str(result), system_key="battle")
+    # 전투 종료 (승리/패배)
     if not battle_engine.in_battle:
-        if isinstance(result, discord.Embed):
-            await ctx.send(embed=result)
+        if isinstance(result, io.BytesIO):
+            await _send_image(ctx, result, 'battle_result.png')
         else:
-            await ctx.send(ansi(result) if not str(result).startswith('```') else result)
+            await _send_msg_card(ctx, "전투 결과", str(result), system_key="battle")
 
 
 @bot.command(name="도주")
@@ -745,10 +751,10 @@ async def flee_cmd(ctx):
     if not await _check_channel(ctx):
         return
     result = battle_engine.flee()
-    if isinstance(result, discord.Embed):
-        await ctx.send(embed=result)
+    if isinstance(result, io.BytesIO):
+        await _send_image(ctx, result, 'flee.png')
     else:
-        await ctx.send(ansi(str(result)))
+        await _send_msg_card(ctx, "도주", str(result), system_key="battle")
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -1633,7 +1639,7 @@ async def move_cmd(ctx, *, destination: str = None):
             pass
     else:
         result = movement_system.show_map(ctx.author.id)
-    await ctx.send(result)
+    await _send_msg_card(ctx, "이동", str(result), system_key="system")
 
 
 # ═══════════════════════════════════════════════════════════════════════════

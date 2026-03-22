@@ -1,8 +1,8 @@
-"""story_quest_ui.py — 스토리 퀘스트 Discord UI 컴포넌트"""
+"""story_quest_ui.py — 스토리 퀘스트 Discord UI 컴포넌트 (PIL 이미지 기반)"""
 import asyncio
 import discord
 from discord.ui import View, Button
-from ui_theme import C, ansi, header_box, divider, EMBED_COLOR, FOOTERS
+from bg3_renderer import get_renderer
 from story_quest_data import (
     STORY_CHAPTERS, CH1_QUESTS, CH2_QUESTS, CH3_QUESTS,
 )
@@ -13,6 +13,21 @@ from story_quest_data import (
 def _chapter_name(chapter: int) -> str:
     ch = STORY_CHAPTERS.get(chapter, {})
     return ch.get("title", f"챕터 {chapter}")
+
+
+def _render_text_card(title: str, lines: list[str], system_key: str = "quest") -> discord.File:
+    """여러 줄의 텍스트를 render_card rows로 변환하여 이미지 파일로 반환."""
+    renderer = get_renderer()
+    rows = [{"label": "", "value": line} for line in lines]
+    row_count = max(len(rows), 1)
+    h = max(340, 100 + row_count * 34)
+    buf = renderer.render_card(
+        title=title,
+        rows=rows,
+        system_key=system_key,
+        h=h,
+    )
+    return discord.File(buf, filename="story.png")
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -47,8 +62,11 @@ class ShadowChoiceView(View):
     def _make_cb(self, key: str, data: dict):
         async def _cb(interaction: discord.Interaction):
             if self.chosen:
+                err_file = _render_text_card(
+                    "알림", ["이미 선택했슴미댜."], system_key="quest"
+                )
                 await interaction.response.send_message(
-                    ansi(f"  {C.DARK}이미 선택했슴미댜.{C.R}"), ephemeral=True
+                    file=err_file, ephemeral=True
                 )
                 return
             self.chosen = True
@@ -56,19 +74,19 @@ class ShadowChoiceView(View):
             self.sq_manager.add_shadow_sync(delta)
             result_hint = self.sq_manager.get_shadow_hint()
             sign = f"+{delta}" if delta > 0 else str(delta)
+
             lines = [
-                header_box("🕷️  그림자의 응답"),
-                f"  {C.WHITE}선택: {data['label']}{C.R}",
-                divider(),
-                f"  {C.DARK}\"{result_hint}\"{C.R}",
+                f"선택: {data['label']}",
+                f"\"{result_hint}\"",
             ]
             if delta != 0:
-                color = C.RED if delta > 0 else C.BLUE
-                lines.append(f"  {color}(그림자 공명 {sign}){C.R}")
+                lines.append(f"(그림자 공명 {sign})")
+
+            file = _render_text_card("🕷️  그림자의 응답", lines, system_key="quest")
             for item in self.children:
                 item.disabled = True
             await interaction.response.edit_message(
-                content=ansi("\n".join(lines)), view=self
+                attachments=[file], content=None, view=self
             )
         return _cb
 
@@ -125,31 +143,34 @@ class ForcedBattleView(View):
             self.player.hp = max(1, self.player.hp - dmg)
 
             lines = [
-                header_box(f"⚔️  턴 {self.current_turn + 1} — {action}"),
-                f"  {C.RED}MISS!{C.R}  {C.DARK}{miss}{C.R}",
-                divider(),
-                f"  {C.GOLD}픽시의 반격: {pixie}{C.R}  {C.RED}HP -{dmg}{C.R}",
+                f"MISS!  {miss}",
+                f"픽시의 반격: {pixie}  HP -{dmg}",
             ]
             if stun:
-                lines.append(f"  {C.PINK}★ 기절!{C.R} {C.DARK}눈앞이 하얗게 번쩍인다...{C.R}")
-            lines.append(f"  {C.RED}현재 HP: {self.player.hp}{C.R}")
+                lines.append("★ 기절! 눈앞이 하얗게 번쩍인다...")
+            lines.append(f"현재 HP: {self.player.hp}")
 
             self.current_turn += 1
             if self.current_turn >= len(self.turns):
                 # 전투 종료
                 for item in self.children:
                     item.disabled = True
-                lines.append(divider())
-                lines.append(f"  {C.DARK}전투 종료 — 다음 장면으로 이어집니다...{C.R}")
+                lines.append("전투 종료 — 다음 장면으로 이어집니다...")
+                file = _render_text_card(
+                    f"⚔️  턴 {self.current_turn} — {action}", lines, system_key="quest"
+                )
                 await interaction.response.edit_message(
-                    content=ansi("\n".join(lines)), view=self
+                    attachments=[file], content=None, view=self
                 )
                 if self.on_done_coro:
                     await self.on_done_coro(interaction)
             else:
+                file = _render_text_card(
+                    f"⚔️  턴 {self.current_turn} — {action}", lines, system_key="quest"
+                )
                 self._build_buttons()
                 await interaction.response.edit_message(
-                    content=ansi("\n".join(lines)), view=self
+                    attachments=[file], content=None, view=self
                 )
         return _cb
 
@@ -185,70 +206,68 @@ class ExploreView(View):
     async def _explore_cb(self, interaction: discord.Interaction):
         desc = self.step_descs[self.current_step]
         self.current_step += 1
-        lines = [
-            header_box(f"🌫️  탐색 {self.current_step}/{len(self.step_descs)}"),
-            f"  {C.WHITE}{desc}{C.R}",
-        ]
+
+        lines = [desc]
+
         if self.current_step >= len(self.step_descs):
             for item in self.children:
                 item.disabled = True
-            lines.append(divider())
-            lines.append(f"  {C.GOLD}탐색 완료! 무언가 발견된 것 같다...{C.R}")
+            lines.append("탐색 완료! 무언가 발견된 것 같다...")
+            file = _render_text_card(
+                f"🌫️  탐색 {self.current_step}/{len(self.step_descs)}", lines, system_key="quest"
+            )
             await interaction.response.edit_message(
-                content=ansi("\n".join(lines)), view=self
+                attachments=[file], content=None, view=self
             )
             if self.on_done_coro:
                 await self.on_done_coro(interaction)
         else:
+            file = _render_text_card(
+                f"🌫️  탐색 {self.current_step}/{len(self.step_descs)}", lines, system_key="quest"
+            )
             self._build_button()
             await interaction.response.edit_message(
-                content=ansi("\n".join(lines)), view=self
+                attachments=[file], content=None, view=self
             )
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# 컷신 자동 재생 (단계별 임베드)
+# 컷신 자동 재생 (단계별 이미지 카드)
 # ═══════════════════════════════════════════════════════════════════════════
 
 async def play_cutscene(ctx_or_interaction, lines_list: list, delay: float = 2.5):
     """
     lines_list: [str, str, ...] 형태의 장면 문자열 목록.
-    각 장면을 delay 초 간격으로 순서대로 전송합니다.
+    각 장면을 delay 초 간격으로 순서대로 이미지 카드로 전송합니다.
     """
     channel = ctx_or_interaction.channel
     for scene in lines_list:
-        await channel.send(ansi(scene))
+        file = _render_text_card("📜 컷신", [scene], system_key="quest")
+        await channel.send(file=file)
         await asyncio.sleep(delay)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# 퀘스트 저널 임베드 생성
+# 퀘스트 저널 이미지 생성
 # ═══════════════════════════════════════════════════════════════════════════
 
-def make_story_journal_embed(sq_manager) -> discord.Embed:
-    """현재 스토리 퀘스트 저널 임베드를 생성합니다."""
-    game_time = sq_manager.get_game_time()
-    color     = sq_manager.get_embed_theme(game_time)
-    embed     = discord.Embed(
-        title="📜 스토리 퀘스트 저널",
-        color=color,
-    )
-
+def make_story_journal_image(sq_manager) -> discord.File:
+    """현재 스토리 퀘스트 저널 이미지를 생성합니다."""
     chapter = sq_manager.chapter
     quest   = sq_manager.quest
+    rows    = []
 
     for ch_num, ch_data in STORY_CHAPTERS.items():
         if ch_data.get("locked"):
-            embed.add_field(
-                name=f"🔒 챕터 {ch_num}: {ch_data['title']}",
-                value="다음 이야기는 아직 쓰이지 않았습니다.",
-                inline=False,
-            )
+            rows.append({
+                "label": f"🔒 챕터 {ch_num}: {ch_data['title']}",
+                "value": "다음 이야기는 아직 쓰이지 않았습니다.",
+            })
             continue
 
         quests = ch_data["quests"]
         max_q  = ch_data["max_quest"]
-        lines  = []
+        quest_lines = []
         for q_key in (list(range(1, max_q + 1)) + ch_data.get("extra_keys", [])):
             qdata = quests.get(q_key)
             if not qdata:
@@ -264,33 +283,55 @@ def make_story_journal_embed(sq_manager) -> discord.Embed:
             else:
                 mark = "○"
             title_str = qdata.get("title", str(q_key))
-            lines.append(f"{mark} {title_str}")
+            quest_lines.append(f"{mark} {title_str}")
 
         ch_status = "진행 중" if ch_num == chapter else ("완료" if ch_num < chapter else "미해금")
-        embed.add_field(
-            name=f"📖 챕터 {ch_num}: {ch_data['title']}  [{ch_status}]",
-            value="\n".join(lines) if lines else "—",
-            inline=False,
-        )
+        rows.append({
+            "label": f"📖 챕터 {ch_num}: {ch_data['title']}",
+            "value": f"[{ch_status}] " + " / ".join(quest_lines) if quest_lines else "—",
+        })
 
     # shadow_sync 힌트
     shadow_hint = sq_manager.get_shadow_hint()
-    embed.add_field(name="🌑 그림자 상태", value=shadow_hint, inline=False)
+    rows.append({"label": "🌑 그림자 상태", "value": shadow_hint})
 
     # 힌트 수
+    game_time = sq_manager.get_game_time()
     hint_count = len(sq_manager.hints)
-    embed.set_footer(text=f"수집한 힌트: {hint_count}개  |  {'🌙 밤' if game_time == 'night' else '☀️ 낮'}")
-    return embed
+    rows.append({
+        "label": "수집한 힌트",
+        "value": f"{hint_count}개  |  {'🌙 밤' if game_time == 'night' else '☀️ 낮'}",
+    })
+
+    renderer = get_renderer()
+    row_count = max(len(rows), 1)
+    h = max(340, 100 + row_count * 34)
+    buf = renderer.render_card(
+        title="📜 스토리 퀘스트 저널",
+        rows=rows,
+        system_key="quest",
+        h=h,
+    )
+    return discord.File(buf, filename="story_journal.png")
 
 
-def make_hints_embed(sq_manager) -> discord.Embed:
-    """수집한 힌트 목록 임베드를 생성합니다."""
-    color = sq_manager.get_embed_theme()
-    embed = discord.Embed(title="📋 수집한 힌트 목록", color=color)
+def make_hints_image(sq_manager) -> discord.File:
+    """수집한 힌트 목록 이미지를 생성합니다."""
+    renderer = get_renderer()
     if not sq_manager.hints:
-        embed.description = "아직 수집한 힌트가 없습니다."
+        rows = [{"label": "—", "value": "아직 수집한 힌트가 없습니다."}]
     else:
-        for i, hint in enumerate(sq_manager.hints, 1):
-            embed.add_field(name=f"힌트 #{i}", value=f"「{hint}」", inline=False)
-    embed.set_footer(text=f"총 {len(sq_manager.hints)}개의 힌트")
-    return embed
+        rows = [
+            {"label": f"힌트 #{i}", "value": f"「{hint}」"}
+            for i, hint in enumerate(sq_manager.hints, 1)
+        ]
+    row_count = max(len(rows), 1)
+    h = max(340, 100 + row_count * 34)
+    buf = renderer.render_card(
+        title="📋 수집한 힌트 목록",
+        rows=rows,
+        system_key="quest",
+        footer=f"총 {len(sq_manager.hints)}개의 힌트",
+        h=h,
+    )
+    return discord.File(buf, filename="hints.png")

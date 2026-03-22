@@ -47,6 +47,7 @@ QUEST_DB = {
         "npc":          "다몬",
         "type":         "kill",
         "difficulty":   "easy",
+        "target_zone":  "방울숲",
         "target_count": 5,
         "reward_gold":  250,
         "reward_exp":   40,
@@ -58,6 +59,7 @@ QUEST_DB = {
         "npc":          "다몬",
         "type":         "kill",
         "difficulty":   "normal",
+        "target_zone":  "고블린동굴",
         "target_count": 10,
         "reward_gold":  600,
         "reward_exp":   100,
@@ -69,6 +71,7 @@ QUEST_DB = {
         "npc":          "다몬",
         "type":         "kill",
         "difficulty":   "hard",
+        "target_zone":  "소금광산",
         "target_count": 20,
         "reward_gold":  1500,
         "reward_exp":   250,
@@ -154,6 +157,7 @@ QUEST_DB = {
         "npc":          "브룩샤",
         "type":         "kill",
         "difficulty":   "easy",
+        "target_zone":  "방울숲",
         "target_count": 5,
         "reward_gold":  180,
         "reward_exp":   30,
@@ -165,6 +169,7 @@ QUEST_DB = {
         "npc":          "브룩샤",
         "type":         "kill",
         "difficulty":   "normal",
+        "target_zone":  "고블린동굴",
         "target_count": 8,
         "reward_gold":  450,
         "reward_exp":   80,
@@ -176,6 +181,7 @@ QUEST_DB = {
         "npc":          "브룩샤",
         "type":         "kill",
         "difficulty":   "hard",
+        "target_zone":  "소금광산",
         "target_count": 15,
         "reward_gold":  1200,
         "reward_exp":   200,
@@ -261,6 +267,7 @@ QUEST_DB = {
         "npc":          "오멜룸",
         "type":         "kill",
         "difficulty":   "easy",
+        "target_zone":  "방울숲",
         "target_count": 5,
         "reward_gold":  200,
         "reward_exp":   35,
@@ -272,6 +279,7 @@ QUEST_DB = {
         "npc":          "오멜룸",
         "type":         "kill",
         "difficulty":   "normal",
+        "target_zone":  "고블린동굴",
         "target_count": 8,
         "reward_gold":  480,
         "reward_exp":   85,
@@ -283,6 +291,7 @@ QUEST_DB = {
         "npc":          "오멜룸",
         "type":         "kill",
         "difficulty":   "hard",
+        "target_zone":  "소금광산",
         "target_count": 15,
         "reward_gold":  1300,
         "reward_exp":   220,
@@ -368,6 +377,7 @@ QUEST_DB = {
         "npc":          "카엘릭",
         "type":         "kill",
         "difficulty":   "easy",
+        "target_zone":  "방울숲",
         "target_count": 5,
         "reward_gold":  250,
         "reward_exp":   60,
@@ -379,6 +389,7 @@ QUEST_DB = {
         "npc":          "카엘릭",
         "type":         "kill",
         "difficulty":   "normal",
+        "target_zone":  "고블린동굴",
         "target_count": 12,
         "reward_gold":  700,
         "reward_exp":   130,
@@ -390,6 +401,7 @@ QUEST_DB = {
         "npc":          "카엘릭",
         "type":         "kill",
         "difficulty":   "hard",
+        "target_zone":  "소금광산",
         "target_count": 25,
         "reward_gold":  2000,
         "reward_exp":   400,
@@ -602,11 +614,20 @@ class QuestManager:
         return ansi("\n".join(results))
 
     # ── 카운터 업데이트 ──────────────────────────────────────────────────────
-    def update_kill_count(self, count: int = 1):
+    def update_kill_count(self, count: int = 1, zone: str = None, monster_id: str = None):
         for qid, info in list(self.active_quests.items()):
             q = QUEST_DB.get(qid)
-            if q and q.get("type") == "kill":
-                info["progress"] = min(info["progress"] + count, q.get("target_count", 1))
+            if not q or q.get("type") != "kill":
+                continue
+            # target_zone 필터: 퀘스트에 지정된 사냥터와 현재 사냥터가 일치해야 함
+            req_zone = q.get("target_zone")
+            if req_zone and zone and req_zone != zone:
+                continue
+            # target_monster 필터: 퀘스트에 지정된 몬스터와 처치한 몬스터가 일치해야 함
+            req_monster = q.get("target_monster")
+            if req_monster and monster_id and req_monster != monster_id:
+                continue
+            info["progress"] = min(info["progress"] + count, q.get("target_count", 1))
 
     def update_collect_count(self, item_id: str, count: int = 1):
         for qid, info in list(self.active_quests.items()):

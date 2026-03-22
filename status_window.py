@@ -6,7 +6,7 @@ def create_status_image(player) -> io.BytesIO:
     """상태창 — BG3 스타일 PIL 이미지 반환"""
     name   = getattr(player, 'name',          '모험가')
     level  = getattr(player, 'level',         1)
-    title  = getattr(player, 'current_title', '비전의 탑 신입')
+    title  = getattr(player, 'current_title', None) or '비전의 탑 신입'
     hp     = getattr(player, 'hp',            100)
     max_hp = getattr(player, 'max_hp',        100)
     mp     = getattr(player, 'mp',            50)

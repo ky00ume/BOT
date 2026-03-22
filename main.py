@@ -689,10 +689,14 @@ async def attack_cmd(ctx, *, skill_input: str = "smash"):
     was_in_battle = battle_engine.in_battle
     result = battle_engine.process_turn(skill_id)
 
-    # 전투 종료 후 업적 체크 (승리 시)
+    # 전투 종료 후 업적/퀘스트 체크 (승리 시)
     if was_in_battle and not battle_engine.in_battle and shared_player.hp > 0:
         newly_unlocked = achievement_manager.increment("battles_won", 1)
         diary_manager.increment("battles_won", 1)
+        # 퀘스트 킬 카운트 업데이트 (사냥터/몬스터 매칭)
+        _killed_zone = battle_engine.current_zone
+        _killed_monster = battle_engine.current_monster.get("id", "") if battle_engine.current_monster else ""
+        quest_manager.update_kill_count(1, zone=_killed_zone, monster_id=_killed_monster)
         for ach_id in newly_unlocked:
             from achievements import ACHIEVEMENT_DEFS
             ach = ACHIEVEMENT_DEFS.get(ach_id, {})

@@ -194,7 +194,7 @@ class ShopManager:
                 lines.append(f"    {C.DARK}{desc}{C.R}")
 
         lines.append(divider())
-        lines.append(f"  {C.GREEN}/구매 {npc_name} [아이템이름]{C.R} 으로 구매")
+        lines.append(f"  {C.GREEN}[구매]{C.R} 버튼으로 드롭다운 구매")
         return ansi("\n".join(lines))
 
     def execute_buy(self, npc_name: str, name_or_id: str, count: int = 1) -> str:

@@ -1,5 +1,6 @@
 """town_ui.py — 비전타운 / 비전의 땅 임베드+버튼 UI 시스템"""
 import discord
+import io
 from discord.ui import View, Button
 from ui_theme import EMBED_COLOR
 
@@ -146,7 +147,7 @@ def _make_gathering_zone_embed(zone_name: str) -> discord.Embed:
     embed = discord.Embed(
         title=f"{zone.get('emoji', '🌿')} {zone.get('name', zone_name)} — 채집터",
         description=zone.get("desc", ""),
-        color=0x228833,
+        color=EMBED_COLOR.get("gathering", 0x2A6A3A),
     )
     items = zone.get("items", [])
     if items:
@@ -160,7 +161,7 @@ def _make_fishing_zone_embed(zone_name: str) -> discord.Embed:
     embed = discord.Embed(
         title=f"{zone.get('emoji', '🎣')} {zone.get('name', zone_name)} — 낚시터",
         description=zone.get("desc", ""),
-        color=0x1E90FF,
+        color=EMBED_COLOR.get("fishing", 0x1A6878),
     )
     fish = zone.get("fish", [])
     if fish:
@@ -421,3 +422,71 @@ class FishingZoneView(View):
         embed = _make_worldmap_embed()
         view = WorldMapView(self.player, self.aff_manager, self.npc_manager_ref)
         await interaction.response.edit_message(embed=embed, view=view)
+
+
+# ── BG3 스타일 배너 이미지 생성 함수 ─────────────────────────────
+def create_location_banner(location_name: str, description: str,
+                            zone_type: str = "town",
+                            zone_id: str = None) -> io.BytesIO:
+    """
+    장소 배너 이미지 (BG3 스타일).
+    zone_type: 'town' | 'hunting' | 'gathering' | 'fishing'
+    zone_id:   static/banners/{zone_type}/{zone_id}.png 파일명
+    """
+    from bg3_renderer import get_renderer
+    return get_renderer().render_location_banner(
+        location_name=location_name,
+        description=description,
+        zone_type=zone_type,
+        zone_id=zone_id,
+    )
+
+
+def create_town_banner(zone_id: str = "비전타운") -> io.BytesIO:
+    """비전타운 배너 단축 함수"""
+    from bg3_renderer import get_renderer
+    return get_renderer().render_location_banner(
+        location_name="비전 타운",
+        description=(
+            "언더다크의 깊은 곳에 자리한 작은 마을. "
+            "버섯 포자와 광석 가루가 뒤섞인 공기 속에서 사람들이 분주히 오간다."
+        ),
+        zone_type="town",
+        zone_id=zone_id,
+    )
+
+
+def create_hunting_banner(zone_key: str, zone_name: str,
+                           zone_desc: str) -> io.BytesIO:
+    """사냥터 배너 단축 함수"""
+    from bg3_renderer import get_renderer
+    return get_renderer().render_location_banner(
+        location_name=zone_name,
+        description=zone_desc,
+        zone_type="hunting",
+        zone_id=zone_key,
+    )
+
+
+def create_gathering_banner(zone_key: str, zone_name: str,
+                             zone_desc: str) -> io.BytesIO:
+    """채집터 배너 단축 함수"""
+    from bg3_renderer import get_renderer
+    return get_renderer().render_location_banner(
+        location_name=zone_name,
+        description=zone_desc,
+        zone_type="gathering",
+        zone_id=zone_key,
+    )
+
+
+def create_fishing_banner(zone_key: str, zone_name: str,
+                           zone_desc: str) -> io.BytesIO:
+    """낚시터 배너 단축 함수"""
+    from bg3_renderer import get_renderer
+    return get_renderer().render_location_banner(
+        location_name=zone_name,
+        description=zone_desc,
+        zone_type="fishing",
+        zone_id=zone_key,
+    )

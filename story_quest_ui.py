@@ -2,7 +2,7 @@
 import asyncio
 import discord
 from discord.ui import View, Button
-from ui_theme import C, ansi, header_box, divider, EMBED_COLOR
+from ui_theme import C, ansi, header_box, divider, EMBED_COLOR, FOOTERS
 from story_quest_data import (
     STORY_CHAPTERS, CH1_QUESTS, CH2_QUESTS, CH3_QUESTS,
 )

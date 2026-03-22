@@ -1,6 +1,6 @@
 """shop_ui.py — discord.ui.View 기반 인터랙티브 구매/판매 UI"""
 import discord
-from ui_theme import C, ansi, header_box, divider, GRADE_ICON_PLAIN
+from ui_theme import C, ansi, header_box, divider, GRADE_ICON_PLAIN, EMBED_COLOR
 from items import ALL_ITEMS
 
 

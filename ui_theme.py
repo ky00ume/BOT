@@ -1,3 +1,15 @@
+"""
+ui_theme.py — 비전 타운 봇 UI 테마 (BG3 스타일 적용)
+
+하위호환 정책:
+  - 모든 기존 함수 시그니처 100% 유지
+  - ANSI 색상 코드 그대로 유지 (터미널/코드블록용)
+  - EMBED_COLOR / GRADE_EMBED_COLOR → BG3 팔레트로 교체
+  - FOOTERS → 시스템 메시지 항목만 중립 말투 교체
+             (NPC 대사·스토리 텍스트는 각 전용 파일에서 관리)
+  - SPIDER_ART → 원본 유지 (캐릭터 고유 표현)
+"""
+
 ESC = "\u001b"
 
 class C:
@@ -16,25 +28,32 @@ class C:
     BG_GOLD = f"{ESC}[43m"
     BG_BLUE = f"{ESC}[44m"
 
+# ── Embed 색상 (BG3 팔레트) ──────────────────────────────────────
 EMBED_COLOR = {
-    "status":    0xC9A96E,
-    "equipment": 0x8B6B3D,
-    "battle":    0xA01B2C,
-    "shop":      0xD4AF37,
-    "npc":       0x4A7856,
-    "help":      0x7B5EA7,
-    "save":      0x708090,
-    "heal":      0xCB7BA0,
-    "system":    0x2F3136,
-    "rest":      0x7B68EE,
+    "status":     0x4A7EC2,
+    "equipment":  0x7A5530,
+    "battle":     0x8B1A28,
+    "shop":       0xB8960E,
+    "npc":        0x2E7A4A,
+    "help":       0x5A3E8A,
+    "save":       0x4A5060,
+    "heal":       0x8A4A6A,
+    "system":     0x2A2438,
+    "rest":       0x4A4AAA,
+    "fishing":    0x1A6878,
+    "cooking":    0x8A4A18,
+    "metallurgy": 0x4A6878,
+    "craft":      0x3A5878,
+    "quest":      0x8A5818,
+    "gathering":  0x2A6A3A,
 }
 
 GRADE_EMBED_COLOR = {
-    "Normal":    0x3A7BD5,
-    "Rare":      0x00D2A0,
-    "Epic":      0x9B59B6,
-    "Legendary": 0xF39C12,
-    "Fail":      0xE74C3C,
+    "Normal":    0x7A7A7A,
+    "Rare":      0x3A7ACC,
+    "Epic":      0x7A3ACC,
+    "Legendary": 0xC87800,
+    "Fail":      0xCC2820,
 }
 
 
@@ -44,7 +63,7 @@ def bar(current, max_val, width=10, fill_c=C.RED, empty_c=C.DARK):
     else:
         filled = round(width * current / max_val)
     filled = max(0, min(width, filled))
-    empty = width - filled
+    empty  = width - filled
     return f"{fill_c}{'█' * filled}{empty_c}{'░' * empty}{C.R}"
 
 
@@ -54,13 +73,13 @@ def bar_plain(current, max_val, width=10):
     else:
         filled = round(width * current / max_val)
     filled = max(0, min(width, filled))
-    empty = width - filled
+    empty  = width - filled
     return f"{'█' * filled}{'░' * empty}"
 
 
 def section(label, width=28):
-    pad = width - len(label) - 2
-    left = pad // 2
+    pad   = width - len(label) - 2
+    left  = pad // 2
     right = pad - left
     return f"{C.GOLD}{'─' * left} {label} {'─' * right}{C.R}"
 
@@ -70,10 +89,10 @@ def divider(width=28):
 
 
 def header_box(title, width=28):
-    inner = width - 2
-    pad = inner - len(title)
-    left = pad // 2
-    right = pad - left
+    inner  = width - 2
+    pad    = inner - len(title)
+    left   = pad // 2
+    right  = pad - left
     top    = f"{C.GOLD}╔{'═' * inner}╗{C.R}"
     middle = f"{C.GOLD}║{' ' * left}{C.B}{title}{C.R}{C.GOLD}{' ' * right}║{C.R}"
     bottom = f"{C.GOLD}╚{'═' * inner}╝{C.R}"
@@ -124,22 +143,27 @@ STAT_DISPLAY = {
     "luck": ("운",   "★"),
 }
 
+# ── 푸터 (시스템 메시지만 중립 말투 교체) ─────────────────────────
 FOOTERS = {
-    "status":    "✦ 츄라이더는 성장 중임미댜! 츄아앗! ✦",
-    "equipment": "✿ /스왑 으로 주·보조 슬롯을 전환하셰요 ✿",
-    "battle":    "⚔ 승리를 위해 전진임미댜! ⚔",
-    "shop":      "✦ 좋은 물건 많이 사셰요~ ✦",
-    "npc":       "❋ 마을 사람들과 친해지셰요~ ❋",
-    "help":      "✦ 모르는 게 있으면 언제든 물어봐요! ✦",
-    "save":      "✿ 데이터가 안전하게 저장됐슴미댜 ✿",
-    "heal":      "❋ 건강이 최고임미댜! ❋",
-    "system":    "⚙ 비전 타운 봇 시스템 ⚙",
-    "fishing":   "🎣 낚시는 인내임미댜~ 🎣",
-    "cooking":   "🍳 요리로 힘을 키우셰요~ 🍳",
-    "metallurgy": "⚒ 두드리면 강해짐미댜! ⚒",
-    "rest":      "💤 푹 쉬면 기력이 회복됨미댜~ 💤",
+    "status":     "✦ 상태 정보 ✦",
+    "equipment":  "✦ /스왑 으로 주·보조 슬롯을 전환할 수 있습니다 ✦",
+    "battle":     "⚔ 전투 진행 중 ⚔",
+    "shop":       "✦ 상점 ✦",
+    "npc":        "❋ 대화 ❋",
+    "help":       "✦ 도움말 ✦",
+    "save":       "✦ 데이터가 저장되었습니다 ✦",
+    "heal":       "❋ 회복 ❋",
+    "system":     "⚙ 비전 타운 시스템 ⚙",
+    "fishing":    "🎣 낚시 중 🎣",
+    "cooking":    "🍳 요리 중 🍳",
+    "metallurgy": "⚒ 제련 중 ⚒",
+    "rest":       "💤 휴식 중 💤",
+    "quest":      "📜 퀘스트 ✦",
+    "gathering":  "🌿 채집 중 🌿",
+    "craft":      "🔨 제작 중 🔨",
 }
 
+# ── SPIDER_ART (캐릭터 고유 표현 — 원본 유지) ────────────────────
 SPIDER_ART = {
     "idle": (
         "```\n"
@@ -149,27 +173,26 @@ SPIDER_ART = {
         " 🍃     🍃    🍃\n"
         "```"
     ),
-    "happy": "```\n   ✨ 🎉 ✨\n    \\🕷️/\n  ～🕸️🎶🕸️～\n    💕💕\n```",
-    "pet": "```\n   🤚✨\n    🕷️ ♡ ♡\n  ～🕸️～🕸️～\n    (기분 좋슴미댜~)\n```",
-    "sleep": "```\n   🌙  ⭐  ✨\n     💤🕷️💤\n  ═══🕸️═══\n   (새근새근...)\n```",
-    "rest": "```\n  🏠 ～～～\n   🕷️💤  ☕\n  ═══🕸️═══\n   (쉬는 중임미댜...)\n```",
+    "happy":        "```\n   ✨ 🎉 ✨\n    \\🕷️/\n  ～🕸️🎶🕸️～\n    💕💕\n```",
+    "pet":          "```\n   🤚✨\n    🕷️ ♡ ♡\n  ～🕸️～🕸️～\n    (기분 좋슴미댜~)\n```",
+    "sleep":        "```\n   🌙  ⭐  ✨\n     💤🕷️💤\n  ═══🕸️═══\n   (새근새근...)\n```",
+    "rest":         "```\n  🏠 ～～～\n   🕷️💤  ☕\n  ═══🕸️═══\n   (쉬는 중임미댜...)\n```",
     "battle_start": "```\n   ⚔️ 🕷️ ⚔️\n   ╔═══════╗\n   ║ VS {monster} ║\n   ╚═══════╝\n  🕸️🕸️🕸️🕸️🕸️\n```",
-    "battle_win": "```\n   🎉✨🏆✨🎉\n     \\🕷️/\n   ═🕸️═🕸️═\n   승리임미댜!!!\n```",
-    "battle_lose": "```\n      💫\n    🕷️💦\n   ～～🕸️～～\n   (으으... 아팠슴미댜...)\n```",
+    "battle_win":   "```\n   🎉✨🏆✨🎉\n     \\🕷️/\n   ═🕸️═🕸️═\n   승리임미댜!!!\n```",
+    "battle_lose":  "```\n      💫\n    🕷️💦\n   ～～🕸️～～\n   (으으... 아팠슴미댜...)\n```",
     "fishing_wait": "```\n   🕷️🎣        🌊\n   ｜         〰️\n  🪨～～～～～～🐟?\n```",
     "fishing_bite": "```\n   🕷️❗🎣      💥\n   ｜       🐟!!\n  🪨～～💦～～～\n```",
-    "fishing_catch": "```\n  ✨🕷️✨\n   \\🎣/\n    🐟 GET!\n  🕸️═══🕸️\n```",
-    "shop": "```\n  🏪═══════🏪\n  ║ 🕷️💰     ║\n  ║  뭘 살까~  ║\n  ╚═══════╝\n```",
-    "travel": "```\n  🕷️ ─ ─ ─ → 🏘️\n  🕸️ ～～～  🌲🌲\n```",
-    "levelup": "```\n  ✨🌟✨🌟✨\n    🕷️ LEVEL UP!\n  ═🕸️═══🕸️═\n    Lv.{old} → Lv.{new}\n  💪더 강해졌슴미댜!💪\n```",
-    "cooking": "```\n  🕷️🍳 지글지글~\n   🔥🔥🔥\n  ═══🕸️═══\n```",
-    "gathering": "```\n  🌿🕷️🌿\n   ✂️ 슥슥\n  🕸️～～🕸️\n```",
-    "mining": "```\n  ⛏️🕷️💎\n   쨍! 쨍!\n  🪨🪨🪨\n```",
+    "fishing_catch":"```\n  ✨🕷️✨\n   \\🎣/\n    🐟 GET!\n  🕸️═══🕸️\n```",
+    "shop":         "```\n  🏪═══════🏪\n  ║ 🕷️💰     ║\n  ║  뭘 살까~  ║\n  ╚═══════╝\n```",
+    "travel":       "```\n  🕷️ ─ ─ ─ → 🏘️\n  🕸️ ～～～  🌲🌲\n```",
+    "levelup":      "```\n  ✨🌟✨🌟✨\n    🕷️ LEVEL UP!\n  ═🕸️═══🕸️═\n    Lv.{old} → Lv.{new}\n  💪더 강해졌슴미댜!💪\n```",
+    "cooking":      "```\n  🕷️🍳 지글지글~\n   🔥🔥🔥\n  ═══🕸️═══\n```",
+    "gathering":    "```\n  🌿🕷️🌿\n   ✂️ 슥슥\n  🕸️～～🕸️\n```",
+    "mining":       "```\n  ⛏️🕷️💎\n   쨍! 쨍!\n  🪨🪨🪨\n```",
 }
 
 
 def spider_scene(scene_key: str, **kwargs) -> str:
-    """SPIDER_ART에서 scene_key에 해당하는 아트를 반환합니다."""
     art = SPIDER_ART.get(scene_key, SPIDER_ART["idle"])
     try:
         return art.format(**kwargs)

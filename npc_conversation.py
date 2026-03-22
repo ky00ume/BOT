@@ -1,5 +1,6 @@
 """npc_conversation.py — 마비노기식 NPC 키워드 대화 시스템 (임베드+버튼 UI)"""
 import random
+import io
 import discord
 from discord.ui import View, Button
 from database import NPC_DATA
@@ -77,6 +78,31 @@ def _build_affinity_bar(aff_manager, npc_name: str) -> str:
     bar_filled = min(10, int(aff_points / max(bar_max, 1) * 10))
     bar_str = "█" * bar_filled + "░" * (10 - bar_filled)
     return f"`{bar_str}` **{lv_name}** ({aff_points}pt)"
+
+
+
+def build_npc_dialogue_image(npc_name: str, aff_manager,
+                              portrait_type: str = "npc",
+                              portrait_id: str = None) -> io.BytesIO:
+    """NPC 대화 UI — BG3 스타일 PIL 이미지 반환"""
+    from bg3_renderer import get_renderer
+    from database import NPC_DATA
+    import random
+    npc      = NPC_DATA.get(npc_name, {})
+    greeting = random.choice(npc.get("greetings", ["..."]))
+    role     = npc.get("role", "???")
+    aff_pts  = _get_affinity_points(aff_manager, npc_name)
+    aff_lv   = _get_affinity_level_name(aff_manager, npc_name)
+    pid      = portrait_id or npc_name
+    return get_renderer().render_npc_dialogue(
+        npc_name=npc.get("name", npc_name),
+        npc_role=role,
+        greeting=greeting,
+        affinity_pts=aff_pts,
+        affinity_level=aff_lv,
+        portrait_type=portrait_type,
+        portrait_id=pid,
+    )
 
 
 def _build_greeting_embed(npc_name: str, aff_manager, show_limit_warning: bool = False) -> discord.Embed:
@@ -342,11 +368,24 @@ class ConversationManager:
         self.npc_manager_ref = npc_manager_ref
 
     async def send_conversation(self, ctx, npc_name: str):
-        """대화 명령어 실행 — 임베드 + 버튼 전송"""
+        """대화 명령어 실행 — BG3 초상화 이미지 + 임베드 + 버튼 전송"""
         npc = NPC_DATA.get(npc_name)
         if not npc:
             await ctx.send(ansi(f"  {C.RED}✖ [{npc_name}]을(를) 찾을 수 없슴미댜.{C.R}"))
             return
+
+        # BG3 대화 UI 이미지 (초상화 + 대사창)
+        try:
+            buf = build_npc_dialogue_image(
+                npc_name=npc_name,
+                aff_manager=self.aff_manager,
+                portrait_type='npc',
+                portrait_id=npc_name,
+            )
+            import discord as _disc
+            await ctx.send(file=_disc.File(fp=buf, filename='npc_dialogue.png'))
+        except Exception:
+            pass
 
         # 일일 제한 확인 (차단 없음, 경고만)
         show_limit_warning = False

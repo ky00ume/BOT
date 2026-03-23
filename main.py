@@ -1545,29 +1545,39 @@ async def inventory_cmd(ctx):
     from items import ALL_ITEMS, SKILL_BOOKS
     from shop import ShopManager
     from shop_ui import SellView
+    from bg3_renderer import get_renderer, C as RC, render_async
     inventory = shared_player.inventory
     used, max_slots = shared_player.inventory_check()
 
-    embed = discord.Embed(
-        title=f"🎒 인벤토리 ({used}/{max_slots})",
-        color=EMBED_COLOR.get("status", 0x5865F2),
-    )
-    embed.description = f"💰 소지금: **{shared_player.gold:,}G**"
+    # ── PIL 이미지 렌더링 ─────────────────────────────────────────
+    rows = [{"label": "소지금", "value": f"{shared_player.gold:,}G", "color": RC.GOLD_HI}]
 
     if not inventory:
-        embed.add_field(name="📦 아이템", value="인벤토리가 비어있슴미댜.", inline=False)
+        rows.append({"label": "아이템", "value": "인벤토리가 비어있슴미댜."})
     else:
-        lines = []
-        for item_id, count in list(inventory.items())[:50]:
+        for item_id, count in list(inventory.items())[:48]:
             item = ALL_ITEMS.get(item_id, {})
             name = item.get("name", item_id)
-            # 스킬북: 이미 습득했으면 (습득한 스킬) 표시
+            grade = item.get("grade", "Normal")
+            # 스킬북: 이미 습득했으면 표시
             if item.get("type") == "skillbook":
                 skill_id = item.get("skill_id", "")
                 if skill_id in shared_player.skill_ranks:
-                    name = f"~~{name}~~ *(습득한 스킬)*"
-            lines.append(f"• **{name}** ×{count}")
-        embed.add_field(name="📦 아이템", value="\n".join(lines) if lines else "없음", inline=False)
+                    name = f"{name} (습득완료)"
+            color = RC.RARITY.get(grade, RC.TXT_HI)
+            rows.append({"label": name, "value": f"×{count}", "color": color})
+
+    card_h = max(380, 120 + len(rows) * 36)
+    buf = await render_async(
+        get_renderer().render_card,
+        f"🎒 인벤토리 ({used}/{max_slots})",
+        rows,
+        grade="Normal",
+        system_key="status",
+        footer="✦ 비전 타운 ✦",
+        h=card_h,
+    )
+    file = discord.File(fp=buf, filename="inventory.png")
 
     view = discord.ui.View(timeout=120.0)
 
@@ -1630,7 +1640,7 @@ async def inventory_cmd(ctx):
     sell_btn.callback = sell_callback
     view.add_item(sell_btn)
 
-    await ctx.send(embed=embed, view=view)
+    await ctx.send(file=file, view=view)
 
 
 # ═══════════════════════════════════════════════════════════════════════════

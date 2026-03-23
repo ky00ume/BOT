@@ -143,7 +143,9 @@ class MetallurgyEngine:
                     break
                 rec_name = rec.get("name", "")
                 if rec_name == ore_input or rec_name.replace(" ", "") == inp_normalized:
-                    recipe = rec; ore_input = key; break
+                    recipe = rec
+                    ore_input = key
+                    break
 
         if not recipe:
             return {"success": False, "error": f"[{ore_input}] 레시피 없음",

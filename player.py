@@ -94,12 +94,11 @@ class Player:
         }
 
         self.costume = {
-            "costume_main":  None,
-            "costume_sub":   None,
-            "costume_body":  None,
-            "costume_head":  None,
-            "costume_hands": None,
-            "costume_feet":  None,
+            "toy":       None,  # 장난감
+            "hat":       None,  # 모자
+            "outfit":    None,  # 의상
+            "shoes":     None,  # 신발
+            "accessory": None,  # 악세사리
         }
 
         self.inventory = {}
@@ -214,20 +213,25 @@ class Player:
 
     # ─── 의장(코스튬) 슬롯 ─────────────────────────────────────────────────
     _COSTUME_SLOT_MAP = {
-        "main":  "costume_main",
-        "sub":   "costume_sub",
-        "body":  "costume_body",
-        "head":  "costume_head",
-        "hands": "costume_hands",
-        "feet":  "costume_feet",
+        # 영문 키
+        "toy":       "toy",
+        "hat":       "hat",
+        "outfit":    "outfit",
+        "shoes":     "shoes",
+        "accessory": "accessory",
+        # 한글 alias
+        "장난감": "toy",
+        "모자":   "hat",
+        "의상":   "outfit",
+        "신발":   "shoes",
+        "악세사리": "accessory",
     }
     _COSTUME_SLOT_NAMES = {
-        "costume_main":  "의장 주무기",
-        "costume_sub":   "의장 보조",
-        "costume_body":  "의장 갑옷",
-        "costume_head":  "의장 투구",
-        "costume_hands": "의장 장갑",
-        "costume_feet":  "의장 신발",
+        "toy":       "장난감",
+        "hat":       "모자",
+        "outfit":    "의상",
+        "shoes":     "신발",
+        "accessory": "악세사리",
     }
 
     def equip_costume(self, item_id: str) -> str:
@@ -237,8 +241,8 @@ class Player:
             return f"[{item_id}] 아이템을 찾을 수 없슴미댜."
 
         item_type = item.get("type")
-        if item_type not in ("weapon", "armor"):
-            return f"[{item.get('name', item_id)}]은(는) 의장으로 장착할 수 없는 아이템임미댜."
+        if item_type != "costume":
+            return f"[{item.get('name', item_id)}]은(는) 의장 아이템이 아님미댜."
 
         eq_slot = item.get("slot")
         if not eq_slot:
@@ -257,21 +261,14 @@ class Player:
 
         self.costume[costume_slot] = item_id
         slot_name = self._COSTUME_SLOT_NAMES.get(costume_slot, costume_slot)
-        return f"[{item.get('name', item_id)}]을(를) {slot_name}에 의장으로 장착했슴미댜!"
+        return f"[{item.get('name', item_id)}]을(를) {slot_name} 슬롯에 장착했슴미댜!"
 
     def unequip_costume(self, slot_input: str) -> str:
         from items import ALL_ITEMS
-        # "main" → "costume_main" 도 허용
-        if not slot_input.startswith("costume_"):
-            slot = self._COSTUME_SLOT_MAP.get(slot_input)
-            if slot is None:
-                valid = ", ".join(self._COSTUME_SLOT_MAP.keys())
-                return f"[{slot_input}]은(는) 올바른 의장 슬롯이 아님미댜. ({valid})"
-        else:
-            slot = slot_input
-            if slot not in self.costume:
-                valid = ", ".join(self._COSTUME_SLOT_MAP.keys())
-                return f"[{slot_input}]은(는) 올바른 의장 슬롯이 아님미댜. ({valid})"
+        slot = self._COSTUME_SLOT_MAP.get(slot_input)
+        if slot is None:
+            valid = "toy(장난감) / hat(모자) / outfit(의상) / shoes(신발) / accessory(악세사리)"
+            return f"[{slot_input}]은(는) 올바른 의장 슬롯이 아님미댜.\n슬롯: {valid}"
         eq_id = self.costume.get(slot)
         if not eq_id:
             slot_name = self._COSTUME_SLOT_NAMES.get(slot, slot)
@@ -280,7 +277,7 @@ class Player:
         self.add_item(eq_id)
         self.costume[slot] = None
         slot_name = self._COSTUME_SLOT_NAMES.get(slot, slot)
-        return f"[{item.get('name', eq_id)}]을(를) {slot_name}에서 해제했슴미댜!"
+        return f"[{item.get('name', eq_id)}]을(를) {slot_name} 슬롯에서 해제했슴미댜!"
 
     def train_skill(self, skill_id: str, amount: float) -> str:
         if skill_id not in self.skill_ranks:
@@ -403,6 +400,7 @@ class Player:
                     self.equipment[slot] = val
 
         if "costume" in data and isinstance(data["costume"], dict):
+            # 구버전 6슬롯 키(costume_main 등)는 새 5슬롯에 없으므로 자동으로 무시됨
             for slot, val in data["costume"].items():
                 if slot in self.costume:
                     self.costume[slot] = val
@@ -442,11 +440,11 @@ class Player:
         if main_id:
             weapon = ALL_ITEMS.get(main_id, {})
             base += weapon.get("attack", 0)
-        # 의장 주무기 공격력 합산
-        costume_main_id = self.costume.get("costume_main")
-        if costume_main_id:
-            costume_weapon = ALL_ITEMS.get(costume_main_id, {})
-            base += costume_weapon.get("attack", 0)
+        # 의장 장난감 슬롯 공격력 합산
+        toy_id = self.costume.get("toy")
+        if toy_id:
+            toy_item = ALL_ITEMS.get(toy_id, {})
+            base += toy_item.get("attack", 0)
         # 타이틀 효과
         try:
             from title_data import get_title_effects
@@ -465,8 +463,8 @@ class Player:
             if eq_id:
                 armor = ALL_ITEMS.get(eq_id, {})
                 base += armor.get("defense", 0)
-        # 의장 방어구 방어력 합산
-        for cslot in ("costume_sub", "costume_body", "costume_head", "costume_hands", "costume_feet"):
+        # 의장 방어구 방어력 합산 (모든 의장 슬롯)
+        for cslot in ("toy", "hat", "outfit", "shoes", "accessory"):
             ceq_id = self.costume.get(cslot)
             if ceq_id:
                 citem = ALL_ITEMS.get(ceq_id, {})

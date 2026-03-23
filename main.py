@@ -50,6 +50,8 @@ from diary        import diary_manager
 from collection   import collection_manager
 from achievements import achievement_manager
 from special_npc  import SpecialNPCEncounterManager
+from care         import CareManager
+from care_ui      import CareRoomView, _make_room_card
 
 # ─── 상수 (환경변수로 관리) ────────────────────────────────────────────────
 TOKEN              = os.getenv("DISCORD_TOKEN", "")
@@ -91,6 +93,7 @@ affinity_manager  = AffinityManager(shared_player)
 gacha_engine      = GachaEngine(shared_player)
 music_engine      = MusicEngine(shared_player)
 crafting_engine   = CraftingEngine(shared_player)
+care_manager      = CareManager()
 shared_player._affinity_manager = affinity_manager
 
 # 특수 NPC 인카운터 매니저 초기화
@@ -875,11 +878,23 @@ async def unequip_costume_cmd(ctx, *, slot: str = None):
     if not await _check_channel(ctx):
         return
     if not slot:
-        slots = "main / sub / body / head / hands / feet"
+        slots = "toy(장난감) / hat(모자) / outfit(의상) / shoes(신발) / accessory(악세사리)"
         await _send_msg_card(ctx, "의장 해제", f"/의장해제 [슬롯] 형식으로 입력하셰요!\n슬롯: {slots}", system_key="battle", grade="Fail")
         return
     msg = shared_player.unequip_costume(slot)
     await _send_msg_card(ctx, "의장 해제", msg, system_key="battle")
+
+
+# ─── 하이네스의 방 ────────────────────────────────────────────────────────
+
+@bot.command(name="방", aliases=["하이네스의방", "돌봄"])
+async def room_command(ctx):
+    if not await _check_channel(ctx):
+        return
+    view = CareRoomView(shared_player, care_manager)
+    file = _make_room_card(shared_player)
+    msg  = await ctx.send(file=file, view=view)
+    view._message = msg
 
 
 # ═══════════════════════════════════════════════════════════════════════════

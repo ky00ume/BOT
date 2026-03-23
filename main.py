@@ -20,6 +20,8 @@ from npcs         import VillageNPC
 from shop         import ShopManager
 from battle       import BattleEngine
 from database     import init_db, save_player_to_db, load_player_from_db
+from economy      import Economy
+from save_manager import save_manager
 from equipment_window import create_equipment_image
 from status_window import create_status_image
 import io
@@ -163,7 +165,7 @@ async def on_ready():
     status_mod.ensure_status_json()
 
     # DB에서 플레이어 로드
-    loaded = load_player_from_db(0)
+    loaded = save_manager.load(0)
     if loaded:
         shared_player.load_from_dict(loaded)
         # 호감도 데이터 복원 (affinity_full에 to_dict() 전체 포함)
@@ -943,7 +945,7 @@ async def save_cmd(ctx):
     if not await _check_channel(ctx):
         return
     try:
-        save_player_to_db(shared_player)
+        save_manager.save(shared_player)
         await ctx.send(ansi(f"  {C.GREEN}✔ 데이터 저장 완료임미댜!{C.R}"))
     except Exception as e:
         await ctx.send(ansi(f"  {C.RED}✖ 저장 실패: {e}{C.R}"))
@@ -1451,7 +1453,7 @@ async def title_cmd(ctx, *, title_name: str = None):
 def _shutdown_handler(sig, frame):
     print(f"\n[종료] 시그널 {sig} 수신 — 데이터 저장 중...")
     try:
-        save_player_to_db(shared_player)
+        save_manager.save(shared_player)
         print("[종료] 저장 완료.")
     except Exception as e:
         print(f"[종료] 저장 실패: {e}")
@@ -1869,7 +1871,7 @@ async def story_quest_cmd(ctx):
                 lines.append(f"  {C.CYAN}🔓 새 키워드: [{kw}]{C.R}")
             story_quest_manager.complete_quest(ch, q)
             story_quest_manager.quest = q + 1
-            save_player_to_db(shared_player)
+            save_manager.save(shared_player)
             await ctx.send(ansi("\n".join(lines)))
 
         elif q == 4:
@@ -1904,7 +1906,7 @@ async def story_quest_cmd(ctx):
                 story_quest_manager.complete_quest(ch, q)
                 story_quest_manager.quest  = 1
                 story_quest_manager.chapter = 2
-                save_player_to_db(shared_player)
+                save_manager.save(shared_player)
                 await ctx.send(ansi(
                     f"  {C.GREEN}✔ 챕터 1 완료! 챕터 2 《픽시의 흔적》으로 진행합니다.{C.R}\n"
                     + (f"  {C.GOLD}🏅 칭호 획득: [{title}]{C.R}" if title else "")
@@ -1931,7 +1933,7 @@ async def story_quest_cmd(ctx):
             story_quest_manager.add_hint(hint)
             story_quest_manager.complete_quest(ch, q)
             story_quest_manager.quest = 2
-            save_player_to_db(shared_player)
+            save_manager.save(shared_player)
             await ctx.send(ansi("\n".join(lines)))
 
         elif q == 2:
@@ -1979,7 +1981,7 @@ async def story_quest_cmd(ctx):
                 story_quest_manager.add_hint(hint)
                 story_quest_manager.complete_quest(ch, q)
                 story_quest_manager.quest = 4
-                save_player_to_db(shared_player)
+                save_manager.save(shared_player)
 
         elif q == 4:
             # 등불의 설계도
@@ -2007,7 +2009,7 @@ async def story_quest_cmd(ctx):
             story_quest_manager.complete_quest(ch, q)
             story_quest_manager.quest   = 1
             story_quest_manager.chapter = 3
-            save_player_to_db(shared_player)
+            save_manager.save(shared_player)
             lines.append(f"  {C.GREEN}✔ 챕터 2 완료! 챕터 3 《선택의 무게》로 진행합니다.{C.R}")
             await ctx.send(ansi("\n".join(lines)))
 
@@ -2033,7 +2035,7 @@ async def story_quest_cmd(ctx):
             story_quest_manager.flags["늪지대_해금"] = True
             story_quest_manager.complete_quest(ch, q)
             story_quest_manager.quest = "gate"
-            save_player_to_db(shared_player)
+            save_manager.save(shared_player)
             lines.append(f"  {C.GREEN}🗺️ 늪지대 이동 가능! /이동 늪지대{C.R}")
             await ctx.send(ansi("\n".join(lines)))
 
@@ -2053,7 +2055,7 @@ async def story_quest_cmd(ctx):
             ]
             story_quest_manager.complete_quest(ch, "gate")
             story_quest_manager.quest = 2
-            save_player_to_db(shared_player)
+            save_manager.save(shared_player)
             await ctx.send(ansi("\n".join(lines)))
 
         elif q == 2:
@@ -2091,7 +2093,7 @@ async def story_quest_cmd(ctx):
             ))
             story_quest_manager.complete_quest(ch, q)
             story_quest_manager.quest = 4
-            save_player_to_db(shared_player)
+            save_manager.save(shared_player)
 
         elif q == 4:
             # 닿지 않는 전투
@@ -2102,7 +2104,7 @@ async def story_quest_cmd(ctx):
             async def on_battle_done(interaction):
                 story_quest_manager.complete_quest(ch, 4)
                 story_quest_manager.quest = 5
-                save_player_to_db(shared_player)
+                save_manager.save(shared_player)
                 await interaction.channel.send(ansi(
                     f"  {C.RED}★ 전투 종료 — 도달할 수 없었다.{C.R}\n"
                     f"  {C.DARK}/스토리퀘스트 로 다음 장면을 진행하세요.{C.R}"
@@ -2143,7 +2145,7 @@ async def story_quest_cmd(ctx):
             story_quest_manager.complete_quest(ch, q)
             story_quest_manager.quest   = 1
             story_quest_manager.chapter = 4
-            save_player_to_db(shared_player)
+            save_manager.save(shared_player)
             lines.append(divider())
             lines.append(f"  {C.DARK}🔒 챕터 4 《거미줄과 속박》 — 미해금{C.R}")
             lines.append(f"  {C.DARK}다음 이야기는 아직 쓰이지 않았습니다.{C.R}")
@@ -2180,7 +2182,7 @@ async def story_explore_cmd(ctx):
     async def on_explore_done(interaction):
         story_quest_manager.complete_quest(3, 2)
         story_quest_manager.quest = 3
-        save_player_to_db(shared_player)
+        save_manager.save(shared_player)
         await interaction.channel.send(ansi(
             f"  {C.GOLD}✔ 탐색 완료! 무언가 발견됐슴미댜...{C.R}\n"
             f"  {C.GREEN}/스토리퀘스트 로 다음 퀘스트를 진행하세요.{C.R}"
@@ -2250,7 +2252,7 @@ async def story_collect_cmd(ctx):
         if have >= qdata["collect_count"]:
             story_quest_manager.complete_quest(2, 2)
             story_quest_manager.quest = 3
-            save_player_to_db(shared_player)
+            save_manager.save(shared_player)
             lines.append(f"  {C.GOLD}✔ 수집 완료! /스토리퀘스트 로 다음 퀘스트를 진행하세요.{C.R}")
         await ctx.send(ansi("\n".join(lines)))
     else:

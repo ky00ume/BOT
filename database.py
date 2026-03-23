@@ -396,6 +396,14 @@ def init_db():
             max_capacity  INTEGER DEFAULT 20
         )
     """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS players_backup (
+            backup_id  INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id    INTEGER NOT NULL,
+            backed_at  TEXT DEFAULT CURRENT_TIMESTAMP,
+            data       TEXT NOT NULL
+        )
+    """)
     conn.commit()
     conn.close()
 

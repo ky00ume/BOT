@@ -237,36 +237,20 @@ class FishingView(discord.ui.View):
         fee      = int(price * fee_rate)
         net      = price - fee
 
-        added    = player.add_item(fish_id)
+        from economy import Economy
+        from gather_bridge import gather_bridge
+        economy  = Economy(player)
+        catch_result = gather_bridge.on_fish_caught(
+            economy, fish_id, caught_name, size_cm, price, grade
+        )
+        added    = catch_result["added"]
+        is_new_collection = catch_result["is_new_collection"]
         rank_msg = player.train_skill("fishing", 15.0)
 
-        try:
-            from village import village_manager
-            village_manager.add_contribution(1, "fishing")
-        except Exception:
-            pass
-
-        try:
-            from bulletin import weekly_fishing
-            weekly_fishing.add_catch(player.name, caught_name, size_cm)
-        except Exception:
-            pass
-
-        try:
-            from collection import collection_manager
-            is_new, total = collection_manager.register("낚시", fish_id, caught_name, grade, size_cm)
-            if is_new and self._message:
-                await self._message.channel.send(
-                    f"📖✨ **새로운 도감 등록!** 🎣 `{caught_name}` 이(가) 낚시 도감에 추가됐슴미댜!"
-                )
-        except Exception:
-            pass
-
-        try:
-            from achievements import achievement_manager
-            achievement_manager.increment("fish_caught", 1)
-        except Exception:
-            pass
+        if is_new_collection and self._message:
+            await self._message.channel.send(
+                f"📖✨ **새로운 도감 등록!** 🎣 `{caught_name}` 이(가) 낚시 도감에 추가됐슴미댜!"
+            )
 
         FLAVOR_TEXT = {
             "Normal":    "평범한 녀석이지만 기분은 좋다!",

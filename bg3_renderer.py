@@ -485,9 +485,9 @@ def _grade_badge(img, d, x,y, grade) -> int:
     txt = labels.get(grade, grade.upper())
     col = C.RARITY.get(grade,(155,155,155))
     gl  = C.RARITY_GL.get(grade,(50,50,50,35))
-    f   = _f(12, bold=True)
-    CW=10; PAD=9
-    bx0=x; by0=y; bx1=x+len(txt)*CW+PAD*2; by1=y+22
+    f   = _f(15, bold=True)
+    CW=12; PAD=10
+    bx0=x; by0=y; bx1=x+len(txt)*CW+PAD*2; by1=y+26
     _glow(img,bx0-3,by0-3,bx1+3,by1+3, (*gl[:3],gl[3]), rad=6, blur=5)
     _rr(img,bx0,by0,bx1,by1, 4, fill=(*C.BG2,210), outline=col, lw=1)
     d  = ImageDraw.Draw(img)
@@ -542,14 +542,19 @@ class BG3Renderer:
                     grade="Normal", subtitle=None,
                     system_key="system",
                     footer="✦ 비전 타운 ✦",
-                    w=480, h=340) -> io.BytesIO:
+                    w=520, h=380) -> io.BytesIO:
         w = min(w, _MAX_IMG_DIM); h = min(h, _MAX_IMG_DIM)
         title = str(title)[:200]; subtitle = str(subtitle)[:200] if subtitle else None
+        # 행 수에 따라 높이 동적 조정
+        row_h = 36
+        min_h = 120 + len(rows) * row_h
+        h = max(h, min_h)
+        h = min(h, _MAX_IMG_DIM)
         img = _make_base(w,h, system_key, grade)
         d   = ImageDraw.Draw(img)
         rc  = C.RARITY.get(grade,(155,155,155))
-        fT  = _f(22,True); fS=_f(12); fL=_f(13); fV=_f(14,True); fF=_f(11)
-        PAD = 22; HH = 60 if not subtitle else 78
+        fT  = _f(28,True); fS=_f(16); fL=_f(17); fV=_f(19,True); fF=_f(14)
+        PAD = 24; HH = 66 if not subtitle else 88
 
         # 헤더 패널
         hdr = Image.new("RGBA",(w,h),(0,0,0,0))
@@ -557,23 +562,23 @@ class BG3Renderer:
         img.alpha_composite(hdr); d=ImageDraw.Draw(img)
 
         _notxt(d,(PAD,13), title, fT, C.TXT_HI)
-        if subtitle: _notxt(d,(PAD+1,44), subtitle, fS, C.TXT_LO)
-        _grade_badge(img,d, w-145,12, grade)
+        if subtitle: _notxt(d,(PAD+1,50), subtitle, fS, C.TXT_LO)
+        _grade_badge(img,d, w-165,12, grade)
         _orn(img,d, PAD,HH, w-PAD, color=rc)
 
         # 콘텐츠 패널
-        FH=40; CT=HH+10; CB=h-FH-6
+        FH=46; CT=HH+12; CB=h-FH-6
         _rr(img,PAD,CT,w-PAD,CB, 8, fill=(*C.BG2,115))
         d=ImageDraw.Draw(img)
 
-        avail=CB-CT-14; rh=max(26,min(34,avail//max(len(rows),1)))
-        mx_col=PAD+(w-PAD*2)*2//5+22; cy=CT+10
+        avail=CB-CT-16; rh=max(30,min(row_h,avail//max(len(rows),1)))
+        mx_col=PAD+(w-PAD*2)*2//5+26; cy=CT+12
 
         for i,row in enumerate(rows):
             lbl = row.get("label",""); val=str(row.get("value",""))
             col = row.get("color", C.TXT_HI)
-            if i>0: d.line([(PAD+16,cy-4),(w-PAD-16,cy-4)], fill=C.SEP, width=1)
-            _notxt(d,(PAD+16,cy), lbl+":", fL, C.TXT_LBL)
+            if i>0: d.line([(PAD+18,cy-5),(w-PAD-18,cy-5)], fill=C.SEP, width=1)
+            _notxt(d,(PAD+18,cy), lbl+":", fL, C.TXT_LBL)
             _notxt(d,(mx_col,cy), val,      fV, col)
             cy+=rh
 
@@ -589,23 +594,23 @@ class BG3Renderer:
                            gold, exp, exp_needed,
                            stats: dict,
                            inv_used, inv_max) -> io.BytesIO:
-        W = 480
-        PAD = 20; HH = 68
+        W = 520
+        PAD = 22; HH = 78
 
         # ── 폰트 (모바일 가독성 우선 — 큰 사이즈) ────────────
-        fN  = _f(28, True)   # 이름
-        fT  = _f(15)         # 칭호
-        fLb = _f(14, True)   # HP/MP/EN 라벨
-        fBv = _f(14)         # 바 수치
-        fSec= _f(14, True)   # 섹션 헤더
-        fSt = _f(15)         # 스탯 이름
-        fV  = _f(17, True)   # 스탯 값
-        fFt = _f(15, True)   # 하단
+        fN  = _f(34, True)   # 이름
+        fT  = _f(20)         # 칭호
+        fLb = _f(18, True)   # HP/MP/EN 라벨
+        fBv = _f(18)         # 바 수치
+        fSec= _f(18, True)   # 섹션 헤더
+        fSt = _f(20)         # 스탯 이름
+        fV  = _f(22, True)   # 스탯 값
+        fFt = _f(20, True)   # 하단
 
         # ── 높이 계산 (세로 배치) ─────────────────────────────
-        # 헤더(68) + 바간격(16) + 바3줄(108) + 구분(14) + EXP(36)
-        # + 구분+헤더(36) + 스탯5줄(150) + 하단(56)
-        H = HH + 16 + 108 + 14 + 36 + 36 + 150 + 56
+        # 헤더(78) + 바간격(18) + 바3줄(126) + 구분(16) + EXP(42)
+        # + 구분+헤더(42) + 스탯5줄(180) + 하단(66)
+        H = HH + 18 + 126 + 16 + 42 + 42 + 180 + 66
         img = _make_base(W, H, "status")
         d   = ImageDraw.Draw(img)
 
@@ -619,9 +624,9 @@ class BG3Renderer:
         _orn(img, d, PAD, HH, W-PAD)
 
         # ── 게이지 바 (전체 폭 사용) ─────────────────────────
-        BW = W - PAD*2 - 56; BH = 20; BX = PAD + 50; LX = PAD + 4
+        BW = W - PAD*2 - 62; BH = 24; BX = PAD + 56; LX = PAD + 4
         bars = [("HP", hp, max_hp, C.HP), ("MP", mp, max_mp, C.MP), ("EN", en, max_en, C.EN)]
-        by = HH + 16
+        by = HH + 18
         for lbl, cur, mx2, cols in bars:
             _notxt(d, (LX, by+3), lbl, fLb, C.TXT_LBL)
             _bar_A(img, d, BX, by, BW, BH, cur, mx2, cols, show_val=False)
@@ -630,23 +635,23 @@ class BG3Renderer:
             vtxt = f"{cur}/{mx2}"
             vw = _tw(d, vtxt, fBv)
             _notxt(d, (BX + BW - vw - 6, by+3), vtxt, fBv, C.TXT_HI)
-            by += 36
+            by += 42
 
         # EXP 바
-        _orn(img, d, PAD, by+2, W-PAD, color=C.GOLD_LO); by += 14
+        _orn(img, d, PAD, by+2, W-PAD, color=C.GOLD_LO); by += 16
         _notxt(d, (LX, by+3), "EXP", fLb, C.TXT_LBL)
         _bar_A(img, d, BX, by, BW, BH, int(exp), exp_needed, C.EXP, show_val=False)
         d = ImageDraw.Draw(img)
         vtxt = f"{int(exp)}/{exp_needed}"
         vw = _tw(d, vtxt, fBv)
         _notxt(d, (BX + BW - vw - 6, by+3), vtxt, fBv, C.TXT_HI)
-        by += 36
+        by += 42
 
         # ── 구분선 + 스탯 (바 아래에 배치) ────────────────────
         _orn(img, d, PAD, by, W-PAD)
-        by += 10
+        by += 12
         _notxt(d, (PAD+8, by), "[ 기본 스탯 ]", fSec, C.GOLD_MID)
-        by += 26
+        by += 30
 
         STAT_DATA = [
             ("str",  "힘",   stats.get("str", 0)),
@@ -655,30 +660,30 @@ class BG3Renderer:
             ("will", "의지", stats.get("will", 0)),
             ("luck", "운",   stats.get("luck", 0)),
         ]
-        IS = 22  # 아이콘 크기
+        IS = 26  # 아이콘 크기
         for sk, sname, val in STAT_DATA:
             _paste_stat_icon(img, d, sk, PAD+8, by, IS)
             d = ImageDraw.Draw(img)
             text_y = by + (IS - _th(d, "가", fSt)) // 2
-            _notxt(d, (PAD+8+IS+10, text_y), sname, fSt, C.TXT_LBL)
+            _notxt(d, (PAD+8+IS+12, text_y), sname, fSt, C.TXT_LBL)
             vt = str(val); vw = _tw(d, vt, fV)
             _notxt(d, (W-PAD-vw-8, text_y), vt, fV, C.TXT_HI)
             # 점선 리더
             leader_y = text_y + _th(d, "가", fSt) // 2
-            lx2 = PAD+8+IS+10+_tw(d, sname, fSt)+8
+            lx2 = PAD+8+IS+12+_tw(d, sname, fSt)+8
             rx2 = W-PAD-vw-16
             if rx2 > lx2:
                 for dx in range(lx2, rx2, 7):
                     d.point((dx, leader_y), fill=C.SEP)
-            by += 30
+            by += 36
 
         # ── 하단 골드/인벤 ────────────────────────────────────
-        _orn(img, d, PAD, H-50, W-PAD)
-        _notxt(d, (PAD+12, H-38), f"◆ {gold:,} G", fFt, C.GOLD_HI)
+        _orn(img, d, PAD, H-60, W-PAD)
+        _notxt(d, (PAD+12, H-46), f"◆ {gold:,} G", fFt, C.GOLD_HI)
         it = f"{inv_used} / {inv_max} 슬롯"
         iw = _tw(d, it, fFt)
-        _notxt(d, (W-PAD-iw-12, H-38), it, fFt, C.TXT_MID)
-        _orn(img, d, PAD, H-14, W-PAD, color=C.GOLD_LO)
+        _notxt(d, (W-PAD-iw-12, H-46), it, fFt, C.TXT_MID)
+        _orn(img, d, PAD, H-16, W-PAD, color=C.GOLD_LO)
 
         _gold_frame(img); return _to_buf(img)
 
@@ -689,12 +694,12 @@ class BG3Renderer:
         장비창 카드 렌더링.
         slots: [{"slot_name": str, "item_name": str|None, "grade": str, "stats_text": str}, ...]
         """
-        W, H = 560, 420
+        W, H = 600, 480
         img = _make_base(W, H, "equipment")
         d   = ImageDraw.Draw(img)
-        fN  = _f(22, True); fSec = _f(13, True)
-        fL  = _f(13); fV = _f(14, True); fF = _f(11)
-        PAD = 22; HH = 60
+        fN  = _f(28, True); fSec = _f(17, True)
+        fL  = _f(17); fV = _f(19, True); fF = _f(14)
+        PAD = 24; HH = 68
 
         # 헤더
         hdr = Image.new("RGBA", (W, H), (0, 0, 0, 0))
@@ -704,12 +709,12 @@ class BG3Renderer:
         _orn(img, d, PAD, HH, W - PAD)
 
         # 콘텐츠 영역
-        FH = 40; CT = HH + 10; CB = H - FH - 6
+        FH = 46; CT = HH + 12; CB = H - FH - 6
         _rr(img, PAD, CT, W - PAD, CB, 8, fill=(*C.BG2, 115))
         d = ImageDraw.Draw(img)
 
-        cy = CT + 12
-        mx_col = PAD + 100
+        cy = CT + 14
+        mx_col = PAD + 120
 
         for slot in slots:
             sname = slot.get("slot_name", "")
@@ -717,11 +722,11 @@ class BG3Renderer:
             grade = slot.get("grade", "Normal")
             stats = slot.get("stats_text", "")
 
-            if cy > CT + 12:
-                d.line([(PAD + 16, cy - 4), (W - PAD - 16, cy - 4)],
+            if cy > CT + 14:
+                d.line([(PAD + 18, cy - 5), (W - PAD - 18, cy - 5)],
                        fill=C.SEP, width=1)
 
-            _notxt(d, (PAD + 16, cy), f"[{sname}]", fL, C.GOLD_MID)
+            _notxt(d, (PAD + 18, cy), f"[{sname}]", fL, C.GOLD_MID)
 
             if iname:
                 col = C.RARITY.get(grade, (155, 155, 155))
@@ -731,22 +736,22 @@ class BG3Renderer:
                 _notxt(d, (mx_col, cy), display, fV, col)
             else:
                 _notxt(d, (mx_col, cy), "— 비어있음 —", fV, C.TXT_LO)
-            cy += 32
+            cy += 38
 
         # 전투 스탯 구분선
-        cy += 8
-        _orn(img, d, PAD + 16, cy, W - PAD - 16, color=C.GOLD_LO)
-        cy += 14
-        _notxt(d, (PAD + 16, cy), "[ 전투 스탯 ]", fSec, C.GOLD_MID)
-        cy += 26
-        _notxt(d, (PAD + 16, cy), "공격력:", fL, C.TXT_LBL)
+        cy += 10
+        _orn(img, d, PAD + 18, cy, W - PAD - 18, color=C.GOLD_LO)
+        cy += 16
+        _notxt(d, (PAD + 18, cy), "[ 전투 스탯 ]", fSec, C.GOLD_MID)
+        cy += 30
+        _notxt(d, (PAD + 18, cy), "공격력:", fL, C.TXT_LBL)
         _notxt(d, (mx_col, cy), str(attack), fV, C.TXT_HI)
-        cy += 26
-        _notxt(d, (PAD + 16, cy), "방어력:", fL, C.TXT_LBL)
+        cy += 30
+        _notxt(d, (PAD + 18, cy), "방어력:", fL, C.TXT_LBL)
         _notxt(d, (mx_col, cy), str(defense), fV, C.TXT_HI)
         if magic_attack:
-            cy += 26
-            _notxt(d, (PAD + 16, cy), "마공력:", fL, C.TXT_LBL)
+            cy += 30
+            _notxt(d, (PAD + 18, cy), "마공력:", fL, C.TXT_LBL)
             _notxt(d, (mx_col, cy), str(magic_attack), fV, C.TXT_HI)
 
         # 푸터
@@ -768,10 +773,10 @@ class BG3Renderer:
         portrait_type: 'npc' | 'animal' | 'monster'
         portrait_id:   파일명 (확장자 제외). None이면 플레이스홀더
         """
-        W,H = 480,235
+        W,H = 560,290
         img = _make_base(W,H,"npc")
         d   = ImageDraw.Draw(img)
-        PW=172; fN=_f(19,True); fR=_f(12); fD=_f(13); fA=_f(12); fP=_f(11)
+        PW=200; fN=_f(24,True); fR=_f(16); fD=_f(17); fA=_f(16); fP=_f(14)
         PX0,PY0=14,14; PX1,PY1=PW-4,H-14
         pw2=PX1-PX0-2; ph2=PY1-PY0-2
 
@@ -790,27 +795,27 @@ class BG3Renderer:
         d.rounded_rectangle([PX0,PY0,PX1,PY1], radius=8, outline=C.GOLD_MID, width=2)
 
         # 대화창
-        TX=PW+12; ty=16
+        TX=PW+14; ty=18
         _notxt(d,(TX,ty), npc_name, fN, C.GOLD_HI)
         name_h = _th(d, npc_name, fN)
-        _notxt(d,(TX, ty+name_h+4), f"[ {npc_role} ]", fR, C.TXT_LO)
+        _notxt(d,(TX, ty+name_h+6), f"[ {npc_role} ]", fR, C.TXT_LO)
         role_h = _th(d, f"[ {npc_role} ]", fR)
-        orn_y = ty + name_h + role_h + 10
-        _orn(img,d,TX, orn_y, W-16, color=C.GOLD_LO)
-        _wrap(d, f'"{greeting}"', fD, TX, orn_y+10, W-TX-20, C.TXT_HI, lh=21)
+        orn_y = ty + name_h + role_h + 14
+        _orn(img,d,TX, orn_y, W-18, color=C.GOLD_LO)
+        _wrap(d, f'"{greeting}"', fD, TX, orn_y+12, W-TX-24, C.TXT_HI, lh=26)
 
         # 호감도 바 (시안 A)
-        AY=H-48; _orn(img,d,TX,AY,W-16, color=(*C.TEAL_LO,180))
+        AY=H-58; _orn(img,d,TX,AY,W-18, color=(*C.TEAL_LO,180))
         d=ImageDraw.Draw(img)
-        aff_y = AY+8
+        aff_y = AY+10
         _notxt(d,(TX,aff_y), affinity_level, fA, C.TEAL_HI)
         aw=_tw(d,affinity_level,fA)
-        _bar_A(img,d, TX+aw+10, aff_y, W-TX-aw-60, 14,
+        _bar_A(img,d, TX+aw+12, aff_y, W-TX-aw-72, 18,
                min(affinity_pts,100), 100,
                (C.TEAL_LO, C.TEAL_HI), show_val=False)
         d=ImageDraw.Draw(img)
         pt2=f"{affinity_pts}pt"; pw3=_tw(d,pt2,fP)
-        _notxt(d,(W-pw3-16, aff_y+2), pt2, fP, C.TXT_LO)
+        _notxt(d,(W-pw3-18, aff_y+2), pt2, fP, C.TXT_LO)
 
         _gold_frame(img); return _to_buf(img)
 
@@ -823,45 +828,45 @@ class BG3Renderer:
                            player_mp, player_max_mp,
                            last_action="", last_dmg=0,
                            is_crit=False, size_label="") -> io.BytesIO:
-        W,H=480,310
+        W,H=540,360
         img=_make_base(W,H,"battle"); d=ImageDraw.Draw(img)
-        fB=_f(20,True); fM=_f(14,True); fS=_f(12); fL=_f(11); PAD=20
+        fB=_f(26,True); fM=_f(18,True); fS=_f(16); fL=_f(14); PAD=22
 
-        _notxt(d,(PAD,13), monster_name, fB, C.TXT_HI)
-        _notxt(d,(PAD+2,42), f"Lv.{monster_level}   {size_label}", fS, C.TXT_LO)
+        _notxt(d,(PAD,14), monster_name, fB, C.TXT_HI)
+        _notxt(d,(PAD+2,50), f"Lv.{monster_level}   {size_label}", fS, C.TXT_LO)
 
         DCOL={"위험당함":(220,55,45),"보통":(230,180,30),"안전":(50,195,100)}
         dc=DCOL.get(danger,(155,155,155)); dt=f"  {danger}  "
         dw=_tw(d,dt,fS)
-        _rr(img,W-dw-PAD-6,10,W-PAD+2,34,5, fill=(*dc,38),outline=dc,lw=1)
-        d=ImageDraw.Draw(img); d.text((W-dw-PAD,14),dt, font=fS, fill=dc)
+        _rr(img,W-dw-PAD-6,12,W-PAD+2,40,5, fill=(*dc,38),outline=dc,lw=1)
+        d=ImageDraw.Draw(img); d.text((W-dw-PAD,16),dt, font=fS, fill=dc)
 
-        rc=C.SYS["battle"]; _orn(img,d,PAD,56,W-PAD,color=rc)
+        rc=C.SYS["battle"]; _orn(img,d,PAD,68,W-PAD,color=rc)
 
         # 몬스터 HP (시안 A, 크게)
-        _notxt(d,(PAD,68),"몬스터 HP",fL,C.TXT_LBL)
-        _bar_A(img,d, PAD+82,66, W-PAD*2-82,24, monster_hp,monster_max_hp, C.HP)
-        d=ImageDraw.Draw(img); _orn(img,d,PAD,104,W-PAD,color=(68,22,28))
+        _notxt(d,(PAD,80),"몬스터 HP",fL,C.TXT_LBL)
+        _bar_A(img,d, PAD+98,78, W-PAD*2-98,28, monster_hp,monster_max_hp, C.HP)
+        d=ImageDraw.Draw(img); _orn(img,d,PAD,122,W-PAD,color=(68,22,28))
 
         # 플레이어 HP/MP
-        _notxt(d,(PAD,116),"내 HP",fL,C.TXT_LBL)
-        _bar_A(img,d,PAD+62,114, 205,18, player_hp,player_max_hp, C.HP)
+        _notxt(d,(PAD,134),"내 HP",fL,C.TXT_LBL)
+        _bar_A(img,d,PAD+76,132, 240,22, player_hp,player_max_hp, C.HP)
         d=ImageDraw.Draw(img)
-        _notxt(d,(PAD,140),"내 MP",fL,C.TXT_LBL)
-        _bar_A(img,d,PAD+62,138, 205,18, player_mp,player_max_mp, C.MP)
-        d=ImageDraw.Draw(img); _orn(img,d,PAD,170,W-PAD,color=(68,22,28))
+        _notxt(d,(PAD,164),"내 MP",fL,C.TXT_LBL)
+        _bar_A(img,d,PAD+76,162, 240,22, player_mp,player_max_mp, C.MP)
+        d=ImageDraw.Draw(img); _orn(img,d,PAD,200,W-PAD,color=(68,22,28))
 
         # 마지막 액션
         if last_action:
             col=C.GOLD_HI if is_crit else C.TXT_HI
             pre="[크리티컬]  " if is_crit else ""
-            _notxt(d,(PAD,180),f"{pre}{last_action}  /  {last_dmg} 피해",fM,col)
+            _notxt(d,(PAD,212),f"{pre}{last_action}  /  {last_dmg} 피해",fM,col)
         tt=f"턴  {turn}"; tw2=_tw(d,tt,fS)
-        _notxt(d,(W-tw2-PAD,180),tt, fS, C.TXT_LO)
+        _notxt(d,(W-tw2-PAD,212),tt, fS, C.TXT_LO)
 
-        _orn(img,d,PAD,H-46,W-PAD,color=rc)
+        _orn(img,d,PAD,H-56,W-PAD,color=rc)
         g="/공격 [스킬명]   /도주"; gw=_tw(d,g,fL)
-        d.text((W//2-gw//2,H-34),g, font=fL, fill=C.TXT_LO)
+        d.text((W//2-gw//2,H-42),g, font=fL, fill=C.TXT_LO)
 
         _gold_frame(img); return _to_buf(img)
 
@@ -876,7 +881,31 @@ class BG3Renderer:
         zone_id:   파일명 (확장자 제외, 예: '비전타운', '고블린동굴')
                    None이면 플레이스홀더 표시
         """
-        W=480; SH=160; TH=130; H=SH+TH
+        W=540; SH=180
+        fLoc=_f(34,True); fDesc=_f(17); fSub=_f(14)
+        LH=24  # 설명 텍스트 줄 간격
+
+        # ── 텍스트 패널 높이 동적 계산 ──────────────────────────
+        # 임시 이미지에서 줄바꿈 결과를 미리 계산하여 TH 결정
+        _tmp_img = Image.new("RGBA", (W, 1), (0,0,0,0))
+        _tmp_d   = ImageDraw.Draw(_tmp_img)
+        desc_text = description or ""
+        # 줄 수 계산
+        line_count = 0
+        line = ""
+        for ch in desc_text:
+            test = line + ch
+            if _tw(_tmp_d, test, fDesc) > W - 56 and line:
+                line_count += 1
+                line = ch
+            else:
+                line = test
+        if line:
+            line_count += 1
+        # 장소명(44) + 밑줄(6) + 설명 줄들 + 하단 여백(44)
+        TH = max(130, 44 + 6 + line_count * LH + 44)
+        H = SH + TH
+
         img=Image.new("RGBA",(W,H),(0,0,0,0))
 
         # ── 상단 씬 이미지 슬롯 ─────────────────────────────
@@ -895,12 +924,12 @@ class BG3Renderer:
             d2=ImageDraw.Draw(img)
             d2.rounded_rectangle([16,16,W-17,SH-16], radius=8,
                                   outline=(*C.GOLD_LO,100), width=1)
-            fph=_f(14)
+            fph=_f(17)
             ph_type = {"town":"마을","hunting":"사냥터",
                        "gathering":"채집터","fishing":"낚시터"}.get(zone_type,"")
             ph=f"[ {ph_type} 씬 이미지 슬롯 ]"
             pw=_tw(d2,ph,fph)
-            d2.text((W//2-pw//2,SH//2-9),ph, font=fph, fill=C.TXT_LO)
+            d2.text((W//2-pw//2,SH//2-11),ph, font=fph, fill=C.TXT_LO)
 
         # 씬 슬롯 테두리 표시
         d=ImageDraw.Draw(img)
@@ -912,19 +941,18 @@ class BG3Renderer:
         _gv(tp,0,SH,W,H, (*C.BG1,245),(*C.BG0,255))
         img.alpha_composite(tp); d=ImageDraw.Draw(img)
 
-        fLoc=_f(28,True); fDesc=_f(13); fSub=_f(11)
-        TY=SH+14
+        TY=SH+16
         # 금장 세로선
-        d.line([(22,TY+2),(22,H-16)], fill=C.GOLD_MID,  width=3)
-        d.line([(23,TY+2),(23,H-16)], fill=(*C.GOLD_HI,65), width=1)
+        d.line([(24,TY+2),(24,H-18)], fill=C.GOLD_MID,  width=3)
+        d.line([(25,TY+2),(25,H-18)], fill=(*C.GOLD_HI,65), width=1)
 
-        _notxt(d,(38,TY), location_name, fLoc, C.GOLD_HI)
+        _notxt(d,(42,TY), location_name, fLoc, C.GOLD_HI)
         lw=_tw(d,location_name,fLoc)
-        d.line([(38,TY+40),(38+lw,TY+40)], fill=C.GOLD_MID, width=1)
-        _wrap(d,description,fDesc, 38,TY+50, W-56, C.TXT_MID, lh=19)
+        d.line([(42,TY+48),(42+lw,TY+48)], fill=C.GOLD_MID, width=1)
+        _wrap(d, desc_text, fDesc, 42, TY+58, W-60, C.TXT_MID, lh=LH)
 
         sub="✦ 비전 타운   언더다크"; sw=_tw(d,sub,fSub)
-        d.text((W-sw-18,H-22),sub, font=fSub, fill=C.TXT_LO)
+        d.text((W-sw-20,H-26),sub, font=fSub, fill=C.TXT_LO)
 
         # 전체 마스크
         mk=Image.new("L",(W,H),0)

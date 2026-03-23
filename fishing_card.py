@@ -142,10 +142,12 @@ def generate_gather_card(
     rarity: str,
     grade: str = "Normal",
 ) -> io.BytesIO:
+    from bg3_renderer import C
+    grade_color = C.RARITY.get(grade, C.TXT_HI)
     rows = [
         {"label": "아이템", "value": item_name},
         {"label": "개수",   "value": f"{count}개"},
-        {"label": "희귀도", "value": rarity},
+        {"label": "희귀도", "value": rarity, "color": grade_color},
     ]
     return generate_card("채집 결과", "🌿", rows, grade=grade)
 

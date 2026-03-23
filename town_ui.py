@@ -126,7 +126,8 @@ class VisionTownView(View):
         locations_seen = set()
         for npc_name, npc in NPC_DATA.items():
             loc = npc.get("location", "")
-            if loc and loc not in locations_seen:
+            # "랜덤" 키워드가 포함된 location은 버튼 생성에서 제외 (특수 NPC 랜덤 인카운터)
+            if loc and loc not in locations_seen and "랜덤" not in loc:
                 locations_seen.add(loc)
                 btn = Button(
                     label=_strip_town_prefix(loc)[:20],

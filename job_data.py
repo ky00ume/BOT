@@ -1020,12 +1020,65 @@ DIFFICULTY_LABELS = {
 DIFFICULTY_ENERGY = {"easy": 10, "normal": 20, "hard": 35}
 
 
+def _can_do_job(job: dict, player) -> bool:
+    """플레이어가 gather 알바의 제작 대상을 만들 수 있는지 확인."""
+    if player is None or job.get("type") != "gather":
+        return True
+    target_item = job.get("target_item", "")
+    try:
+        from crafting import CRAFTING_RECIPES, _rank_gte as craft_gte
+        if target_item in CRAFTING_RECIPES:
+            rank_req = CRAFTING_RECIPES[target_item].get("rank_req", "연습")
+            player_rank = getattr(player, "skill_ranks", {}).get("crafting", "연습")
+            return craft_gte(player_rank, rank_req)
+    except Exception:
+        pass
+    try:
+        from metallurgy import SMELT_RECIPES, _rank_gte as smelt_gte
+        for recipe in SMELT_RECIPES.values():
+            if target_item in recipe.get("output", {}):
+                rank_req = recipe.get("rank_req", "연습")
+                player_rank = getattr(player, "skill_ranks", {}).get("metallurgy", "연습")
+                return smelt_gte(player_rank, rank_req)
+    except Exception:
+        pass
+    return True
+
+
 def get_random_job(npc_name: str) -> dict | None:
     """NPC의 알바 풀에서 완전 랜덤으로 1개 반환."""
     pool = NPC_JOB_POOL.get(npc_name, [])
     if not pool:
         return None
     return random.choice(pool)
+
+
+def get_jobs_by_difficulty(npc_name: str, player=None) -> dict:
+    """NPC의 알바를 난이도별(easy/normal/hard)로 1개씩 반환.
+
+    player가 제공되면 gather 알바의 제작 가능 여부를 체크하여
+    수행 불가능한 알바를 최대한 제외합니다.
+    반환 형식: {"easy": job_dict, "normal": job_dict, "hard": job_dict}
+    해당 난이도 알바가 없으면 해당 키 생략.
+    """
+    pool = NPC_JOB_POOL.get(npc_name, [])
+    if not pool:
+        return {}
+
+    by_diff: dict[str, list[dict]] = {"easy": [], "normal": [], "hard": []}
+    for job in pool:
+        diff = job.get("difficulty", "easy")
+        if diff in by_diff:
+            by_diff[diff].append(job)
+
+    result = {}
+    for diff, jobs in by_diff.items():
+        if not jobs:
+            continue
+        feasible = [j for j in jobs if _can_do_job(j, player)]
+        chosen_pool = feasible if feasible else jobs
+        result[diff] = random.choice(chosen_pool)
+    return result
 
 
 def get_job_by_id(job_id: str) -> dict | None:

@@ -1,5 +1,6 @@
 from items import WEAPONS, ARMORS, CONSUMABLES, COOKED_DISHES, ALL_ITEMS, TOOLS, GROCERIES
 from database import BAGS
+from economy import Economy
 from ui_theme import C, section, divider, header_box, ansi, GRADE_ICON_PLAIN, EMBED_COLOR, FOOTERS
 
 # 스킬북 아이템 임포트 (있으면)
@@ -155,8 +156,9 @@ class ShopManager:
         price = item.get("price", 0)
         sell  = (price // 2) * count
 
-        self.player.remove_item(item_id, count)
-        self.player.gold += sell
+        economy = Economy(self.player)
+        economy.remove_item(f"판매:{name}", item_id, count)
+        economy.pay_reward(source=f"판매:{name}", gold=sell)
 
         return ansi(
             f"  {C.GREEN}✔{C.R} {C.WHITE}{name}{C.R} x{count} 판매 완료!\n"
@@ -230,6 +232,8 @@ class ShopManager:
         name = item.get("name", item_id)
         discount_str = f" ({discount}% 할인!)" if discount else ""
 
+        economy = Economy(self.player)
+
         # ── 가방 특별 처리 ──────────────────────────────────────────────
         if item.get("type") == "bag":
             new_slots = item.get("slots", 0)
@@ -243,7 +247,7 @@ class ShopManager:
                         f"  {C.RED}✖ 이미 더 좋은 가방을 가지고 있슴미댜! "
                         f"({cur_bag.get('name', cur_bag_id)}, +{cur_slots}칸){C.R}"
                     )
-            self.player.gold -= final_price
+            economy.deduct(source=f"구매:{name}", gold=final_price)
             self.player.bags = [item_id]
             return ansi(
                 f"  {C.GREEN}✔{C.R} {C.WHITE}{name}{C.R} 구매 완료!{discount_str}\n"
@@ -259,8 +263,8 @@ class ShopManager:
                 f"  {C.RED}✖ 인벤토리가 가득 찼슴미댜! ({used}/{max_slots}){C.R}"
             )
 
-        self.player.gold -= final_price
-        self.player.add_item(item_id, count)
+        economy.deduct(source=f"구매:{name}", gold=final_price)
+        economy.add_item(source=f"구매:{name}", item_id=item_id, count=count)
 
         return ansi(
             f"  {C.GREEN}✔{C.R} {C.WHITE}{name}{C.R} x{count} 구매 완료!{discount_str}\n"

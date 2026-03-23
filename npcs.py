@@ -1,7 +1,11 @@
+import logging
 import random
 from database import NPC_DATA
+from economy import Economy
 from ui_theme import C, section, divider, header_box, ansi, EMBED_COLOR, FOOTERS
 from job_data import get_random_job, DIFFICULTY_LABELS
+
+logger = logging.getLogger(__name__)
 
 
 class VillageNPC:
@@ -74,8 +78,8 @@ class VillageNPC:
 
         reward_gold = job.get("reward_gold", 100)
         reward_exp  = job.get("reward_exp",  10)
-        self.player.gold += reward_gold
-        self.player.exp = getattr(self.player, "exp", 0.0) + reward_exp
+        economy = Economy(self.player)
+        economy.pay_reward(source=f"알바:{npc_name}", gold=reward_gold, exp=reward_exp)
 
         lines = [
             header_box(f"💼 {npc['name']} 알바"),
@@ -110,6 +114,8 @@ class VillageNPC:
         diff_label = DIFFICULTY_LABELS.get(job.get("difficulty", "easy"), "쉬움")
         job_type   = job.get("type", "hunt")
 
+        economy = Economy(self.player)
+
         # ── gather 유형: 인벤토리 아이템 확인 & 차감 ──────────────────
         if job_type == "gather":
             target_item  = job.get("target_item", "")
@@ -129,7 +135,7 @@ class VillageNPC:
                     f"  기력이 환불되었슴미댜. {C.R}"
                 ))
                 return
-            self.player.remove_item(target_item, target_count)
+            economy.remove_item(f"알바:{npc_name}", target_item, target_count)
 
         # ── deliver 유형: 퀘스트 아이템 인벤토리에 추가 ──────────────────
         elif job_type == "deliver":
@@ -137,7 +143,7 @@ class VillageNPC:
             deliver_item_name = job.get("deliver_item_name", deliver_item)
             target_npc        = job.get("target_npc", "")
             if deliver_item:
-                self.player.add_item(deliver_item, 1)
+                economy.add_item(f"알바:{npc_name}", deliver_item, 1)
 
         await ctx.send(ansi(
             f"  {C.GOLD}💼 {npc['name']} 알바 시작! [{diff_label}]{C.R}\n"
@@ -155,17 +161,16 @@ class VillageNPC:
         try:
             from village import village_manager
             village_manager.add_contribution(5, "job")
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error(f"[npcs] village contribution 실패: {e}")
 
-        # ── hunt 유형: 즉시 완료 처리 ──────────────────────────────────
-        if job_type == "hunt":
-            self.player.gold += reward_gold
-            self.player.exp = getattr(self.player, "exp", 0.0) + reward_exp
-            result_note = ""
-        elif job_type == "gather":
-            self.player.gold += reward_gold
-            self.player.exp = getattr(self.player, "exp", 0.0) + reward_exp
+        # ── hunt/gather 유형: Economy를 통한 보상 지급 ─────────────────
+        if job_type in ("hunt", "gather"):
+            economy.pay_reward(
+                source=f"알바:{npc_name}",
+                gold=reward_gold,
+                exp=float(reward_exp),
+            )
             result_note = ""
         else:  # deliver
             # 전달형: 보상은 대상 NPC에게 전달 완료 후 지급 (여기선 안내만)
@@ -190,7 +195,7 @@ class VillageNPC:
         # ── 보상 아이템 지급 ──────────────────────────────────────────────
         reward_item_line = ""
         if reward_item:
-            self.player.add_item(reward_item, 1)
+            economy.add_item(f"알바:{npc_name}", reward_item, 1)
             from items import ALL_ITEMS
             item_name = ALL_ITEMS.get(reward_item, {}).get("name", reward_item)
             reward_item_line = f"\n  {C.WHITE}🎁 {item_name} x1{C.R}"

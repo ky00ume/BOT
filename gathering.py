@@ -213,25 +213,19 @@ class GatheringEngine:
         count  = random.randint(1, 3)
         grade  = item["grade"]
 
-        added     = self.player.add_item(item["id"], count)
-        rank_msg  = self.player.train_skill("gathering", 10.0)
+        from economy import Economy
+        from gather_bridge import gather_bridge
+        economy = Economy(self.player)
+        gather_result = gather_bridge.on_gather_complete(
+            economy, item["id"], item["name"], count, grade
+        )
+        added    = gather_result["added"]
+        rank_msg = self.player.train_skill("gathering", 10.0)
 
-        try:
-            from village import village_manager
-            village_manager.add_contribution(2, "gathering")
-        except Exception:
-            pass
-
-        if added:
-            try:
-                from collection import collection_manager
-                is_new, total = collection_manager.register("채집", item["id"], item["name"], grade)
-                if is_new:
-                    await ctx.send(
-                        f"📖✨ **새로운 도감 등록!** 🌿 `{item['name']}` 이(가) 채집 도감에 추가됐슴미댜!"
-                    )
-            except Exception:
-                pass
+        if gather_result["is_new_collection"]:
+            await ctx.send(
+                f"📖✨ **새로운 도감 등록!** 🌿 `{item['name']}` 이(가) 채집 도감에 추가됐슴미댜!"
+            )
 
         card_sent = False
         season_kr = {"spring": "봄", "summer": "여름", "autumn": "가을", "winter": "겨울"}.get(season, season)

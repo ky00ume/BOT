@@ -223,14 +223,26 @@ class VillageNPC:
         # deliver: 퀘스트 아이템 지급
         elif job_type == "deliver":
             deliver_item      = job.get("deliver_item", "")
-            deliver_item_name = job.get("deliver_item_name", deliver_item)
+            deliver_item_name = job.get("deliver_item_name", "")
             target_npc        = job.get("target_npc", "")
+            if deliver_item and not deliver_item_name:
+                from items import ALL_ITEMS as _AI
+                deliver_item_name = _AI.get(deliver_item, {}).get("name", deliver_item)
+            if not deliver_item_name:
+                deliver_item_name = deliver_item
             if deliver_item:
                 economy.add_item(f"알바:{npc_name}", deliver_item, 1)
 
+        # deliver 타입: 배달 아이템 이름 안내 메시지 준비
+        deliver_notice = ""
+        if job_type == "deliver" and deliver_item:
+            _dname = deliver_item_name if deliver_item_name else deliver_item
+            _target = job.get("target_npc", "")
+            deliver_notice = f"\n  {C.WHITE}📦 {_dname}을(를) {_target}에게 전달하셰요!{C.R}"
+
         await ctx.send(ansi(
             f"  {C.GOLD}💼 {npc['name']} 알바 시작! [{diff_label}]{C.R}\n"
-            f"  {C.DARK}{job['name']} — {job.get('desc','')}{C.R}\n"
+            f"  {C.DARK}{job['name']} — {job.get('desc','')}{C.R}{deliver_notice}\n"
             f"  {C.RED}기력 -{energy_cost}{C.R}  ⏱ 잠시 기다려 주셰요..."
         ))
 

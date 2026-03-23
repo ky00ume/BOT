@@ -60,8 +60,8 @@ GATHERING_ZONE_DATA = {
     },
     "버섯 군락지": {
         "name": "버섯 군락지",
-        "desc": "형형색색의 버섯이 자라는 언더다크 특유의 지역.",
-        "items": ["버섯", "발광버섯", "독버섯", "표고버섯"],
+        "desc": "언더다크 깊숙이 자리한 거대 버섯 군락. 다양한 버섯이 자생한다.",
+        "items": ["버섯", "표고버섯", "발광버섯", "독버섯", "나이트라이트 버섯", "팀마스크", "블루캡", "비버뱅", "토치스톡", "서서 꽃"],
         "emoji": "🍄",
     },
 }
@@ -153,16 +153,20 @@ class VisionTownView(View):
     async def send(self, channel_or_interaction, edit=False):
         """뷰를 전송하거나 기존 메시지를 편집한다."""
         file = self._make_banner_file()
+        # 마을 기여도·레벨 임베드
+        embed = None
+        if self.village_manager is not None:
+            embed = self.village_manager.make_status_embed()
         if edit and isinstance(channel_or_interaction, discord.Interaction):
             await channel_or_interaction.response.edit_message(
-                attachments=[file], embed=None, view=self,
+                attachments=[file], embed=embed, view=self,
             )
         elif isinstance(channel_or_interaction, discord.Interaction):
             await channel_or_interaction.response.send_message(
-                file=file, view=self,
+                file=file, embed=embed, view=self,
             )
         else:
-            await channel_or_interaction.send(file=file, view=self)
+            await channel_or_interaction.send(file=file, embed=embed, view=self)
 
     def _make_location_callback(self, location: str):
         async def callback(interaction: discord.Interaction):
@@ -321,14 +325,31 @@ class HuntingZoneView(View):
         if departure:
             await interaction.channel.send(departure)
         success, result = battle_engine.start_encounter(self.zone_name)
-        if isinstance(result, discord.Embed):
+        if isinstance(result, io.BytesIO):
+            result.seek(0)
+            file = discord.File(fp=result, filename="battle.png")
+            await interaction.channel.send(file=file)
+        elif isinstance(result, discord.Embed):
             await interaction.channel.send(embed=result)
         else:
             await interaction.channel.send(str(result))
         if success:
             enc_msg = encounter_manager.trigger_encounter()
             if enc_msg:
-                await interaction.channel.send(enc_msg)
+                from special_npc import render_encounter_image
+                npc_name = encounter_manager.get_active_encounter()
+                buf = render_encounter_image(npc_name, enc_msg)
+                if buf:
+                    buf.seek(0)
+                    from special_npc_ui import SpecialNPCView
+                    view = SpecialNPCView(npc_name, encounter_manager.player,
+                                         getattr(encounter_manager, '_aff_manager', None),
+                                         getattr(encounter_manager, '_npc_manager_ref', None),
+                                         encounter_manager)
+                    enc_file = discord.File(fp=buf, filename="encounter.png")
+                    await interaction.channel.send(file=enc_file, view=view)
+                else:
+                    await interaction.channel.send(enc_msg)
 
     async def _back_callback(self, interaction: discord.Interaction):
         view = WorldMapView(self.player, self.aff_manager, self.npc_manager_ref)
@@ -453,7 +474,20 @@ class FishingZoneView(View):
         await fishing_engine.fish(interaction.channel)
         enc_msg = encounter_manager.trigger_encounter()
         if enc_msg:
-            await interaction.channel.send(enc_msg)
+            from special_npc import render_encounter_image
+            npc_name = encounter_manager.get_active_encounter()
+            buf = render_encounter_image(npc_name, enc_msg)
+            if buf:
+                buf.seek(0)
+                from special_npc_ui import SpecialNPCView
+                view = SpecialNPCView(npc_name, encounter_manager.player,
+                                     getattr(encounter_manager, '_aff_manager', None),
+                                     getattr(encounter_manager, '_npc_manager_ref', None),
+                                     encounter_manager)
+                enc_file = discord.File(fp=buf, filename="encounter.png")
+                await interaction.channel.send(file=enc_file, view=view)
+            else:
+                await interaction.channel.send(enc_msg)
 
     async def _silen_callback(self, interaction: discord.Interaction):
         from npc_conversation import ConversationManager

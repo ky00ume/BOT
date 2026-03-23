@@ -1,6 +1,7 @@
 """special_npc.py — 특수 NPC 랜덤 인카운터 시스템"""
 import random
 import datetime
+import io
 from ui_theme import C, ansi, header_box, divider, EMBED_COLOR
 from database import NPC_DATA
 
@@ -94,6 +95,41 @@ DEPARTURE_MESSAGES = {
     "카르니스": "\"꺼져라. 다시 눈앞에 얼씬거리지 마.\" *어둠 속으로 사라진다*",
     "루바토": "\"어이, 벌써 가버려? 뭐, 다음에 또 보자고!\" *손을 흔들며 사라진다*",
 }
+
+# ── NPC 등장 대사 (짧은 버전, PIL 이미지용) ────────────────────────────────
+ENCOUNTER_SHORT_GREETINGS = {
+    "라파엘": "\"오, 마침 찾고 있었어. 흥미로운 제안이 있는데... 거절하기 아깝지 않겠어?\"",
+    "카르니스": "\"...또 왔군. 하등한 미물이 어슬렁거리는 꼴이 눈에 거슬린다.\"",
+    "루바토": "\"야호~ 오늘도 만났네! 세상 좁다고 하더니, 정말 그렇구나!\"",
+}
+
+ENCOUNTER_NPC_ROLES = {
+    "라파엘": "악마 / 거래자",
+    "카르니스": "드라이더 / 어둠의 존재",
+    "루바토": "티플링 음유시인",
+}
+
+
+def render_encounter_image(npc_name: str | None, intro_text: str) -> io.BytesIO | None:
+    """특수 NPC 인카운터 등장 이미지를 PIL로 생성합니다."""
+    if not npc_name:
+        return None
+    try:
+        from bg3_renderer import get_renderer
+        greeting = ENCOUNTER_SHORT_GREETINGS.get(npc_name, intro_text[:100])
+        role = ENCOUNTER_NPC_ROLES.get(npc_name, "특수 NPC")
+        buf = get_renderer().render_npc_dialogue(
+            npc_name=npc_name,
+            npc_role=role,
+            greeting=greeting,
+            affinity_pts=0,
+            affinity_level="낯선이",
+            portrait_type="npc",
+            portrait_id=npc_name,
+        )
+        return buf
+    except Exception:
+        return None
 
 
 class SpecialNPCEncounterManager:

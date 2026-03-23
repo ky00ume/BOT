@@ -121,11 +121,18 @@ GATHERING_ITEMS = {
     "fragrant_flower": {"name": "향기로운꽃",     "type": "gathering", "grade": "Normal",    "price": 35,   "desc": "달콤한 향기를 내뿜는 꽃."},
     "lavender":        {"name": "라벤더",         "type": "gathering", "grade": "Rare",      "price": 100,  "desc": "보라빛 라벤더. 허브차 재료.",          "mp": 15},
     # ── 버섯류 ────────────────────────────────────────────────────────────────
-    "shiitake":        {"name": "표고버섯",       "type": "gathering", "grade": "Normal",    "price": 45,   "desc": "향긋한 표고버섯."},
-    "toxic_mushroom":  {"name": "독버섯",         "type": "gathering", "grade": "Normal",    "price": 20,   "desc": "독성이 있는 버섯. 포션 재료."},
-    "glow_mushroom":   {"name": "발광버섯",       "type": "gathering", "grade": "Rare",      "price": 200,  "desc": "어둠 속에서 빛나는 신비한 버섯.",       "mp": 25},
-    "pine_mushroom":   {"name": "송이버섯",       "type": "gathering", "grade": "Rare",      "price": 300,  "desc": "귀한 향기의 송이버섯."},
-    "reishi":          {"name": "영지버섯",       "type": "gathering", "grade": "Epic",      "price": 800,  "desc": "불로장생의 효능이 있다는 영지버섯.",    "hp": 50, "mp": 50},
+    "shiitake":           {"name": "표고버섯",          "type": "gathering", "grade": "Normal",    "price": 45,   "desc": "향긋한 표고버섯."},
+    "toxic_mushroom":     {"name": "독버섯",            "type": "gathering", "grade": "Normal",    "price": 20,   "desc": "독성이 있는 버섯. 포션 재료."},
+    "glow_mushroom":      {"name": "발광버섯",          "type": "gathering", "grade": "Rare",      "price": 200,  "desc": "어둠 속에서 빛나는 신비한 버섯.",       "mp": 25},
+    "pine_mushroom":      {"name": "송이버섯",          "type": "gathering", "grade": "Rare",      "price": 300,  "desc": "귀한 향기의 송이버섯."},
+    "reishi":             {"name": "영지버섯",          "type": "gathering", "grade": "Epic",      "price": 800,  "desc": "불로장생의 효능이 있다는 영지버섯.",    "hp": 50, "mp": 50},
+    # ── BG3 기반 언더다크 버섯류 ─────────────────────────────────────────────
+    "nightlight_mushroom":{"name": "나이트라이트 버섯", "type": "gathering", "grade": "Normal",    "price": 80,   "desc": "언더다크에서 자생하는 발광 버섯. 은은한 빛을 발산한다."},
+    "timmask":            {"name": "팀마스크",          "type": "gathering", "grade": "Rare",      "price": 250,  "desc": "독성이 강한 언더다크 버섯. 환각 효과가 있다."},
+    "bluecap":            {"name": "블루캡",            "type": "gathering", "grade": "Normal",    "price": 60,   "desc": "파란 갓이 특징인 언더다크 버섯."},
+    "bibberbang":         {"name": "비버뱅",            "type": "gathering", "grade": "Rare",      "price": 300,  "desc": "폭발성 포자를 가진 위험한 언더다크 버섯."},
+    "torchstalk":         {"name": "토치스톡",          "type": "gathering", "grade": "Normal",    "price": 90,   "desc": "불꽃 같은 발광을 내뿜는 언더다크 버섯."},
+    "sussur_bloom":       {"name": "서서 꽃",           "type": "gathering", "grade": "Epic",      "price": 1200, "desc": "반마법 특성을 지닌 언더다크의 희귀 꽃버섯.", "mp": 60},
     # ── 열매류 ────────────────────────────────────────────────────────────────
     "apple":           {"name": "사과",           "type": "gathering", "grade": "Normal",    "price": 20,   "desc": "빨갛고 달콤한 사과.",                   "hp": 15},
     "strawberry":      {"name": "딸기",           "type": "gathering", "grade": "Normal",    "price": 25,   "desc": "새콤달콤한 딸기.",                       "hp": 10},
@@ -284,6 +291,17 @@ COOKED_DISHES = {
     "ck_yukhoe":         {"name": "육회",         "type": "cooked", "grade": "Rare",   "price": 150, "desc": "신선한 고급 육회.",                       "hp": 60, "mp": 10, "en": 25},
     "ck_natto":          {"name": "낫또",         "type": "cooked", "grade": "Normal", "price": 35,  "desc": "발효된 대두 낫또.",                       "hp": 15, "mp": 10, "en": 10},
     "ck_mandu":          {"name": "만두",         "type": "cooked", "grade": "Normal", "price": 60,  "desc": "속이 꽉 찬 만두.",                        "hp": 40, "mp": 10, "en": 20},
+    # ── 버섯 요리 10종 ───────────────────────────────────────────────────────
+    "nightlight_soup":        {"name": "나이트라이트 수프",   "type": "cooked", "grade": "Normal",    "price": 120,  "desc": "나이트라이트 버섯의 은은한 발광이 스며든 수프.",          "hp": 60,  "mp": 30,  "en": 15},
+    "bluecap_stew":           {"name": "블루캡 스튜",         "type": "cooked", "grade": "Normal",    "price": 130,  "desc": "블루캡과 감자로 만든 진한 스튜.",                        "hp": 70,  "mp": 20,  "en": 20},
+    "mushroom_risotto":       {"name": "버섯 리소토",         "type": "cooked", "grade": "Rare",      "price": 280,  "desc": "표고버섯과 쌀로 만든 풍미 가득한 리소토.",               "hp": 110, "mp": 30,  "en": 40},
+    "torchstalk_grill":       {"name": "토치스톡 구이",       "type": "cooked", "grade": "Normal",    "price": 110,  "desc": "화염 속성 토치스톡을 구워낸 요리.",                      "hp": 65,  "mp": 15,  "en": 25},
+    "underdark_mushroom_pie": {"name": "언더다크 버섯 파이",  "type": "cooked", "grade": "Rare",      "price": 350,  "desc": "언더다크 버섯들을 담은 두툼한 파이.",                    "hp": 130, "mp": 40,  "en": 45},
+    "timmask_poison_stew":    {"name": "팀마스크 독 스튜",    "type": "cooked", "grade": "Rare",      "price": 400,  "desc": "팀마스크의 독성을 정제한 특수 스튜. 먹으면 몸이 강해진다.", "hp": 100, "mp": 60,  "en": 30},
+    "glowing_mushroom_salad": {"name": "발광 버섯 샐러드",    "type": "cooked", "grade": "Normal",    "price": 140,  "desc": "발광버섯과 나이트라이트 버섯으로 만든 신선한 샐러드.",     "hp": 50,  "mp": 50,  "en": 20},
+    "mushroom_cream_pasta":   {"name": "버섯 크림 파스타",    "type": "cooked", "grade": "Rare",      "price": 320,  "desc": "표고버섯과 크림 소스의 조화로운 파스타.",                "hp": 120, "mp": 35,  "en": 50},
+    "sussur_bloom_tea":       {"name": "서서 꽃 차",          "type": "cooked", "grade": "Epic",      "price": 900,  "desc": "서서 꽃으로 우려낸 차. 마법 저항력이 높아진다.",         "hp": 80,  "mp": 120, "en": 30},
+    "bibberbang_hotpot":      {"name": "비버뱅 전골",         "type": "cooked", "grade": "Rare",      "price": 380,  "desc": "비버뱅의 폭발적인 맛을 살린 전골. 아주 맵다.",           "hp": 140, "mp": 45,  "en": 55},
 }
 
 # 몬스터 드랍 아이템

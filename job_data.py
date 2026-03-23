@@ -1020,12 +1020,76 @@ DIFFICULTY_LABELS = {
 DIFFICULTY_ENERGY = {"easy": 10, "normal": 20, "hard": 35}
 
 
-def get_random_job(npc_name: str) -> dict | None:
-    """NPC의 알바 풀에서 완전 랜덤으로 1개 반환."""
+def _normalize_rank(rank: str, rank_order: list) -> str:
+    """랭크 값이 rank_order에 없으면 '연습'으로 정규화합니다."""
+    return rank if rank in rank_order else "연습"
+
+
+def _can_craft_item(item_id: str, player) -> bool:
+    """플레이어가 item_id를 제작/제련할 수 있는지 확인합니다.
+
+    item_id가 CRAFTING_RECIPES 또는 SMELT_RECIPES 의 결과물인 경우
+    플레이어의 해당 스킬 랭크가 rank_req 이상인지 체크합니다.
+    제작/제련과 무관한 아이템이면 True를 반환합니다.
+    """
+    from crafting import CRAFTING_RECIPES, RANK_ORDER_CRAFT
+    from metallurgy import SMELT_RECIPES, RANK_ORDER_SMELT
+
+    # crafting 레시피 체크 (레시피 키 = 결과물 ID)
+    if item_id in CRAFTING_RECIPES:
+        rank_req = CRAFTING_RECIPES[item_id].get("rank_req", "연습")
+        player_rank = _normalize_rank(
+            getattr(player, "skill_ranks", {}).get("crafting", "연습"),
+            RANK_ORDER_CRAFT,
+        )
+        return RANK_ORDER_CRAFT.index(player_rank) >= RANK_ORDER_CRAFT.index(rank_req)
+
+    # metallurgy 레시피 체크 (output dict 의 키가 결과물 ID)
+    for recipe in SMELT_RECIPES.values():
+        if item_id in recipe.get("output", {}):
+            rank_req = recipe.get("rank_req", "연습")
+            player_rank = _normalize_rank(
+                getattr(player, "skill_ranks", {}).get("metallurgy", "연습"),
+                RANK_ORDER_SMELT,
+            )
+            return RANK_ORDER_SMELT.index(player_rank) >= RANK_ORDER_SMELT.index(rank_req)
+
+    # 제작/제련 불필요 아이템
+    return True
+
+
+def _job_available_for_player(job: dict, player) -> bool:
+    """플레이어가 해당 알바를 수행할 수 있는지 확인합니다.
+
+    gather 유형이고 target_item 이 제작/제련 결과물인 경우에만
+    스킬 랭크를 검사합니다. 다른 유형은 항상 True를 반환합니다.
+    """
+    if job.get("type") != "gather":
+        return True
+    target_item = job.get("target_item", "")
+    if not target_item:
+        return True
+    return _can_craft_item(target_item, player)
+
+
+def get_random_job(npc_name: str, player=None) -> dict | None:
+    """NPC의 알바 풀에서 랜덤으로 1개 반환.
+
+    player가 전달되면 플레이어가 수행 가능한 알바만 후보로 고려합니다.
+    gather 유형 알바의 target_item이 제작/제련 결과물인 경우
+    플레이어의 스킬 랭크가 rank_req를 충족하지 못하면 해당 알바는 제외됩니다.
+    가능한 알바가 하나도 없으면 None을 반환합니다.
+    player가 None이면 기존처럼 완전 랜덤으로 동작합니다.
+    """
     pool = NPC_JOB_POOL.get(npc_name, [])
     if not pool:
         return None
-    return random.choice(pool)
+    if player is None:
+        return random.choice(pool)
+    candidates = [job for job in pool if _job_available_for_player(job, player)]
+    if not candidates:
+        return None
+    return random.choice(candidates)
 
 
 def get_job_by_id(job_id: str) -> dict | None:

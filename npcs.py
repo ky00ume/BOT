@@ -35,7 +35,7 @@ class VillageNPC:
             f"  {C.DARK}{npc.get('desc','')}{C.R}",
         ]
 
-        job = get_random_job(npc_name)
+        job = get_random_job(npc_name, self.player)
         if job:
             diff_label = DIFFICULTY_LABELS.get(job.get("difficulty", "easy"), "쉬움")
             lines.append(f"\n  {C.GOLD}▸ 알바{C.R}: {C.WHITE}{job['name']}{C.R} [{diff_label}]")
@@ -66,7 +66,7 @@ class VillageNPC:
         if not npc:
             return ansi(f"  {C.RED}✖ [{npc_name}]을(를) 찾을 수 없슴미댜.{C.R}")
 
-        job = get_random_job(npc_name)
+        job = get_random_job(npc_name, self.player)
         if not job:
             return ansi(f"  {C.RED}✖ {npc.get('name', npc_name)}은(는) 알바가 없슴미댜.{C.R}")
 
@@ -99,7 +99,7 @@ class VillageNPC:
             await ctx.send(ansi(f"  {C.RED}✖ [{npc_name}]을(를) 찾을 수 없슴미댜.{C.R}"))
             return
 
-        job = get_random_job(npc_name)
+        job = get_random_job(npc_name, self.player)
         if not job:
             await ctx.send(ansi(f"  {C.RED}✖ {npc.get('name', npc_name)}은(는) 알바가 없슴미댜.{C.R}"))
             return

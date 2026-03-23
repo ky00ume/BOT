@@ -3,7 +3,7 @@ import random
 from database import NPC_DATA
 from economy import Economy
 from ui_theme import C, section, divider, header_box, ansi, EMBED_COLOR, FOOTERS
-from job_data import get_random_job, DIFFICULTY_LABELS
+from job_data import get_random_job, get_jobs_by_difficulty, DIFFICULTY_LABELS, NPC_JOB_POOL
 
 logger = logging.getLogger(__name__)
 
@@ -35,12 +35,10 @@ class VillageNPC:
             f"  {C.DARK}{npc.get('desc','')}{C.R}",
         ]
 
-        job = get_random_job(npc_name)
-        if job:
-            diff_label = DIFFICULTY_LABELS.get(job.get("difficulty", "easy"), "쉬움")
-            lines.append(f"\n  {C.GOLD}▸ 알바{C.R}: {C.WHITE}{job['name']}{C.R} [{diff_label}]")
-            lines.append(f"    {C.DARK}보상: {job['reward_gold']}G / EXP+{job['reward_exp']} / 기력 -{job['energy_cost']}{C.R}")
-            lines.append(f"  {C.GREEN}/알바 {npc['name']}{C.R} 으로 알바 가능")
+        # Fix #6: 알바 가능 여부만 표시 (구체적인 알바 1개를 고정하지 않음)
+        if NPC_JOB_POOL.get(npc_name):
+            lines.append(f"\n  {C.GOLD}▸ 알바 가능{C.R}: {C.WHITE}{npc['name']}{C.R}에게 알바를 받을 수 있슴미댜!")
+            lines.append(f"  {C.GREEN}/알바 {npc['name']}{C.R} 으로 알바 선택 UI를 열 수 있슴미댜.")
 
         return ansi("\n".join(lines))
 
@@ -92,52 +90,137 @@ class VillageNPC:
         return ansi("\n".join(lines))
 
     async def start_job_async(self, ctx, npc_name: str):
-        """알바 시작 메시지 전송 후 대기, 결과를 전송합니다."""
+        """알바 선택 UI → 진행 → 결과를 전송합니다."""
         import asyncio
+        import discord
+
         npc = NPC_DATA.get(npc_name)
         if not npc:
             await ctx.send(ansi(f"  {C.RED}✖ [{npc_name}]을(를) 찾을 수 없슴미댜.{C.R}"))
             return
 
-        job = get_random_job(npc_name)
-        if not job:
+        # Fix #5: 난이도별 3개 알바 제시 (제작 가능 여부 체크 포함)
+        jobs_by_diff = get_jobs_by_difficulty(npc_name, self.player)
+        if not jobs_by_diff:
             await ctx.send(ansi(f"  {C.RED}✖ {npc.get('name', npc_name)}은(는) 알바가 없슴미댜.{C.R}"))
             return
 
+        # ── 알바 선택 UI ──────────────────────────────────────────────────────
+        diff_styles = {
+            "easy":   discord.ButtonStyle.success,
+            "normal": discord.ButtonStyle.primary,
+            "hard":   discord.ButtonStyle.danger,
+        }
+        type_icons = {"gather": "🛒", "deliver": "📦", "hunt": "⚔️"}
+
+        class JobSelectView(discord.ui.View):
+            def __init__(self, jobs: dict, author_id: int):
+                super().__init__(timeout=10)
+                self.selected_job = None
+                self.author_id = author_id
+
+                for diff in ("easy", "normal", "hard"):
+                    if diff not in jobs:
+                        continue
+                    j = jobs[diff]
+                    diff_label = DIFFICULTY_LABELS.get(diff, diff)
+                    icon = type_icons.get(j.get("type", "hunt"), "💼")
+                    btn = discord.ui.Button(
+                        label=f"{icon} [{diff_label}] {j['name']}  {j['reward_gold']}G / EXP+{j['reward_exp']}",
+                        style=diff_styles.get(diff, discord.ButtonStyle.secondary),
+                    )
+                    btn.callback = self._make_cb(j)
+                    self.add_item(btn)
+
+                cancel_btn = discord.ui.Button(
+                    label="취소", style=discord.ButtonStyle.secondary, row=1
+                )
+                cancel_btn.callback = self._on_cancel
+                self.add_item(cancel_btn)
+
+            def _make_cb(self, job: dict):
+                async def cb(interaction: discord.Interaction):
+                    if interaction.user.id != self.author_id:
+                        await interaction.response.send_message(
+                            "다른 플레이어의 알바 선택입니다!", ephemeral=True
+                        )
+                        return
+                    self.selected_job = job
+                    for child in self.children:
+                        child.disabled = True
+                    await interaction.response.edit_message(view=self)
+                    self.stop()
+                return cb
+
+            async def _on_cancel(self, interaction: discord.Interaction):
+                if interaction.user.id != self.author_id:
+                    await interaction.response.send_message(
+                        "다른 플레이어의 알바 선택입니다!", ephemeral=True
+                    )
+                    return
+                for child in self.children:
+                    child.disabled = True
+                await interaction.response.edit_message(view=self)
+                self.stop()
+
+            async def on_timeout(self):
+                for child in self.children:
+                    child.disabled = True
+
+        author_id = ctx.author.id if hasattr(ctx, "author") else 0
+        view = JobSelectView(jobs_by_diff, author_id)
+        select_msg = await ctx.send(
+            ansi(
+                f"  {C.GOLD}💼 {npc['name']} 알바 선택{C.R}\n"
+                f"  {C.DARK}원하는 알바를 선택하셰요. (10초 안에 선택해야 합니다){C.R}"
+            ),
+            view=view,
+        )
+        await view.wait()
+
+        job = view.selected_job
+        if job is None:
+            await select_msg.edit(
+                content=ansi(f"  {C.RED}✖ 알바 선택이 취소되었슴미댜. (기력 소모 없음){C.R}"),
+                view=None,
+            )
+            return
+
+        # Fix #7: deliver 변수 기본값 초기화
+        deliver_item      = ""
+        deliver_item_name = ""
+        target_npc        = ""
+
         energy_cost = job.get("energy_cost", 20)
+        diff_label  = DIFFICULTY_LABELS.get(job.get("difficulty", "easy"), "쉬움")
+        job_type    = job.get("type", "hunt")
+        economy     = Economy(self.player)
+
+        # Fix #3: gather 재료 확인을 기력 차감 전에 수행
+        if job_type == "gather":
+            target_item  = job.get("target_item", "")
+            target_count = job.get("target_count", 1)
+            have = self.player.inventory.get(target_item, 0)
+            if have < target_count:
+                from items import ALL_ITEMS
+                item_name = ALL_ITEMS.get(target_item, {}).get("name", target_item)
+                await ctx.send(ansi(
+                    f"  {C.RED}✖ 재료가 부족함미댜! "
+                    f"{item_name} {target_count}개 필요 (보유: {have}개){C.R}"
+                ))
+                return
+
         if not self.player.consume_energy(energy_cost):
             await ctx.send(ansi(
                 f"  {C.RED}✖ 기력이 부족함미댜! (필요: {energy_cost}, 보유: {self.player.energy}){C.R}"
             ))
             return
 
-        diff_label = DIFFICULTY_LABELS.get(job.get("difficulty", "easy"), "쉬움")
-        job_type   = job.get("type", "hunt")
-
-        economy = Economy(self.player)
-
-        # ── gather 유형: 인벤토리 아이템 확인 & 차감 ──────────────────
+        # gather: 아이템 차감
         if job_type == "gather":
-            target_item  = job.get("target_item", "")
-            target_count = job.get("target_count", 1)
-            have = self.player.inventory.get(target_item, 0)
-            if have < target_count:
-                # 기력 환불
-                self.player.energy = min(
-                    getattr(self.player, "max_energy", 100),
-                    self.player.energy + energy_cost,
-                )
-                from items import ALL_ITEMS
-                item_name = ALL_ITEMS.get(target_item, {}).get("name", target_item)
-                await ctx.send(ansi(
-                    f"  {C.RED}✖ 재료가 부족함미댜! "
-                    f"{item_name} {target_count}개 필요 (보유: {have}개)\n"
-                    f"  기력이 환불되었슴미댜. {C.R}"
-                ))
-                return
             economy.remove_item(f"알바:{npc_name}", target_item, target_count)
 
-        # ── deliver 유형: 퀘스트 아이템 인벤토리에 추가 ──────────────────
+        # deliver: 퀘스트 아이템 지급
         elif job_type == "deliver":
             deliver_item      = job.get("deliver_item", "")
             deliver_item_name = job.get("deliver_item_name", deliver_item)
@@ -164,35 +247,49 @@ class VillageNPC:
         except Exception as e:
             logger.error(f"[npcs] village contribution 실패: {e}")
 
-        # ── hunt/gather 유형: Economy를 통한 보상 지급 ─────────────────
-        if job_type in ("hunt", "gather"):
+        result_note = ""
+
+        # Fix #2: hunt 유형 — 스탯 기반 성공/실패 판정
+        if job_type == "hunt":
+            difficulty  = job.get("difficulty", "easy")
+            base_rates  = {"easy": 0.90, "normal": 0.70, "hard": 0.50}
+            base_rate   = base_rates.get(difficulty, 0.70)
+            str_val     = self.player.base_stats.get("str", 10)
+            dex_val     = self.player.base_stats.get("dex", 10)
+            final_rate  = min(0.95, base_rate + (str_val + dex_val) * 0.005)
+            hunt_success = random.random() < final_rate
+            if not hunt_success:
+                reward_gold = max(1, int(reward_gold * 0.3))
+                reward_exp  = max(1, int(reward_exp  * 0.3))
+                result_note = "실패"
             economy.pay_reward(
                 source=f"알바:{npc_name}",
                 gold=reward_gold,
                 exp=float(reward_exp),
             )
-            result_note = ""
-        else:  # deliver
-            # 전달형: 보상은 대상 NPC에게 전달 완료 후 지급 (여기선 안내만)
-            await ctx.send(ansi(
-                f"  {C.GOLD}📦 배달 아이템을 받았슴미댜!{C.R}\n"
-                f"  {C.WHITE}[{deliver_item_name}]{C.R} — "
-                f"**{target_npc}** 에게 전달해 주셰요.\n"
-                f"  {C.DARK}전달 완료 시 보상: {reward_gold}G / EXP +{reward_exp}{C.R}"
-            ))
-            return
 
-        # ── 스킬 경험치 보상 ─────────────────────────────────────────────
+        elif job_type == "gather":
+            economy.pay_reward(
+                source=f"알바:{npc_name}",
+                gold=reward_gold,
+                exp=float(reward_exp),
+            )
+
+        else:  # Fix #1: deliver — 즉시 보상 지급 + 배달 아이템 제거
+            economy.pay_reward(
+                source=f"알바:{npc_name}",
+                gold=reward_gold,
+                exp=float(reward_exp),
+            )
+            if deliver_item:
+                economy.remove_item(f"알바:{npc_name}", deliver_item, 1)
+
+        # Fix #4: 스킬 경험치 보상 — train_skill() 사용 (미등록 스킬도 자동 초기화)
         if reward_skill_exp:
-            skill_ranks_ref = getattr(self.player, "skill_ranks", {})
-            skill_exp_ref   = getattr(self.player, "skill_exp", {})
             for skill_id, amount in reward_skill_exp.items():
-                if skill_id in skill_ranks_ref:
-                    skill_exp_ref[skill_id] = skill_exp_ref.get(skill_id, 0) + amount
-            if not hasattr(self.player, "skill_exp"):
-                self.player.skill_exp = skill_exp_ref
+                self.player.train_skill(skill_id, amount)
 
-        # ── 보상 아이템 지급 ──────────────────────────────────────────────
+        # ── 보상 아이템 지급 ──────────────────────────────────────────────────
         reward_item_line = ""
         if reward_item:
             economy.add_item(f"알바:{npc_name}", reward_item, 1)
@@ -200,17 +297,17 @@ class VillageNPC:
             item_name = ALL_ITEMS.get(reward_item, {}).get("name", reward_item)
             reward_item_line = f"\n  {C.WHITE}🎁 {item_name} x1{C.R}"
 
-        # ── 결과 카드 / 텍스트 전송 ──────────────────────────────────────
+        # ── 결과 카드 / 텍스트 전송 ──────────────────────────────────────────
+        completion_label = f"{'실패! ' if result_note == '실패' else '완료! '}[{diff_label}]"
         card_sent = False
         try:
             import fishing_card
-            import discord
             buf  = fishing_card.generate_job_card(
-                job["name"], f"완료! [{diff_label}]", reward_gold, f"EXP +{reward_exp}"
+                job["name"], completion_label, reward_gold, f"EXP +{reward_exp}"
             )
             file = discord.File(buf, filename="job_result.png")
             embed = discord.Embed(
-                title=f"💼 {npc['name']} 알바 완료! [{diff_label}]",
+                title=f"💼 {npc['name']} 알바 {completion_label}",
                 color=EMBED_COLOR.get("npc", 0x4A7856),
             )
             embed.set_image(url="attachment://job_result.png")
@@ -221,11 +318,13 @@ class VillageNPC:
 
         if not card_sent:
             lines = [
-                header_box(f"💼 {npc['name']} 알바 완료! [{diff_label}]"),
+                header_box(f"💼 {npc['name']} 알바 {completion_label}"),
                 f"  {C.WHITE}{job['name']}{C.R}",
                 divider(),
                 f"  {C.GOLD}+{reward_gold}G{C.R}  {C.GREEN}EXP +{reward_exp}{C.R}",
             ]
+            if result_note == "실패":
+                lines.insert(2, f"  {C.RED}⚠ 사냥에 실패했슴미댜. 보상이 30%만 지급됩니다.{C.R}")
             if reward_item_line:
                 lines.append(reward_item_line)
             await ctx.send(ansi("\n".join(lines)))

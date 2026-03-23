@@ -263,45 +263,65 @@ class CraftingEngine:
         lines.append(f"  {C.GREEN}/제작 [결과물ID]{C.R} 으로 제작하셰요!")
         return ansi("\n".join(lines))
 
-    def craft(self, result_id: str) -> str:
+    def craft(self, result_id: str) -> dict:
+        """제작 실행. 결과를 dict로 반환 (BG3 렌더링 호환).
+
+        Returns: {
+            "success": bool,
+            "recipe_name": str,
+            "result_name": str,
+            "result_grade": str,
+            "ingredients": [(name, cnt), ...],
+            "exp": float,
+            "rank_up_msg": str,
+            "error": str (실패 시),
+            "system_key": "craft",
+        }
+        """
+        from items import ALL_ITEMS
         recipe = CRAFTING_RECIPES.get(result_id)
         if not recipe:
-            return ansi(f"  {C.RED}✖ [{result_id}]은(는) 제작 레시피가 없슴미댜!{C.R}")
+            return {"success": False, "error": f"[{result_id}] 레시피 없음",
+                    "recipe_name": result_id, "system_key": "craft"}
 
         rank     = self.player.skill_ranks.get("crafting", "연습")
         rank_req = recipe.get("rank_req", "연습")
 
         if not _rank_gte(rank, rank_req):
-            return ansi(
-                f"  {C.RED}✖ 제작 랭크 부족! (필요: {rank_req}, 현재: {rank}){C.R}"
-            )
+            return {"success": False,
+                    "error": f"랭크 부족 (필요: {rank_req}, 현재: {rank})",
+                    "recipe_name": recipe["name"], "system_key": "craft"}
 
         ingredients = recipe["ingredients"]
         for ing_id, cnt in ingredients.items():
             if self.player.inventory.get(ing_id, 0) < cnt:
-                from items import ALL_ITEMS
                 ing_name = ALL_ITEMS.get(ing_id, {}).get("name", ing_id)
-                return ansi(
-                    f"  {C.RED}✖ 재료가 부족함미댜! [{ing_name}] x{cnt} 필요{C.R}"
-                )
+                return {"success": False,
+                        "error": f"재료 부족: {ing_name} x{cnt} 필요",
+                        "recipe_name": recipe["name"], "system_key": "craft"}
 
+        # 재료 소모
+        ing_list = []
         for ing_id, cnt in ingredients.items():
             self.player.remove_item(ing_id, cnt)
+            ing_name = ALL_ITEMS.get(ing_id, {}).get("name", ing_id)
+            ing_list.append((ing_name, cnt))
 
         self.player.add_item(result_id, 1)
 
-        from items import ALL_ITEMS
         result_name = ALL_ITEMS.get(result_id, {}).get("name", result_id)
+        result_grade = ALL_ITEMS.get(result_id, {}).get("grade", "Normal")
 
         exp = recipe.get("exp", 30.0)
         rank_msg = self.player.train_skill("crafting", exp)
 
-        lines = [
-            header_box("🔨 제작 완료!"),
-            f"  {C.GREEN}✔ {result_name}{C.R} 제작 성공!",
-            f"  {C.GOLD}제작 숙련도 +{exp}{C.R}",
-        ]
-        if rank_msg:
-            lines.append(f"  {C.GOLD}{rank_msg}{C.R}")
-
-        return ansi("\n".join(lines))
+        return {
+            "success": True,
+            "recipe_name": recipe["name"],
+            "result_name": result_name,
+            "result_grade": result_grade,
+            "ingredients": ing_list,
+            "exp": exp,
+            "rank_up_msg": rank_msg or "",
+            "system_key": "craft",
+        }

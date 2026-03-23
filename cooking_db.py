@@ -529,67 +529,66 @@ class CookingEngine:
         lines.append(f"  {C.GREEN}{cmd}{C.R} 으로 조리하셰요!")
         return ansi("\n".join(lines))
 
-    def cook(self, dish_id: str, force_method: str = None) -> str:
+    def cook(self, dish_id: str, force_method: str = None) -> dict:
+        """요리 실행. 결과를 dict로 반환 (BG3 렌더링 호환)."""
+        from items import ALL_ITEMS
         recipe = RECIPES.get(dish_id)
         if not recipe:
-            return ansi(f"  {C.RED}✖ [{dish_id}]은(는) 존재하지 않는 레시피임미댜!{C.R}")
+            return {"success": False, "error": f"[{dish_id}] 레시피 없음",
+                    "recipe_name": dish_id, "system_key": "cooking"}
 
-        # 혼합 레시피를 /요리로, 또는 가열 레시피를 /혼합으로 사용하는 경우 안내
         method = recipe.get("method", "cook")
         if force_method and method != force_method:
-            if force_method == "mix":
-                return ansi(f"  {C.RED}✖ [{recipe['name']}]은(는) 혼합 레시피가 아님미댜! /요리 를 사용하셰요.{C.R}")
-            else:
-                return ansi(f"  {C.RED}✖ [{recipe['name']}]은(는) 가열 레시피임미댜! /혼합 을 사용하셰요.{C.R}")
+            label = "혼합" if force_method == "mix" else "요리"
+            return {"success": False,
+                    "error": f"잘못된 방식입니다. /{label}를 사용하세요.",
+                    "recipe_name": recipe["name"], "system_key": "cooking"}
 
         rank     = self.player.skill_ranks.get("cooking", "연습")
         rank_req = recipe.get("rank_req", "연습")
 
         if not _rank_gte(rank, rank_req):
-            return ansi(
-                f"  {C.RED}✖ 요리 랭크 부족! (필요: {rank_req}, 현재: {rank}){C.R}"
-            )
+            return {"success": False,
+                    "error": f"랭크 부족 (필요: {rank_req}, 현재: {rank})",
+                    "recipe_name": recipe["name"], "system_key": "cooking"}
 
-        # 도구 확인 (혼합은 tool_req가 None이므로 가열만 체크)
         tool_req = recipe.get("tool_req")
         if tool_req and self.player.inventory.get(tool_req, 0) == 0:
-            from items import ALL_ITEMS
             tool_name = ALL_ITEMS.get(tool_req, {}).get("name", tool_req)
-            return ansi(f"  {C.RED}✖ 도구 부족! [{tool_name}]이(가) 필요함미댜!{C.R}")
+            return {"success": False,
+                    "error": f"도구 부족: {tool_name} 필요",
+                    "recipe_name": recipe["name"], "system_key": "cooking"}
 
-        # 재료 확인
         ingredients = recipe["ingredients"]
         for ing_id, cnt in ingredients.items():
             if self.player.inventory.get(ing_id, 0) < cnt:
-                from items import ALL_ITEMS
                 ing_name = ALL_ITEMS.get(ing_id, {}).get("name", ing_id)
-                return ansi(
-                    f"  {C.RED}✖ 재료가 부족함미댜! [{ing_name}] x{cnt} 필요{C.R}"
-                )
+                return {"success": False,
+                        "error": f"재료 부족: {ing_name} x{cnt} 필요",
+                        "recipe_name": recipe["name"], "system_key": "cooking"}
 
         # 재료 소비
+        ing_list = []
         for ing_id, cnt in ingredients.items():
             self.player.remove_item(ing_id, cnt)
+            ing_name = ALL_ITEMS.get(ing_id, {}).get("name", ing_id)
+            ing_list.append((ing_name, cnt))
 
-        # 성공률 (luck 기반)
         luck     = self.player.base_stats.get("luck", 5)
         success_rate = min(0.95, 0.65 + luck * 0.01)
         success  = random.random() < success_rate
 
-        method_label = "혼합" if method == "mix" else "요리"
-        lines = [header_box(f"{'🔪' if method == 'mix' else '🍳'} {method_label}")]
-
         if success:
+            result_names = []
+            result_grade = "Normal"
             for result_id, cnt in recipe["result"].items():
                 self.player.add_item(result_id, cnt)
-                from items import ALL_ITEMS
                 result_name = ALL_ITEMS.get(result_id, {}).get("name", result_id)
-                lines.append(f"  {C.GREEN}✔ {result_name}{C.R} x{cnt} 완성!")
+                result_names.append(f"{result_name} x{cnt}")
+                result_grade = ALL_ITEMS.get(result_id, {}).get("grade", "Normal")
                 try:
                     from collection import collection_manager
                     is_new, total = collection_manager.register("요리", result_id, result_name)
-                    if is_new:
-                        lines.append(f"  📖✨ {C.GOLD}새로운 도감 등록! [{result_name}]{C.R}")
                 except Exception:
                     pass
                 try:
@@ -605,12 +604,26 @@ class CookingEngine:
 
             exp = recipe.get("exp", 10.0)
             rank_msg = self.player.train_skill("cooking", exp)
-            lines.append(f"  {C.GOLD}요리 숙련도 +{exp}{C.R}")
-            if rank_msg:
-                lines.append(f"  {C.GOLD}{rank_msg}{C.R}")
+            return {
+                "success": True,
+                "recipe_name": recipe["name"],
+                "result_name": ", ".join(result_names),
+                "result_grade": result_grade,
+                "ingredients": ing_list,
+                "exp": exp,
+                "rank_up_msg": rank_msg or "",
+                "system_key": "cooking",
+            }
         else:
-            lines.append(f"  {C.RED}✖ {method_label} 실패...(재료만 낭비됐슴미댜){C.R}")
             exp_fail = recipe.get("exp", 10.0) * 0.3
-            self.player.train_skill("cooking", exp_fail)
-
-        return ansi("\n".join(lines))
+            rank_msg = self.player.train_skill("cooking", exp_fail)
+            return {
+                "success": False,
+                "recipe_name": recipe["name"],
+                "error": "요리 실패! 재료가 낭비되었습니다.",
+                "ingredients": ing_list,
+                "exp": exp_fail,
+                "rank_up_msg": rank_msg or "",
+                "system_key": "cooking",
+                "crafted_but_failed": True,
+            }

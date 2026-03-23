@@ -1024,6 +1024,64 @@ class BG3Renderer:
         return self.render_card(shop_name, rows, grade="Normal",
                                 system_key="shop", footer="상점")
 
+    # ─── 제작 결과 카드 ──────────────────────────────────────────
+    def render_craft_result(self, recipe_name, result_item_name,
+                            result_grade="Normal", ingredients=None,
+                            exp_gained=0, rank_up_msg="",
+                            system_key="craft",
+                            footer="제작 완료") -> io.BytesIO:
+        """제작/제련/요리/연금 결과 카드"""
+        rows = [
+            {"label": "결과물", "value": result_item_name,
+             "color": C.RARITY.get(result_grade, C.TXT_HI)},
+        ]
+        if ingredients:
+            for ing_name, cnt in ingredients:
+                rows.append({"label": "소모", "value": f"{ing_name} x{cnt}",
+                             "color": C.TXT_MID})
+        if exp_gained:
+            rows.append({"label": "숙련도", "value": f"+{exp_gained}",
+                         "color": C.GOLD_HI})
+        if rank_up_msg:
+            rows.append({"label": "랭크 업!", "value": rank_up_msg,
+                         "color": C.GOLD_HI})
+        return self.render_card(recipe_name, rows, grade=result_grade,
+                                system_key=system_key, footer=footer)
+
+    # ─── 제작 실패 카드 ──────────────────────────────────────────
+    def render_craft_fail(self, recipe_name, reason,
+                          exp_gained=0, rank_up_msg="",
+                          system_key="craft",
+                          footer="제작 실패") -> io.BytesIO:
+        """제작/제련/요리/연금 실패 카드"""
+        rows = [
+            {"label": "실패 사유", "value": reason, "color": C.RARITY["Fail"]},
+        ]
+        if exp_gained:
+            rows.append({"label": "숙련도", "value": f"+{exp_gained}",
+                         "color": C.GOLD_HI})
+        if rank_up_msg:
+            rows.append({"label": "랭크 업!", "value": rank_up_msg,
+                         "color": C.GOLD_HI})
+        return self.render_card(recipe_name, rows, grade="Fail",
+                                system_key=system_key, footer=footer)
+
+    # ─── 제작 레시피 목록 카드 ───────────────────────────────────
+    def render_recipe_list(self, skill_name, rank, recipes_info,
+                           system_key="craft") -> io.BytesIO:
+        """레시피 목록 카드 (skill_name: 스킬명, recipes_info: [(name, rank_req, unlocked), ...])"""
+        rows = []
+        for name, rank_req, unlocked in recipes_info[:12]:
+            status = "O" if unlocked else "X"
+            col = C.TXT_HI if unlocked else C.TXT_LO
+            rows.append({"label": f"[{status}] [{rank_req}]",
+                         "value": name, "color": col})
+        return self.render_card(
+            f"{skill_name} 레시피", rows, grade="Normal",
+            subtitle=f"현재 랭크: {rank}",
+            system_key=system_key,
+            footer=f"{skill_name} 레시피 목록")
+
 
 # ══════════════════════════════════════════════════════════════════
 # 싱글톤 (스레드 안전)

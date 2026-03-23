@@ -253,20 +253,6 @@ def make_category_embed(player, category: str) -> discord.Embed:
                     f"> {gauge}  EXP: {exp:.0f}\n"
                     f"> {sdata['desc']}{note}"
                 )
-        # 생활형 마스터리 스킬도 함께 표시 (combat_mastery 제외)
-        _life_mastery_ids = {"cooking_mastery", "fishing_mastery", "composing_mastery", "metallurgy_mastery", "rest_mastery"}
-        for sid, sdata in MASTERY_SKILLS.items():
-            if sid not in _life_mastery_ids:
-                continue
-            rank = skill_ranks.get(sid)
-            if rank:
-                exp = skill_exp.get(sid, 0)
-                gauge = _exp_gauge(sid, rank, exp)
-                lines.append(
-                    f"**{sdata['name']}** {_rank_badge(rank)}\n"
-                    f"> {gauge}  EXP: {exp:.0f}\n"
-                    f"> {sdata['desc']}"
-                )
         desc = "\n\n".join(lines) if lines else "보유한 생활 스킬이 없습니다."
         embed = discord.Embed(title=title, description=desc, color=0x2ECC71)
 
@@ -422,14 +408,10 @@ class LifeSkillSelect(Select):
         skill_ranks = getattr(player, "skill_ranks", {})
         options = []
         for sid, sdata in OTHER_SKILLS.items():
-            if sid in skill_ranks:
+            if sid in skill_ranks and sid in _LIFE_SKILL_ENGINE:
                 rank = skill_ranks[sid]
-                has_engine = sid in _LIFE_SKILL_ENGINE
-                label = f"{sdata['name']} [{rank}]"
-                if not has_engine:
-                    label = f"🌿 {sdata['name']} [{rank}]"
                 options.append(discord.SelectOption(
-                    label=label,
+                    label=f"{sdata['name']} [{rank}]",
                     value=sid,
                     description=sdata.get("desc", "")[:50],
                 ))
@@ -445,15 +427,6 @@ class LifeSkillSelect(Select):
         skill_id = self.values[0]
         if skill_id == "none":
             await interaction.response.send_message("보유한 생활 스킬이 없습니다.", ephemeral=True)
-            return
-
-        if skill_id not in _LIFE_SKILL_ENGINE:
-            from skills_db import OTHER_SKILLS as _OS
-            skill_name = _OS.get(skill_id, {}).get("name", skill_id)
-            await interaction.response.send_message(
-                f"🌿 **{skill_name}** 스킬은 현재 레시피 창이 없습니다.\n(낚시터·채집터·채광터에서 직접 활동하세요.)",
-                ephemeral=True,
-            )
             return
 
         view: SkillMainView = self.view

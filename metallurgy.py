@@ -115,97 +115,102 @@ class MetallurgyEngine:
         lines.append(f"  {C.GREEN}/제련 [광석이름 또는 ID]{C.R} 으로 제련하셰요!")
         return ansi("\n".join(lines))
 
-    def smelt(self, ore_input: str) -> str:
-        """ore_input: 레시피 키(ID), 광석 한글 이름, 또는 결과물 이름 중 하나."""
+    def smelt(self, ore_input: str) -> dict:
+        """제련 실행. 결과를 dict로 반환 (BG3 렌더링 호환)."""
+        from items import ALL_ITEMS
         # 1. 직접 키 매칭
         recipe = SMELT_RECIPES.get(ore_input)
 
         # 2. 광석/결과물 이름으로 검색
         if recipe is None:
-            from items import ALL_ITEMS
-            # 공백 제거 버전으로도 비교
             inp_normalized = ore_input.replace(" ", "")
             for key, rec in SMELT_RECIPES.items():
-                # 입력물(광석) 이름 매칭
                 for ing_id in rec["input"]:
                     ing_name = ALL_ITEMS.get(ing_id, {}).get("name", "")
                     if ing_name == ore_input or ing_name.replace(" ", "") == inp_normalized:
-                        recipe = rec
-                        ore_input = key
-                        break
-                if recipe:
-                    break
-                # 결과물(주괴) 이름 매칭
+                        recipe = rec; ore_input = key; break
+                if recipe: break
                 for out_id in rec["output"]:
                     out_name = ALL_ITEMS.get(out_id, {}).get("name", "")
                     if out_name == ore_input or out_name.replace(" ", "") == inp_normalized:
-                        recipe = rec
-                        ore_input = key
-                        break
-                if recipe:
-                    break
-                # 레시피 이름 매칭
+                        recipe = rec; ore_input = key; break
+                if recipe: break
                 rec_name = rec.get("name", "")
                 if rec_name == ore_input or rec_name.replace(" ", "") == inp_normalized:
-                    recipe = rec
-                    ore_input = key
-                    break
+                    recipe = rec; ore_input = key; break
 
         if not recipe:
-            return ansi(f"  {C.RED}✖ [{ore_input}]은(는) 제련 레시피가 없슴미댜!\n  /제련목록 으로 레시피를 확인하셰요!{C.R}")
+            return {"success": False, "error": f"[{ore_input}] 레시피 없음",
+                    "recipe_name": ore_input, "system_key": "craft"}
 
         rank     = self.player.skill_ranks.get("metallurgy", "연습")
         rank_req = recipe.get("rank_req", "연습")
 
         if not _rank_gte(rank, rank_req):
-            return ansi(
-                f"  {C.RED}✖ 제련술 랭크 부족! (필요: {rank_req}, 현재: {rank}){C.R}"
-            )
+            return {"success": False,
+                    "error": f"랭크 부족 (필요: {rank_req}, 현재: {rank})",
+                    "recipe_name": recipe["name"], "system_key": "craft"}
 
         for ing_id, cnt in recipe["input"].items():
             if self.player.inventory.get(ing_id, 0) < cnt:
-                from items import ALL_ITEMS
                 ing_name = ALL_ITEMS.get(ing_id, {}).get("name", ing_id)
-                return ansi(
-                    f"  {C.RED}✖ 재료 부족! [{ing_name}] x{cnt} 필요{C.R}"
-                )
+                return {"success": False,
+                        "error": f"재료 부족: {ing_name} x{cnt} 필요",
+                        "recipe_name": recipe["name"], "system_key": "craft"}
 
+        # 재료 소모
+        ing_list = []
         for ing_id, cnt in recipe["input"].items():
             self.player.remove_item(ing_id, cnt)
+            ing_name = ALL_ITEMS.get(ing_id, {}).get("name", ing_id)
+            ing_list.append((ing_name, cnt))
 
         will = self.player.base_stats.get("will", 10)
         success_rate = min(0.95, 0.60 + will * 0.01)
         success = random.random() < success_rate
 
-        lines = [header_box("⚒ 제련")]
-
         if success:
+            result_names = []
+            result_grade = "Normal"
             for out_id, cnt in recipe["output"].items():
                 self.player.add_item(out_id, cnt)
-                from items import ALL_ITEMS
                 out_name = ALL_ITEMS.get(out_id, {}).get("name", out_id)
-                lines.append(f"  {C.GREEN}✔ {out_name}{C.R} x{cnt} 제련 완료!")
+                result_names.append(f"{out_name} x{cnt}")
+                result_grade = ALL_ITEMS.get(out_id, {}).get("grade", "Normal")
                 try:
                     from collection import collection_manager
                     grade = ALL_ITEMS.get(out_id, {}).get("grade", "Normal")
                     is_new, total = collection_manager.register("채광", out_id, out_name, grade)
-                    if is_new:
-                        lines.append(f"  📖✨ {C.GOLD}새로운 도감 등록! [{out_name}]{C.R}")
                 except Exception:
                     pass
 
             exp = recipe.get("exp", 10.0)
             rank_msg = self.player.train_skill("metallurgy", exp)
-            lines.append(f"  {C.GOLD}제련 숙련도 +{exp}{C.R}")
-            if rank_msg:
-                lines.append(f"  {C.GOLD}{rank_msg}{C.R}")
+            return {
+                "success": True,
+                "recipe_name": recipe["name"],
+                "result_name": ", ".join(result_names),
+                "result_grade": result_grade,
+                "ingredients": ing_list,
+                "exp": exp,
+                "rank_up_msg": rank_msg or "",
+                "system_key": "craft",
+            }
         else:
+            fail_names = []
             for out_id, cnt in recipe["fail_out"].items():
                 self.player.add_item(out_id, cnt)
-                from items import ALL_ITEMS
                 out_name = ALL_ITEMS.get(out_id, {}).get("name", out_id)
-                lines.append(f"  {C.RED}✖ 제련 실패! {out_name}{C.R} x{cnt} 생성")
+                fail_names.append(f"{out_name} x{cnt}")
             exp_fail = recipe.get("exp", 10.0) * 0.2
-            self.player.train_skill("metallurgy", exp_fail)
-
-        return ansi("\n".join(lines))
+            rank_msg = self.player.train_skill("metallurgy", exp_fail)
+            return {
+                "success": False,
+                "recipe_name": recipe["name"],
+                "error": f"제련 실패! {', '.join(fail_names)} 생성",
+                "ingredients": ing_list,
+                "exp": exp_fail,
+                "rank_up_msg": rank_msg or "",
+                "system_key": "craft",
+                "crafted_but_failed": True,
+            }

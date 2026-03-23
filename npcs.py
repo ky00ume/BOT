@@ -64,7 +64,7 @@ class VillageNPC:
         if not npc:
             return ansi(f"  {C.RED}✖ [{npc_name}]을(를) 찾을 수 없슴미댜.{C.R}")
 
-        job = get_random_job(npc_name)
+        job = get_random_job(npc_name, self.player)
         if not job:
             return ansi(f"  {C.RED}✖ {npc.get('name', npc_name)}은(는) 알바가 없슴미댜.{C.R}")
 

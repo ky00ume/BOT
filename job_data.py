@@ -1045,12 +1045,24 @@ def _can_do_job(job: dict, player) -> bool:
     return True
 
 
-def get_random_job(npc_name: str) -> dict | None:
-    """NPC의 알바 풀에서 완전 랜덤으로 1개 반환."""
+def get_random_job(npc_name: str, player=None) -> dict | None:
+    """NPC의 알바 풀에서 랜덤으로 1개 반환.
+
+    player가 전달되면 플레이어가 수행 가능한 알바만 후보로 고려합니다.
+    gather 유형 알바의 target_item이 제작/제련 결과물인 경우
+    플레이어의 스킬 랭크가 rank_req를 충족하지 못하면 해당 알바는 제외됩니다.
+    가능한 알바가 하나도 없으면 None을 반환합니다.
+    player가 None이면 기존처럼 완전 랜덤으로 동작합니다.
+    """
     pool = NPC_JOB_POOL.get(npc_name, [])
     if not pool:
         return None
-    return random.choice(pool)
+    if player is None:
+        return random.choice(pool)
+    candidates = [job for job in pool if _can_do_job(job, player)]
+    if not candidates:
+        return None
+    return random.choice(candidates)
 
 
 def get_jobs_by_difficulty(npc_name: str, player=None) -> dict:

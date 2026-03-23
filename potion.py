@@ -119,52 +119,75 @@ class PotionEngine:
         lines.append(f"  {C.GREEN}/제조 [레시피ID]{C.R} 으로 제조하셰요!")
         return ansi("\n".join(lines))
 
-    def craft(self, recipe_id: str) -> str:
+    def craft(self, recipe_id: str) -> dict:
+        """포션 제조. 결과를 dict로 반환 (BG3 렌더링 호환)."""
+        from items import ALL_ITEMS
         recipe = POTION_RECIPES.get(recipe_id)
         if not recipe:
-            return ansi(f"  {C.RED}✖ [{recipe_id}]은(는) 존재하지 않는 레시피임미댜!{C.R}")
+            return {"success": False, "error": f"[{recipe_id}] 레시피 없음",
+                    "recipe_name": recipe_id, "system_key": "cooking"}
 
         rank     = self.player.skill_ranks.get("alchemy", "연습")
         rank_req = recipe.get("rank_req", "연습")
         if not _rank_gte(rank, rank_req):
-            return ansi(f"  {C.RED}✖ 연금술 랭크 부족! (필요: {rank_req}, 현재: {rank}){C.R}")
+            return {"success": False,
+                    "error": f"랭크 부족 (필요: {rank_req}, 현재: {rank})",
+                    "recipe_name": recipe["name"], "system_key": "cooking"}
 
         tool_req = recipe.get("tool_req")
         if tool_req and self.player.inventory.get(tool_req, 0) == 0:
-            from items import ALL_ITEMS
             tool_name = ALL_ITEMS.get(tool_req, {}).get("name", tool_req)
-            return ansi(f"  {C.RED}✖ 도구 부족! [{tool_name}]이(가) 필요함미댜!{C.R}")
+            return {"success": False,
+                    "error": f"도구 부족: {tool_name} 필요",
+                    "recipe_name": recipe["name"], "system_key": "cooking"}
 
         for ing_id, cnt in recipe["ingredients"].items():
             if self.player.inventory.get(ing_id, 0) < cnt:
-                from items import ALL_ITEMS
                 ing_name = ALL_ITEMS.get(ing_id, {}).get("name", ing_id)
-                return ansi(f"  {C.RED}✖ 재료 부족! [{ing_name}] x{cnt} 필요{C.R}")
+                return {"success": False,
+                        "error": f"재료 부족: {ing_name} x{cnt} 필요",
+                        "recipe_name": recipe["name"], "system_key": "cooking"}
 
+        # 재료 소모
+        ing_list = []
         for ing_id, cnt in recipe["ingredients"].items():
             self.player.remove_item(ing_id, cnt)
+            ing_name = ALL_ITEMS.get(ing_id, {}).get("name", ing_id)
+            ing_list.append((ing_name, cnt))
 
         dex          = self.player.base_stats.get("dex", 10)
         success_rate = min(0.95, 0.55 + dex * 0.015)
         success      = random.random() < success_rate
 
-        lines = [header_box("⚗ 포션 제조")]
         if success:
             result_id = recipe["result"]
             added     = self.player.add_item(result_id)
             exp       = recipe.get("exp", 20.0)
             rank_msg  = self.player.train_skill("alchemy", exp)
+            result_name = ALL_ITEMS.get(result_id, {}).get("name", result_id)
+            result_grade = ALL_ITEMS.get(result_id, {}).get("grade", "Normal")
 
-            if added:
-                lines.append(f"  {C.GREEN}✔ {recipe['name']} 제조 성공임미댜!{C.R}")
-            else:
-                lines.append(f"  {C.RED}✖ 제조 성공했지만 인벤토리가 가득 차서 담지 못했슴미댜!{C.R}")
-            lines.append(f"  {C.GOLD}연금술 숙련도 +{exp:.0f}{C.R}")
-            if rank_msg:
-                lines.append(f"  {C.GOLD}{rank_msg}{C.R}")
+            return {
+                "success": True,
+                "recipe_name": recipe["name"],
+                "result_name": result_name,
+                "result_grade": result_grade,
+                "ingredients": ing_list,
+                "exp": exp,
+                "rank_up_msg": rank_msg or "",
+                "system_key": "cooking",
+                "inv_full": not added,
+            }
         else:
-            lines.append(f"  {C.RED}✖ 제조 실패! 재료가 낭비됐슴미댜...{C.R}")
-            lines.append(f"  {C.GOLD}연금술 숙련도 +{recipe['exp'] * 0.3:.0f}{C.R}")
-            self.player.train_skill("alchemy", recipe["exp"] * 0.3)
-
-        return ansi("\n".join(lines))
+            fail_exp = recipe["exp"] * 0.3
+            rank_msg = self.player.train_skill("alchemy", fail_exp)
+            return {
+                "success": False,
+                "recipe_name": recipe["name"],
+                "error": "제조 실패! 재료가 낭비되었습니다.",
+                "ingredients": ing_list,
+                "exp": fail_exp,
+                "rank_up_msg": rank_msg or "",
+                "system_key": "cooking",
+                "crafted_but_failed": True,
+            }

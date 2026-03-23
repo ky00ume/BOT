@@ -8,11 +8,15 @@
 """
 import json
 import logging
+import re
 
 from database import get_db_connection
 from user_data import UserData
 
 logger = logging.getLogger(__name__)
+
+# 컬럼명 유효성 검사용 정규식 (SQL 인젝션 방지)
+_SAFE_COL_RE = re.compile(r'^[A-Za-z_][A-Za-z0-9_]*$')
 
 REQUIRED_FIELDS = {"user_id", "name", "level", "gold", "inventory"}
 
@@ -130,11 +134,21 @@ class SaveManager:
                 )
                 return
             backup_data = json.loads(row["data"])
-            cols = ", ".join(backup_data.keys())
-            placeholders = ", ".join("?" * len(backup_data))
+            # 컬럼명을 화이트리스트로 검증하여 SQL 인젝션 방지
+            safe_data = {
+                k: v for k, v in backup_data.items()
+                if _SAFE_COL_RE.match(k)
+            }
+            if not safe_data:
+                logger.error(
+                    f"[SaveManager] 백업 데이터에 유효한 컬럼이 없음 (user_id={user_id})"
+                )
+                return
+            cols = ", ".join(safe_data.keys())
+            placeholders = ", ".join("?" * len(safe_data))
             cursor.execute(
                 f"INSERT OR REPLACE INTO players ({cols}) VALUES ({placeholders})",
-                list(backup_data.values()),
+                list(safe_data.values()),
             )
             conn.commit()
             logger.info(

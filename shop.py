@@ -1,5 +1,6 @@
 from items import WEAPONS, ARMORS, CONSUMABLES, COOKED_DISHES, ALL_ITEMS, TOOLS, GROCERIES
 from database import BAGS
+from economy import Economy
 from ui_theme import C, section, divider, header_box, ansi, GRADE_ICON_PLAIN, EMBED_COLOR, FOOTERS
 
 # 스킬북 아이템 임포트 (있으면)
@@ -155,7 +156,6 @@ class ShopManager:
         price = item.get("price", 0)
         sell  = (price // 2) * count
 
-        from economy import Economy
         economy = Economy(self.player)
         economy.remove_item(f"판매:{name}", item_id, count)
         economy.pay_reward(source=f"판매:{name}", gold=sell)
@@ -232,7 +232,6 @@ class ShopManager:
         name = item.get("name", item_id)
         discount_str = f" ({discount}% 할인!)" if discount else ""
 
-        from economy import Economy
         economy = Economy(self.player)
 
         # ── 가방 특별 처리 ──────────────────────────────────────────────

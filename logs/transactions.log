@@ -1,9 +1,0 @@
-2026-03-23 06:34:25 [LOG: TRANSACTION] [테스트유저] [TRANSACTION] 출처=테스트:알바  보상 지급  변동: +200 gold, +15.0 exp, +2 herb
-2026-03-23 06:34:25 [LOG: TRANSACTION] [테스트유저] [TRANSACTION] 출처=테스트:구매  차감  변동: -100 gold, -1 herb
-2026-03-23 06:34:25 [LOG: TRANSACTION] [테스트유저] [TRANSACTION] 출처=테스트:채집  아이템 추가: mushroom  변동: +3 mushroom
-2026-03-23 06:34:25 [LOG: TRANSACTION] [테스트유저] [TRANSACTION] 출처=테스트:채집  아이템 제거: mushroom  변동: -1 mushroom
-2026-03-23 06:34:43 [LOG: TRANSACTION] [테스트유저] [TRANSACTION] 출처=알바:다몬  보상 지급  변동: +150 gold, +20 exp
-2026-03-23 06:34:43 [LOG: TRANSACTION] [테스트유저] [TRANSACTION] 출처=낚시  아이템 추가  변동: +1 fs_carp_01
-2026-03-23 06:34:43 [LOG: TRANSACTION] [다른유저] [TRANSACTION] 출처=구매  차감  변동: -500 gold
-2026-03-23 06:35:06 [LOG: TRANSACTION] [낚시테스트] [TRANSACTION] 출처=낚시  아이템 추가: fs_carp_01  변동: +1 fs_carp_01
-2026-03-23 06:35:06 [LOG: TRANSACTION] [낚시테스트] [TRANSACTION] 출처=채집  아이템 추가: herb  변동: +2 herb

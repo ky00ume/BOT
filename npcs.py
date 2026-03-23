@@ -1,6 +1,7 @@
 import logging
 import random
 from database import NPC_DATA
+from economy import Economy
 from ui_theme import C, section, divider, header_box, ansi, EMBED_COLOR, FOOTERS
 from job_data import get_random_job, DIFFICULTY_LABELS
 
@@ -77,7 +78,6 @@ class VillageNPC:
 
         reward_gold = job.get("reward_gold", 100)
         reward_exp  = job.get("reward_exp",  10)
-        from economy import Economy
         economy = Economy(self.player)
         economy.pay_reward(source=f"알바:{npc_name}", gold=reward_gold, exp=reward_exp)
 
@@ -114,7 +114,6 @@ class VillageNPC:
         diff_label = DIFFICULTY_LABELS.get(job.get("difficulty", "easy"), "쉬움")
         job_type   = job.get("type", "hunt")
 
-        from economy import Economy
         economy = Economy(self.player)
 
         # ── gather 유형: 인벤토리 아이템 확인 & 차감 ──────────────────

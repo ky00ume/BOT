@@ -52,7 +52,7 @@ class QuestBridge:
         exp = quest_data.get("reward_exp", 0.0)
         reward_items = quest_data.get("reward_items", {}) or {}
 
-        economy.pay_reward(source=source, gold=gold, exp=exp, items=reward_items or None)
+        economy.pay_reward(source=source, gold=gold, exp=exp, items=reward_items if reward_items else None)
         return {"gold": gold, "exp": exp, "items": reward_items}
 
     def complete_job(
@@ -84,7 +84,7 @@ class QuestBridge:
             items[job_data["reward_item"]] = 1
 
         economy.pay_reward(
-            source=source, gold=gold, exp=exp, items=items or None
+            source=source, gold=gold, exp=exp, items=items if items else None
         )
         return {"gold": gold, "exp": exp, "items": items}
 

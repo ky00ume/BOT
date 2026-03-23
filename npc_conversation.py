@@ -7,6 +7,26 @@ from database import NPC_DATA
 from npc_dialogue_db import NPC_KEYWORDS, DEFAULT_KEYWORDS, AFFINITY_UNLOCK_KEYWORDS
 from bg3_renderer import get_renderer
 
+# ── NPC 초상화 파일 ID 매핑 ─────────────────────────────────────────────────
+# BG3 위키 매칭 NPC: 파일명은 static/portraits/npc/{portrait_id}.png
+# 창작 캐릭터(카엘릭, 브룩샤, 실렌, 루바토)는 placeholder 유지
+NPC_PORTRAIT_MAP: dict[str, str] = {
+    "라파엘":    "라파엘",    # BG3 Raphael
+    "카르니스":  "카르니스",  # BG3 Kar'niss (드라이더)
+    "다몬":      "다몬",      # BG3 Dammon
+    "오멜룸":    "오멜룸",    # BG3 Omeluum
+    "몰":        "몰",        # BG3 Mol
+    "아라벨라":  "아라벨라",  # BG3 Arabella
+    "알피라":    "알피라",    # BG3 Alfira
+    "엘레라신":  "엘레라신",  # BG3 Jaheira
+    "게일의 환영": "게일의 환영",  # BG3 Gale
+    # 창작 캐릭터 (placeholder)
+    "카엘릭":    "카엘릭",    # 창작 캐릭터
+    "브룩샤":    "브룩샤",    # 창작 캐릭터
+    "실렌":      "실렌",      # 창작 캐릭터
+    "루바토":    "루바토",    # 창작 캐릭터
+}
+
 
 def _get_affinity_level_name(aff_manager, npc_name: str) -> str:
     if aff_manager is None:

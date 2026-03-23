@@ -153,6 +153,25 @@ async def _send_msg_card(ctx, title, message, system_key="system", grade="Normal
     await _send_image(ctx, buf, 'message.png')
 
 
+async def _send_encounter(ctx, enc_msg: str):
+    """특수 NPC 인카운터 메시지를 PIL 이미지+버튼 View로 전송합니다."""
+    from special_npc import render_encounter_image
+    from special_npc_ui import SpecialNPCView
+    npc_name = encounter_manager.get_active_encounter()
+    buf = render_encounter_image(npc_name, enc_msg)
+    if buf:
+        buf.seek(0)
+        view = SpecialNPCView(
+            npc_name, shared_player,
+            getattr(shared_player, "_affinity_manager", None),
+            None,
+            encounter_manager,
+        )
+        await ctx.send(file=discord.File(fp=buf, filename="encounter.png"), view=view)
+    else:
+        await ctx.send(enc_msg)
+
+
 # ─── 이벤트 ──────────────────────────────────────────────────────────────
 @bot.event
 async def on_ready():
@@ -623,7 +642,7 @@ async def job_cmd(ctx, *, name: str = None):
     # 인카운터 체크
     enc_msg = encounter_manager.trigger_encounter()
     if enc_msg:
-        await ctx.send(enc_msg)
+        await _send_encounter(ctx, enc_msg)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -700,7 +719,7 @@ async def hunt_cmd(ctx, *, zone: str = None):
     if success:
         enc_msg = encounter_manager.trigger_encounter()
         if enc_msg:
-            await ctx.send(enc_msg)
+            await _send_encounter(ctx, enc_msg)
 
 
 @bot.command(name="공격")
@@ -914,7 +933,7 @@ async def fishing_cmd(ctx):
     await fishing_engine.fish(ctx)
     enc_msg = encounter_manager.trigger_encounter()
     if enc_msg:
-        await ctx.send(enc_msg)
+        await _send_encounter(ctx, enc_msg)
 
 
 @bot.command(name="낚시목록")
@@ -1116,7 +1135,7 @@ async def gather_cmd(ctx):
     await gathering_engine.gather(ctx)
     enc_msg = encounter_manager.trigger_encounter()
     if enc_msg:
-        await ctx.send(enc_msg)
+        await _send_encounter(ctx, enc_msg)
 
 
 @bot.command(name="채광")
@@ -1129,7 +1148,7 @@ async def mine_cmd(ctx):
     await gathering_engine.mine(ctx)
     enc_msg = encounter_manager.trigger_encounter()
     if enc_msg:
-        await ctx.send(enc_msg)
+        await _send_encounter(ctx, enc_msg)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -1656,6 +1675,91 @@ async def inventory_cmd(ctx):
         sell_view._message = msg
     sell_btn.callback = sell_callback
     view.add_item(sell_btn)
+
+    # [🗑️ 버리기] 버튼
+    discard_btn = discord.ui.Button(label="버리기", style=discord.ButtonStyle.secondary, emoji="🗑️")
+    async def discard_btn_callback(interaction: discord.Interaction):
+        from items import ALL_ITEMS as _AI
+        inv = shared_player.inventory
+        if not inv:
+            await interaction.response.send_message("인벤토리가 비어있슴미댜!", ephemeral=True)
+            return
+        options = []
+        for iid, cnt in list(inv.items())[:25]:
+            item = _AI.get(iid, {})
+            if item.get("quest_locked"):
+                continue
+            name = item.get("name", iid)
+            options.append(discord.SelectOption(
+                label=f"{name} (×{cnt})",
+                value=iid,
+                description=item.get("desc", "")[:50],
+            ))
+        if not options:
+            await interaction.response.send_message("버릴 수 있는 아이템이 없슴미댜!", ephemeral=True)
+            return
+        discard_select = discord.ui.Select(
+            placeholder="버릴 아이템을 선택하세요...",
+            options=options,
+            custom_id="discard_item_select",
+        )
+        async def discard_select_callback(sel_interaction: discord.Interaction):
+            item_id = discard_select.values[0]
+            item = _AI.get(item_id, {})
+            if item.get("quest_locked"):
+                await sel_interaction.response.send_message("❌ 퀘스트 아이템은 버릴 수 없슴미댜!", ephemeral=True)
+                return
+            have = shared_player.inventory.get(item_id, 0)
+            if have == 0:
+                await sel_interaction.response.send_message("인벤토리에 해당 아이템이 없슴미댜!", ephemeral=True)
+                return
+            item_name = item.get("name", item_id)
+            # 수량 선택 버튼
+            qty_view = discord.ui.View(timeout=60.0)
+            for qty_label, qty_val in [("1개", 1), ("5개", 5), ("10개", 10), ("전부", have)]:
+                actual = min(qty_val, have)
+                if actual <= 0:
+                    continue
+                qty_btn = discord.ui.Button(label=qty_label, style=discord.ButtonStyle.secondary)
+                async def make_confirm_callback(_iid=item_id, _iname=item_name, _qty=actual):
+                    async def confirm_cb(q_interaction: discord.Interaction):
+                        confirm_view = discord.ui.View(timeout=30.0)
+                        yes_btn = discord.ui.Button(label="✅ 네, 버립니다", style=discord.ButtonStyle.danger)
+                        no_btn  = discord.ui.Button(label="❌ 취소",        style=discord.ButtonStyle.secondary)
+                        async def yes_cb(y_interaction: discord.Interaction):
+                            cur = shared_player.inventory.get(_iid, 0)
+                            drop = min(_qty, cur)
+                            if drop > 0:
+                                shared_player.remove_item(_iid, drop)
+                            await y_interaction.response.edit_message(
+                                content=f"🗑️ **{_iname}** ×{drop}을(를) 버렸슴미댜!",
+                                view=None,
+                            )
+                        async def no_cb(n_interaction: discord.Interaction):
+                            await n_interaction.response.edit_message(content="취소했슴미댜.", view=None)
+                        yes_btn.callback = yes_cb
+                        no_btn.callback  = no_cb
+                        confirm_view.add_item(yes_btn)
+                        confirm_view.add_item(no_btn)
+                        await q_interaction.response.send_message(
+                            f"정말 **{_iname}** ×{_qty}을(를) 버리시겠슴미꺄?",
+                            view=confirm_view,
+                            ephemeral=True,
+                        )
+                    return confirm_cb
+                qty_btn.callback = await make_confirm_callback()
+                qty_view.add_item(qty_btn)
+            await sel_interaction.response.send_message(
+                f"**{item_name}** 몇 개를 버리시겠슴미꺄? (보유: ×{have})",
+                view=qty_view,
+                ephemeral=True,
+            )
+        discard_select.callback = discard_select_callback
+        sel_view = discord.ui.View(timeout=60.0)
+        sel_view.add_item(discard_select)
+        await interaction.response.send_message("버릴 아이템을 선택하세요:", view=sel_view, ephemeral=True)
+    discard_btn.callback = discard_btn_callback
+    view.add_item(discard_btn)
 
     await ctx.send(file=file, view=view)
 

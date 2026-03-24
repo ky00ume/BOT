@@ -2,7 +2,12 @@ import sqlite3
 import json
 import os
 
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "vision_town.db")
+# DB_PATH 환경변수로 경로 지정 가능 (기본값: 봇 폴더 내 vision_town.db)
+# 머지/재배포 시 데이터 유지를 위해 .env에 DB_PATH=/data/vision_town.db 처럼 repo 외부 경로 설정 권장
+DB_PATH = os.environ.get(
+    "DB_PATH",
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "vision_town.db")
+)
 
 STATS_INFO = {
     "str":  {"name": "힘",   "desc": "물리 공격력에 영향"},

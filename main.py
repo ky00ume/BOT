@@ -354,11 +354,18 @@ async def heal_cmd(ctx):
     heal_mp = shared_player.max_mp - shared_player.mp
     shared_player.hp = shared_player.max_hp
     shared_player.mp = shared_player.max_mp
-    await ctx.send(ansi(
-        f"  {C.GREEN}✔ 치료 완료!{C.R}\n"
-        f"  {C.RED}HP +{heal_hp}{C.R}  {C.BLUE}MP +{heal_mp}{C.R}\n"
-        f"  {C.GOLD}-{cost}G{C.R} (현재: {shared_player.gold:,}G)"
-    ))
+    buf = get_renderer().render_card(
+        "치료 완료",
+        rows=[
+            {"label": "HP 회복", "value": f"+{heal_hp} HP"},
+            {"label": "MP 회복", "value": f"+{heal_mp} MP"},
+            {"label": "치료비",  "value": f"-{cost}G (잔액: {shared_player.gold:,}G)"},
+        ],
+        subtitle="HP와 MP가 완전 회복됐슴미댜!",
+        system_key="system",
+        footer="비전 타운 의료소",
+    )
+    await _send_image(ctx, buf, "heal.png")
     save_manager.save(shared_player)
 
 
@@ -381,14 +388,17 @@ async def eat_item(ctx, *, item_name: str = None):
         shared_player.level += 1
         from player import apply_level_up
         gains = apply_level_up(shared_player)
-        gain_str = ", ".join(
-            f"+{v} {k}" for k, v in gains.items()
+        rows = [{"label": "레벨", "value": f"{old_level} → {shared_player.level}"}]
+        rows += [{"label": k, "value": f"+{v}"} for k, v in gains.items()]
+        buf = get_renderer().render_card(
+            "레벨 업! ✨",
+            rows=rows,
+            grade="Legendary",
+            subtitle="레벨업 사탕 사용!",
+            system_key="system",
+            footer="레벨 업 완료",
         )
-        await ctx.send(ansi(
-            f"  {C.GOLD}✨ 레벨업 사탕 사용!{C.R}\n"
-            f"  {C.WHITE}레벨 {old_level} → {shared_player.level}{C.R}\n"
-            f"  {C.GREEN}{gain_str}{C.R}"
-        ))
+        await _send_image(ctx, buf, "levelup.png")
         save_manager.save(shared_player)
         return
 
@@ -411,15 +421,19 @@ async def eat_item(ctx, *, item_name: str = None):
         shared_player.energy = min(shared_player.max_energy, shared_player.energy + en_eff)
 
     name = item.get("name", item_id)
-    effects = []
-    if hp_eff: effects.append(f"{C.RED}HP +{hp_eff}{C.R}")
-    if mp_eff: effects.append(f"{C.BLUE}MP +{mp_eff}{C.R}")
-    if en_eff: effects.append(f"{C.GREEN}EN +{en_eff}{C.R}")
-
-    await ctx.send(ansi(
-        f"  {C.GREEN}✔{C.R} {C.WHITE}{name}{C.R} 섭취!\n"
-        f"  {' / '.join(effects) if effects else '효과 없음'}"
-    ))
+    rows = []
+    if hp_eff: rows.append({"label": "HP", "value": f"+{hp_eff}"})
+    if mp_eff: rows.append({"label": "MP", "value": f"+{mp_eff}"})
+    if en_eff: rows.append({"label": "기력", "value": f"+{en_eff}"})
+    if not rows: rows.append({"label": "효과", "value": "없음"})
+    buf = get_renderer().render_card(
+        "아이템 섭취",
+        rows=rows,
+        subtitle=f"{name} 을(를) 먹었슴미댜!",
+        system_key="system",
+        footer="섭취 완료",
+    )
+    await _send_image(ctx, buf, "eat.png")
     save_manager.save(shared_player)
 
 
@@ -552,21 +566,21 @@ async def _process_gift_by_id(ctx, npc_name: str, item_id: str, item_display: st
         return
 
     pts = affinity_manager.affinities.get(npc_name, 0)
-    lines = [
-        f"  {C.GOLD}🎁 {npc['name']}에게 선물!{C.R}",
-        f"  {C.WHITE}{item_display}{C.R} 을(를) {npc['name']}에게 선물했슴미댜!",
-        f"  {C.DARK}─────────────────────────────{C.R}",
-        f"  {C.WHITE}\"{reaction}\"{C.R}",
-        f"  {C.DARK}─────────────────────────────{C.R}",
+    affinity_str = f"{'+' if amount >= 0 else ''}{amount} (현재 {pts}pt)"
+    rows = [
+        {"label": "반응",   "value": (reaction or "...")[:50]},
+        {"label": "호감도", "value": affinity_str},
     ]
-    if amount > 0:
-        lines.append(f"  {C.PINK}💖 호감도 +{amount}{C.R}  (현재 {pts}pt)")
-    elif amount < 0:
-        lines.append(f"  {C.RED}💔 호감도 {amount}{C.R}  (현재 {pts}pt)")
     if leveled:
-        lines.append(f"  {C.PINK}✦ 호감도 단계 상승! → [{lv_name}]{C.R}")
-
-    await ctx.send(ansi("\n".join(lines)))
+        rows.append({"label": "호감 단계", "value": f"↑ [{lv_name}]"})
+    buf = get_renderer().render_card(
+        f"🎁 {npc.get('name', npc_name)}에게 선물",
+        rows=rows,
+        subtitle=f"{item_display} 을(를) 선물했슴미댜!",
+        system_key="system",
+        footer="선물 완료",
+    )
+    await _send_image(ctx, buf, "gift.png")
     save_manager.save(shared_player)
 
 
@@ -1017,9 +1031,7 @@ async def dice_cmd(ctx, sides: int = 6):
         return
     sides = max(2, min(sides, 10000))
     result = random.randint(1, sides)
-    await ctx.send(ansi(
-        f"  🎲 {C.GOLD}{sides}면 주사위{C.R} 결과: {C.WHITE}{result}{C.R}!"
-    ))
+    await _send_msg_card(ctx, f"🎲 {sides}면 주사위", f"결과: {result}", system_key="system")
 
 
 @bot.command(name="저장")
@@ -1028,7 +1040,7 @@ async def save_cmd(ctx):
         return
     try:
         save_manager.save(shared_player)
-        await ctx.send(ansi(f"  {C.GREEN}✔ 데이터 저장 완료임미댜!{C.R}"))
+        await _send_msg_card(ctx, "데이터 저장", "저장 완료임미댜!", system_key="system")
     except Exception as e:
         await ctx.send(ansi(f"  {C.RED}✖ 저장 실패: {e}{C.R}"))
 

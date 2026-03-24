@@ -773,10 +773,25 @@ class BG3Renderer:
         portrait_type: 'npc' | 'animal' | 'monster'
         portrait_id:   파일명 (확장자 제외). None이면 플레이스홀더
         """
-        W,H = 560,290
+        W=560; MIN_H=290
+        PW=200; fN=_f(24,True); fR=_f(16); fD=_f(17); fA=_f(16); fP=_f(14)
+        TX=PW+14; ty=18; LH=26
+
+        # ── 동적 높이 계산 ──────────────────────────────────────
+        _tmp_img = Image.new("RGBA", (W, 1), (0,0,0,0))
+        _tmp_d   = ImageDraw.Draw(_tmp_img)
+        name_h   = _th(_tmp_d, npc_name, fN)
+        role_h   = _th(_tmp_d, f"[ {npc_role} ]", fR)
+        orn_y    = ty + name_h + role_h + 14
+        greeting_text = f'"{greeting}"'
+        maxw = W - TX - 24
+        text_start_y = orn_y + 12
+        text_end_y   = _wrap(_tmp_d, greeting_text, fD, TX, text_start_y, maxw, (0,0,0,0), lh=LH)
+        # 헤더 + 대사 줄들 + 여백(14) + 호감도 바 영역(58)
+        H = max(MIN_H, text_end_y + 14 + 58)
+
         img = _make_base(W,H,"npc")
         d   = ImageDraw.Draw(img)
-        PW=200; fN=_f(24,True); fR=_f(16); fD=_f(17); fA=_f(16); fP=_f(14)
         PX0,PY0=14,14; PX1,PY1=PW-4,H-14
         pw2=PX1-PX0-2; ph2=PY1-PY0-2
 
@@ -795,14 +810,10 @@ class BG3Renderer:
         d.rounded_rectangle([PX0,PY0,PX1,PY1], radius=8, outline=C.GOLD_MID, width=2)
 
         # 대화창
-        TX=PW+14; ty=18
         _notxt(d,(TX,ty), npc_name, fN, C.GOLD_HI)
-        name_h = _th(d, npc_name, fN)
         _notxt(d,(TX, ty+name_h+6), f"[ {npc_role} ]", fR, C.TXT_LO)
-        role_h = _th(d, f"[ {npc_role} ]", fR)
-        orn_y = ty + name_h + role_h + 14
         _orn(img,d,TX, orn_y, W-18, color=C.GOLD_LO)
-        _wrap(d, f'"{greeting}"', fD, TX, orn_y+12, W-TX-24, C.TXT_HI, lh=26)
+        _wrap(d, greeting_text, fD, TX, orn_y+12, maxw, C.TXT_HI, lh=LH)
 
         # 호감도 바 (시안 A)
         AY=H-58; _orn(img,d,TX,AY,W-18, color=(*C.TEAL_LO,180))

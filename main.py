@@ -795,6 +795,7 @@ async def attack_cmd(ctx, *, skill_input: str = "smash"):
             await _send_image(ctx, result, 'battle_result.png')
         else:
             await _send_msg_card(ctx, "전투 결과", str(result), system_key="battle")
+        save_manager.save(shared_player)
 
 
 @bot.command(name="도주")
@@ -806,6 +807,8 @@ async def flee_cmd(ctx):
         await _send_image(ctx, result, 'flee.png')
     else:
         await _send_msg_card(ctx, "도주", str(result), system_key="battle")
+    if not battle_engine.in_battle:
+        save_manager.save(shared_player)
 
 
 # ═══════════════════════════════════════════════════════════════════════════

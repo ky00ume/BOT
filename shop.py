@@ -15,10 +15,10 @@ _OMELUM_POTIONS.update({
     k: v for k, v in ALL_ITEMS.items()
     if v.get("type") == "gathering" and k in (
         "herb", "mana_herb", "water", "healing_root", "mana_flower",
-        "energy_leaf", "antidote_herb", "moonlight_dew", "honey",
+        "energy_leaf", "antidote_herb", "moonlight_dew",
     )
 })
-_OMELUM_TOOLS = {"tool_mortar": TOOLS["tool_mortar"]}
+_OMELUM_TOOLS = {}
 
 # ── 브룩샤 카탈로그: 식재료(조미료) + 요리 완성품 ────────────────────────────
 # 빈 병은 브룩샤에서 제거, 몰로 이전
@@ -28,6 +28,15 @@ _BROOKSHA_DISHES = {
     if k in ("simple_soup", "potato_pancake", "mushroom_soup", "tofu",
              "mushroom_soup", "honey_milk", "ck_soup_01", "ck_steak_01")
 }
+# 꿀, 절구, 빵, 우유 추가 (오멜룸에서 이전)
+_BROOKSHA_EXTRA = {}
+if "honey" in ALL_ITEMS:
+    _BROOKSHA_EXTRA["honey"] = ALL_ITEMS["honey"]
+if "tool_mortar" in TOOLS:
+    _BROOKSHA_EXTRA["tool_mortar"] = TOOLS["tool_mortar"]
+for _k in ("bread", "milk"):
+    if _k in ALL_ITEMS:
+        _BROOKSHA_EXTRA[_k] = ALL_ITEMS[_k]
 
 # ── 몰 카탈로그: 도구 + 빈 병 + 가방 ──────────────────────────────────────
 _MOL_CATALOG = {**TOOLS}
@@ -37,7 +46,7 @@ _MOL_CATALOG.update(BAGS)
 NPC_CATALOGS = {
     "다몬":   {**WEAPONS, **ARMORS},
     "오멜룸": {**_OMELUM_POTIONS, **_OMELUM_TOOLS},
-    "브룩샤": {**_BROOKSHA_GROCERIES, **_BROOKSHA_DISHES},
+    "브룩샤": {**_BROOKSHA_GROCERIES, **_BROOKSHA_DISHES, **_BROOKSHA_EXTRA},
     "몰":     _MOL_CATALOG,
     "카엘릭": {k: v for k, v in SKILL_BOOKS.items() if v.get("npc") == "카엘릭"},
     "게일의 환영": {k: v for k, v in SKILL_BOOKS.items() if v.get("npc") == "게일의 환영"},

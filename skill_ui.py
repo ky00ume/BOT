@@ -431,14 +431,34 @@ class LifeSkillSelect(Select):
 
         view: SkillMainView = self.view
         recipes = _get_recipes_for_skill(skill_id)
-        embed = make_recipe_list_embed(self.player, skill_id, recipes)
-        # 레시피 드롭다운으로 교체
         view.clear_items()
         view.add_item(SkillCategorySelect(self.player))
         view.add_item(LifeSkillSelect(self.player))
         if recipes:
             view.add_item(RecipeSelect(self.player, skill_id, recipes))
-        await interaction.response.edit_message(embed=embed, view=view)
+
+        try:
+            from bg3_renderer import get_renderer, render_async
+            skill_name = OTHER_SKILLS.get(skill_id, {}).get("name", skill_id)
+            rank = getattr(self.player, "skill_ranks", {}).get(skill_id, "연습")
+            recipes_info = []
+            for rid, recipe in list(recipes.items())[:12]:
+                rank_req = recipe.get("rank_req", "연습")
+                try:
+                    unlocked = RANK_ORDER.index(rank) >= RANK_ORDER.index(rank_req)
+                except Exception:
+                    unlocked = True
+                recipes_info.append((recipe.get("name", rid), rank_req, unlocked))
+            r = get_renderer()
+            buf = await render_async(r.render_recipe_list, skill_name, rank, recipes_info)
+            await interaction.response.edit_message(
+                attachments=[discord.File(buf, filename="recipe_list.png")],
+                embed=None,
+                view=view,
+            )
+        except Exception:
+            embed = make_recipe_list_embed(self.player, skill_id, recipes)
+            await interaction.response.edit_message(embed=embed, view=view)
 
 
 class RecipeSelect(Select):

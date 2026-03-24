@@ -241,30 +241,16 @@ class GatheringEngine:
                 f"📖✨ **새로운 도감 등록!** 🌿 `{item['name']}` 이(가) 채집 도감에 추가됐슴미댜!"
             )
 
-        card_sent = False
         season_kr = {"spring": "봄", "summer": "여름", "autumn": "가을", "winter": "겨울"}.get(season, season)
         if added:
             try:
                 import fishing_card
-                buf  = fishing_card.generate_gather_card(item["name"], count, grade)
-                file = discord.File(buf, filename="gather_result.png")
-                embed = discord.Embed(
-                    title=f"🌿 와! {item['name']}을(를) 채집했슴미댜!!",
-                    color=GRADE_EMBED_COLOR.get(grade, 0x228833),
-                )
-                embed.set_image(url="attachment://gather_result.png")
-                footer_parts = [f"계절: {season_kr}", f"{grade} 등급"]
+                buf = fishing_card.generate_gather_card(item["name"], count, grade)
+                await ctx.send(file=discord.File(buf, filename="gather_result.png"))
                 if rank_msg:
-                    footer_parts.append(rank_msg)
-                embed.set_footer(text="  |  ".join(footer_parts))
-                await ctx.send(embed=embed, file=file)
-                card_sent = True
+                    await ctx.send(ansi(f"  {C.GOLD}{rank_msg}{C.R}"))
             except Exception:
-                pass
-
-        if not card_sent:
-            grade_mark = GRADE_ICON_PLAIN.get(grade, "⚬")
-            if added:
+                grade_mark = GRADE_ICON_PLAIN.get(grade, "⚬")
                 lines = [
                     header_box("🌿 채집 완료!"),
                     f"  계절: {C.CYAN}{season_kr}{C.R}",
@@ -273,9 +259,9 @@ class GatheringEngine:
                 ]
                 if rank_msg:
                     lines.append(f"  {C.GOLD}{rank_msg}{C.R}")
-            else:
-                lines = [f"  {C.RED}✖ 인벤토리 부족으로 {item['name']}을(를) 주울 수 없슴미댜!{C.R}"]
-            await ctx.send(ansi("\n".join(lines)))
+                await ctx.send(ansi("\n".join(lines)))
+        else:
+            await ctx.send(ansi(f"  {C.RED}✖ 인벤토리 부족으로 {item['name']}을(를) 주울 수 없슴미댜!{C.R}"))
 
     async def mine(self, ctx):
         """채광을 수행합니다."""
@@ -322,29 +308,15 @@ class GatheringEngine:
         except Exception:
             pass
 
-        card_sent = False
         if added:
             try:
                 import fishing_card
-                buf  = fishing_card.generate_gather_card(item["name"], count, grade)
-                file = discord.File(buf, filename="mine_result.png")
-                embed = discord.Embed(
-                    title=f"⛏ 와! {item['name']}을(를) 캐냈슴미댜!!",
-                    color=GRADE_EMBED_COLOR.get(grade, 0xaa8833),
-                )
-                embed.set_image(url="attachment://mine_result.png")
-                footer_parts = [f"{grade} 등급"]
+                buf = fishing_card.generate_gather_card(item["name"], count, grade)
+                await ctx.send(file=discord.File(buf, filename="mine_result.png"))
                 if rank_msg:
-                    footer_parts.append(rank_msg)
-                embed.set_footer(text="  |  ".join(footer_parts))
-                await ctx.send(embed=embed, file=file)
-                card_sent = True
+                    await ctx.send(ansi(f"  {C.GOLD}{rank_msg}{C.R}"))
             except Exception:
-                pass
-
-        if not card_sent:
-            grade_mark = GRADE_ICON_PLAIN.get(grade, "⚬")
-            if added:
+                grade_mark = GRADE_ICON_PLAIN.get(grade, "⚬")
                 lines = [
                     header_box("⛏ 채광 완료!"),
                     f"  힘(STR): {C.RED}{str_stat}{C.R}",
@@ -353,9 +325,9 @@ class GatheringEngine:
                 ]
                 if rank_msg:
                     lines.append(f"  {C.GOLD}{rank_msg}{C.R}")
-            else:
-                lines = [f"  {C.RED}✖ 인벤토리 부족으로 {item['name']}을(를) 담을 수 없슴미댜!{C.R}"]
-            await ctx.send(ansi("\n".join(lines)))
+                await ctx.send(ansi("\n".join(lines)))
+        else:
+            await ctx.send(ansi(f"  {C.RED}✖ 인벤토리 부족으로 {item['name']}을(를) 담을 수 없슴미댜!{C.R}"))
 
     async def woodcut(self, ctx):
         """벌목을 수행합니다."""
@@ -396,29 +368,15 @@ class GatheringEngine:
         except Exception:
             pass
 
-        card_sent = False
         if added:
             try:
                 import fishing_card
-                buf  = fishing_card.generate_gather_card(item["name"], count, grade)
-                file = discord.File(buf, filename="woodcut_result.png")
-                embed = discord.Embed(
-                    title=f"🪓 와! {item['name']}을(를) 벌목했슴미댜!!",
-                    color=GRADE_EMBED_COLOR.get(grade, 0x8B4513),
-                )
-                embed.set_image(url="attachment://woodcut_result.png")
-                footer_parts = [f"힘(STR): {str_stat}", f"{grade} 등급"]
+                buf = fishing_card.generate_gather_card(item["name"], count, grade)
+                await ctx.send(file=discord.File(buf, filename="woodcut_result.png"))
                 if rank_msg:
-                    footer_parts.append(rank_msg)
-                embed.set_footer(text="  |  ".join(footer_parts))
-                await ctx.send(embed=embed, file=file)
-                card_sent = True
+                    await ctx.send(ansi(f"  {C.GOLD}{rank_msg}{C.R}"))
             except Exception:
-                pass
-
-        if not card_sent:
-            grade_mark = GRADE_ICON_PLAIN.get(grade, "⚬")
-            if added:
+                grade_mark = GRADE_ICON_PLAIN.get(grade, "⚬")
                 lines = [
                     header_box("🪓 벌목 완료!"),
                     f"  힘(STR): {C.RED}{str_stat}{C.R}",
@@ -427,6 +385,6 @@ class GatheringEngine:
                 ]
                 if rank_msg:
                     lines.append(f"  {C.GOLD}{rank_msg}{C.R}")
-            else:
-                lines = [f"  {C.RED}✖ 인벤토리 부족으로 {item['name']}을(를) 담을 수 없슴미댜!{C.R}"]
-            await ctx.send(ansi("\n".join(lines)))
+                await ctx.send(ansi("\n".join(lines)))
+        else:
+            await ctx.send(ansi(f"  {C.RED}✖ 인벤토리 부족으로 {item['name']}을(를) 담을 수 없슴미댜!{C.R}"))

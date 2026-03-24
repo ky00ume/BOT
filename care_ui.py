@@ -176,6 +176,10 @@ class CostumeManageView(discord.ui.View):
 
         async def unequip_confirm(inter: discord.Interaction, slot_chosen: str):
             msg = self.player.unequip_costume(slot_chosen)
+            try:
+                save_player_to_db(self.player)
+            except Exception:
+                pass
             file = _result_card("의장 해제", [{"label": "결과", "value": msg}])
             await inter.response.edit_message(content=None, attachments=[file], view=None)
 

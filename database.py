@@ -448,6 +448,8 @@ def save_player_to_db(player):
 
     # story_quest 직렬화
     story_quest_json = json.dumps(data.get("story_quest", {}), ensure_ascii=False)
+    # quest_data 직렬화
+    quest_data_json = json.dumps(data.get("quest_data", {}), ensure_ascii=False)
 
     cursor.execute("""
         INSERT OR REPLACE INTO players
@@ -455,8 +457,8 @@ def save_player_to_db(player):
          gold, base_stats, inventory, equipment, keywords, affinity_data, daily_limits,
          story_quest, skill_ranks, skill_exp, titles, current_title, bags,
          last_special_encounter, rafael_contract,
-         fatigue, condition, stability, costume, care_flags)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         fatigue, condition, stability, costume, care_flags, quest_data)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         data.get("user_id", 0),
         data.get("name", "모험가"),
@@ -488,6 +490,7 @@ def save_player_to_db(player):
         data.get("stability", 50),
         json.dumps(data.get("costume", {}), ensure_ascii=False),
         json.dumps(data.get("_flags", {}), ensure_ascii=False),
+        quest_data_json,
     ))
     conn.commit()
     conn.close()
@@ -565,6 +568,10 @@ def _migrate_players_table(cursor):
         if "care_flags" not in columns:
             cursor.execute(
                 "ALTER TABLE players ADD COLUMN care_flags TEXT DEFAULT '{}'"
+            )
+        if "quest_data" not in columns:
+            cursor.execute(
+                "ALTER TABLE players ADD COLUMN quest_data TEXT DEFAULT '{}'"
             )
     except Exception:
         pass
@@ -684,6 +691,11 @@ def load_player_from_db(user_id):
         result["_flags"] = _safe_json(row["care_flags"], {})
     except (IndexError, KeyError):
         result["_flags"] = {}
+
+    try:
+        result["quest_data"] = _safe_json(row["quest_data"], {})
+    except (IndexError, KeyError):
+        result["quest_data"] = {}
 
     return result
 

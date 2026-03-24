@@ -281,6 +281,14 @@ class NPCConversationView(View):
         if unlocked or leveled:
             self._build_buttons()
 
+        # 친밀도/키워드 변경 시 저장
+        if aff_gain or unlocked or leveled:
+            try:
+                from save_manager import save_manager
+                save_manager.save(self.player)
+            except Exception:
+                pass
+
         await interaction.response.edit_message(attachments=[file], embed=None, view=self)
 
     async def _job_callback(self, interaction: discord.Interaction):
@@ -290,6 +298,7 @@ class NPCConversationView(View):
                 def __init__(self, inter):
                     self.channel = inter.channel
                     self.send = inter.channel.send
+                    self.author = inter.user
             fake_ctx = _FakeCtx(interaction)
             await self.npc_manager_ref.start_job_async(fake_ctx, self.npc_name)
         else:
@@ -354,6 +363,15 @@ class ConversationManager:
         if not npc:
             await ctx.send(f"[{npc_name}]을(를) 찾을 수 없슴미댜.")
             return
+
+        # deliver 타입 퀘스트: 목표 NPC 방문 시 자동 전달 처리
+        try:
+            from main import quest_manager
+            deliver_msg = quest_manager.deliver_to_npc(npc_name)
+            if deliver_msg:
+                await ctx.send(deliver_msg)
+        except Exception:
+            pass
 
         # 일일 제한 확인 (차단 없음, 경고만)
         show_limit_warning = False

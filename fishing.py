@@ -263,22 +263,15 @@ class FishingView(discord.ui.View):
         if added and hi > 0:
             try:
                 import fishing_card
-                from ui_theme import spider_scene
                 buf  = fishing_card.generate_fishing_card(
                     caught_name, size_cm, price, fee, 0, net, grade=grade
                 )
                 file = discord.File(buf, filename="fishing_result.png")
-                embed = discord.Embed(
-                    title=f"🎣 {fishing_card.GRADE_TITLE_TEXT.get(grade, '🕷️ {name}을(를) 낚았슴미댜!').format(name=caught_name)}",
-                    description=f"{spider_scene('fishing_catch')}\n{flavor}",
-                    color=GRADE_EMBED_COLOR.get(grade, 0x00aa44),
+                await interaction.response.edit_message(
+                    embed=None, attachments=[file], view=self
                 )
-                embed.set_image(url="attachment://fishing_result.png")
-                footer_parts = [f"📍 {self.spot_name}", f"{grade} 등급"]
                 if rank_msg:
-                    footer_parts.append(rank_msg)
-                embed.set_footer(text="  |  ".join(footer_parts))
-                await interaction.response.edit_message(embed=embed, attachments=[file], view=self)
+                    await interaction.followup.send(ansi(f"  {C.GOLD}{rank_msg}{C.R}"))
                 card_sent = True
             except Exception:
                 pass

@@ -114,6 +114,24 @@ MINE_ITEMS = [
 ]
 
 
+GATHER_ZONE_ITEMS = {
+    "버섯 군락지": [
+        {"id": "mushroom",            "name": "버섯",              "grade": "Normal",  "rate": 0.50},
+        {"id": "shiitake",            "name": "표고버섯",          "grade": "Normal",  "rate": 0.30},
+        {"id": "bluecap",             "name": "블루캡",            "grade": "Normal",  "rate": 0.18},
+        {"id": "nightlight_mushroom", "name": "나이트라이트 버섯", "grade": "Normal",  "rate": 0.22},
+        {"id": "torchstalk",          "name": "토치스톡",          "grade": "Normal",  "rate": 0.12},
+        {"id": "toxic_mushroom",      "name": "독버섯",            "grade": "Normal",  "rate": 0.10},
+        {"id": "glow_mushroom",       "name": "발광버섯",          "grade": "Rare",    "rate": 0.08},
+        {"id": "pine_mushroom",       "name": "송이버섯",          "grade": "Rare",    "rate": 0.06},
+        {"id": "timmask",             "name": "팀마스크",          "grade": "Rare",    "rate": 0.05},
+        {"id": "bibberbang",          "name": "비버뱅",            "grade": "Rare",    "rate": 0.04},
+        {"id": "reishi",              "name": "영지버섯",          "grade": "Epic",    "rate": 0.02},
+        {"id": "sussur_bloom",        "name": "서서 꽃",           "grade": "Epic",    "rate": 0.005},
+    ],
+}
+
+
 def get_current_season() -> str:
     import datetime
     month = datetime.datetime.now().month
@@ -209,8 +227,8 @@ class GatheringEngine:
     def __init__(self, player):
         self.player = player
 
-    async def gather(self, ctx):
-        """채집을 수행합니다."""
+    async def gather(self, ctx, zone_name: str = None):
+        """채집을 수행합니다. zone_name이 있으면 해당 존 전용 풀을 사용합니다."""
         energy_cost = 8
         if not self.player.consume_energy(energy_cost):
             await ctx.send(ansi(
@@ -222,7 +240,10 @@ class GatheringEngine:
         await asyncio.sleep(random.uniform(3, 6))
 
         season = get_current_season()
-        pool   = GATHER_ITEMS_BY_SEASON.get(season, GATHER_ITEMS_BY_SEASON["spring"])
+        if zone_name and zone_name in GATHER_ZONE_ITEMS:
+            pool = GATHER_ZONE_ITEMS[zone_name]
+        else:
+            pool = GATHER_ITEMS_BY_SEASON.get(season, GATHER_ITEMS_BY_SEASON["spring"])
         item   = _pick_by_rate(pool)
         count  = random.randint(1, 3)
         grade  = item["grade"]
@@ -241,30 +262,16 @@ class GatheringEngine:
                 f"📖✨ **새로운 도감 등록!** 🌿 `{item['name']}` 이(가) 채집 도감에 추가됐슴미댜!"
             )
 
-        card_sent = False
         season_kr = {"spring": "봄", "summer": "여름", "autumn": "가을", "winter": "겨울"}.get(season, season)
         if added:
             try:
                 import fishing_card
-                buf  = fishing_card.generate_gather_card(item["name"], count, grade)
-                file = discord.File(buf, filename="gather_result.png")
-                embed = discord.Embed(
-                    title=f"🌿 와! {item['name']}을(를) 채집했슴미댜!!",
-                    color=GRADE_EMBED_COLOR.get(grade, 0x228833),
-                )
-                embed.set_image(url="attachment://gather_result.png")
-                footer_parts = [f"계절: {season_kr}", f"{grade} 등급"]
+                buf = fishing_card.generate_gather_card(item["name"], count, grade)
+                await ctx.send(file=discord.File(buf, filename="gather_result.png"))
                 if rank_msg:
-                    footer_parts.append(rank_msg)
-                embed.set_footer(text="  |  ".join(footer_parts))
-                await ctx.send(embed=embed, file=file)
-                card_sent = True
+                    await ctx.send(ansi(f"  {C.GOLD}{rank_msg}{C.R}"))
             except Exception:
-                pass
-
-        if not card_sent:
-            grade_mark = GRADE_ICON_PLAIN.get(grade, "⚬")
-            if added:
+                grade_mark = GRADE_ICON_PLAIN.get(grade, "⚬")
                 lines = [
                     header_box("🌿 채집 완료!"),
                     f"  계절: {C.CYAN}{season_kr}{C.R}",
@@ -273,9 +280,9 @@ class GatheringEngine:
                 ]
                 if rank_msg:
                     lines.append(f"  {C.GOLD}{rank_msg}{C.R}")
-            else:
-                lines = [f"  {C.RED}✖ 인벤토리 부족으로 {item['name']}을(를) 주울 수 없슴미댜!{C.R}"]
-            await ctx.send(ansi("\n".join(lines)))
+                await ctx.send(ansi("\n".join(lines)))
+        else:
+            await ctx.send(ansi(f"  {C.RED}✖ 인벤토리 부족으로 {item['name']}을(를) 주울 수 없슴미댜!{C.R}"))
 
     async def mine(self, ctx):
         """채광을 수행합니다."""
@@ -322,29 +329,15 @@ class GatheringEngine:
         except Exception:
             pass
 
-        card_sent = False
         if added:
             try:
                 import fishing_card
-                buf  = fishing_card.generate_gather_card(item["name"], count, grade)
-                file = discord.File(buf, filename="mine_result.png")
-                embed = discord.Embed(
-                    title=f"⛏ 와! {item['name']}을(를) 캐냈슴미댜!!",
-                    color=GRADE_EMBED_COLOR.get(grade, 0xaa8833),
-                )
-                embed.set_image(url="attachment://mine_result.png")
-                footer_parts = [f"{grade} 등급"]
+                buf = fishing_card.generate_gather_card(item["name"], count, grade)
+                await ctx.send(file=discord.File(buf, filename="mine_result.png"))
                 if rank_msg:
-                    footer_parts.append(rank_msg)
-                embed.set_footer(text="  |  ".join(footer_parts))
-                await ctx.send(embed=embed, file=file)
-                card_sent = True
+                    await ctx.send(ansi(f"  {C.GOLD}{rank_msg}{C.R}"))
             except Exception:
-                pass
-
-        if not card_sent:
-            grade_mark = GRADE_ICON_PLAIN.get(grade, "⚬")
-            if added:
+                grade_mark = GRADE_ICON_PLAIN.get(grade, "⚬")
                 lines = [
                     header_box("⛏ 채광 완료!"),
                     f"  힘(STR): {C.RED}{str_stat}{C.R}",
@@ -353,9 +346,9 @@ class GatheringEngine:
                 ]
                 if rank_msg:
                     lines.append(f"  {C.GOLD}{rank_msg}{C.R}")
-            else:
-                lines = [f"  {C.RED}✖ 인벤토리 부족으로 {item['name']}을(를) 담을 수 없슴미댜!{C.R}"]
-            await ctx.send(ansi("\n".join(lines)))
+                await ctx.send(ansi("\n".join(lines)))
+        else:
+            await ctx.send(ansi(f"  {C.RED}✖ 인벤토리 부족으로 {item['name']}을(를) 담을 수 없슴미댜!{C.R}"))
 
     async def woodcut(self, ctx):
         """벌목을 수행합니다."""
@@ -396,29 +389,15 @@ class GatheringEngine:
         except Exception:
             pass
 
-        card_sent = False
         if added:
             try:
                 import fishing_card
-                buf  = fishing_card.generate_gather_card(item["name"], count, grade)
-                file = discord.File(buf, filename="woodcut_result.png")
-                embed = discord.Embed(
-                    title=f"🪓 와! {item['name']}을(를) 벌목했슴미댜!!",
-                    color=GRADE_EMBED_COLOR.get(grade, 0x8B4513),
-                )
-                embed.set_image(url="attachment://woodcut_result.png")
-                footer_parts = [f"힘(STR): {str_stat}", f"{grade} 등급"]
+                buf = fishing_card.generate_gather_card(item["name"], count, grade)
+                await ctx.send(file=discord.File(buf, filename="woodcut_result.png"))
                 if rank_msg:
-                    footer_parts.append(rank_msg)
-                embed.set_footer(text="  |  ".join(footer_parts))
-                await ctx.send(embed=embed, file=file)
-                card_sent = True
+                    await ctx.send(ansi(f"  {C.GOLD}{rank_msg}{C.R}"))
             except Exception:
-                pass
-
-        if not card_sent:
-            grade_mark = GRADE_ICON_PLAIN.get(grade, "⚬")
-            if added:
+                grade_mark = GRADE_ICON_PLAIN.get(grade, "⚬")
                 lines = [
                     header_box("🪓 벌목 완료!"),
                     f"  힘(STR): {C.RED}{str_stat}{C.R}",
@@ -427,6 +406,6 @@ class GatheringEngine:
                 ]
                 if rank_msg:
                     lines.append(f"  {C.GOLD}{rank_msg}{C.R}")
-            else:
-                lines = [f"  {C.RED}✖ 인벤토리 부족으로 {item['name']}을(를) 담을 수 없슴미댜!{C.R}"]
-            await ctx.send(ansi("\n".join(lines)))
+                await ctx.send(ansi("\n".join(lines)))
+        else:
+            await ctx.send(ansi(f"  {C.RED}✖ 인벤토리 부족으로 {item['name']}을(를) 담을 수 없슴미댜!{C.R}"))

@@ -121,6 +121,7 @@ class Player:
         self.keywords = ["마을", "날씨", "소문"]  # 기본 키워드 3개로 시작
 
         self._story_quest_manager = None  # StoryQuestManager (main.py에서 주입)
+        self._quest_manager = None  # QuestManager (main.py에서 주입)
         self._flags: dict = {}  # 1회성 이벤트 플래그 (예: levelup_potion_granted)
 
     def get_max_slots(self):
@@ -361,6 +362,10 @@ class Player:
         sq_mgr = getattr(self, "_story_quest_manager", None)
         if sq_mgr is not None:
             data["story_quest"] = sq_mgr.to_dict()
+        # 퀘스트 데이터 포함
+        qm = getattr(self, "_quest_manager", None)
+        if qm is not None:
+            data["quest_data"] = qm.to_dict()
         return data
 
     def load_from_dict(self, data: dict):
@@ -423,6 +428,12 @@ class Player:
             sq_mgr = getattr(self, "_story_quest_manager", None)
             if sq_mgr is not None:
                 sq_mgr.from_dict(data["story_quest"])
+
+        # 퀘스트 복원
+        if "quest_data" in data and isinstance(data["quest_data"], dict):
+            qm = getattr(self, "_quest_manager", None)
+            if qm is not None:
+                qm.from_dict(data["quest_data"])
 
         # 인카운터 관련 데이터 복원
         if "last_special_encounter" in data:

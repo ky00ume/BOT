@@ -117,6 +117,12 @@ class SellView(discord.ui.View):
         # Execute the actual sell operation
         self.shop_manager.sell_item(name, count)
 
+        try:
+            from save_manager import save_manager
+            save_manager.save(self.player)
+        except Exception:
+            pass
+
         for child in self.children:
             child.disabled = True
 
@@ -248,6 +254,12 @@ class BuyView(discord.ui.View):
 
         # Execute the actual buy operation
         self.shop_manager.execute_buy(self.npc_name, name, self.buy_count)
+
+        try:
+            from save_manager import save_manager
+            save_manager.save(self.player)
+        except Exception:
+            pass
 
         for child in self.children:
             child.disabled = True

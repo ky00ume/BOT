@@ -92,6 +92,12 @@ class RestEngine:
                 embed.set_footer(text=rank_msg)
             await self._channel.send(embed=embed)
 
+        try:
+            from save_manager import save_manager
+            save_manager.save(self.player)
+        except Exception:
+            pass
+
     def stop_rest(self):
         """휴식을 강제 종료합니다."""
         if self._task and not self._task.done():

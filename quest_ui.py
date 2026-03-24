@@ -293,17 +293,38 @@ class QuestDetailView(View):
         q = QUEST_DB.get(self.quest_id, {})
         result = self.quest_manager.complete_quest(self.quest_id)
         file = _make_result_image("퀘스트 완료", q.get("name", self.quest_id), result)
+        back_view = QuestBackView(self.quest_manager, self.player)
         await interaction.response.edit_message(
-            attachments=[file], embed=None, view=None, content=None,
+            attachments=[file], embed=None, view=back_view, content=None,
         )
 
     async def _abandon_callback(self, interaction: discord.Interaction):
         q = QUEST_DB.get(self.quest_id, {})
         result = self.quest_manager.abandon_quest(self.quest_id)
         file = _make_result_image("퀘스트 포기", q.get("name", self.quest_id), result)
+        back_view = QuestBackView(self.quest_manager, self.player)
         await interaction.response.edit_message(
-            attachments=[file], embed=None, view=None, content=None,
+            attachments=[file], embed=None, view=back_view, content=None,
         )
+
+    async def _back_callback(self, interaction: discord.Interaction):
+        qw = QuestWindowView(self.quest_manager, self.player)
+        file = _make_quest_list_image(self.quest_manager)
+        await interaction.response.edit_message(
+            attachments=[file], embed=None, view=qw, content=None,
+        )
+
+
+class QuestBackView(View):
+    """퀘스트 완료/포기 후 목록으로 돌아가는 뷰"""
+
+    def __init__(self, quest_manager, player):
+        super().__init__(timeout=300.0)
+        self.quest_manager = quest_manager
+        self.player = player
+        back_btn = Button(label="퀘스트 목록", style=discord.ButtonStyle.secondary, emoji="📋")
+        back_btn.callback = self._back_callback
+        self.add_item(back_btn)
 
     async def _back_callback(self, interaction: discord.Interaction):
         qw = QuestWindowView(self.quest_manager, self.player)

@@ -224,6 +224,9 @@ class BattleView(discord.ui.View):
             )
         else:
             await interaction.followup.send(str(result))
+        # 도주 성공 시 (전투 종료) 콜백 호출 → 저장 처리
+        if not self.battle_engine.in_battle and self.on_battle_end:
+            await self.on_battle_end(False)
 
 
 def _make_event_view(engine, event, interaction, skill_id, battle_view):

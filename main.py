@@ -1,5 +1,5 @@
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 import random
 import signal
 import sys
@@ -101,6 +101,9 @@ shared_player._affinity_manager = affinity_manager
 # 특수 NPC 인카운터 매니저 초기화
 encounter_manager = SpecialNPCEncounterManager(shared_player)
 
+# 퀘스트 매니저 플레이어에 주입 (저장/복원 연동)
+shared_player._quest_manager = quest_manager
+
 # 스토리 퀘스트 매니저 초기화
 from story_quest import StoryQuestManager
 story_quest_manager = StoryQuestManager(shared_player)
@@ -172,6 +175,16 @@ async def _send_encounter(ctx, enc_msg: str):
         await ctx.send(enc_msg)
 
 
+# ─── 자동 저장 루프 (5분마다) ────────────────────────────────────────────
+@tasks.loop(minutes=5)
+async def auto_save_loop():
+    """5분마다 플레이어 데이터를 자동 저장합니다."""
+    try:
+        save_manager.save(shared_player)
+    except Exception as e:
+        print(f"[자동저장] 실패: {e}")
+
+
 # ─── 이벤트 ──────────────────────────────────────────────────────────────
 @bot.event
 async def on_ready():
@@ -214,6 +227,10 @@ async def on_ready():
         shared_player.add_item("levelup_potion", 1)
         print("[이벤트] 레벨업 사탕 1회 지급 완료")
 
+    # 자동 저장 루프 시작
+    if not auto_save_loop.is_running():
+        auto_save_loop.start()
+
     print("[봇 준비] 모든 시스템 초기화 완료!")
 
 
@@ -255,8 +272,24 @@ async def equipment_cmd(ctx):
 async def swap_cmd(ctx):
     if not await _check_channel(ctx):
         return
-    msg = shared_player.swap_weapons()
-    await ctx.send(ansi(f"  {C.GREEN}✔{C.R} {msg}"))
+    shared_player.swap_weapons()
+    main_id   = shared_player.equipment.get("main")
+    sub_id    = shared_player.equipment.get("sub")
+    _SLOT_KR  = {"main": "주무기", "sub": "보조무기", "body": "갑옷", "head": "투구", "hands": "장갑", "feet": "신발"}
+    main_name = ALL_ITEMS.get(main_id, {}).get("name", "없음") if main_id else "없음"
+    sub_name  = ALL_ITEMS.get(sub_id,  {}).get("name", "없음") if sub_id  else "없음"
+    buf = get_renderer().render_card(
+        "무기 교환",
+        rows=[
+            {"label": "주무기", "value": main_name},
+            {"label": "보조무기", "value": sub_name},
+        ],
+        subtitle="주·보조 슬롯이 교환됐슴미댜!",
+        system_key="system",
+        footer="교환 완료",
+    )
+    await _send_image(ctx, buf, "swap.png")
+    save_manager.save(shared_player)
 
 
 @bot.command(name="장착")
@@ -273,8 +306,25 @@ async def equip_cmd(ctx, *, item_name: str = None):
     if shared_player.inventory.get(item_id, 0) == 0:
         await ctx.send(ansi(f"  {C.RED}✖ 인벤토리에 [{item_name}]가 없슴미댜!{C.R}"))
         return
+    item_data = ALL_ITEMS.get(item_id, {})
+    if item_data.get("type") not in ("weapon", "armor"):
+        await ctx.send(ansi(f"  {C.RED}✖ [{item_data.get('name', item_name)}]은(는) 장착할 수 없는 아이템임미댜!{C.R}"))
+        return
     msg = shared_player.equip_item(item_id)
-    await ctx.send(ansi(f"  {C.GREEN}✔{C.R} {msg}"))
+    _SLOT_KR = {"main": "주무기", "sub": "보조무기", "body": "갑옷", "head": "투구", "hands": "장갑", "feet": "신발"}
+    slot_kr  = _SLOT_KR.get(item_data.get("slot", ""), item_data.get("slot", "?"))
+    buf = get_renderer().render_card(
+        "장비 장착",
+        rows=[
+            {"label": "아이템", "value": item_data.get("name", item_name)},
+            {"label": "슬롯",   "value": slot_kr},
+        ],
+        subtitle=msg,
+        system_key="system",
+        footer="장착 완료",
+    )
+    await _send_image(ctx, buf, "equip.png")
+    save_manager.save(shared_player)
 
 
 @bot.command(name="벗기", aliases=["탈착", "장비해제"])
@@ -291,7 +341,8 @@ async def unequip_cmd(ctx, slot: str = None):
     if "올바른 슬롯" in msg or "비어있" in msg:
         await ctx.send(ansi(f"  {C.RED}✖ {msg}{C.R}"))
     else:
-        await ctx.send(ansi(f"  {C.GREEN}✔{C.R} {msg}"))
+        await _send_msg_card(ctx, "장비 해제", msg, system_key="system")
+        save_manager.save(shared_player)
 
 
 @bot.command(name="치료")
@@ -307,11 +358,19 @@ async def heal_cmd(ctx):
     heal_mp = shared_player.max_mp - shared_player.mp
     shared_player.hp = shared_player.max_hp
     shared_player.mp = shared_player.max_mp
-    await ctx.send(ansi(
-        f"  {C.GREEN}✔ 치료 완료!{C.R}\n"
-        f"  {C.RED}HP +{heal_hp}{C.R}  {C.BLUE}MP +{heal_mp}{C.R}\n"
-        f"  {C.GOLD}-{cost}G{C.R} (현재: {shared_player.gold:,}G)"
-    ))
+    buf = get_renderer().render_card(
+        "치료 완료",
+        rows=[
+            {"label": "HP 회복", "value": f"+{heal_hp} HP"},
+            {"label": "MP 회복", "value": f"+{heal_mp} MP"},
+            {"label": "치료비",  "value": f"-{cost}G (잔액: {shared_player.gold:,}G)"},
+        ],
+        subtitle="HP와 MP가 완전 회복됐슴미댜!",
+        system_key="system",
+        footer="비전 타운 의료소",
+    )
+    await _send_image(ctx, buf, "heal.png")
+    save_manager.save(shared_player)
 
 
 @bot.command(name="먹기")
@@ -333,14 +392,18 @@ async def eat_item(ctx, *, item_name: str = None):
         shared_player.level += 1
         from player import apply_level_up
         gains = apply_level_up(shared_player)
-        gain_str = ", ".join(
-            f"+{v} {k}" for k, v in gains.items()
+        rows = [{"label": "레벨", "value": f"{old_level} → {shared_player.level}"}]
+        rows += [{"label": k, "value": f"+{v}"} for k, v in gains.items()]
+        buf = get_renderer().render_card(
+            "레벨 업! ✨",
+            rows=rows,
+            grade="Legendary",
+            subtitle="레벨업 사탕 사용!",
+            system_key="system",
+            footer="레벨 업 완료",
         )
-        await ctx.send(ansi(
-            f"  {C.GOLD}✨ 레벨업 사탕 사용!{C.R}\n"
-            f"  {C.WHITE}레벨 {old_level} → {shared_player.level}{C.R}\n"
-            f"  {C.GREEN}{gain_str}{C.R}"
-        ))
+        await _send_image(ctx, buf, "levelup.png")
+        save_manager.save(shared_player)
         return
 
     item = EDIBLE_ITEMS.get(item_id)
@@ -362,15 +425,20 @@ async def eat_item(ctx, *, item_name: str = None):
         shared_player.energy = min(shared_player.max_energy, shared_player.energy + en_eff)
 
     name = item.get("name", item_id)
-    effects = []
-    if hp_eff: effects.append(f"{C.RED}HP +{hp_eff}{C.R}")
-    if mp_eff: effects.append(f"{C.BLUE}MP +{mp_eff}{C.R}")
-    if en_eff: effects.append(f"{C.GREEN}EN +{en_eff}{C.R}")
-
-    await ctx.send(ansi(
-        f"  {C.GREEN}✔{C.R} {C.WHITE}{name}{C.R} 섭취!\n"
-        f"  {' / '.join(effects) if effects else '효과 없음'}"
-    ))
+    rows = []
+    if hp_eff: rows.append({"label": "HP", "value": f"+{hp_eff}"})
+    if mp_eff: rows.append({"label": "MP", "value": f"+{mp_eff}"})
+    if en_eff: rows.append({"label": "기력", "value": f"+{en_eff}"})
+    if not rows: rows.append({"label": "효과", "value": "없음"})
+    buf = get_renderer().render_card(
+        "아이템 섭취",
+        rows=rows,
+        subtitle=f"{name} 을(를) 먹었슴미댜!",
+        system_key="system",
+        footer="섭취 완료",
+    )
+    await _send_image(ctx, buf, "eat.png")
+    save_manager.save(shared_player)
 
 
 @bot.command(name="납품")
@@ -502,21 +570,22 @@ async def _process_gift_by_id(ctx, npc_name: str, item_id: str, item_display: st
         return
 
     pts = affinity_manager.affinities.get(npc_name, 0)
-    lines = [
-        f"  {C.GOLD}🎁 {npc['name']}에게 선물!{C.R}",
-        f"  {C.WHITE}{item_display}{C.R} 을(를) {npc['name']}에게 선물했슴미댜!",
-        f"  {C.DARK}─────────────────────────────{C.R}",
-        f"  {C.WHITE}\"{reaction}\"{C.R}",
-        f"  {C.DARK}─────────────────────────────{C.R}",
+    affinity_str = f"{'+' if amount >= 0 else ''}{amount} (현재 {pts}pt)"
+    rows = [
+        {"label": "반응",   "value": (reaction or "...")[:50]},
+        {"label": "호감도", "value": affinity_str},
     ]
-    if amount > 0:
-        lines.append(f"  {C.PINK}💖 호감도 +{amount}{C.R}  (현재 {pts}pt)")
-    elif amount < 0:
-        lines.append(f"  {C.RED}💔 호감도 {amount}{C.R}  (현재 {pts}pt)")
     if leveled:
-        lines.append(f"  {C.PINK}✦ 호감도 단계 상승! → [{lv_name}]{C.R}")
-
-    await ctx.send(ansi("\n".join(lines)))
+        rows.append({"label": "호감 단계", "value": f"↑ [{lv_name}]"})
+    buf = get_renderer().render_card(
+        f"🎁 {npc.get('name', npc_name)}에게 선물",
+        rows=rows,
+        subtitle=f"{item_display} 을(를) 선물했슴미댜!",
+        system_key="system",
+        footer="선물 완료",
+    )
+    await _send_image(ctx, buf, "gift.png")
+    save_manager.save(shared_player)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -658,14 +727,20 @@ async def zone_list_cmd(ctx):
     if not await _check_channel(ctx):
         return
     zones = battle_engine.zone_list
-    lines = ["  " + C.GOLD + "사냥터 목록" + C.R]
     from monsters_db import MONSTERS_DB
+    rows = []
     for zone_name in zones:
         zone = MONSTERS_DB[zone_name]
         lvl_min, lvl_max = zone["level_range"]
-        lines.append(f"  {C.WHITE}{zone_name}{C.R}  {C.DARK}(Lv.{lvl_min}~{lvl_max}){C.R}")
-    lines.append(f"  {C.GREEN}/사냥 [사냥터이름]{C.R} 으로 출발!")
-    await ctx.send(ansi("\n".join(lines)))
+        rows.append({"label": zone_name, "value": f"Lv.{lvl_min} ~ {lvl_max}"})
+    buf = get_renderer().render_card(
+        "사냥터 목록",
+        rows=rows,
+        subtitle="/사냥 [사냥터이름] 으로 출발!",
+        system_key="battle",
+        footer="⚔ 전투 시스템",
+    )
+    await _send_image(ctx, buf, "zones.png")
 
 
 @bot.command(name="사냥")
@@ -699,6 +774,7 @@ async def hunt_cmd(ctx, *, zone: str = None):
                         f"  {ach.get('desc', '')}\n"
                         f"  🎀 타이틀 획득: **{ach.get('title', '')}**"
                     )
+            save_manager.save(shared_player)
 
         from battle_view import BattleView
         view = BattleView(battle_engine, ctx, on_battle_end=_on_battle_end)
@@ -771,6 +847,7 @@ async def attack_cmd(ctx, *, skill_input: str = "smash"):
             await _send_image(ctx, result, 'battle_result.png')
         else:
             await _send_msg_card(ctx, "전투 결과", str(result), system_key="battle")
+        save_manager.save(shared_player)
 
 
 @bot.command(name="도주")
@@ -782,6 +859,8 @@ async def flee_cmd(ctx):
         await _send_image(ctx, result, 'flee.png')
     else:
         await _send_msg_card(ctx, "도주", str(result), system_key="battle")
+    if not battle_engine.in_battle:
+        save_manager.save(shared_player)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -857,6 +936,7 @@ async def adventure_cmd(ctx, *, zone: str = None):
         post_evt = adventure_engine.post_adventure_event(zone)
         if post_evt:
             await ctx.send(f"📬 {post_evt.get('text', '')}")
+        save_manager.save(shared_player)
 
     view = AdventureView(
         adventure_engine=adventure_engine,
@@ -931,6 +1011,7 @@ async def fishing_cmd(ctx):
     if departure:
         await ctx.send(departure)
     await fishing_engine.fish(ctx)
+    save_manager.save(shared_player)
     enc_msg = encounter_manager.trigger_encounter()
     if enc_msg:
         await _send_encounter(ctx, enc_msg)
@@ -954,9 +1035,7 @@ async def dice_cmd(ctx, sides: int = 6):
         return
     sides = max(2, min(sides, 10000))
     result = random.randint(1, sides)
-    await ctx.send(ansi(
-        f"  🎲 {C.GOLD}{sides}면 주사위{C.R} 결과: {C.WHITE}{result}{C.R}!"
-    ))
+    await _send_msg_card(ctx, f"🎲 {sides}면 주사위", f"결과: {result}", system_key="system")
 
 
 @bot.command(name="저장")
@@ -965,7 +1044,7 @@ async def save_cmd(ctx):
         return
     try:
         save_manager.save(shared_player)
-        await ctx.send(ansi(f"  {C.GREEN}✔ 데이터 저장 완료임미댜!{C.R}"))
+        await _send_msg_card(ctx, "데이터 저장", "저장 완료임미댜!", system_key="system")
     except Exception as e:
         await ctx.send(ansi(f"  {C.RED}✖ 저장 실패: {e}{C.R}"))
 
@@ -1133,6 +1212,7 @@ async def gather_cmd(ctx):
     if departure:
         await ctx.send(departure)
     await gathering_engine.gather(ctx)
+    save_manager.save(shared_player)
     enc_msg = encounter_manager.trigger_encounter()
     if enc_msg:
         await _send_encounter(ctx, enc_msg)
@@ -1146,6 +1226,7 @@ async def mine_cmd(ctx):
     if departure:
         await ctx.send(departure)
     await gathering_engine.mine(ctx)
+    save_manager.save(shared_player)
     enc_msg = encounter_manager.trigger_encounter()
     if enc_msg:
         await _send_encounter(ctx, enc_msg)
@@ -1174,6 +1255,7 @@ async def quest_accept_cmd(ctx, quest_id: str = None):
         return
     result = quest_manager.accept_quest(quest_id)
     await ctx.send(result)
+    save_manager.save(shared_player)
 
 
 @bot.command(name="퀘스트완료")
@@ -1185,6 +1267,7 @@ async def quest_complete_cmd(ctx, quest_id: str = None):
         return
     result = quest_manager.complete_quest(quest_id)
     await ctx.send(result)
+    save_manager.save(shared_player)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -1199,6 +1282,7 @@ async def gacha_cmd(ctx, count: int = 1):
     results = gacha_engine.do_gacha(count)
     embed   = gacha_engine.show_result(results)
     await ctx.send(embed=embed)
+    save_manager.save(shared_player)
 
 
 @bot.command(name="뽑기10")
@@ -1208,6 +1292,7 @@ async def gacha10_cmd(ctx):
     results = gacha_engine.do_gacha_10()
     embed   = gacha_engine.show_result(results)
     await ctx.send(embed=embed)
+    save_manager.save(shared_player)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -1506,6 +1591,7 @@ async def draw_water_cmd(ctx, count: int = 1):
         f"  {C.WHITE}물{C.R} x{count} 획득!\n"
         f"  {C.RED}기력 -{energy_cost}{C.R}"
     ))
+    save_manager.save(shared_player)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -1586,7 +1672,13 @@ async def inventory_cmd(ctx):
     used, max_slots = shared_player.inventory_check()
 
     # ── PIL 이미지 렌더링 ─────────────────────────────────────────
-    rows = [{"label": "소지금", "value": f"{shared_player.gold:,}G", "color": RC.GOLD_HI}]
+    from database import BAGS
+    bag_names = [BAGS.get(b, {}).get("name", b) for b in shared_player.bags if b in BAGS]
+    bag_label = ", ".join(bag_names) if bag_names else "기본"
+    rows = [
+        {"label": "소지금", "value": f"{shared_player.gold:,}G", "color": RC.GOLD_HI},
+        {"label": "장착 가방", "value": bag_label},
+    ]
 
     if not inventory:
         rows.append({"label": "아이템", "value": "인벤토리가 비어있슴미댜."})
@@ -1845,6 +1937,7 @@ async def woodcut_cmd(ctx):
     if not await _check_channel(ctx):
         return
     await gathering_engine.woodcut(ctx)
+    save_manager.save(shared_player)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -1889,9 +1982,11 @@ async def train_cmd(ctx, *, stat: str = None):
         return
     if stat:
         result = training_system.train(stat.strip())
+        await ctx.send(result)
+        save_manager.save(shared_player)
     else:
         result = training_system.show_menu()
-    await ctx.send(result)
+        await ctx.send(result)
 
 
 # ═══════════════════════════════════════════════════════════════════════════

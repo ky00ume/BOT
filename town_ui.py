@@ -181,6 +181,7 @@ class VisionTownView(View):
                 conv = ConversationManager(self.player, self.aff_manager, self.npc_manager_ref)
                 await interaction.response.defer()
                 await conv.send_conversation(interaction.channel, npc_name)
+                await interaction.delete_original_response()
             else:
                 npc_list = "\n".join(f"• {n}" for n in npcs_here)
                 await interaction.response.send_message(
@@ -320,19 +321,42 @@ class HuntingZoneView(View):
 
     async def _hunt_callback(self, interaction: discord.Interaction):
         await interaction.response.defer()
-        from main import battle_engine, encounter_manager
+        from main import battle_engine, encounter_manager, quest_manager, achievement_manager, diary_manager
         departure = encounter_manager.clear_encounter()
         if departure:
             await interaction.channel.send(departure)
         success, result = battle_engine.start_encounter(self.zone_name)
-        if isinstance(result, io.BytesIO):
-            result.seek(0)
-            file = discord.File(fp=result, filename="battle.png")
-            await interaction.channel.send(file=file)
-        elif isinstance(result, discord.Embed):
-            await interaction.channel.send(embed=result)
+        if success:
+            _bimg = battle_engine.build_battle_image()
+
+            async def _on_battle_end(won: bool):
+                if won:
+                    achievement_manager.increment("battles_won", 1)
+                    diary_manager.increment("battles_won", 1)
+                    _killed_zone = battle_engine.current_zone
+                    _killed_monster = battle_engine.current_monster.get("id", "") if battle_engine.current_monster else ""
+                    quest_manager.update_kill_count(1, zone=_killed_zone, monster_id=_killed_monster)
+                from main import save_manager, shared_player
+                save_manager.save(shared_player)
+
+            from battle_view import BattleView
+            view = BattleView(battle_engine, interaction.channel, on_battle_end=_on_battle_end)
+            if _bimg:
+                _bimg.seek(0)
+                await interaction.channel.send(file=discord.File(fp=_bimg, filename="battle.png"), view=view)
+            elif isinstance(result, io.BytesIO):
+                result.seek(0)
+                await interaction.channel.send(file=discord.File(fp=result, filename="battle.png"), view=view)
+            else:
+                await interaction.channel.send(str(result), view=view)
         else:
-            await interaction.channel.send(str(result))
+            if isinstance(result, io.BytesIO):
+                result.seek(0)
+                await interaction.channel.send(file=discord.File(fp=result, filename="battle.png"))
+            elif isinstance(result, discord.Embed):
+                await interaction.channel.send(embed=result)
+            else:
+                await interaction.channel.send(str(result))
         if success:
             enc_msg = encounter_manager.trigger_encounter()
             if enc_msg:
@@ -404,13 +428,17 @@ class GatheringZoneView(View):
 
     async def _gather_callback(self, interaction: discord.Interaction):
         await interaction.response.defer()
-        from main import gathering_engine
-        await gathering_engine.gather(interaction.channel)
+        from main import gathering_engine, save_manager, shared_player
+        await gathering_engine.gather(interaction.channel, zone_name=self.zone_name)
+        save_manager.save(shared_player)
+        await interaction.delete_original_response()
 
     async def _mine_callback(self, interaction: discord.Interaction):
         await interaction.response.defer()
-        from main import gathering_engine
+        from main import gathering_engine, save_manager, shared_player
         await gathering_engine.mine(interaction.channel)
+        save_manager.save(shared_player)
+        await interaction.delete_original_response()
 
     async def _back_callback(self, interaction: discord.Interaction):
         view = WorldMapView(self.player, self.aff_manager, self.npc_manager_ref)
@@ -467,11 +495,12 @@ class FishingZoneView(View):
 
     async def _fish_callback(self, interaction: discord.Interaction):
         await interaction.response.defer()
-        from main import fishing_engine, encounter_manager
+        from main import fishing_engine, encounter_manager, save_manager, shared_player
         departure = encounter_manager.clear_encounter()
         if departure:
             await interaction.channel.send(departure)
         await fishing_engine.fish(interaction.channel)
+        save_manager.save(shared_player)
         enc_msg = encounter_manager.trigger_encounter()
         if enc_msg:
             from special_npc import render_encounter_image
@@ -488,12 +517,14 @@ class FishingZoneView(View):
                 await interaction.channel.send(file=enc_file, view=view)
             else:
                 await interaction.channel.send(enc_msg)
+        await interaction.delete_original_response()
 
     async def _silen_callback(self, interaction: discord.Interaction):
         from npc_conversation import ConversationManager
         conv = ConversationManager(self.player, self.aff_manager, self.npc_manager_ref)
         await interaction.response.defer()
         await conv.send_conversation(interaction.channel, "실렌")
+        await interaction.delete_original_response()
 
     async def _back_callback(self, interaction: discord.Interaction):
         view = WorldMapView(self.player, self.aff_manager, self.npc_manager_ref)

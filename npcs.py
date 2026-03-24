@@ -246,6 +246,28 @@ class VillageNPC:
             f"  {C.RED}기력 -{energy_cost}{C.R}  ⏱ 잠시 기다려 주셰요..."
         ))
 
+        # deliver 타입: 보류 작업으로 등록 후 즉시 반환 (대상 NPC 방문 시 완료)
+        if job_type == "deliver" and deliver_item:
+            _flags = getattr(self.player, "_flags", {})
+            _flags[f"pending_deliver:{deliver_item}"] = {
+                "npc_name":          npc_name,
+                "target_npc":        target_npc,
+                "deliver_item":      deliver_item,
+                "deliver_item_name": deliver_item_name,
+                "reward_gold":       job.get("reward_gold", 0),
+                "reward_exp":        float(job.get("reward_exp", 0)),
+                "reward_skill_exp":  job.get("reward_skill_exp", {}),
+                "reward_item":       job.get("reward_item"),
+                "job_name":          job["name"],
+            }
+            self.player._flags = _flags
+            try:
+                from save_manager import save_manager
+                save_manager.save(self.player)
+            except Exception:
+                pass
+            return
+
         await asyncio.sleep(3)
 
         reward_gold      = job.get("reward_gold", 100)
@@ -287,14 +309,9 @@ class VillageNPC:
                 exp=float(reward_exp),
             )
 
-        else:  # Fix #1: deliver — 즉시 보상 지급 + 배달 아이템 제거
-            economy.pay_reward(
-                source=f"알바:{npc_name}",
-                gold=reward_gold,
-                exp=float(reward_exp),
-            )
-            if deliver_item:
-                economy.remove_item(f"알바:{npc_name}", deliver_item, 1)
+        else:
+            # deliver 타입은 위에서 return 처리됨 — 이 분기는 실행되지 않음
+            pass
 
         # Fix #4: 스킬 경험치 보상 — train_skill() 사용 (미등록 스킬도 자동 초기화)
         if reward_skill_exp:

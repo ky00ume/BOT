@@ -1,5 +1,5 @@
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 import random
 import signal
 import sys
@@ -175,6 +175,16 @@ async def _send_encounter(ctx, enc_msg: str):
         await ctx.send(enc_msg)
 
 
+# ─── 자동 저장 루프 (5분마다) ────────────────────────────────────────────
+@tasks.loop(minutes=5)
+async def auto_save_loop():
+    """5분마다 플레이어 데이터를 자동 저장합니다."""
+    try:
+        save_manager.save(shared_player)
+    except Exception as e:
+        print(f"[자동저장] 실패: {e}")
+
+
 # ─── 이벤트 ──────────────────────────────────────────────────────────────
 @bot.event
 async def on_ready():
@@ -216,6 +226,10 @@ async def on_ready():
         shared_player._flags["levelup_potion_granted"] = True
         shared_player.add_item("levelup_potion", 1)
         print("[이벤트] 레벨업 사탕 1회 지급 완료")
+
+    # 자동 저장 루프 시작
+    if not auto_save_loop.is_running():
+        auto_save_loop.start()
 
     print("[봇 준비] 모든 시스템 초기화 완료!")
 

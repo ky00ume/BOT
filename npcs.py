@@ -341,6 +341,12 @@ class VillageNPC:
                 lines.append(reward_item_line)
             await ctx.send(ansi("\n".join(lines)))
 
+        try:
+            from save_manager import save_manager
+            save_manager.save(self.player)
+        except Exception:
+            pass
+
     def list_npcs(self) -> str:
         lines = [header_box("🏘 마을 NPC 목록"), section("NPC 목록")]
         for npc_name, npc in NPC_DATA.items():

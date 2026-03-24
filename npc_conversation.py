@@ -281,6 +281,14 @@ class NPCConversationView(View):
         if unlocked or leveled:
             self._build_buttons()
 
+        # 친밀도/키워드 변경 시 저장
+        if aff_gain or unlocked or leveled:
+            try:
+                from save_manager import save_manager
+                save_manager.save(self.player)
+            except Exception:
+                pass
+
         await interaction.response.edit_message(attachments=[file], embed=None, view=self)
 
     async def _job_callback(self, interaction: discord.Interaction):

@@ -373,6 +373,45 @@ class ConversationManager:
         except Exception:
             pass
 
+        # 알바 배달형: 보류 중인 배달 작업 완료 처리
+        try:
+            _flags = getattr(self.player, "_flags", {})
+            for key in [k for k in list(_flags.keys()) if k.startswith("pending_deliver:")]:
+                job_info = _flags.get(key, {})
+                if job_info.get("target_npc") != npc_name:
+                    continue
+                d_item = job_info.get("deliver_item", "")
+                if not d_item or self.player.inventory.get(d_item, 0) < 1:
+                    continue
+                # 아이템 제거 및 보상 지급
+                self.player.remove_item(d_item, 1)
+                gold = job_info.get("reward_gold", 0)
+                exp  = job_info.get("reward_exp", 0.0)
+                self.player.gold += gold
+                self.player.exp = getattr(self.player, "exp", 0.0) + exp
+                for sid, amt in job_info.get("reward_skill_exp", {}).items():
+                    self.player.train_skill(sid, float(amt))
+                r_item = job_info.get("reward_item")
+                if r_item:
+                    self.player.add_item(r_item, 1)
+                del _flags[key]
+                self.player._flags = _flags
+                src_npc   = job_info.get("npc_name", "")
+                job_nm    = job_info.get("job_name", "배달 알바")
+                d_name    = job_info.get("deliver_item_name", d_item)
+                await ctx.send(
+                    f"📦 **{src_npc} 알바 [{job_nm}]** 완료!\n"
+                    f"**{npc_name}**에게 {d_name}을(를) 전달했슴미댜!\n"
+                    f"+**{gold:,}G**  /  EXP +**{exp}**"
+                )
+                try:
+                    from save_manager import save_manager
+                    save_manager.save(self.player)
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
         # 일일 제한 확인 (차단 없음, 경고만)
         show_limit_warning = False
         if self.aff_manager and hasattr(self.aff_manager, "check_talk_limit"):

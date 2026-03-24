@@ -71,6 +71,7 @@ def make_npc_embed() -> discord.Embed:
             "~~`/대화 [NPC이름]`~~ — 삭제됨 → `/비전타운` 사용\n"
             "`/대화` (단독) — NPC 목록 확인은 유지\n"
             "`/알바 [NPC이름]` — NPC 알바 진행 (기력 소모, 골드·EXP 획득)\n"
+            "  └ **배달형 알바**: 아이템 수령 후 대상 NPC 방문 시 자동 완료\n"
             "⚠️ 호감도 일일 한도 달성 시 대화는 계속 가능 (대화 차단 없음)"
         ),
         inline=False,
@@ -176,11 +177,11 @@ def make_commands_embed() -> discord.Embed:
     embed.add_field(
         name="👤 캐릭터 & 상태",
         value=(
-            "`/상태창` `/장비` `/스왑`\n"
+            "`/상태` `/상태창` `/장비` `/스왑`\n"
             "`/장착 [아이템]` `/벗기 [슬롯]`\n"
-            "`/치료` `/먹기 [ID]` `/버리기 [ID]`\n"
-            "`/타이틀` `/업적` `/도감`\n"
-            "`/일기` `/아이템목록`"
+            "`/치료` `/휴식` `/먹기 [아이템]`\n"
+            "`/버리기 [아이템] [수량]` — 아이템 버리기\n"
+            "`/타이틀` `/업적` `/도감`"
         ),
         inline=True,
     )
@@ -353,10 +354,48 @@ def make_patchnote_embed() -> discord.Embed:
     return embed
 
 
+def make_patchnote_v052_embed() -> discord.Embed:
+    embed = discord.Embed(
+        title="🛠️ 패치노트 — v0.5.2 (2026-03-24)",
+        description="비전 타운 봇 버그 수정 및 시스템 개선 패치임미댜!",
+        color=0xf0a500,
+    )
+    embed.add_field(
+        name="💬 NPC 키워드 대화 UI 수정",
+        value=(
+            "• 키워드 선택 시 대사가 길면 카드 UI를 뚫고 나가던 현상 수정\n"
+            "• 대사 텍스트 자동 줄바꿈 적용 — 카드 높이도 내용에 맞게 동적 조정"
+        ),
+        inline=False,
+    )
+    embed.add_field(
+        name="💼 배달형 알바 시스템 전면 재구현",
+        value=(
+            "• 기존: 3초 후 자동 완료 → 배달 아이템이 인벤토리에 잔류하는 버그 존재\n"
+            "• 변경: **대상 NPC를 실제로 방문해야 알바 완료**\n"
+            "  1. 알바 수락 → 배달 아이템이 인벤토리에 추가됨\n"
+            "  2. `/비전타운` → 대상 NPC 선택 → 자동으로 배달 완료 처리\n"
+            "  3. 배달 완료 시 아이템 자동 삭제 + 보상 지급"
+        ),
+        inline=False,
+    )
+    embed.add_field(
+        name="📖 공지·도움말 업데이트",
+        value=(
+            "• 현재 명령어 및 시스템 정보 반영\n"
+            "• 패치노트 최신화 (v0.5.2)"
+        ),
+        inline=True,
+    )
+    embed.set_footer(text="✦ 비전 타운 봇 v0.5.2 패치노트 ✦")
+    return embed
+
+
 async def send_town_notice(channel):
-    """채널에 마을 공지 5장을 전송합니다."""
+    """채널에 마을 공지를 전송합니다."""
     await channel.send(embed=make_intro_embed())
     await channel.send(embed=make_npc_embed())
     await channel.send(embed=make_life_embed())
     await channel.send(embed=make_commands_embed())
     await channel.send(embed=make_patchnote_embed())
+    await channel.send(embed=make_patchnote_v052_embed())

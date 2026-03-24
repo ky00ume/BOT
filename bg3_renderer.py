@@ -545,16 +545,37 @@ class BG3Renderer:
                     w=520, h=380) -> io.BytesIO:
         w = min(w, _MAX_IMG_DIM); h = min(h, _MAX_IMG_DIM)
         title = str(title)[:200]; subtitle = str(subtitle)[:200] if subtitle else None
-        # 행 수에 따라 높이 동적 조정
-        row_h = 36
-        min_h = 120 + len(rows) * row_h
+        PAD = 24; HH = 66 if not subtitle else 88; FH = 46
+        _lh_val = 22  # 값 텍스트 줄 높이
+        fV = _f(19, True)
+        mx_col = PAD + (w - PAD * 2) * 2 // 5 + 26
+        val_maxw = w - PAD - mx_col - 8
+
+        # 행별 실제 높이 계산 (텍스트 줄바꿈 고려)
+        _tmp = Image.new("RGBA", (w, 1))
+        _tmp_d = ImageDraw.Draw(_tmp)
+        row_heights = []
+        for row in rows:
+            val = str(row.get("value", ""))
+            line = ""; n = 0
+            for ch in val:
+                test = line + ch
+                if _tw(_tmp_d, test, fV) > val_maxw and line:
+                    n += 1; line = ch
+                else:
+                    line = test
+            if line:
+                n += 1
+            row_heights.append(max(36, n * _lh_val + 14))
+
+        min_h = HH + FH + 30 + sum(row_heights) + 10
         h = max(h, min_h)
         h = min(h, _MAX_IMG_DIM)
+
         img = _make_base(w,h, system_key, grade)
         d   = ImageDraw.Draw(img)
         rc  = C.RARITY.get(grade,(155,155,155))
-        fT  = _f(28,True); fS=_f(16); fL=_f(17); fV=_f(19,True); fF=_f(14)
-        PAD = 24; HH = 66 if not subtitle else 88
+        fT  = _f(28,True); fS=_f(16); fL=_f(17); fF=_f(14)
 
         # 헤더 패널
         hdr = Image.new("RGBA",(w,h),(0,0,0,0))
@@ -567,19 +588,17 @@ class BG3Renderer:
         _orn(img,d, PAD,HH, w-PAD, color=rc)
 
         # 콘텐츠 패널
-        FH=46; CT=HH+12; CB=h-FH-6
+        CT=HH+12; CB=h-FH-6
         _rr(img,PAD,CT,w-PAD,CB, 8, fill=(*C.BG2,115))
         d=ImageDraw.Draw(img)
+        cy=CT+12
 
-        avail=CB-CT-16; rh=max(30,min(row_h,avail//max(len(rows),1)))
-        mx_col=PAD+(w-PAD*2)*2//5+26; cy=CT+12
-
-        for i,row in enumerate(rows):
+        for i, (row, rh) in enumerate(zip(rows, row_heights)):
             lbl = row.get("label",""); val=str(row.get("value",""))
             col = row.get("color", C.TXT_HI)
             if i>0: d.line([(PAD+18,cy-5),(w-PAD-18,cy-5)], fill=C.SEP, width=1)
             _notxt(d,(PAD+18,cy), lbl+":", fL, C.TXT_LBL)
-            _notxt(d,(mx_col,cy), val,      fV, col)
+            _wrap(d, val, fV, mx_col, cy, val_maxw, col, lh=_lh_val)
             cy+=rh
 
         sy=h-FH; _orn(img,d,PAD,sy,w-PAD, color=C.GOLD_LO)

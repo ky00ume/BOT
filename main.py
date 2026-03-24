@@ -702,6 +702,7 @@ async def hunt_cmd(ctx, *, zone: str = None):
                         f"  {ach.get('desc', '')}\n"
                         f"  🎀 타이틀 획득: **{ach.get('title', '')}**"
                     )
+            save_manager.save(shared_player)
 
         from battle_view import BattleView
         view = BattleView(battle_engine, ctx, on_battle_end=_on_battle_end)
@@ -860,6 +861,7 @@ async def adventure_cmd(ctx, *, zone: str = None):
         post_evt = adventure_engine.post_adventure_event(zone)
         if post_evt:
             await ctx.send(f"📬 {post_evt.get('text', '')}")
+        save_manager.save(shared_player)
 
     view = AdventureView(
         adventure_engine=adventure_engine,
@@ -934,6 +936,7 @@ async def fishing_cmd(ctx):
     if departure:
         await ctx.send(departure)
     await fishing_engine.fish(ctx)
+    save_manager.save(shared_player)
     enc_msg = encounter_manager.trigger_encounter()
     if enc_msg:
         await _send_encounter(ctx, enc_msg)
@@ -1136,6 +1139,7 @@ async def gather_cmd(ctx):
     if departure:
         await ctx.send(departure)
     await gathering_engine.gather(ctx)
+    save_manager.save(shared_player)
     enc_msg = encounter_manager.trigger_encounter()
     if enc_msg:
         await _send_encounter(ctx, enc_msg)
@@ -1149,6 +1153,7 @@ async def mine_cmd(ctx):
     if departure:
         await ctx.send(departure)
     await gathering_engine.mine(ctx)
+    save_manager.save(shared_player)
     enc_msg = encounter_manager.trigger_encounter()
     if enc_msg:
         await _send_encounter(ctx, enc_msg)
@@ -1854,6 +1859,7 @@ async def woodcut_cmd(ctx):
     if not await _check_channel(ctx):
         return
     await gathering_engine.woodcut(ctx)
+    save_manager.save(shared_player)
 
 
 # ═══════════════════════════════════════════════════════════════════════════

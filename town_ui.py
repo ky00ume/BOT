@@ -320,19 +320,40 @@ class HuntingZoneView(View):
 
     async def _hunt_callback(self, interaction: discord.Interaction):
         await interaction.response.defer()
-        from main import battle_engine, encounter_manager
+        from main import battle_engine, encounter_manager, quest_manager, achievement_manager, diary_manager
         departure = encounter_manager.clear_encounter()
         if departure:
             await interaction.channel.send(departure)
         success, result = battle_engine.start_encounter(self.zone_name)
-        if isinstance(result, io.BytesIO):
-            result.seek(0)
-            file = discord.File(fp=result, filename="battle.png")
-            await interaction.channel.send(file=file)
-        elif isinstance(result, discord.Embed):
-            await interaction.channel.send(embed=result)
+        if success:
+            _bimg = battle_engine.build_battle_image()
+
+            async def _on_battle_end(won: bool):
+                if won:
+                    achievement_manager.increment("battles_won", 1)
+                    diary_manager.increment("battles_won", 1)
+                    _killed_zone = battle_engine.current_zone
+                    _killed_monster = battle_engine.current_monster.get("id", "") if battle_engine.current_monster else ""
+                    quest_manager.update_kill_count(1, zone=_killed_zone, monster_id=_killed_monster)
+
+            from battle_view import BattleView
+            view = BattleView(battle_engine, interaction.channel, on_battle_end=_on_battle_end)
+            if _bimg:
+                _bimg.seek(0)
+                await interaction.channel.send(file=discord.File(fp=_bimg, filename="battle.png"), view=view)
+            elif isinstance(result, io.BytesIO):
+                result.seek(0)
+                await interaction.channel.send(file=discord.File(fp=result, filename="battle.png"), view=view)
+            else:
+                await interaction.channel.send(str(result), view=view)
         else:
-            await interaction.channel.send(str(result))
+            if isinstance(result, io.BytesIO):
+                result.seek(0)
+                await interaction.channel.send(file=discord.File(fp=result, filename="battle.png"))
+            elif isinstance(result, discord.Embed):
+                await interaction.channel.send(embed=result)
+            else:
+                await interaction.channel.send(str(result))
         if success:
             enc_msg = encounter_manager.trigger_encounter()
             if enc_msg:

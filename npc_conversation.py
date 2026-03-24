@@ -355,6 +355,15 @@ class ConversationManager:
             await ctx.send(f"[{npc_name}]을(를) 찾을 수 없슴미댜.")
             return
 
+        # deliver 타입 퀘스트: 목표 NPC 방문 시 자동 전달 처리
+        try:
+            from main import quest_manager
+            deliver_msg = quest_manager.deliver_to_npc(npc_name)
+            if deliver_msg:
+                await ctx.send(deliver_msg)
+        except Exception:
+            pass
+
         # 일일 제한 확인 (차단 없음, 경고만)
         show_limit_warning = False
         if self.aff_manager and hasattr(self.aff_manager, "check_talk_limit"):

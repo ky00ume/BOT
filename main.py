@@ -289,6 +289,7 @@ async def swap_cmd(ctx):
         footer="교환 완료",
     )
     await _send_image(ctx, buf, "swap.png")
+    save_manager.save(shared_player)
 
 
 @bot.command(name="장착")
@@ -306,6 +307,9 @@ async def equip_cmd(ctx, *, item_name: str = None):
         await ctx.send(ansi(f"  {C.RED}✖ 인벤토리에 [{item_name}]가 없슴미댜!{C.R}"))
         return
     item_data = ALL_ITEMS.get(item_id, {})
+    if item_data.get("type") not in ("weapon", "armor"):
+        await ctx.send(ansi(f"  {C.RED}✖ [{item_data.get('name', item_name)}]은(는) 장착할 수 없는 아이템임미댜!{C.R}"))
+        return
     msg = shared_player.equip_item(item_id)
     _SLOT_KR = {"main": "주무기", "sub": "보조무기", "body": "갑옷", "head": "투구", "hands": "장갑", "feet": "신발"}
     slot_kr  = _SLOT_KR.get(item_data.get("slot", ""), item_data.get("slot", "?"))
@@ -1251,6 +1255,7 @@ async def quest_accept_cmd(ctx, quest_id: str = None):
         return
     result = quest_manager.accept_quest(quest_id)
     await ctx.send(result)
+    save_manager.save(shared_player)
 
 
 @bot.command(name="퀘스트완료")
@@ -1262,6 +1267,7 @@ async def quest_complete_cmd(ctx, quest_id: str = None):
         return
     result = quest_manager.complete_quest(quest_id)
     await ctx.send(result)
+    save_manager.save(shared_player)
 
 
 # ═══════════════════════════════════════════════════════════════════════════

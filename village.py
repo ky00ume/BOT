@@ -3,6 +3,7 @@ import asyncio
 import random
 import json
 import discord
+import database
 from ui_theme import C, ansi, header_box, divider, EMBED_COLOR
 
 VILLAGE_LEVEL_THRESHOLDS = [0, 500, 1200, 2500, 4500, 7500, 12000]
@@ -43,6 +44,7 @@ class VillageManager:
         old_level = self.level
         self.level = self.get_level()
         leveled_up = self.level > old_level
+        database.save_village_data(self.contribution, self.level)
         return (self.contribution, leveled_up, self.level)
 
     def get_level(self) -> int:
@@ -77,6 +79,7 @@ class VillageManager:
             delta = event.get("contrib_delta", 0)
             self.contribution = max(0, self.contribution + delta)
             self.level = self.get_level()
+            database.save_village_data(self.contribution, self.level)
 
         self.active_event = event
 

@@ -19,7 +19,7 @@ from player       import Player
 from npcs         import VillageNPC
 from shop         import ShopManager
 from battle       import BattleEngine
-from database     import init_db, save_player_to_db, load_player_from_db
+from database     import init_db, save_player_to_db, load_player_from_db, load_village_data
 from economy      import Economy
 from save_manager import save_manager
 from equipment_window import create_equipment_image
@@ -213,6 +213,11 @@ async def on_ready():
         print(f"[DB 로드] {shared_player.name} 데이터 복원 완료")
     else:
         print("[DB 로드] 저장 데이터 없음 — 기본 캐릭터로 시작")
+
+    # 마을 기여도/레벨 DB에서 복원
+    village_data = load_village_data()
+    village_manager.from_dict(village_data)
+    print(f"[DB 로드] 마을 기여도: {village_manager.contribution}pt, Lv.{village_manager.level}")
 
     # 알람 설정
     alarm_loop = setup_alarms(bot, ALLOWED_CHANNEL_ID, DRIDER_ID, hyness_id=HYNESS_ID, majesty_id=MAJESTY_ID)

@@ -1207,6 +1207,7 @@ async def gacha_cmd(ctx, count: int = 1):
     results = gacha_engine.do_gacha(count)
     embed   = gacha_engine.show_result(results)
     await ctx.send(embed=embed)
+    save_manager.save(shared_player)
 
 
 @bot.command(name="뽑기10")
@@ -1216,6 +1217,7 @@ async def gacha10_cmd(ctx):
     results = gacha_engine.do_gacha_10()
     embed   = gacha_engine.show_result(results)
     await ctx.send(embed=embed)
+    save_manager.save(shared_player)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -1904,9 +1906,11 @@ async def train_cmd(ctx, *, stat: str = None):
         return
     if stat:
         result = training_system.train(stat.strip())
+        await ctx.send(result)
+        save_manager.save(shared_player)
     else:
         result = training_system.show_menu()
-    await ctx.send(result)
+        await ctx.send(result)
 
 
 # ═══════════════════════════════════════════════════════════════════════════

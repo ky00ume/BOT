@@ -429,7 +429,7 @@ class GatheringZoneView(View):
     async def _gather_callback(self, interaction: discord.Interaction):
         await interaction.response.defer()
         from main import gathering_engine, save_manager, shared_player
-        await gathering_engine.gather(interaction.channel)
+        await gathering_engine.gather(interaction.channel, zone_name=self.zone_name)
         save_manager.save(shared_player)
         await interaction.delete_original_response()
 

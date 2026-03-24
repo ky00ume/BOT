@@ -114,6 +114,24 @@ MINE_ITEMS = [
 ]
 
 
+GATHER_ZONE_ITEMS = {
+    "버섯 군락지": [
+        {"id": "mushroom",            "name": "버섯",              "grade": "Normal",  "rate": 0.50},
+        {"id": "shiitake",            "name": "표고버섯",          "grade": "Normal",  "rate": 0.30},
+        {"id": "bluecap",             "name": "블루캡",            "grade": "Normal",  "rate": 0.18},
+        {"id": "nightlight_mushroom", "name": "나이트라이트 버섯", "grade": "Normal",  "rate": 0.22},
+        {"id": "torchstalk",          "name": "토치스톡",          "grade": "Normal",  "rate": 0.12},
+        {"id": "toxic_mushroom",      "name": "독버섯",            "grade": "Normal",  "rate": 0.10},
+        {"id": "glow_mushroom",       "name": "발광버섯",          "grade": "Rare",    "rate": 0.08},
+        {"id": "pine_mushroom",       "name": "송이버섯",          "grade": "Rare",    "rate": 0.06},
+        {"id": "timmask",             "name": "팀마스크",          "grade": "Rare",    "rate": 0.05},
+        {"id": "bibberbang",          "name": "비버뱅",            "grade": "Rare",    "rate": 0.04},
+        {"id": "reishi",              "name": "영지버섯",          "grade": "Epic",    "rate": 0.02},
+        {"id": "sussur_bloom",        "name": "서서 꽃",           "grade": "Epic",    "rate": 0.005},
+    ],
+}
+
+
 def get_current_season() -> str:
     import datetime
     month = datetime.datetime.now().month
@@ -209,8 +227,8 @@ class GatheringEngine:
     def __init__(self, player):
         self.player = player
 
-    async def gather(self, ctx):
-        """채집을 수행합니다."""
+    async def gather(self, ctx, zone_name: str = None):
+        """채집을 수행합니다. zone_name이 있으면 해당 존 전용 풀을 사용합니다."""
         energy_cost = 8
         if not self.player.consume_energy(energy_cost):
             await ctx.send(ansi(
@@ -222,7 +240,10 @@ class GatheringEngine:
         await asyncio.sleep(random.uniform(3, 6))
 
         season = get_current_season()
-        pool   = GATHER_ITEMS_BY_SEASON.get(season, GATHER_ITEMS_BY_SEASON["spring"])
+        if zone_name and zone_name in GATHER_ZONE_ITEMS:
+            pool = GATHER_ZONE_ITEMS[zone_name]
+        else:
+            pool = GATHER_ITEMS_BY_SEASON.get(season, GATHER_ITEMS_BY_SEASON["spring"])
         item   = _pick_by_rate(pool)
         count  = random.randint(1, 3)
         grade  = item["grade"]

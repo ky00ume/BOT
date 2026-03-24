@@ -1376,10 +1376,26 @@ async def village_status_cmd(ctx):
 # 신규 명령어 — 쓰담
 # ═══════════════════════════════════════════════════════════════════════════
 
+_pat_last_used: float = 0.0
+PAT_COOLDOWN_SEC = 30  # 30초
+
+
 @bot.command(name="쓰담", aliases=["복복", "북북", "쓰다듬", "북북박박", "복복복", "복복박박"])
 async def pat_cmd(ctx):
+    global _pat_last_used
     if not await _check_channel(ctx):
         return
+
+    now = _time.time()
+    remaining = PAT_COOLDOWN_SEC - (now - _pat_last_used)
+    if remaining > 0:
+        await ctx.send(ansi(
+            f"  {C.RED}💕 아직 쓰담쓰담할 수 없슴미댜! {int(remaining)}초 남음{C.R}"
+        ))
+        return
+
+    _pat_last_used = now
+
     uid = ctx.author.id
     if uid == HYNESS_ID:
         msg = random.choice(HYNESS_PET_RESPONSES)
@@ -1417,20 +1433,19 @@ async def pat_cmd(ctx):
 # 신규 명령어 — 휴식
 # ═══════════════════════════════════════════════════════════════════════════
 
-_rest_cooldowns: dict[int, float] = {}
+_rest_last_used: float = 0.0
 REST_COOLDOWN_SEC = 180  # 3분
 
 
 @bot.command(name="휴식")
 async def rest_cmd(ctx):
+    global _rest_last_used
     if not await _check_channel(ctx):
         return
 
-    user_id = ctx.author.id
     now = _time.time()
 
-    last_used = _rest_cooldowns.get(user_id, 0)
-    remaining = REST_COOLDOWN_SEC - (now - last_used)
+    remaining = REST_COOLDOWN_SEC - (now - _rest_last_used)
     if remaining > 0:
         minutes = int(remaining // 60)
         seconds = int(remaining % 60)
@@ -1445,7 +1460,7 @@ async def rest_cmd(ctx):
 
     rest_engine = RestEngine(shared_player, channel=ctx.channel)
 
-    _rest_cooldowns[user_id] = now
+    _rest_last_used = now
 
     embed = discord.Embed(
         title="💤 휴식 시작!",
@@ -1906,10 +1921,26 @@ async def discard_cmd(ctx, item_name: str = None, count_str: str = "1"):
 # 신규 명령어 — 혼내기 / 훈육 (츄라이더 사죄 반응)
 # ═══════════════════════════════════════════════════════════════════════════
 
+_scold_last_used: float = 0.0
+SCOLD_COOLDOWN_SEC = 30  # 30초
+
+
 @bot.command(name="혼내기", aliases=["훈육"])
 async def scold_cmd(ctx):
+    global _scold_last_used
     if not await _check_channel(ctx):
         return
+
+    now = _time.time()
+    remaining = SCOLD_COOLDOWN_SEC - (now - _scold_last_used)
+    if remaining > 0:
+        await ctx.send(ansi(
+            f"  {C.RED}😤 아직 혼낼 수 없슴미댜! {int(remaining)}초 남음{C.R}"
+        ))
+        return
+
+    _scold_last_used = now
+
     uid = ctx.author.id
     if uid == HYNESS_ID:
         msg = random.choice(HYNESS_SCOLD_RESPONSES)

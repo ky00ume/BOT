@@ -533,6 +533,11 @@ class SkillMainView(View):
                 color=0x2ECC71,
             )
             await interaction.response.send_message(embed=embed, ephemeral=False)
+            try:
+                from save_manager import save_manager
+                save_manager.save(self.player)
+            except Exception:
+                pass
         return callback
 
     def _make_craft_callback(self, skill_id: str, recipe_id: str):
@@ -603,6 +608,11 @@ class SkillMainView(View):
                     await interaction.followup.send(f"결과: {msg}", ephemeral=False)
                 else:
                     await interaction.followup.send(str(result), ephemeral=False)
+            try:
+                from save_manager import save_manager
+                save_manager.save(self.player)
+            except Exception:
+                pass
         return callback
 
 

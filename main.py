@@ -278,6 +278,7 @@ async def equip_cmd(ctx, *, item_name: str = None):
         return
     msg = shared_player.equip_item(item_id)
     await ctx.send(ansi(f"  {C.GREEN}✔{C.R} {msg}"))
+    save_manager.save(shared_player)
 
 
 @bot.command(name="벗기", aliases=["탈착", "장비해제"])
@@ -295,6 +296,7 @@ async def unequip_cmd(ctx, slot: str = None):
         await ctx.send(ansi(f"  {C.RED}✖ {msg}{C.R}"))
     else:
         await ctx.send(ansi(f"  {C.GREEN}✔{C.R} {msg}"))
+        save_manager.save(shared_player)
 
 
 @bot.command(name="치료")
@@ -315,6 +317,7 @@ async def heal_cmd(ctx):
         f"  {C.RED}HP +{heal_hp}{C.R}  {C.BLUE}MP +{heal_mp}{C.R}\n"
         f"  {C.GOLD}-{cost}G{C.R} (현재: {shared_player.gold:,}G)"
     ))
+    save_manager.save(shared_player)
 
 
 @bot.command(name="먹기")
@@ -344,6 +347,7 @@ async def eat_item(ctx, *, item_name: str = None):
             f"  {C.WHITE}레벨 {old_level} → {shared_player.level}{C.R}\n"
             f"  {C.GREEN}{gain_str}{C.R}"
         ))
+        save_manager.save(shared_player)
         return
 
     item = EDIBLE_ITEMS.get(item_id)
@@ -374,6 +378,7 @@ async def eat_item(ctx, *, item_name: str = None):
         f"  {C.GREEN}✔{C.R} {C.WHITE}{name}{C.R} 섭취!\n"
         f"  {' / '.join(effects) if effects else '효과 없음'}"
     ))
+    save_manager.save(shared_player)
 
 
 @bot.command(name="납품")
@@ -520,6 +525,7 @@ async def _process_gift_by_id(ctx, npc_name: str, item_id: str, item_display: st
         lines.append(f"  {C.PINK}✦ 호감도 단계 상승! → [{lv_name}]{C.R}")
 
     await ctx.send(ansi("\n".join(lines)))
+    save_manager.save(shared_player)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -1516,6 +1522,7 @@ async def draw_water_cmd(ctx, count: int = 1):
         f"  {C.WHITE}물{C.R} x{count} 획득!\n"
         f"  {C.RED}기력 -{energy_cost}{C.R}"
     ))
+    save_manager.save(shared_player)
 
 
 # ═══════════════════════════════════════════════════════════════════════════

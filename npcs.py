@@ -328,6 +328,9 @@ class VillageNPC:
         except Exception:
             pass
 
+        if card_sent and reward_item_line:
+            await ctx.send(ansi(reward_item_line.strip()))
+
         if not card_sent:
             lines = [
                 header_box(f"💼 {npc['name']} 알바 {completion_label}"),

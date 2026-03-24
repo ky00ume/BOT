@@ -623,6 +623,16 @@ class CareRoomView(discord.ui.View):
         craft_costume_btn.callback = self._on_craft_costume
         self.add_item(craft_costume_btn)
 
+        # Row 3: 산책
+        walk_btn = discord.ui.Button(
+            label="🚶 산책",
+            style=discord.ButtonStyle.secondary,
+            custom_id="care_walk",
+            row=3,
+        )
+        walk_btn.callback = self._on_walk
+        self.add_item(walk_btn)
+
     # ── 쓰담쓰담 ──────────────────────────────────────────────────────────
     async def _on_pet(self, interaction: discord.Interaction):
         result = self.care_manager.pet(self.player)
@@ -637,7 +647,29 @@ class CareRoomView(discord.ui.View):
                 save_player_to_db(self.player)
             except Exception:
                 pass
+            try:
+                import main as _main
+                _main.diary_manager.increment("pet_count", 1)
+            except Exception:
+                pass
         file = _result_card("🐾 쓰담쓰담", rows, grade=grade)
+        await interaction.response.edit_message(content=None, attachments=[file], view=self)
+
+    # ── 산책 ──────────────────────────────────────────────────────────────
+    async def _on_walk(self, interaction: discord.Interaction):
+        if not hasattr(self.player, "_flags") or self.player._flags is None:
+            self.player._flags = {}
+        is_walking = self.player._flags.get("walking", False)
+        self.player._flags["walking"] = not is_walking
+        if self.player._flags["walking"]:
+            msg = "🚶 산책 시작! 츄라이더가 신나게 걷고 있슴미댜~ 🐾"
+        else:
+            msg = "🏠 산책 종료! 츄라이더가 방으로 돌아왔슴미댜."
+        try:
+            save_player_to_db(self.player)
+        except Exception:
+            pass
+        file = _result_card("🚶 산책", [{"label": "상태", "value": msg}])
         await interaction.response.edit_message(content=None, attachments=[file], view=self)
 
     # ── 간식주기 ──────────────────────────────────────────────────────────

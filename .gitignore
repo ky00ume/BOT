@@ -28,4 +28,7 @@ Thumbs.db
 achievements.json
 collections.json
 diaries.json
+status.json
+bulletin.json
+weekly_fishing.json
 logs/

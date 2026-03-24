@@ -101,6 +101,9 @@ shared_player._affinity_manager = affinity_manager
 # 특수 NPC 인카운터 매니저 초기화
 encounter_manager = SpecialNPCEncounterManager(shared_player)
 
+# 퀘스트 매니저 플레이어에 주입 (저장/복원 연동)
+shared_player._quest_manager = quest_manager
+
 # 스토리 퀘스트 매니저 초기화
 from story_quest import StoryQuestManager
 story_quest_manager = StoryQuestManager(shared_player)

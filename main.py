@@ -272,8 +272,23 @@ async def equipment_cmd(ctx):
 async def swap_cmd(ctx):
     if not await _check_channel(ctx):
         return
-    msg = shared_player.swap_weapons()
-    await ctx.send(ansi(f"  {C.GREEN}✔{C.R} {msg}"))
+    shared_player.swap_weapons()
+    main_id   = shared_player.equipment.get("main")
+    sub_id    = shared_player.equipment.get("sub")
+    _SLOT_KR  = {"main": "주무기", "sub": "보조무기", "body": "갑옷", "head": "투구", "hands": "장갑", "feet": "신발"}
+    main_name = ALL_ITEMS.get(main_id, {}).get("name", "없음") if main_id else "없음"
+    sub_name  = ALL_ITEMS.get(sub_id,  {}).get("name", "없음") if sub_id  else "없음"
+    buf = get_renderer().render_card(
+        "무기 교환",
+        rows=[
+            {"label": "주무기", "value": main_name},
+            {"label": "보조무기", "value": sub_name},
+        ],
+        subtitle="주·보조 슬롯이 교환됐슴미댜!",
+        system_key="system",
+        footer="교환 완료",
+    )
+    await _send_image(ctx, buf, "swap.png")
 
 
 @bot.command(name="장착")
@@ -290,8 +305,21 @@ async def equip_cmd(ctx, *, item_name: str = None):
     if shared_player.inventory.get(item_id, 0) == 0:
         await ctx.send(ansi(f"  {C.RED}✖ 인벤토리에 [{item_name}]가 없슴미댜!{C.R}"))
         return
+    item_data = ALL_ITEMS.get(item_id, {})
     msg = shared_player.equip_item(item_id)
-    await ctx.send(ansi(f"  {C.GREEN}✔{C.R} {msg}"))
+    _SLOT_KR = {"main": "주무기", "sub": "보조무기", "body": "갑옷", "head": "투구", "hands": "장갑", "feet": "신발"}
+    slot_kr  = _SLOT_KR.get(item_data.get("slot", ""), item_data.get("slot", "?"))
+    buf = get_renderer().render_card(
+        "장비 장착",
+        rows=[
+            {"label": "아이템", "value": item_data.get("name", item_name)},
+            {"label": "슬롯",   "value": slot_kr},
+        ],
+        subtitle=msg,
+        system_key="system",
+        footer="장착 완료",
+    )
+    await _send_image(ctx, buf, "equip.png")
     save_manager.save(shared_player)
 
 
@@ -309,7 +337,7 @@ async def unequip_cmd(ctx, slot: str = None):
     if "올바른 슬롯" in msg or "비어있" in msg:
         await ctx.send(ansi(f"  {C.RED}✖ {msg}{C.R}"))
     else:
-        await ctx.send(ansi(f"  {C.GREEN}✔{C.R} {msg}"))
+        await _send_msg_card(ctx, "장비 해제", msg, system_key="system")
         save_manager.save(shared_player)
 
 
@@ -681,14 +709,20 @@ async def zone_list_cmd(ctx):
     if not await _check_channel(ctx):
         return
     zones = battle_engine.zone_list
-    lines = ["  " + C.GOLD + "사냥터 목록" + C.R]
     from monsters_db import MONSTERS_DB
+    rows = []
     for zone_name in zones:
         zone = MONSTERS_DB[zone_name]
         lvl_min, lvl_max = zone["level_range"]
-        lines.append(f"  {C.WHITE}{zone_name}{C.R}  {C.DARK}(Lv.{lvl_min}~{lvl_max}){C.R}")
-    lines.append(f"  {C.GREEN}/사냥 [사냥터이름]{C.R} 으로 출발!")
-    await ctx.send(ansi("\n".join(lines)))
+        rows.append({"label": zone_name, "value": f"Lv.{lvl_min} ~ {lvl_max}"})
+    buf = get_renderer().render_card(
+        "사냥터 목록",
+        rows=rows,
+        subtitle="/사냥 [사냥터이름] 으로 출발!",
+        system_key="battle",
+        footer="⚔ 전투 시스템",
+    )
+    await _send_image(ctx, buf, "zones.png")
 
 
 @bot.command(name="사냥")

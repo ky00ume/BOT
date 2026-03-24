@@ -491,7 +491,25 @@ class RecipeSelect(Select):
             return
 
         view: SkillMainView = self.view
-        embed, can_craft = make_recipe_detail_embed(self.player, recipe_id, recipe)
+        # 재료 현황 계산
+        from items import ALL_ITEMS
+        can_craft = True
+        rows = []
+        for ing_id, need in recipe.get("ingredients", {}).items():
+            ing_name = ALL_ITEMS.get(ing_id, {}).get("name", ing_id)
+            have = self.player.inventory.get(ing_id, 0)
+            ok = have >= need
+            if not ok:
+                can_craft = False
+            rows.append({"label": f"[{'O' if ok else 'X'}] {ing_name}", "value": f"{have}/{need}개"})
+        tool_req = recipe.get("tool_req")
+        if tool_req:
+            tool_name = ALL_ITEMS.get(tool_req, {}).get("name", tool_req)
+            have_tool = self.player.inventory.get(tool_req, 0)
+            if have_tool == 0:
+                can_craft = False
+            rows.append({"label": f"[{'O' if have_tool else 'X'}] 도구", "value": tool_name})
+
         view.clear_items()
         view.add_item(SkillCategorySelect(self.player))
         view.add_item(LifeSkillSelect(self.player))
@@ -506,7 +524,30 @@ class RecipeSelect(Select):
         )
         craft_btn.callback = view._make_craft_callback(self.skill_id, recipe_id)
         view.add_item(craft_btn)
-        await interaction.response.edit_message(embed=embed, view=view)
+
+        try:
+            from bg3_renderer import get_renderer, render_async
+            r = get_renderer()
+            grade    = "Normal" if can_craft else "Fail"
+            subtitle = "✅ 제작 가능!" if can_craft else "❌ 재료 부족"
+            footer   = "[제작 실행] 버튼으로 제작하세요." if can_craft else "재료를 먼저 모아주세요."
+            buf = await render_async(
+                r.render_card,
+                recipe.get("name", recipe_id),
+                rows,
+                grade=grade,
+                subtitle=subtitle,
+                system_key="craft",
+                footer=footer,
+            )
+            await interaction.response.edit_message(
+                attachments=[discord.File(buf, filename="recipe_detail.png")],
+                embed=None,
+                view=view,
+            )
+        except Exception:
+            embed, _ = make_recipe_detail_embed(self.player, recipe_id, recipe)
+            await interaction.response.edit_message(embed=embed, view=view)
 
 
 class SkillMainView(View):
@@ -576,16 +617,47 @@ class SkillMainView(View):
                 await interaction.response.send_message("제작 엔진을 찾을 수 없습니다.", ephemeral=True)
                 return
 
-            # 제작 후 임베드 갱신
+            # 제작 후 재료 현황 갱신
             recipes = _get_recipes_for_skill(skill_id)
             recipe = recipes.get(recipe_id, {})
-            new_embed, can_craft = make_recipe_detail_embed(self.player, recipe_id, recipe)
+            from items import ALL_ITEMS as _AI
+            can_craft = True
+            detail_rows = []
+            for ing_id, need in recipe.get("ingredients", {}).items():
+                ing_name = _AI.get(ing_id, {}).get("name", ing_id)
+                have = self.player.inventory.get(ing_id, 0)
+                ok = have >= need
+                if not ok:
+                    can_craft = False
+                detail_rows.append({"label": f"[{'O' if ok else 'X'}] {ing_name}", "value": f"{have}/{need}개"})
             for child in self.children:
                 if hasattr(child, "custom_id") and child.custom_id and child.custom_id.startswith("craft_exec_"):
                     child.disabled = not can_craft
                     child.style = discord.ButtonStyle.success if can_craft else discord.ButtonStyle.secondary
 
-            await interaction.response.edit_message(embed=new_embed, view=self)
+            try:
+                from bg3_renderer import get_renderer, render_async
+                _r = get_renderer()
+                _grade  = "Normal" if can_craft else "Fail"
+                _sub    = "✅ 제작 가능!" if can_craft else "❌ 재료 부족"
+                _footer = "[제작 실행] 버튼으로 제작하세요." if can_craft else "재료를 먼저 모아주세요."
+                _buf = await render_async(
+                    _r.render_card,
+                    recipe.get("name", recipe_id),
+                    detail_rows,
+                    grade=_grade,
+                    subtitle=_sub,
+                    system_key="craft",
+                    footer=_footer,
+                )
+                await interaction.response.edit_message(
+                    attachments=[discord.File(_buf, filename="recipe_detail.png")],
+                    embed=None,
+                    view=self,
+                )
+            except Exception:
+                new_embed, _ = make_recipe_detail_embed(self.player, recipe_id, recipe)
+                await interaction.response.edit_message(embed=new_embed, view=self)
 
             # BG3 스타일 이미지 결과 카드 전송
             try:

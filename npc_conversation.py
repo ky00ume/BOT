@@ -290,6 +290,7 @@ class NPCConversationView(View):
                 def __init__(self, inter):
                     self.channel = inter.channel
                     self.send = inter.channel.send
+                    self.author = inter.user
             fake_ctx = _FakeCtx(interaction)
             await self.npc_manager_ref.start_job_async(fake_ctx, self.npc_name)
         else:

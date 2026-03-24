@@ -1586,7 +1586,13 @@ async def inventory_cmd(ctx):
     used, max_slots = shared_player.inventory_check()
 
     # ── PIL 이미지 렌더링 ─────────────────────────────────────────
-    rows = [{"label": "소지금", "value": f"{shared_player.gold:,}G", "color": RC.GOLD_HI}]
+    from database import BAGS
+    bag_names = [BAGS.get(b, {}).get("name", b) for b in shared_player.bags if b in BAGS]
+    bag_label = ", ".join(bag_names) if bag_names else "기본"
+    rows = [
+        {"label": "소지금", "value": f"{shared_player.gold:,}G", "color": RC.GOLD_HI},
+        {"label": "장착 가방", "value": bag_label},
+    ]
 
     if not inventory:
         rows.append({"label": "아이템", "value": "인벤토리가 비어있슴미댜."})

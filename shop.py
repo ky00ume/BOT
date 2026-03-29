@@ -46,10 +46,12 @@ _MOL_CATALOG.update(BAGS)
 NPC_CATALOGS = {
     "다몬":   {**WEAPONS, **ARMORS},
     "오멜룸": {**_OMELUM_POTIONS, **_OMELUM_TOOLS},
-    "브룩샤": {**_BROOKSHA_GROCERIES, **_BROOKSHA_DISHES, **_BROOKSHA_EXTRA},
+    "브룩샤": {**_BROOKSHA_GROCERIES, **_BROOKSHA_DISHES, **_BROOKSHA_EXTRA,
+                **{k: v for k, v in SKILL_BOOKS.items() if v.get("npc") == "브룩샤"}},
     "몰":     _MOL_CATALOG,
     "카엘릭": {k: v for k, v in SKILL_BOOKS.items() if v.get("npc") == "카엘릭"},
     "게일의 환영": {k: v for k, v in SKILL_BOOKS.items() if v.get("npc") == "게일의 환영"},
+    "알피라": {k: v for k, v in SKILL_BOOKS.items() if v.get("npc") == "알피라"},
 }
 
 

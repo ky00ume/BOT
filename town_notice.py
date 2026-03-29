@@ -35,7 +35,8 @@ def make_intro_embed() -> discord.Embed:
             "• Lv3 (1200pt): 알바 +15%, 드랍 +8%, 요리품질 +1\n"
             "• Lv4 (2500pt): 알바 +20%, 드랍 +12%\n"
             "• Lv5 (4500pt): 알바 +30%, 드랍 +20%, 요리품질 +2\n"
-            "기여도: 알바(+5), 제련(+4), 전투(+3), 요리(+2), 채집(+2), 낚시(+1)"
+            "기여도: 퀘스트(+8), 알바(+5), 연주(+5), 제련(+4),\n"
+            "전투(+3), 요리기부(+3), 요리(+2), 채집(+2), 낚시(+1)"
         ),
         inline=False,
     )
@@ -60,7 +61,8 @@ def make_npc_embed() -> discord.Embed:
         ("알피라",     "음유시인",     "마을 광장 / 공연 보조 알바"),
         ("엘레라신",   "길드 마스터",  "모험가 길드 / 길드 업무 알바"),
         ("게일의 환영","마법학교 교수","마법학교 / 수업 보조 알바"),
-        ("카엘릭",     "교관",         "훈련소 / 훈련 보조 알바"),
+        ("카엘릭",     "교관",         "훈련소 / 훈련 보조 알바 / 수련"),
+        ("그리스타",   "여관 주인",    "비전 타운 여관 / 휴식·회복"),
     ]
     npc_text = "\n".join(f"• **{name}** [{role}] — {desc}" for name, role, desc in npcs)
     embed.add_field(name="NPC 목록", value=npc_text, inline=False)
@@ -89,7 +91,7 @@ def make_life_embed() -> discord.Embed:
     embed.add_field(
         name="🎣 낚시",
         value=(
-            "`/낚시` — 타이밍 게임 (버튼 클릭)\n"
+            "`/비전타운` → 낚시터 → **[낚시]** 버튼으로 진행\n"
             "`/낚시터정보` `/낚시도감` — 낚시터·물고기 정보\n"
             "`/낚시순위` — 주간 낚시 대회 순위\n"
             "날씨에 따라 확률 변화! 비 오면 확률 +20%"
@@ -128,7 +130,7 @@ def make_life_embed() -> discord.Embed:
     embed.add_field(
         name="💧 물뜨기 & 🛡 장비",
         value=(
-            "`/물뜨기 [수량]` — 빈 병으로 물 뜨기\n"
+            "낚시터 → **[물뜨기]** 버튼 — 빈 병으로 물 뜨기\n"
             "`/장착 [아이템이름]` — 장비 장착\n"
             "`/벗기 [슬롯]` — 장비 탈착\n"
             "`/스왑` — 주·보조 무기 교환"
@@ -147,7 +149,7 @@ def make_life_embed() -> discord.Embed:
     embed.add_field(
         name="📖 수련 & 스킬",
         value=(
-            "`/수련 [스탯]` — 훈련소 스탯 수련 (`/훈련소` `/학교`)\n"
+            "카엘릭 NPC 대화 → **[수련]** 버튼 — 스탯 수련\n"
             "`/스킬` — 스킬 창 (드롭다운+버튼 UI)\n"
             "  └ 카테고리 선택 → 스킬 버튼 → 상세 정보 조회\n"
             "`/업적` — 업적 목록\n"
@@ -158,10 +160,17 @@ def make_life_embed() -> discord.Embed:
     embed.add_field(
         name="📦 보관함",
         value=(
-            "`/보관함` — 보관함 보기\n"
-            "`/보관함넣기 [아이템] [수량]` — 넣기\n"
-            "`/보관함꺼내기 [아이템] [수량]` — 꺼내기\n"
-            "`/보관함업그레이드` — 용량 확장"
+            "`/보관함` — 보관함 보기 (버튼으로 넣기·꺼내기·업그레이드)"
+        ),
+        inline=True,
+    )
+    embed.add_field(
+        name="🏨 여관 & 🎵 연주",
+        value=(
+            "그리스타 NPC 대화 → **[휴식]** 버튼 — 기력·HP 회복\n"
+            "  └ 간이 휴식(50G) / 숙박(150G) / 특실(300G)\n"
+            "알피라 NPC 대화 → **[연주]** 버튼 — 연주 스킬 훈련\n"
+            "  └ 연주 스킬북: 브룩샤/알피라 상점에서 구매"
         ),
         inline=True,
     )
@@ -200,8 +209,7 @@ def make_commands_embed() -> discord.Embed:
         value=(
             "NPC 대화 창 **[구매]** 버튼 — NPC 상점\n"
             "인벤토리 **[판매]** 버튼 — 아이템 판매\n"
-            "`/보관함` `/보관함넣기`\n"
-            "`/보관함꺼내기` `/보관함업그레이드`"
+            "`/보관함` — 보관함 (버튼으로 넣기·꺼내기·업그레이드)"
         ),
         inline=True,
     )
@@ -211,17 +219,18 @@ def make_commands_embed() -> discord.Embed:
             "`/사냥터` `/사냥 [구역]`\n"
             "`/공격 [스킬]` `/도주`\n"
             "`/스킬` — 스킬 창 (드롭다운+버튼 UI)\n"
-            "`/수련 [스탯]`"
+            "수련: 카엘릭 NPC → **[수련]** 버튼"
         ),
         inline=True,
     )
     embed.add_field(
         name="🎣 낚시 & 생활",
         value=(
-            "`/낚시` `/낚시터정보` `/낚시도감`\n"
+            "낚시: `/비전타운` → 낚시터 → **[낚시]** 버튼\n"
+            "`/낚시터정보` `/낚시도감`\n"
             "`/채집` `/채광` `/벌목` `/채집도감`\n"
             "`/스킬` → 생활 스킬 → 요리/제련/포션/제작\n"
-            "`/물뜨기` `/날씨`"
+            "`/날씨`"
         ),
         inline=True,
     )
@@ -231,7 +240,8 @@ def make_commands_embed() -> discord.Embed:
             "`/퀘스트` — 퀘스트 목록 (채집·처치·전달형)\n"
             "`/퀘스트수락 [ID]` `/퀘스트완료 [ID]`\n"
             "`/뽑기` `/뽑기10`\n"
-            "`/작곡` `/연주 [ID]`\n"
+            "`/작곡` — 악보 작곡\n"
+            "연주: 알피라 NPC → **[연주]** 버튼\n"
             "`/게시판` `/명예의전당`\n"
             "`/낚시순위`"
         ),
@@ -391,6 +401,74 @@ def make_patchnote_v052_embed() -> discord.Embed:
     return embed
 
 
+def make_patchnote_v053_embed() -> discord.Embed:
+    embed = discord.Embed(
+        title="🛠️ 패치노트 — v0.5.3 (2026-03-29)",
+        description="비전 타운 봇 버그 수정 및 신규 콘텐츠 패치임미댜!",
+        color=0xf0a500,
+    )
+    embed.add_field(
+        name="🐛 버그 수정 (7건)",
+        value=(
+            "• 배달 알바: 대상 NPC 방문 시 자동 완료되지 않던 버그 수정\n"
+            "• 버섯 채집: 버섯동굴에서 마을 복귀 후 재진입 불가 버그 수정\n"
+            "• 알피라 꽃 채집 알바: 채집 시 알바 진행도 미반영 수정\n"
+            "• 콩 판매: '콩' 검색 시 다른 아이템 매칭되던 버그 수정\n"
+            "• EXP 레벨업: 경험치 획득 시 레벨업 체크 누락 수정\n"
+            "• 오멜룸 텍스트: 키워드 대사가 카드 UI를 뚫고 나가던 현상 수정\n"
+            "• 스토리 퀘스트: 선택지 후 120초간 진행 안 되던 버그 수정"
+        ),
+        inline=False,
+    )
+    embed.add_field(
+        name="🗑️ 명령어 정리",
+        value=(
+            "• `/낚시` 삭제 → 낚시터 UI **[낚시]** 버튼으로 이동\n"
+            "• `/물뜨기` 삭제 → 낚시터 UI **[물뜨기]** 버튼으로 이동\n"
+            "• `/수련` 삭제 → 카엘릭 NPC 대화 **[수련]** 버튼으로 이동\n"
+            "• `/연주` 삭제 → 알피라 NPC 대화 **[연주]** 버튼으로 이동\n"
+            "• `/보관함넣기` `/보관함꺼내기` → `/보관함` 버튼 UI로 통합"
+        ),
+        inline=False,
+    )
+    embed.add_field(
+        name="🏨 신규: 여관 시스템",
+        value=(
+            "• NPC **그리스타** (여관 주인) 추가\n"
+            "• 대화 → **[휴식]** 버튼 → 기력·HP 회복\n"
+            "  간이 휴식(50G) / 숙박(150G) / 특실(300G)"
+        ),
+        inline=True,
+    )
+    embed.add_field(
+        name="🎵 신규: 연주 스킬 시스템",
+        value=(
+            "• 연주 스킬북: 알피라 상점에서 구매\n"
+            "• 연주 시 정확도에 비례한 스킬 EXP 획득\n"
+            "• 연주로 마을 기여도 +5pt 획득"
+        ),
+        inline=True,
+    )
+    embed.add_field(
+        name="🍳 신규: 요리 스킬북",
+        value=(
+            "• 요리 스킬북: 브룩샤 상점에서 구매 (500G)\n"
+            "• /쓰담 대사 전면 개편 (마제스티)"
+        ),
+        inline=True,
+    )
+    embed.add_field(
+        name="📊 기여도 시스템 개편",
+        value=(
+            "• 퀘스트(+8), 알바(+5), 연주(+5), 제련(+4)\n"
+            "• 전투(+3), 요리기부(+3), 요리(+2), 채집(+2), 낚시(+1)"
+        ),
+        inline=False,
+    )
+    embed.set_footer(text="✦ 비전 타운 봇 v0.5.3 패치노트 ✦")
+    return embed
+
+
 async def send_town_notice(channel):
     """채널에 마을 공지를 전송합니다."""
     await channel.send(embed=make_intro_embed())
@@ -399,3 +477,4 @@ async def send_town_notice(channel):
     await channel.send(embed=make_commands_embed())
     await channel.send(embed=make_patchnote_embed())
     await channel.send(embed=make_patchnote_v052_embed())
+    await channel.send(embed=make_patchnote_v053_embed())

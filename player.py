@@ -45,6 +45,29 @@ def apply_level_up(player) -> dict:
             result[stat] = v
     return result
 
+
+def check_level_up(player) -> list:
+    """EXP가 레벨업 기준(level*100)을 초과하면 레벨업 처리.
+
+    여러 레벨을 한 번에 올릴 수 있다.
+    Returns: [{old_level, new_level, gains}, ...] 레벨업 내역 리스트 (없으면 빈 리스트)
+    """
+    results = []
+    while True:
+        threshold = player.level * 100
+        if player.exp < threshold:
+            break
+        old_level = player.level
+        player.exp -= threshold
+        player.level += 1
+        gains = apply_level_up(player)
+        results.append({
+            "old_level": old_level,
+            "new_level": player.level,
+            "gains": gains,
+        })
+    return results
+
 BASE_INVENTORY_SLOTS = 10
 
 _SLOT_NAMES = {

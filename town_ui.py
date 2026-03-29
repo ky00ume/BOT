@@ -431,14 +431,25 @@ class GatheringZoneView(View):
         from main import gathering_engine, save_manager, shared_player
         await gathering_engine.gather(interaction.channel, zone_name=self.zone_name)
         save_manager.save(shared_player)
-        await interaction.delete_original_response()
+        # 채집 후 같은 채집터 뷰를 다시 전송하여 재접근 편의 제공
+        new_view = GatheringZoneView(self.zone_name, self.player, self.aff_manager, self.npc_manager_ref)
+        await new_view.send(interaction.channel)
+        try:
+            await interaction.delete_original_response()
+        except Exception:
+            pass
 
     async def _mine_callback(self, interaction: discord.Interaction):
         await interaction.response.defer()
         from main import gathering_engine, save_manager, shared_player
         await gathering_engine.mine(interaction.channel)
         save_manager.save(shared_player)
-        await interaction.delete_original_response()
+        new_view = GatheringZoneView(self.zone_name, self.player, self.aff_manager, self.npc_manager_ref)
+        await new_view.send(interaction.channel)
+        try:
+            await interaction.delete_original_response()
+        except Exception:
+            pass
 
     async def _back_callback(self, interaction: discord.Interaction):
         view = WorldMapView(self.player, self.aff_manager, self.npc_manager_ref)
@@ -461,6 +472,10 @@ class FishingZoneView(View):
         fish_btn = Button(label="낚시", style=discord.ButtonStyle.primary, emoji="🎣")
         fish_btn.callback = self._fish_callback
         self.add_item(fish_btn)
+
+        water_btn = Button(label="물뜨기", style=discord.ButtonStyle.success, emoji="🫗")
+        water_btn.callback = self._water_callback
+        self.add_item(water_btn)
 
         if self.has_silen:
             silen_btn = Button(label="실렌", style=discord.ButtonStyle.secondary, emoji="🌊")
@@ -517,7 +532,42 @@ class FishingZoneView(View):
                 await interaction.channel.send(file=enc_file, view=view)
             else:
                 await interaction.channel.send(enc_msg)
-        await interaction.delete_original_response()
+        # 낚시 후 같은 낚시터 뷰를 다시 전송
+        new_view = FishingZoneView(
+            self.zone_name, self.has_silen,
+            self.player, self.aff_manager, self.npc_manager_ref,
+        )
+        await new_view.send(interaction.channel)
+        try:
+            await interaction.delete_original_response()
+        except Exception:
+            pass
+
+    async def _water_callback(self, interaction: discord.Interaction):
+        """물뜨기 — 빈 병 1개를 물 1개로 전환 (기력 5 소모)."""
+        from main import save_manager, shared_player
+        from ui_theme import C, ansi
+        p = self.player
+        if p.inventory.get("empty_bottle", 0) < 1:
+            await interaction.response.send_message(
+                ansi(f"  {C.RED}✖ 빈 병이 없슴미댜!{C.R}"), ephemeral=True,
+            )
+            return
+        energy_cost = 5
+        if not p.consume_energy(energy_cost):
+            await interaction.response.send_message(
+                ansi(f"  {C.RED}✖ 기력이 부족함미댜! (필요: {energy_cost}){C.R}"), ephemeral=True,
+            )
+            return
+        p.remove_item("empty_bottle", 1)
+        p.add_item("water", 1)
+        save_manager.save(shared_player)
+        await interaction.response.send_message(
+            ansi(
+                f"  {C.GREEN}✔ 물을 떴슴미댜!{C.R}\n"
+                f"  {C.WHITE}물{C.R} x1 획득!  {C.RED}기력 -{energy_cost}{C.R}"
+            ),
+        )
 
     async def _silen_callback(self, interaction: discord.Interaction):
         from npc_conversation import ConversationManager

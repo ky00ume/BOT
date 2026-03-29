@@ -216,9 +216,24 @@ class VillageNPC:
             ))
             return
 
-        # gather: 아이템 차감
+        # gather: 아이템 차감 (이중 확인)
         if job_type == "gather":
-            economy.remove_item(f"알바:{npc_name}", target_item, target_count)
+            have = self.player.inventory.get(target_item, 0)
+            if have < target_count:
+                # 기력 환불
+                self.player.energy = min(self.player.max_energy, self.player.energy + energy_cost)
+                from items import ALL_ITEMS
+                item_name = ALL_ITEMS.get(target_item, {}).get("name", target_item)
+                await ctx.send(ansi(
+                    f"  {C.RED}✖ 재료가 부족함미댜! "
+                    f"{item_name} {target_count}개 필요 (보유: {have}개){C.R}\n"
+                    f"  {C.GREEN}기력이 환불되었슴미댜.{C.R}"
+                ))
+                return
+            if not economy.remove_item(f"알바:{npc_name}", target_item, target_count):
+                self.player.energy = min(self.player.max_energy, self.player.energy + energy_cost)
+                await ctx.send(ansi(f"  {C.RED}✖ 아이템 차감에 실패했슴미댜! 기력이 환불됨미댜.{C.R}"))
+                return
 
         # deliver: 퀘스트 아이템 지급
         elif job_type == "deliver":
@@ -240,14 +255,47 @@ class VillageNPC:
             _target = job.get("target_npc", "")
             deliver_notice = f"\n  {C.WHITE}📦 {_dname}을(를) {_target}에게 전달하셰요!{C.R}"
 
-        # deliver 타입: 대기 메시지 대신 전달 안내 표시
+        # deliver 타입: 대기 메시지 대신 전달 안내 + 비전타운 버튼 표시
         if job_type == "deliver" and deliver_item:
-            await ctx.send(ansi(
-                f"  {C.GOLD}💼 {npc['name']} 알바 수락! [{diff_label}]{C.R}\n"
-                f"  {C.DARK}{job['name']} — {job.get('desc','')}{C.R}{deliver_notice}\n"
-                f"  {C.RED}기력 -{energy_cost}{C.R}\n"
-                f"  {C.GREEN}▶ /대화 {_target} 으로 전달하셰요!{C.R}"
-            ))
+            import discord
+            from town_ui import VisionTownView
+            from village import village_manager as _vm
+
+            class _DeliverGuideView(discord.ui.View):
+                def __init__(self, player, aff_mgr, npc_mgr, target_npc_name):
+                    super().__init__(timeout=120.0)
+                    self._player = player
+                    self._aff = aff_mgr
+                    self._npc = npc_mgr
+                    self._target = target_npc_name
+
+                @discord.ui.button(label="비전타운", style=discord.ButtonStyle.secondary, emoji="🏘️")
+                async def go_town(self, interaction: discord.Interaction, button):
+                    view = VisionTownView(self._player, self._aff, self._npc, _vm)
+                    await view.send(interaction, edit=False)
+
+                @discord.ui.button(label="돌아가기", style=discord.ButtonStyle.secondary, emoji="◀️")
+                async def dismiss(self, interaction: discord.Interaction, button):
+                    for child in self.children:
+                        child.disabled = True
+                    await interaction.response.edit_message(view=self)
+                    self.stop()
+
+            _guide_view = _DeliverGuideView(
+                self.player,
+                getattr(self, '_aff_manager', None) or getattr(self.player, '_affinity_manager', None),
+                self,
+                _target,
+            )
+            await ctx.send(
+                ansi(
+                    f"  {C.GOLD}💼 {npc['name']} 알바 수락! [{diff_label}]{C.R}\n"
+                    f"  {C.DARK}{job['name']} — {job.get('desc','')}{C.R}{deliver_notice}\n"
+                    f"  {C.RED}기력 -{energy_cost}{C.R}\n"
+                    f"  {C.GREEN}▶ 비전타운에서 {_target}에게 전달하셰요!{C.R}"
+                ),
+                view=_guide_view,
+            )
         else:
             await ctx.send(ansi(
                 f"  {C.GOLD}💼 {npc['name']} 알바 시작! [{diff_label}]{C.R}\n"

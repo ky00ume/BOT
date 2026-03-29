@@ -1028,19 +1028,7 @@ async def room_command(ctx):
 # 낚시 명령어
 # ═══════════════════════════════════════════════════════════════════════════
 
-@bot.command(name="낚시")
-async def fishing_cmd(ctx):
-    if not await _check_channel(ctx):
-        return
-    # 낚시 시작
-    departure = encounter_manager.clear_encounter()
-    if departure:
-        await ctx.send(departure)
-    await fishing_engine.fish(ctx)
-    save_manager.save(shared_player)
-    enc_msg = encounter_manager.trigger_encounter()
-    if enc_msg:
-        await _send_encounter(ctx, enc_msg)
+# /낚시 명령어 삭제됨 — 낚시터 UI(FishingZoneView)에서 버튼으로 접근
 
 
 @bot.command(name="낚시목록")
@@ -1353,14 +1341,7 @@ async def sheet_delete_cmd(ctx, title: str = None):
     await music_engine.delete_sheet(ctx, title)
 
 
-@bot.command(name="연주")
-async def perform_cmd(ctx, song_id: str = None):
-    if not await _check_channel(ctx):
-        return
-    if not song_id:
-        await music_engine.compose(ctx)
-        return
-    await music_engine.perform(ctx, song_id)
+# /연주 명령어 삭제됨 — 마을 UI에서 접근 (음악 스킬 시스템으로 통합 예정)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -1599,26 +1580,7 @@ signal.signal(signal.SIGTERM, _shutdown_handler)
 # 신규 명령어 — 물 뜨기
 # ═══════════════════════════════════════════════════════════════════════════
 
-@bot.command(name="물뜨기")
-async def draw_water_cmd(ctx, count: int = 1):
-    if not await _check_channel(ctx):
-        return
-    count = max(1, min(count, 99))
-    if shared_player.inventory.get("empty_bottle", 0) < count:
-        await ctx.send(ansi(f"  {C.RED}✖ 빈 병이 부족함미댜! (필요: {count}개){C.R}"))
-        return
-    energy_cost = 5 * count
-    if not shared_player.consume_energy(energy_cost):
-        await ctx.send(ansi(f"  {C.RED}✖ 기력이 부족함미댜! (필요: {energy_cost}){C.R}"))
-        return
-    shared_player.remove_item("empty_bottle", count)
-    shared_player.add_item("water", count)
-    await ctx.send(ansi(
-        f"  {C.GREEN}✔ 물을 떴슴미댜!{C.R}\n"
-        f"  {C.WHITE}물{C.R} x{count} 획득!\n"
-        f"  {C.RED}기력 -{energy_cost}{C.R}"
-    ))
-    save_manager.save(shared_player)
+# /물뜨기 명령어 삭제됨 — 낚시터 UI(FishingZoneView)에서 버튼으로 접근
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -1643,7 +1605,9 @@ async def item_list_cmd(ctx):
 async def storage_cmd(ctx):
     if not await _check_channel(ctx):
         return
-    await ctx.send(storage_engine.show())
+    from storage_ui import StorageView
+    view = StorageView(shared_player, storage_engine)
+    await view.send(ctx)
 
 
 @bot.command(name="보관함넣기")
@@ -2021,17 +1985,7 @@ async def move_cmd(ctx, *, destination: str = None):
 # 신규 명령어 — 훈련소 (수련 시스템)
 # ═══════════════════════════════════════════════════════════════════════════
 
-@bot.command(name="수련", aliases=["훈련소", "학교"])
-async def train_cmd(ctx, *, stat: str = None):
-    if not await _check_channel(ctx):
-        return
-    if stat:
-        result = training_system.train(stat.strip())
-        await ctx.send(result)
-        save_manager.save(shared_player)
-    else:
-        result = training_system.show_menu()
-        await ctx.send(result)
+# /수련 명령어 삭제됨 — 카엘릭 NPC 대화에서 수련 버튼으로 접근
 
 
 # ═══════════════════════════════════════════════════════════════════════════

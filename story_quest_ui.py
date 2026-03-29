@@ -88,6 +88,7 @@ class ShadowChoiceView(View):
             await interaction.response.edit_message(
                 attachments=[file], content=None, view=self
             )
+            self.stop()
         return _cb
 
 
@@ -164,6 +165,7 @@ class ForcedBattleView(View):
                 )
                 if self.on_done_coro:
                     await self.on_done_coro(interaction)
+                self.stop()
             else:
                 file = _render_text_card(
                     f"⚔️  턴 {self.current_turn} — {action}", lines, system_key="quest"
@@ -221,6 +223,7 @@ class ExploreView(View):
             )
             if self.on_done_coro:
                 await self.on_done_coro(interaction)
+            self.stop()
         else:
             file = _render_text_card(
                 f"🌫️  탐색 {self.current_step}/{len(self.step_descs)}", lines, system_key="quest"

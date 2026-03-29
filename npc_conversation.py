@@ -25,6 +25,7 @@ NPC_PORTRAIT_MAP: dict[str, str] = {
     "브룩샤":    "브룩샤",    # 창작 캐릭터
     "실렌":      "실렌",      # 창작 캐릭터
     "루바토":    "루바토",    # 창작 캐릭터
+    "그리스타":  "그리스타",  # 창작 캐릭터 (여관 주인)
 }
 
 
@@ -94,7 +95,7 @@ def _render_greeting_image(npc_name: str, aff_manager, show_limit_warning: bool 
     aff_lv = _get_affinity_level_name(aff_manager, npc_name)
 
     if show_limit_warning:
-        greeting += f"\n(오늘의 최대 호감도 획득량을 달성했슴미댜! 현재 {aff_pts}pt)"
+        greeting += "\n오늘의 최대 호감도 획득량을 달성했슴미댜!"
 
     return get_renderer().render_npc_dialogue(
         npc_name=npc.get("name", npc_name),
@@ -211,6 +212,26 @@ class NPCConversationView(View):
             )
             train_btn.callback = self._train_callback
             self.add_item(train_btn)
+
+        # 여관 휴식 버튼 (NPC에 inn이 있으면)
+        if npc.get("inn"):
+            inn_btn = Button(
+                label="휴식",
+                style=discord.ButtonStyle.success,
+                emoji="🛏️",
+            )
+            inn_btn.callback = self._inn_callback
+            self.add_item(inn_btn)
+
+        # 연주 버튼 (알피라 + 연주 스킬 보유 시)
+        if self.npc_name == "알피라" and "music" in getattr(self.player, "skill_ranks", {}):
+            music_btn = Button(
+                label="연주",
+                style=discord.ButtonStyle.success,
+                emoji="🎵",
+            )
+            music_btn.callback = self._music_callback
+            self.add_item(music_btn)
 
     def _make_keyword_callback(self, keyword: str):
         async def callback(interaction: discord.Interaction):
@@ -337,16 +358,215 @@ class NPCConversationView(View):
         view._message = msg
 
     async def _train_callback(self, interaction: discord.Interaction):
-        npc = NPC_DATA.get(self.npc_name, {})
-        train_info = npc.get("train", {})
+        from training import TrainingSystem
+        ts = TrainingSystem(self.player)
+        view = _TrainingView(self.player, ts)
+        menu_buf = view.render_menu()
+        file = discord.File(menu_buf, filename="train_menu.png")
+        await interaction.response.send_message(file=file, view=view)
 
+    async def _music_callback(self, interaction: discord.Interaction):
+        """연주 곡 선택 View를 전송."""
+        from music import SONGS, MusicView, _SONG_BY_ID
+        import random
+        view = _MusicSelectView(self.player)
         buf = get_renderer().render_card(
-            title=f"{npc.get('name', self.npc_name)} 수련",
-            rows=[{"label": "설명", "value": train_info.get("desc", "수련을 받을 수 있슴미댜.")}],
+            title="🎵 연주 — 곡 선택",
+            rows=[
+                {"label": s["name"], "value": f"음표 {s['length']}개 | +{s['reward_gold']}G | 기여도 +{s['reward_contrib']}"}
+                for s in SONGS
+            ],
+            system_key="npc",
+        )
+        file = discord.File(buf, filename="music_select.png")
+        await interaction.response.send_message(file=file, view=view)
+
+    async def _inn_callback(self, interaction: discord.Interaction):
+        p = self.player
+        buf = get_renderer().render_card(
+            title="🛏️ 여관 — 휴식",
+            rows=[
+                {"label": "현재 상태", "value": f"HP {p.hp}/{p.max_hp} | 기력 {p.energy}/{p.max_energy}"},
+                {"label": "간이 휴식", "value": "50G → HP+30, 기력+30"},
+                {"label": "숙박", "value": "150G → HP+80, 기력+80"},
+                {"label": "특실", "value": "300G → HP·기력 완전 회복"},
+            ],
+            system_key="rest",
+        )
+        file = discord.File(buf, filename="inn.png")
+        view = _InnRestView(self.player)
+        await interaction.response.send_message(file=file, view=view)
+
+
+class _TrainingView(View):
+    """스탯 수련 UI View — NPC 대화 내 훈련소."""
+
+    def __init__(self, player, training_system):
+        super().__init__(timeout=120.0)
+        self.player = player
+        self.ts = training_system
+        from training import STAT_TRAIN_CONFIG
+        self._config = STAT_TRAIN_CONFIG
+        self._build_buttons()
+
+    def _build_buttons(self):
+        self.clear_items()
+        from training import STAT_TRAIN_CONFIG
+        for stat_id, cfg in STAT_TRAIN_CONFIG.items():
+            btn = Button(
+                label=f"{cfg['icon']} {cfg['name']}",
+                style=discord.ButtonStyle.success,
+                custom_id=f"train_{stat_id}",
+            )
+            btn.callback = self._make_train_cb(stat_id)
+            self.add_item(btn)
+        close_btn = Button(label="닫기", style=discord.ButtonStyle.secondary, emoji="◀️")
+        close_btn.callback = self._close_cb
+        self.add_item(close_btn)
+
+    def render_menu(self):
+        rows = []
+        for stat_id, cfg in self._config.items():
+            cur = self.player.base_stats.get(stat_id, 0)
+            from training import _train_cost, ENERGY_PER_POINT, MIN_ENERGY_COST
+            cost = _train_cost(stat_id, cur)
+            energy_cost = max(MIN_ENERGY_COST, ENERGY_PER_POINT * cur)
+            rows.append({
+                "label": f"{cfg['icon']} {cfg['name']} (현재 {cur})",
+                "value": f"비용 {cost}G / 기력 {energy_cost} — {cfg['desc']}",
+            })
+        rows.append({"label": "소지금", "value": f"{self.player.gold:,}G | 기력 {self.player.energy}/{self.player.max_energy}"})
+        return get_renderer().render_card(
+            title="🏋️ 훈련소 — 수련",
+            rows=rows,
             system_key="battle",
         )
-        file = discord.File(buf, filename="npc_train.png")
-        await interaction.response.send_message(file=file, ephemeral=False)
+
+    def _make_train_cb(self, stat_id: str):
+        async def _cb(interaction: discord.Interaction):
+            result_text = self.ts.train(stat_id)
+            # 수련 성공 후 메뉴 갱신
+            try:
+                from save_manager import save_manager
+                save_manager.save(self.player)
+            except Exception:
+                pass
+            menu_buf = self.render_menu()
+            file = discord.File(menu_buf, filename="train_menu.png")
+            await interaction.response.edit_message(attachments=[file], view=self)
+            # 결과 메시지를 followup으로 전송
+            await interaction.followup.send(result_text)
+        return _cb
+
+    async def _close_cb(self, interaction: discord.Interaction):
+        for child in self.children:
+            child.disabled = True
+        await interaction.response.edit_message(view=self)
+        self.stop()
+
+
+class _MusicSelectView(View):
+    """연주 곡 선택 View."""
+    def __init__(self, player):
+        super().__init__(timeout=60.0)
+        self.player = player
+        from music import SONGS
+        for song in SONGS:
+            btn = Button(
+                label=song["name"],
+                style=discord.ButtonStyle.primary,
+                custom_id=f"music_{song['id']}",
+            )
+            btn.callback = self._make_perform_cb(song)
+            self.add_item(btn)
+
+    def _make_perform_cb(self, song):
+        async def _cb(interaction: discord.Interaction):
+            import random
+            from music import NOTES, MusicView
+            energy_cost = 5
+            if not self.player.consume_energy(energy_cost):
+                await interaction.response.send_message(
+                    f"```ansi\n  \u001b[0;31m✖ 기력이 부족함미댜! (필요: {energy_cost})\u001b[0m\n```",
+                    ephemeral=True,
+                )
+                return
+            target = [random.choice(NOTES) for _ in range(song["length"])]
+            target_s = " ".join(target)
+            embed = discord.Embed(
+                title=f"🎵 {song['name']} — 연주 시작!",
+                description=(
+                    f"아래 음표를 **순서대로** 버튼으로 입력하셰요!\n\n"
+                    f"🎶 목표: **{target_s}**\n\n"
+                    f"⏱ 60초 안에 완성하셰요!"
+                ),
+                color=0x4488cc,
+            )
+            view = MusicView(target, song, self.player)
+            for child in self.children:
+                child.disabled = True
+            await interaction.response.edit_message(view=self)
+            msg = await interaction.followup.send(embed=embed, view=view)
+            view._message = msg
+        return _cb
+
+
+INN_REST_CONFIG = {
+    "basic":  {"label": "간이 휴식 (50G)", "gold": 50,  "energy": 30, "hp": 30},
+    "full":   {"label": "숙박 (150G)",      "gold": 150, "energy": 80, "hp": 80},
+    "deluxe": {"label": "특실 (300G)",      "gold": 300, "energy_full": True, "hp_full": True},
+}
+
+
+class _InnRestView(View):
+    """여관 휴식 UI View."""
+
+    def __init__(self, player):
+        super().__init__(timeout=60.0)
+        self.player = player
+        for key, cfg in INN_REST_CONFIG.items():
+            btn = Button(
+                label=cfg["label"],
+                style=discord.ButtonStyle.success,
+                custom_id=f"inn_rest_{key}",
+            )
+            btn.callback = self._make_rest_cb(key, cfg)
+            self.add_item(btn)
+
+    def _make_rest_cb(self, key, cfg):
+        async def _cb(interaction: discord.Interaction):
+            p = self.player
+            cost = cfg["gold"]
+            if p.gold < cost:
+                await interaction.response.send_message(
+                    f"```ansi\n  \u001b[0;31m✖ 골드가 부족함미댜! (필요: {cost}G, 보유: {p.gold}G)\u001b[0m\n```",
+                    ephemeral=True,
+                )
+                return
+            p.gold -= cost
+            if cfg.get("energy_full"):
+                p.energy = p.max_energy
+            else:
+                p.energy = min(p.max_energy, p.energy + cfg.get("energy", 0))
+            if cfg.get("hp_full"):
+                p.hp = p.max_hp
+            else:
+                p.hp = min(p.max_hp, p.hp + cfg.get("hp", 0))
+            try:
+                from save_manager import save_manager
+                save_manager.save(p)
+            except Exception:
+                pass
+            for child in self.children:
+                child.disabled = True
+            await interaction.response.edit_message(view=self)
+            await interaction.followup.send(
+                f"```ansi\n  \u001b[0;32m✔ 휴식 완료!\u001b[0m\n"
+                f"  \u001b[0;37mHP: {p.hp}/{p.max_hp}  기력: {p.energy}/{p.max_energy}\u001b[0m\n"
+                f"  \u001b[0;31m-{cost}G\u001b[0m (현재: {p.gold:,}G)\n```"
+            )
+            self.stop()
+        return _cb
 
 
 class ConversationManager:

@@ -806,8 +806,8 @@ class BG3Renderer:
         maxw = W - TX - 24
         text_start_y = orn_y + 12
         text_end_y   = _wrap(_tmp_d, greeting_text, fD, TX, text_start_y, maxw, (0,0,0,0), lh=LH)
-        # 헤더 + 대사 줄들 + 여백(14) + 호감도 바 영역(58)
-        H = max(MIN_H, text_end_y + 14 + 58)
+        # 헤더 + 대사 줄들 + 여백(20) + 호감도 바 영역(58)
+        H = max(MIN_H, text_end_y + 20 + 58)
 
         img = _make_base(W,H,"npc")
         d   = ImageDraw.Draw(img)

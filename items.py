@@ -934,6 +934,24 @@ SKILL_BOOKS = {
         "npc":      "게일의 환영",
         "desc":     "번개 마법탄 스킬 [라이트닝볼트]를 습득한다.",
     },
+    "sb_cooking": {
+        "name":     "요리 스킬북",
+        "type":     "skillbook",
+        "skill_id": "cooking",
+        "grade":    "Normal",
+        "price":    500,
+        "npc":      "브룩샤",
+        "desc":     "재료를 조합하여 음식을 만드는 스킬 [요리]를 습득한다.",
+    },
+    "sb_music": {
+        "name":     "연주 스킬북",
+        "type":     "skillbook",
+        "skill_id": "music",
+        "grade":    "Rare",
+        "price":    600,
+        "npc":      "알피라",
+        "desc":     "악기를 연주하여 마을에 기여하는 스킬 [연주]를 습득한다.",
+    },
 }
 
 ALL_ITEMS.update(SKILL_BOOKS)

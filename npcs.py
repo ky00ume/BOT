@@ -240,11 +240,20 @@ class VillageNPC:
             _target = job.get("target_npc", "")
             deliver_notice = f"\n  {C.WHITE}📦 {_dname}을(를) {_target}에게 전달하셰요!{C.R}"
 
-        await ctx.send(ansi(
-            f"  {C.GOLD}💼 {npc['name']} 알바 시작! [{diff_label}]{C.R}\n"
-            f"  {C.DARK}{job['name']} — {job.get('desc','')}{C.R}{deliver_notice}\n"
-            f"  {C.RED}기력 -{energy_cost}{C.R}  ⏱ 잠시 기다려 주셰요..."
-        ))
+        # deliver 타입: 대기 메시지 대신 전달 안내 표시
+        if job_type == "deliver" and deliver_item:
+            await ctx.send(ansi(
+                f"  {C.GOLD}💼 {npc['name']} 알바 수락! [{diff_label}]{C.R}\n"
+                f"  {C.DARK}{job['name']} — {job.get('desc','')}{C.R}{deliver_notice}\n"
+                f"  {C.RED}기력 -{energy_cost}{C.R}\n"
+                f"  {C.GREEN}▶ /대화 {_target} 으로 전달하셰요!{C.R}"
+            ))
+        else:
+            await ctx.send(ansi(
+                f"  {C.GOLD}💼 {npc['name']} 알바 시작! [{diff_label}]{C.R}\n"
+                f"  {C.DARK}{job['name']} — {job.get('desc','')}{C.R}{deliver_notice}\n"
+                f"  {C.RED}기력 -{energy_cost}{C.R}  ⏱ 잠시 기다려 주셰요..."
+            ))
 
         # deliver 타입: 보류 작업으로 등록 후 즉시 반환 (대상 NPC 방문 시 완료)
         if job_type == "deliver" and deliver_item:

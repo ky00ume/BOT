@@ -160,7 +160,6 @@ class QuestWindowView(View):
         self.quest_manager = quest_manager
         self.player = player
         self._build_select()
-        self._add_story_button()
 
     def _build_select(self):
         """퀘스트 Select Menu 구성"""

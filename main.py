@@ -109,6 +109,9 @@ from story_quest import StoryQuestManager
 story_quest_manager = StoryQuestManager(shared_player)
 shared_player._story_quest_manager = story_quest_manager
 
+# 도감 매니저 플레이어에 주입 (저장/복원 연동)
+shared_player._collection_manager = collection_manager
+
 # 보관함 엔진 초기화
 from storage import StorageEngine
 storage_engine = StorageEngine(shared_player)
@@ -175,10 +178,10 @@ async def _send_encounter(ctx, enc_msg: str):
         await ctx.send(enc_msg)
 
 
-# ─── 자동 저장 루프 (5분마다) ────────────────────────────────────────────
-@tasks.loop(minutes=5)
+# ─── 자동 저장 루프 (2분마다) ────────────────────────────────────────────
+@tasks.loop(minutes=2)
 async def auto_save_loop():
-    """5분마다 플레이어 데이터를 자동 저장합니다."""
+    """2분마다 플레이어 데이터를 자동 저장합니다."""
     try:
         save_manager.save(shared_player)
     except Exception as e:
@@ -186,9 +189,23 @@ async def auto_save_loop():
 
 
 # ─── 이벤트 ──────────────────────────────────────────────────────────────
+_bot_initialized = False  # 재접속 시 데이터 덮어쓰기 방지 가드
+
 @bot.event
 async def on_ready():
+    global _bot_initialized
     print(f"[봇 시작] {bot.user} 로그인 완료")
+
+    if _bot_initialized:
+        # 재접속: 현재 인메모리 데이터를 보존하고 저장만 수행
+        print("[재접속] 인메모리 데이터 보존, 강제 저장 실행")
+        try:
+            save_manager.save(shared_player)
+        except Exception as e:
+            print(f"[재접속 저장] 실패: {e}")
+        return
+
+    _bot_initialized = True
 
     # DB 초기화
     init_db()
@@ -210,6 +227,10 @@ async def on_ready():
         sq_data = loaded.get("story_quest", {})
         if sq_data:
             story_quest_manager.from_dict(sq_data)
+        # 도감 데이터 복원 (DB 우선, 없으면 파일에서)
+        col_data = loaded.get("collection_data", {})
+        if col_data:
+            collection_manager.from_dict(col_data)
         print(f"[DB 로드] {shared_player.name} 데이터 복원 완료")
     else:
         print("[DB 로드] 저장 데이터 없음 — 기본 캐릭터로 시작")
@@ -1382,25 +1403,10 @@ async def village_status_cmd(ctx):
 # 신규 명령어 — 쓰담
 # ═══════════════════════════════════════════════════════════════════════════
 
-_pat_last_used: float = 0.0
-PAT_COOLDOWN_SEC = 30  # 30초
-
-
 @bot.command(name="쓰담", aliases=["복복", "북북", "쓰다듬", "북북박박", "복복복", "복복박박"])
 async def pat_cmd(ctx):
-    global _pat_last_used
     if not await _check_channel(ctx):
         return
-
-    now = _time.time()
-    remaining = PAT_COOLDOWN_SEC - (now - _pat_last_used)
-    if remaining > 0:
-        await ctx.send(ansi(
-            f"  {C.RED}💕 아직 쓰담쓰담할 수 없슴미댜! {int(remaining)}초 남음{C.R}"
-        ))
-        return
-
-    _pat_last_used = now
 
     uid = ctx.author.id
     if uid == HYNESS_ID:
@@ -1717,6 +1723,7 @@ async def inventory_cmd(ctx):
             rows.append({"label": name, "value": f"×{count}", "color": color})
 
     card_h = max(380, 120 + len(rows) * 36)
+    card_w = 520 if len(inventory) <= 12 else 640 if len(inventory) <= 24 else 760
     buf = await render_async(
         get_renderer().render_card,
         f"🎒 인벤토리 ({used}/{max_slots})",
@@ -1725,6 +1732,7 @@ async def inventory_cmd(ctx):
         system_key="status",
         footer="✦ 비전 타운 ✦",
         h=card_h,
+        w=card_w,
     )
     file = discord.File(fp=buf, filename="inventory.png")
 
@@ -2523,6 +2531,20 @@ async def shadow_cmd(ctx):
     )
     embed.set_footer(text="✦ 수치는 비공개임미댜 ✦")
     await ctx.send(embed=embed)
+
+
+# ─── 종료 시 강제 저장 ────────────────────────────────────────────────────
+import atexit
+
+def _shutdown_save():
+    """봇 종료 시 플레이어 데이터 강제 저장"""
+    try:
+        save_manager.save(shared_player)
+        print("[종료 저장] 플레이어 데이터 저장 완료")
+    except Exception as e:
+        print(f"[종료 저장] 실패: {e}")
+
+atexit.register(_shutdown_save)
 
 
 # ─── 봇 실행 ──────────────────────────────────────────────────────────────

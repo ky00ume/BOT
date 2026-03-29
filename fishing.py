@@ -13,6 +13,7 @@ FISH_DB = {
     "메기":       {"id": "fs_catfish_01",   "grade": "Normal",    "price": 20,   "size": (25, 60),   "rate": 0.22, "rank_req": "연습", "cookable": True},
     "가재":       {"id": "fs_crayfish_01",  "grade": "Normal",    "price": 12,   "size": (5, 15),    "rate": 0.30, "rank_req": "연습", "cookable": True},
     "폐타이어":   {"id": "trash_tire_01",   "grade": "Normal",    "price": 1,    "size": (0, 0),     "rate": 0.02, "rank_req": "연습", "cookable": False},
+    "빈 병":      {"id": "trash_bottle_01","grade": "Normal",    "price": 2,    "size": (0, 0),     "rate": 0.03, "rank_req": "연습", "cookable": False},
     # ── Rare ────────────────────────────────────────────────────────────────
     "연어":       {"id": "fs_salmon_01",    "grade": "Rare",      "price": 40,   "size": (40, 80),   "rate": 0.18, "rank_req": "F",    "cookable": True},
     "장어":       {"id": "fs_eel_01",       "grade": "Rare",      "price": 60,   "size": (30, 70),   "rate": 0.08, "rank_req": "E",    "cookable": True},
@@ -35,19 +36,19 @@ FISH_DB = {
 FISH_GUIDE = {
     "방울숲 강": {
         "desc": "조용한 방울숲 근처의 작은 강.",
-        "fish": ["붕어", "잉어", "연어", "미꾸라지", "피라미"],
+        "fish": ["붕어", "잉어", "연어", "미꾸라지", "피라미", "빈 병"],
         "energy_cost": 5,
         "fee_rate": 0.20,
     },
     "소금광산 지하호수": {
         "desc": "소금 광산 깊은 곳의 지하호수.",
-        "fish": ["잉어", "연어", "장어", "황금장어", "메기"],
+        "fish": ["잉어", "연어", "장어", "황금장어", "메기", "빈 병"],
         "energy_cost": 10,
         "fee_rate": 0.15,
     },
     "고요한 연못": {
         "desc": "마을 근처의 고요하고 얕은 연못. 초보자 낚시터.",
-        "fish": ["붕어", "잉어", "미꾸라지", "피라미", "가재", "폐타이어"],
+        "fish": ["붕어", "잉어", "미꾸라지", "피라미", "가재", "폐타이어", "빈 병"],
         "energy_cost": 4,
         "fee_rate": 0.25,
     },

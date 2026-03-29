@@ -14,12 +14,17 @@ from skills_db import (
     RANK_UP_THRESHOLD, SKILL_RANK_THRESHOLD,
 )
 
-# 생활 스킬 ID → 엔진 종류
+# 생활 스킬 ID → 엔진 종류 (레시피 기반 스킬)
 _LIFE_SKILL_ENGINE = {
     "cooking":    "cooking",
     "alchemy":    "alchemy",
     "crafting":   "crafting",
     "metallurgy": "metallurgy",
+    "fishing":    None,
+    "gathering":  None,
+    "mining":     None,
+    "rest":       None,
+    "music":      None,
 }
 
 _CATEGORY_LABELS = {
@@ -437,10 +442,32 @@ class LifeSkillSelect(Select):
         if recipes:
             view.add_item(RecipeSelect(self.player, skill_id, recipes))
 
+        skill_name = OTHER_SKILLS.get(skill_id, {}).get("name", skill_id)
+        rank = getattr(self.player, "skill_ranks", {}).get(skill_id, "연습")
+
+        if not recipes:
+            # 레시피가 없는 생활 스킬 (낚시, 채집, 채광 등) — 스킬 정보만 표시
+            skill_data = OTHER_SKILLS.get(skill_id, {})
+            skill_exp = getattr(self.player, "skill_exp", {}).get(skill_id, 0.0)
+            threshold = SKILL_RANK_THRESHOLD.get(skill_id, RANK_UP_THRESHOLD)
+            try:
+                rank_idx = RANK_ORDER.index(rank)
+                needed = threshold.get(rank, 100.0)
+            except Exception:
+                needed = 100.0
+            pct = min(100.0, (skill_exp / needed * 100)) if needed > 0 else 0
+            icon = skill_data.get("icon", "🌿")
+            desc = skill_data.get("desc", "")
+            embed = discord.Embed(
+                title=f"{icon} {skill_name}",
+                description=f"{desc}\n\n**랭크:** {rank}\n**경험치:** {skill_exp:.1f} / {needed:.0f} ({pct:.1f}%)",
+                color=EMBED_COLOR,
+            )
+            await interaction.response.edit_message(embed=embed, view=view, attachments=[])
+            return
+
         try:
             from bg3_renderer import get_renderer, render_async
-            skill_name = OTHER_SKILLS.get(skill_id, {}).get("name", skill_id)
-            rank = getattr(self.player, "skill_ranks", {}).get(skill_id, "연습")
             recipes_info = []
             for rid, recipe in list(recipes.items())[:12]:
                 rank_req = recipe.get("rank_req", "연습")

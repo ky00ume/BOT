@@ -79,10 +79,6 @@ def generate_fishing_card(
     rows  = [
         {"label": "물고기",  "value": fish_name},
         {"label": "크기",    "value": f"{size_cm:.1f} cm"},
-        {"label": "판매가",  "value": f"{price:,} G"},
-        {"label": "수수료",  "value": f"-{fee:,} G"},
-        {"label": "보너스",  "value": f"+{bonus:,} G"},
-        {"label": "순수익",  "value": f"{net_profit:,} G"},
     ]
     return generate_card(title, "🎣", rows, grade=grade)
 

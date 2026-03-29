@@ -366,6 +366,14 @@ class Player:
         qm = getattr(self, "_quest_manager", None)
         if qm is not None:
             data["quest_data"] = qm.to_dict()
+        # 호감도 데이터 포함
+        aff_mgr = getattr(self, "_affinity_manager", None)
+        if aff_mgr is not None:
+            data["affinity_full"] = aff_mgr.to_dict()
+        # 도감 데이터 포함
+        col_mgr = getattr(self, "_collection_manager", None)
+        if col_mgr is not None:
+            data["collection_data"] = col_mgr.to_dict()
         return data
 
     def load_from_dict(self, data: dict):

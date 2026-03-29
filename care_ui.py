@@ -1,5 +1,7 @@
 """care_ui.py — "하이네스의 방" discord.ui.View 기반 돌봄 UI"""
 import discord
+import random
+import time as _time
 from bg3_renderer import get_renderer
 from costume_data import (
     COSTUME_ITEMS, SNACK_ITEMS, SNACK_RECIPES, COSTUME_RECIPES,
@@ -335,7 +337,8 @@ class RockPaperScissorsView(discord.ui.View):
                 grade = "Fail"
 
             for child in self.children:
-                child.disabled = True
+                if child.label != "◀ 돌아가기":
+                    child.disabled = True
 
             if result.get("success"):
                 try:
@@ -656,20 +659,71 @@ class CareRoomView(discord.ui.View):
         await interaction.response.edit_message(content=None, attachments=[file], view=self)
 
     # ── 산책 ──────────────────────────────────────────────────────────────
+    WALK_COOLDOWN = 180  # 3분
+    WALK_ITEMS = [
+        # (아이템ID, 가중치)  — 장난감/의상 제작 재료
+        ("mat_wood_scrap",    20),
+        ("mat_feather",       18),
+        ("mat_flower_petal",  18),
+        ("mat_silk_thread",   12),
+        ("mat_ribbon_scrap",  12),
+        ("mat_soft_cotton",   10),
+        ("mat_leather_piece",  8),
+        ("mat_shiny_button",   8),
+        ("mat_honey",         10),
+        ("mat_fruit",         10),
+        ("mat_magic_thread",   3),
+        ("mat_magic_dust",     2),
+    ]
+
     async def _on_walk(self, interaction: discord.Interaction):
         if not hasattr(self.player, "_flags") or self.player._flags is None:
             self.player._flags = {}
-        is_walking = self.player._flags.get("walking", False)
-        self.player._flags["walking"] = not is_walking
-        if self.player._flags["walking"]:
-            msg = "🚶 산책 시작! 츄라이더가 신나게 걷고 있슴미댜~ 🐾"
-        else:
-            msg = "🏠 산책 종료! 츄라이더가 방으로 돌아왔슴미댜."
+
+        # 쿨타임 체크
+        now = _time.time()
+        last_walk = self.player._flags.get("last_walk_time", 0)
+        remaining = self.WALK_COOLDOWN - (now - last_walk)
+        if remaining > 0:
+            mins, secs = divmod(int(remaining), 60)
+            file = _result_card("🚶 산책", [
+                {"label": "⏱ 쿨타임", "value": f"아직 산책할 수 없슴미댜! {mins}분 {secs}초 남음"},
+            ])
+            await interaction.response.edit_message(content=None, attachments=[file], view=self)
+            return
+
+        # 쿨타임 갱신
+        self.player._flags["last_walk_time"] = now
+
+        # 랜덤 아이템 1~2개 획득
+        items_found = []
+        num_items = random.choices([1, 2], weights=[70, 30])[0]
+        pool_ids, pool_weights = zip(*self.WALK_ITEMS)
+        for _ in range(num_items):
+            chosen_id = random.choices(pool_ids, weights=pool_weights)[0]
+            self.player.add_item(chosen_id, 1)
+            from items import ALL_ITEMS
+            item_name = ALL_ITEMS.get(chosen_id, {}).get("name", chosen_id)
+            items_found.append(item_name)
+
+        # 컨디션/안정감 소량 변화
+        cond_gain = random.randint(2, 5)
+        stab_gain = random.randint(1, 3)
+        self.player.condition = min(100, self.player.condition + cond_gain)
+        self.player.stability = min(100, self.player.stability + stab_gain)
+
+        rows = [
+            {"label": "🐾 상태", "value": "츄라이더가 신나게 산책하고 돌아왔슴미댜~!"},
+            {"label": "🎁 획득", "value": ", ".join(items_found)},
+            {"label": "💛 컨디션", "value": f"+{cond_gain} → {self.player.condition}"},
+            {"label": "💙 안정감", "value": f"+{stab_gain} → {self.player.stability}"},
+        ]
+
         try:
             save_player_to_db(self.player)
         except Exception:
             pass
-        file = _result_card("🚶 산책", [{"label": "상태", "value": msg}])
+        file = _result_card("🚶 산책 결과", rows)
         await interaction.response.edit_message(content=None, attachments=[file], view=self)
 
     # ── 간식주기 ──────────────────────────────────────────────────────────

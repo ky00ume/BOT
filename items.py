@@ -201,6 +201,7 @@ FISH_ITEMS = {
     "fs_eel_01":      {"name": "장어",       "type": "fish", "grade": "Rare",      "price": 60,   "desc": "탱탱한 장어.",                         "cookable": True},
     "fs_gold_eel_01": {"name": "황금장어",   "type": "fish", "grade": "Legendary", "price": 300,  "desc": "황금빛으로 빛나는 전설의 장어.",       "cookable": True},
     "trash_tire_01":  {"name": "폐타이어",   "type": "loot", "grade": "Normal",    "price": 1,    "desc": "낚시 중에 건진 폐타이어.",             "cookable": False},
+    "trash_bottle_01":{"name": "빈 병",      "type": "loot", "grade": "Normal",    "price": 2,    "desc": "낚시 중에 건진 빈 유리병.",            "cookable": False},
     # ── 신규 물고기 ─────────────────────────────────────────────────────────
     "fs_loach_01":    {"name": "미꾸라지",   "type": "fish", "grade": "Normal",    "price": 8,    "desc": "진흙 속을 헤엄치는 미꾸라지.",         "cookable": True},
     "fs_minnow_01":   {"name": "피라미",     "type": "fish", "grade": "Normal",    "price": 6,    "desc": "작고 날쌘 피라미.",                    "cookable": True},

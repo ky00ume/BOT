@@ -451,10 +451,16 @@ def save_player_to_db(player):
     if aff_mgr:
         aff_full = aff_mgr.to_dict()
 
+    # affinity_full이 get_save_data()에 포함된 경우 우선 사용
+    if "affinity_full" in data and data["affinity_full"]:
+        aff_full = data["affinity_full"]
+
     # story_quest 직렬화
     story_quest_json = json.dumps(data.get("story_quest", {}), ensure_ascii=False)
     # quest_data 직렬화
     quest_data_json = json.dumps(data.get("quest_data", {}), ensure_ascii=False)
+    # collection_data 직렬화
+    collection_data_json = json.dumps(data.get("collection_data", {}), ensure_ascii=False)
 
     cursor.execute("""
         INSERT OR REPLACE INTO players
@@ -462,8 +468,8 @@ def save_player_to_db(player):
          gold, base_stats, inventory, equipment, keywords, affinity_data, daily_limits,
          story_quest, skill_ranks, skill_exp, titles, current_title, bags,
          last_special_encounter, rafael_contract,
-         fatigue, condition, stability, costume, care_flags, quest_data)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         fatigue, condition, stability, costume, care_flags, quest_data, collection_data)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         data.get("user_id", 0),
         data.get("name", "모험가"),
@@ -496,6 +502,7 @@ def save_player_to_db(player):
         json.dumps(data.get("costume", {}), ensure_ascii=False),
         json.dumps(data.get("_flags", {}), ensure_ascii=False),
         quest_data_json,
+        collection_data_json,
     ))
     conn.commit()
     conn.close()
@@ -577,6 +584,10 @@ def _migrate_players_table(cursor):
         if "quest_data" not in columns:
             cursor.execute(
                 "ALTER TABLE players ADD COLUMN quest_data TEXT DEFAULT '{}'"
+            )
+        if "collection_data" not in columns:
+            cursor.execute(
+                "ALTER TABLE players ADD COLUMN collection_data TEXT DEFAULT '{}'"
             )
     except Exception:
         pass
@@ -701,6 +712,11 @@ def load_player_from_db(user_id):
         result["quest_data"] = _safe_json(row["quest_data"], {})
     except (IndexError, KeyError):
         result["quest_data"] = {}
+
+    try:
+        result["collection_data"] = _safe_json(row["collection_data"], {})
+    except (IndexError, KeyError):
+        result["collection_data"] = {}
 
     return result
 

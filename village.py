@@ -17,7 +17,8 @@ VILLAGE_LEVEL_BUFFS = {
 }
 
 CONTRIBUTION_AMOUNTS = {
-    "job": 5, "battle": 3, "cooking": 2, "fishing": 1, "smelting": 4, "gathering": 2
+    "job": 5, "battle": 3, "cooking": 2, "fishing": 1, "smelting": 4, "gathering": 2,
+    "music": 5, "quest": 8, "cooking_donate": 3,
 }
 
 RANDOM_EVENTS = [

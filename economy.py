@@ -42,6 +42,10 @@ class Economy:
                 self.player.add_item(item_id, count)
                 changes[item_id] = count
         tx_log.log(self._name(), "TRANSACTION", source, "보상 지급", changes)
+        # EXP 획득 후 레벨업 자동 체크
+        if exp:
+            from player import check_level_up
+            self._last_level_ups = check_level_up(self.player)
 
     def deduct(
         self,

@@ -93,22 +93,36 @@ class MusicView(discord.ui.View):
             try:
                 from village import village_manager
                 if contrib:
-                    village_manager.add_contribution(contrib)
+                    village_manager.add_contribution(contrib, "music")
             except Exception:
                 pass
+
+            # 연주 스킬 EXP 획득
+            if "music" in self.player.skill_ranks:
+                exp_gain = pct * 0.5  # 정확도에 비례한 EXP
+                rank_up_msg = self.player.train_skill("music", exp_gain)
+            else:
+                exp_gain = 0
+                rank_up_msg = ""
 
             result_notes = " ".join(
                 f"{'✅' if a == b else '❌'} {a}" for a, b in zip(self.entered, self.target)
             )
+            desc_lines = [
+                f"**정확도: {pct}%**  ({matches}/{len(self.target)})\n",
+                f"{result_notes}\n",
+                f"💬 청중: \"{audience_reaction}\"",
+                f"💰 획득 골드: **+{gold_earn:,}G**",
+            ]
+            if contrib:
+                desc_lines.append(f"🏘 마을 기여도: +{contrib}")
+            if exp_gain:
+                desc_lines.append(f"🎵 연주 EXP: +{exp_gain:.0f}")
+            if rank_up_msg:
+                desc_lines.append(rank_up_msg)
             embed = discord.Embed(
                 title=f"🎵 {self.song['name']} — 연주 완료!",
-                description=(
-                    f"**정확도: {pct}%**  ({matches}/{len(self.target)})\n\n"
-                    f"{result_notes}\n\n"
-                    f"💬 청중: \"{audience_reaction}\"\n"
-                    f"💰 획득 골드: **+{gold_earn:,}G**"
-                    + (f"\n마을 기여도: +{contrib}" if contrib else "")
-                ),
+                description="\n".join(desc_lines),
                 color=0xffd700 if pct >= 75 else (0xaa6633 if pct >= 50 else 0x555555),
             )
             await interaction.response.edit_message(embed=embed, view=self)

@@ -114,8 +114,8 @@ class SellView(discord.ui.View):
         price = item.get("price", 0)
         sell_total = (price // 2) * count
 
-        # Execute the actual sell operation
-        self.shop_manager.sell_item(name, count)
+        # Execute the actual sell operation (ID로 직접 전달하여 동명 아이템 혼동 방지)
+        self.shop_manager.sell_item(self.selected_id, count)
 
         try:
             from save_manager import save_manager

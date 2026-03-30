@@ -559,6 +559,9 @@ class QuestManager:
         exp  = q.get("reward_exp",  0)
         self.player.gold += gold
         self.player.exp  += exp
+        # EXP 획득 후 레벨업 자동 체크
+        from player import check_level_up
+        _level_ups = check_level_up(self.player)
 
         reward_item = q.get("reward_item")
         item_msg = ""
@@ -570,7 +573,7 @@ class QuestManager:
 
         try:
             from village import village_manager
-            village_manager.add_contribution(max(1, gold // GOLD_TO_CONTRIBUTION_RATIO))
+            village_manager.add_contribution(8, "quest")
         except Exception:
             pass
 

@@ -567,17 +567,16 @@ class BattleEngine:
                 if self.player.add_item(item_id):
                     drops[item_id] = drops.get(item_id, 0) + 1
 
-        # 레벨업 체크
+        # 레벨업 체크 (공통 함수 사용 — 다중 레벨업 지원)
         leveled_up  = False
         level_gains = {}
         old_level   = self.player.level
-        level_thresh = self.player.level * 100
-        if self.player.exp >= level_thresh:
-            self.player.exp   -= level_thresh
-            self.player.level += 1
-            from player import apply_level_up
-            level_gains = apply_level_up(self.player)
-            leveled_up  = True
+        from player import check_level_up
+        _ups = check_level_up(self.player)
+        if _ups:
+            leveled_up = True
+            # 마지막 레벨업의 gains를 사용 (기존 호환)
+            level_gains = _ups[-1]["gains"]
 
         return {
             "gold":        gold,

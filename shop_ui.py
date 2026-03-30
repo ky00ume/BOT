@@ -175,15 +175,39 @@ class BuyView(discord.ui.View):
         self._message     = None
 
         options = []
+        SLOT_NAMES = {
+            "main": "주무기", "sub": "보조", "body": "갑옷", "head": "투구",
+            "glove": "장갑", "boot": "신발", "hands": "장갑", "feet": "신발",
+        }
         for item_id, item in list(catalog.items())[:25]:
             name  = item.get("name", item_id)
             price = item.get("price", 0)
             grade = item.get("grade", "Normal")
             icon  = GRADE_ICON_PLAIN.get(grade, "⚬")
+            # 상세 정보 조합
+            desc_parts = [f"{price:,}G"]
+            if item.get("attack"):
+                desc_parts.append(f"공격+{item['attack']}")
+            if item.get("magic_attack"):
+                desc_parts.append(f"마공+{item['magic_attack']}")
+            if item.get("defense"):
+                desc_parts.append(f"방어+{item['defense']}")
+            slot = item.get("slot")
+            if slot:
+                desc_parts.append(f"[{SLOT_NAMES.get(slot, slot)}]")
+            # 소비/스킬북 효과
+            eff = item.get("effect", {})
+            if eff:
+                for ek, ev in list(eff.items())[:3]:
+                    sign = "+" if ev > 0 else ""
+                    desc_parts.append(f"{ek}{sign}{ev}")
+            if item.get("type") == "skillbook":
+                desc_parts.append("스킬북")
+            desc_str = " | ".join(desc_parts)[:100]
             options.append(discord.SelectOption(
                 label=f"{icon} {name}",
                 value=item_id,
-                description=f"가격: {price:,}G",
+                description=desc_str,
             ))
 
         if options:

@@ -336,6 +336,11 @@ class HuntingZoneView(View):
                     _killed_zone = battle_engine.current_zone
                     _killed_monster = battle_engine.current_monster.get("id", "") if battle_engine.current_monster else ""
                     quest_manager.update_kill_count(1, zone=_killed_zone, monster_id=_killed_monster)
+                    # 알바 hunt 킬 카운트 추적
+                    from main import npc_manager as _npc_mgr
+                    _hunt_completed = _npc_mgr.update_hunt_kill(monster_id=_killed_monster, count=1)
+                    if _hunt_completed:
+                        await _npc_mgr.complete_pending_hunts(interaction.channel, _hunt_completed)
                 from main import save_manager, shared_player
                 save_manager.save(shared_player)
 

@@ -177,6 +177,31 @@ class Player:
             del self.inventory[item_id]
         return True
 
+    def add_hyness_item(self, item_id: str, count: int = 1):
+        """하이네스 방 전용 인벤토리에 아이템 추가."""
+        if not hasattr(self, "_flags") or self._flags is None:
+            self._flags = {}
+        inv = self._flags.setdefault("hyness_inventory", {})
+        inv[item_id] = inv.get(item_id, 0) + count
+
+    def remove_hyness_item(self, item_id: str, count: int = 1) -> bool:
+        """하이네스 방 전용 인벤토리에서 아이템 제거."""
+        if not hasattr(self, "_flags") or self._flags is None:
+            self._flags = {}
+        inv = self._flags.get("hyness_inventory", {})
+        if inv.get(item_id, 0) < count:
+            return False
+        inv[item_id] -= count
+        if inv[item_id] <= 0:
+            del inv[item_id]
+        return True
+
+    def get_hyness_inventory(self) -> dict:
+        """하이네스 방 전용 인벤토리 반환."""
+        if not hasattr(self, "_flags") or self._flags is None:
+            return {}
+        return self._flags.get("hyness_inventory", {})
+
     def consume_energy(self, amount: int) -> bool:
         """에너지 소비. 부족 시 False 반환."""
         if self.energy < amount:
@@ -278,10 +303,11 @@ class Player:
 
         prev = self.costume.get(costume_slot)
         if prev:
-            self.add_item(prev)
+            self.add_hyness_item(prev)
 
-        if item_id in self.inventory:
-            self.remove_item(item_id)
+        h_inv = self.get_hyness_inventory()
+        if item_id in h_inv:
+            self.remove_hyness_item(item_id)
 
         self.costume[costume_slot] = item_id
         slot_name = self._COSTUME_SLOT_NAMES.get(costume_slot, costume_slot)
@@ -298,7 +324,7 @@ class Player:
             slot_name = self._COSTUME_SLOT_NAMES.get(slot, slot)
             return f"[{slot_name}] 슬롯이 비어있슴미댜."
         item = ALL_ITEMS.get(eq_id, {})
-        self.add_item(eq_id)
+        self.add_hyness_item(eq_id)
         self.costume[slot] = None
         slot_name = self._COSTUME_SLOT_NAMES.get(slot, slot)
         return f"[{item.get('name', eq_id)}]을(를) {slot_name} 슬롯에서 해제했슴미댜!"

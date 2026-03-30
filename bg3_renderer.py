@@ -546,8 +546,18 @@ class BG3Renderer:
         w = min(w, _MAX_IMG_DIM); h = min(h, _MAX_IMG_DIM)
         title = str(title)[:200]; subtitle = str(subtitle)[:200] if subtitle else None
         PAD = 24; HH = 66 if not subtitle else 88; FH = 46
-        _lh_val = 22  # 값 텍스트 줄 높이
-        fV = _f(19, True)
+
+        # 아이템 수에 따라 글씨 크기 유동 조절
+        n_rows = len(rows)
+        if n_rows > 26:
+            _lh_val = 15; _font_val = 13; _font_lbl = 12; _row_min = 24
+        elif n_rows > 14:
+            _lh_val = 18; _font_val = 16; _font_lbl = 14; _row_min = 30
+        else:
+            _lh_val = 22; _font_val = 19; _font_lbl = 17; _row_min = 36
+
+        fV = _f(_font_val, True)
+        fL = _f(_font_lbl)
         mx_col = PAD + (w - PAD * 2) * 2 // 5 + 26
         val_maxw = w - PAD - mx_col - 8
 
@@ -566,7 +576,7 @@ class BG3Renderer:
                     line = test
             if line:
                 n += 1
-            row_heights.append(max(36, n * _lh_val + 14))
+            row_heights.append(max(_row_min, n * _lh_val + 14))
 
         min_h = HH + FH + 30 + sum(row_heights) + 10
         h = max(h, min_h)
@@ -575,7 +585,7 @@ class BG3Renderer:
         img = _make_base(w,h, system_key, grade)
         d   = ImageDraw.Draw(img)
         rc  = C.RARITY.get(grade,(155,155,155))
-        fT  = _f(28,True); fS=_f(16); fL=_f(17); fF=_f(14)
+        fT  = _f(28,True); fS=_f(16); fF=_f(14)
 
         # 헤더 패널
         hdr = Image.new("RGBA",(w,h),(0,0,0,0))
@@ -807,7 +817,7 @@ class BG3Renderer:
         text_start_y = orn_y + 12
         text_end_y   = _wrap(_tmp_d, greeting_text, fD, TX, text_start_y, maxw, (0,0,0,0), lh=LH)
         # 헤더 + 대사 줄들 + 여백(20) + 호감도 바 영역(58)
-        H = max(MIN_H, text_end_y + 20 + 58)
+        H = max(MIN_H, min(600, text_end_y + 20 + 58))
 
         img = _make_base(W,H,"npc")
         d   = ImageDraw.Draw(img)

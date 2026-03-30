@@ -188,7 +188,7 @@ class MetallurgyEngine:
                 try:
                     from collection import collection_manager
                     grade = ALL_ITEMS.get(out_id, {}).get("grade", "Normal")
-                    is_new, total = collection_manager.register("채광", out_id, out_name, grade)
+                    is_new, total = collection_manager.register("제련", out_id, out_name, grade)
                 except Exception:
                     pass
 

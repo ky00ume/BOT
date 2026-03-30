@@ -366,6 +366,12 @@ MASTERY_SKILLS = {
 }
 
 OTHER_SKILLS = {
+    "alchemy": {
+        "name": "연금술",
+        "desc": "재료를 조합하여 포션을 제조한다.",
+        "icon": "⚗️",
+        "ranks": {r: {} for r in RANK_ORDER},
+    },
     "metallurgy": {
         "name": "제련술",
         "desc": "광석을 가공하여 주괴를 만든다.",

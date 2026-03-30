@@ -1610,41 +1610,26 @@ async def storage_cmd(ctx):
     await view.send(ctx)
 
 
+# /보관함넣기, /보관함꺼내기, /보관함업그레이드 → /보관함 버튼 UI로 통합
 @bot.command(name="보관함넣기")
-async def storage_deposit_cmd(ctx, item_name: str = None, count: int = 1):
+async def storage_deposit_cmd(ctx, *, _args: str = ""):
     if not await _check_channel(ctx):
         return
-    if not item_name:
-        await ctx.send(ansi(f"  {C.RED}✖ /보관함넣기 [아이템이름] [수량] 형식으로 입력하셰요!{C.R}"))
-        return
-    item_id = find_item_by_name(item_name)
-    if not item_id:
-        await ctx.send(ansi(f"  {C.RED}✖ [{item_name}]을(를) 찾을 수 없슴미댜!{C.R}"))
-        return
-    count = max(1, count)
-    await ctx.send(storage_engine.deposit(item_id, count))
+    await ctx.send(ansi(f"  {C.YELLOW}ℹ 이 명령어는 `/보관함` 버튼 UI로 통합되었슴미댜! `/보관함`을 사용해 주셰요.{C.R}"))
 
 
 @bot.command(name="보관함꺼내기")
-async def storage_withdraw_cmd(ctx, item_name: str = None, count: int = 1):
+async def storage_withdraw_cmd(ctx, *, _args: str = ""):
     if not await _check_channel(ctx):
         return
-    if not item_name:
-        await ctx.send(ansi(f"  {C.RED}✖ /보관함꺼내기 [아이템이름] [수량] 형식으로 입력하셰요!{C.R}"))
-        return
-    item_id = find_item_by_name(item_name)
-    if not item_id:
-        await ctx.send(ansi(f"  {C.RED}✖ [{item_name}]을(를) 찾을 수 없슴미댜!{C.R}"))
-        return
-    count = max(1, count)
-    await ctx.send(storage_engine.withdraw(item_id, count))
+    await ctx.send(ansi(f"  {C.YELLOW}ℹ 이 명령어는 `/보관함` 버튼 UI로 통합되었슴미댜! `/보관함`을 사용해 주셰요.{C.R}"))
 
 
 @bot.command(name="보관함업그레이드")
 async def storage_upgrade_cmd(ctx):
     if not await _check_channel(ctx):
         return
-    await ctx.send(storage_engine.upgrade())
+    await ctx.send(ansi(f"  {C.YELLOW}ℹ 이 명령어는 `/보관함` 버튼 UI로 통합되었슴미댜! `/보관함`을 사용해 주셰요.{C.R}"))
 
 
 # ═══════════════════════════════════════════════════════════════════════════

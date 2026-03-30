@@ -21,8 +21,9 @@ class StorageView(View):
                 ansi(f"  {C.RED}✖ 인벤토리가 비어 있슴미댜!{C.R}"), ephemeral=True,
             )
             return
+        items_list = list(inv.items())
         options = []
-        for item_id, count in list(inv.items())[:25]:
+        for item_id, count in items_list[:25]:
             item = ALL_ITEMS.get(item_id, {})
             name = item.get("name", item_id)
             options.append(discord.SelectOption(
@@ -30,9 +31,12 @@ class StorageView(View):
                 value=item_id,
                 description=f"보관함에 넣기",
             ))
+        msg = "📥 넣을 아이템을 선택하세요:"
+        if len(items_list) > 25:
+            msg += f" (총 {len(items_list)}종 중 25개까지 표시)"
         view = _DepositSelectView(self.player, self.engine, self)
         view.add_item(_ItemSelect(options, mode="deposit", player=self.player, engine=self.engine, parent=self))
-        await interaction.response.send_message("📥 넣을 아이템을 선택하세요:", view=view, ephemeral=True)
+        await interaction.response.send_message(msg, view=view, ephemeral=True)
 
     @discord.ui.button(label="꺼내기", style=discord.ButtonStyle.primary, emoji="📤")
     async def withdraw_btn(self, interaction: discord.Interaction, button: Button):
@@ -41,8 +45,9 @@ class StorageView(View):
                 ansi(f"  {C.RED}✖ 보관함이 비어 있슴미댜!{C.R}"), ephemeral=True,
             )
             return
+        items_list = list(self.engine.items.items())
         options = []
-        for item_id, count in list(self.engine.items.items())[:25]:
+        for item_id, count in items_list[:25]:
             item = ALL_ITEMS.get(item_id, {})
             name = item.get("name", item_id)
             options.append(discord.SelectOption(
@@ -50,9 +55,12 @@ class StorageView(View):
                 value=item_id,
                 description=f"보관함에서 꺼내기",
             ))
+        msg = "📤 꺼낼 아이템을 선택하세요:"
+        if len(items_list) > 25:
+            msg += f" (총 {len(items_list)}종 중 25개까지 표시)"
         view = _DepositSelectView(self.player, self.engine, self)
         view.add_item(_ItemSelect(options, mode="withdraw", player=self.player, engine=self.engine, parent=self))
-        await interaction.response.send_message("📤 꺼낼 아이템을 선택하세요:", view=view, ephemeral=True)
+        await interaction.response.send_message(msg, view=view, ephemeral=True)
 
     @discord.ui.button(label="업그레이드", style=discord.ButtonStyle.secondary, emoji="⬆️")
     async def upgrade_btn(self, interaction: discord.Interaction, button: Button):

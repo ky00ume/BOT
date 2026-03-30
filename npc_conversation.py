@@ -367,8 +367,7 @@ class NPCConversationView(View):
 
     async def _music_callback(self, interaction: discord.Interaction):
         """연주 곡 선택 View를 전송."""
-        from music import SONGS, MusicView, _SONG_BY_ID
-        import random
+        from music import SONGS
         view = _MusicSelectView(self.player)
         buf = get_renderer().render_card(
             title="🎵 연주 — 곡 선택",

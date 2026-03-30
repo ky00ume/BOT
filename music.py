@@ -116,8 +116,7 @@ class MusicView(discord.ui.View):
             ]
             if contrib:
                 desc_lines.append(f"🏘 마을 기여도: +{contrib}")
-            if "music" in self.player.skill_ranks:
-                exp_gain = pct * 0.5
+            if exp_gain:
                 desc_lines.append(f"🎵 연주 EXP: +{exp_gain:.0f}")
             if rank_up_msg:
                 desc_lines.append(rank_up_msg)

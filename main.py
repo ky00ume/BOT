@@ -2153,6 +2153,11 @@ async def story_quest_cmd(ctx):
                 f"  {C.GREEN}[힌트 획득]: 「{hint}」{C.R}",
             ]
             story_quest_manager.add_hint(hint)
+            # 키워드 해금
+            kw = qdata.get("keyword")
+            if kw and kw not in shared_player.keywords:
+                shared_player.keywords.append(kw)
+                lines.append(f"  {C.CYAN}🔓 새 키워드: [{kw}]{C.R}")
             story_quest_manager.complete_quest(ch, q)
             story_quest_manager.quest = 2
             save_manager.save(shared_player)
@@ -2201,6 +2206,10 @@ async def story_quest_cmd(ctx):
             await view.wait()
             if view.chosen:
                 story_quest_manager.add_hint(hint)
+                # 키워드 해금
+                kw = qdata.get("keyword")
+                if kw and kw not in shared_player.keywords:
+                    shared_player.keywords.append(kw)
                 story_quest_manager.complete_quest(ch, q)
                 story_quest_manager.quest = 4
                 save_manager.save(shared_player)
@@ -2228,6 +2237,14 @@ async def story_quest_cmd(ctx):
             if title and title not in shared_player.titles:
                 shared_player.titles.append(title)
                 lines.append(f"  {C.GOLD}🏅 칭호 획득: [{title}]{C.R}")
+            # 키워드 해금
+            keywords = qdata.get("keyword", [])
+            if isinstance(keywords, str):
+                keywords = [keywords]
+            for kw in keywords:
+                if kw and kw not in shared_player.keywords:
+                    shared_player.keywords.append(kw)
+                    lines.append(f"  {C.CYAN}🔓 새 키워드: [{kw}]{C.R}")
             story_quest_manager.complete_quest(ch, q)
             story_quest_manager.quest   = 1
             story_quest_manager.chapter = 3
@@ -2253,6 +2270,11 @@ async def story_quest_cmd(ctx):
             if item_id:
                 shared_player.add_item(item_id)
                 lines.append(f"  {C.CYAN}📦 아이템 획득: [몰의 지도 조각]{C.R}")
+            # 키워드 해금
+            kw = qdata.get("keyword")
+            if kw and kw not in shared_player.keywords:
+                shared_player.keywords.append(kw)
+                lines.append(f"  {C.CYAN}🔓 새 키워드: [{kw}]{C.R}")
             # 늪지대 해금 플래그
             story_quest_manager.flags["늪지대_해금"] = True
             story_quest_manager.complete_quest(ch, q)
@@ -2472,6 +2494,14 @@ async def story_collect_cmd(ctx):
             f"  {C.GREEN}✔ 픽시의 날개 가루 획득!{C.R}  ({have}/{qdata['collect_count']})",
         ]
         if have >= qdata["collect_count"]:
+            # 키워드 해금
+            keywords = qdata.get("keyword", [])
+            if isinstance(keywords, str):
+                keywords = [keywords]
+            for kw in keywords:
+                if kw and kw not in shared_player.keywords:
+                    shared_player.keywords.append(kw)
+                    lines.append(f"  {C.CYAN}🔓 새 키워드: [{kw}]{C.R}")
             story_quest_manager.complete_quest(2, 2)
             story_quest_manager.quest = 3
             save_manager.save(shared_player)

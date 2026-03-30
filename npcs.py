@@ -340,24 +340,49 @@ class VillageNPC:
 
         result_note = ""
 
-        # Fix #2: hunt 유형 — 스탯 기반 성공/실패 판정
+        # hunt 유형 — 킬 카운트 추적 방식 (pending_hunt 등록 후 반환)
         if job_type == "hunt":
-            difficulty  = job.get("difficulty", "easy")
-            base_rates  = {"easy": 0.90, "normal": 0.70, "hard": 0.50}
-            base_rate   = base_rates.get(difficulty, 0.70)
-            str_val     = self.player.base_stats.get("str", 10)
-            dex_val     = self.player.base_stats.get("dex", 10)
-            final_rate  = min(0.95, base_rate + (str_val + dex_val) * 0.005)
-            hunt_success = random.random() < final_rate
-            if not hunt_success:
-                reward_gold = max(1, int(reward_gold * 0.3))
-                reward_exp  = max(1, int(reward_exp  * 0.3))
-                result_note = "실패"
-            economy.pay_reward(
-                source=f"알바:{npc_name}",
-                gold=reward_gold,
-                exp=float(reward_exp),
-            )
+            target_monster = job.get("target_monster", "")
+            target_count   = job.get("target_count", 1)
+            _flags = getattr(self.player, "_flags", {})
+            _flags[f"pending_hunt:{npc_name}:{job['id']}"] = {
+                "npc_name":          npc_name,
+                "job_id":            job["id"],
+                "job_name":          job["name"],
+                "target_monster":    target_monster,
+                "target_count":      target_count,
+                "progress":          0,
+                "reward_gold":       reward_gold,
+                "reward_exp":        float(reward_exp),
+                "reward_skill_exp":  job.get("reward_skill_exp", {}),
+                "reward_item":       job.get("reward_item"),
+            }
+            self.player._flags = _flags
+            try:
+                from save_manager import save_manager
+                save_manager.save(self.player)
+            except Exception:
+                pass
+
+            from items import ALL_ITEMS as _AI
+            monster_name = target_monster
+            # 몬스터 이름 표시 시도
+            try:
+                from battle_data import MONSTERS
+                for m in MONSTERS:
+                    if m.get("id") == target_monster:
+                        monster_name = m.get("name", target_monster)
+                        break
+            except Exception:
+                pass
+
+            await ctx.send(ansi(
+                f"  {C.GOLD}💼 {npc['name']} 알바 수락! [{diff_label}]{C.R}\n"
+                f"  {C.DARK}{job['name']} — {job.get('desc','')}{C.R}\n"
+                f"  {C.RED}기력 -{energy_cost}{C.R}\n"
+                f"  {C.GREEN}▶ {monster_name} {target_count}마리를 처치하고 돌아오셰요! (0/{target_count}){C.R}"
+            ))
+            return
 
         elif job_type == "gather":
             economy.pay_reward(
@@ -423,6 +448,92 @@ class VillageNPC:
             save_manager.save(self.player)
         except Exception:
             pass
+
+    def update_hunt_kill(self, monster_id: str = "", count: int = 1) -> list:
+        """전투 승리 시 호출 — pending_hunt 진행도 업데이트. 완료된 알바 목록 반환."""
+        _flags = getattr(self.player, "_flags", {})
+        completed = []
+        for key in list(_flags.keys()):
+            if not key.startswith("pending_hunt:"):
+                continue
+            info = _flags[key]
+            target = info.get("target_monster", "")
+            if target and monster_id and target != monster_id:
+                continue
+            info["progress"] = min(info["progress"] + count, info.get("target_count", 1))
+            if info["progress"] >= info.get("target_count", 1):
+                completed.append(info)
+                del _flags[key]
+        self.player._flags = _flags
+        return completed
+
+    async def complete_pending_hunts(self, ctx, completed_hunts: list):
+        """완료된 hunt 알바에 대해 보상 지급."""
+        economy = Economy(self.player)
+        for info in completed_hunts:
+            npc_name = info.get("npc_name", "")
+            npc = NPC_DATA.get(npc_name, {})
+            reward_gold      = info.get("reward_gold", 100)
+            reward_exp       = info.get("reward_exp", 10)
+            reward_item      = info.get("reward_item")
+            reward_skill_exp = info.get("reward_skill_exp", {})
+
+            economy.pay_reward(
+                source=f"알바:{npc_name}",
+                gold=reward_gold,
+                exp=float(reward_exp),
+            )
+            if reward_skill_exp:
+                for skill_id, amount in reward_skill_exp.items():
+                    self.player.train_skill(skill_id, amount)
+
+            reward_item_line = ""
+            if reward_item:
+                economy.add_item(f"알바:{npc_name}", reward_item, 1)
+                from items import ALL_ITEMS
+                item_name = ALL_ITEMS.get(reward_item, {}).get("name", reward_item)
+                reward_item_line = f"\n  {C.WHITE}🎁 {item_name} x1{C.R}"
+
+            try:
+                import fishing_card
+                buf = fishing_card.generate_job_card(
+                    info["job_name"], "완료!", reward_gold, f"EXP +{reward_exp}"
+                )
+                import discord
+                file = discord.File(buf, filename="job_result.png")
+                embed = discord.Embed(
+                    title=f"💼 {npc.get('name', npc_name)} 알바 완료!",
+                    color=EMBED_COLOR.get("npc", 0x4A7856),
+                )
+                embed.set_image(url="attachment://job_result.png")
+                await ctx.send(embed=embed, file=file)
+                if reward_item_line:
+                    await ctx.send(ansi(reward_item_line.strip()))
+            except Exception:
+                lines = [
+                    header_box(f"💼 {npc.get('name', npc_name)} 알바 완료!"),
+                    f"  {C.WHITE}{info['job_name']}{C.R}",
+                    divider(),
+                    f"  {C.GOLD}+{reward_gold}G{C.R}  {C.GREEN}EXP +{reward_exp}{C.R}",
+                ]
+                if reward_item_line:
+                    lines.append(reward_item_line)
+                await ctx.send(ansi("\n".join(lines)))
+
+        try:
+            from save_manager import save_manager
+            save_manager.save(self.player)
+        except Exception:
+            pass
+
+    def get_pending_hunt_status(self) -> list:
+        """현재 진행 중인 hunt 알바 목록 반환."""
+        _flags = getattr(self.player, "_flags", {})
+        result = []
+        for key, info in _flags.items():
+            if key.startswith("pending_hunt:"):
+                result.append(info)
+        return result
 
     def list_npcs(self) -> str:
         lines = [header_box("🏘 마을 NPC 목록"), section("NPC 목록")]

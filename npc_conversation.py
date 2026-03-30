@@ -25,7 +25,7 @@ NPC_PORTRAIT_MAP: dict[str, str] = {
     "브룩샤":    "브룩샤",    # 창작 캐릭터
     "실렌":      "실렌",      # 창작 캐릭터
     "루바토":    "루바토",    # 창작 캐릭터
-    "그리스타":  "그리스타",  # 창작 캐릭터 (여관 주인)
+    "파울":      "파울",      # 창작 캐릭터 (여관 주인)
 }
 
 
@@ -119,30 +119,32 @@ def _render_keyword_response_image(
     leveled: bool,
     lv_name: str,
 ) -> io.BytesIO:
-    """키워드 응답 이미지를 PIL로 생성합니다."""
+    """키워드 응답 이미지를 PIL로 생성합니다 (초상화 포함)."""
     npc = NPC_DATA.get(npc_name, {})
     aff_pts = _get_affinity_points(aff_manager, npc_name)
     aff_lv = _get_affinity_level_name(aff_manager, npc_name)
 
-    rows = [
-        {"label": "대사", "value": response_text},
-        {"label": "호감도", "value": f"{aff_lv} ({aff_pts}pt)"},
-    ]
-
+    # 대사 + 추가 정보를 하나의 greeting 문자열로 조합
+    greeting_parts = [response_text]
     if not show_limit_warning and aff_gain > 0:
-        rows.append({"label": "호감도 변화", "value": f"+{aff_gain}"})
+        greeting_parts.append(f"[호감도 +{aff_gain}]")
     if leveled:
-        rows.append({"label": "단계 상승", "value": f"→ [{lv_name}]"})
+        greeting_parts.append(f"[단계 상승 → {lv_name}]")
     if unlocked:
-        rows.append({"label": "새 키워드", "value": ", ".join(f"[{k}]" for k in unlocked)})
+        greeting_parts.append(f"[새 키워드: {', '.join(unlocked)}]")
     if show_limit_warning:
-        rows.append({"label": "알림", "value": f"오늘의 최대 호감도 달성! (현재 {aff_pts}pt)"})
+        greeting_parts.append(f"[오늘의 최대 호감도 달성! ({aff_pts}pt)]")
+    combined_greeting = "\n".join(greeting_parts)
 
-    return get_renderer().render_card(
-        title=npc.get("name", npc_name),
-        subtitle=f"[{keyword}]",
-        rows=rows,
-        system_key="npc",
+    role = npc.get("role", "???")
+    return get_renderer().render_npc_dialogue(
+        npc_name=npc.get("name", npc_name),
+        npc_role=f"{role} — [{keyword}]",
+        greeting=combined_greeting,
+        affinity_pts=aff_pts,
+        affinity_level=aff_lv,
+        portrait_type="npc",
+        portrait_id=npc_name,
     )
 
 
@@ -232,6 +234,16 @@ class NPCConversationView(View):
             )
             music_btn.callback = self._music_callback
             self.add_item(music_btn)
+
+        # 제련 배우기 버튼 (다몬 + 제련 스킬 미보유 시)
+        if self.npc_name == "다몬" and "metallurgy" not in getattr(self.player, "skill_ranks", {}):
+            smelt_btn = Button(
+                label="제련 배우기",
+                style=discord.ButtonStyle.success,
+                emoji="🔥",
+            )
+            smelt_btn.callback = self._learn_metallurgy_callback
+            self.add_item(smelt_btn)
 
     def _make_keyword_callback(self, keyword: str):
         async def callback(interaction: discord.Interaction):
@@ -364,6 +376,38 @@ class NPCConversationView(View):
         menu_buf = view.render_menu()
         file = discord.File(menu_buf, filename="train_menu.png")
         await interaction.response.send_message(file=file, view=view)
+
+    async def _learn_metallurgy_callback(self, interaction: discord.Interaction):
+        """다몬에게 제련 스킬을 배운다."""
+        if "metallurgy" in getattr(self.player, "skill_ranks", {}):
+            await interaction.response.send_message("이미 제련 스킬을 보유하고 있슴미댜!", ephemeral=True)
+            return
+        self.player.skill_ranks["metallurgy"] = "연습"
+        self.player.skill_exp["metallurgy"] = 0.0
+        try:
+            from save_manager import save_manager
+            save_manager.save(self.player)
+        except Exception:
+            pass
+        # 버튼 재구성 (배우기 버튼 제거)
+        self._build_buttons()
+        dialogue_text = (
+            "좋습니다. 제련의 기초를 알려드리죠. "
+            "광석을 대장간 화로에 넣고, 적절한 온도에서 불순물을 걸러내는 겁니다. "
+            "처음엔 슬래그가 많이 나오겠지만... 연습하면 나아질 거예요. "
+            "/제련 명령어로 광석을 제련할 수 있습니다."
+        )
+        buf = get_renderer().render_npc_dialogue(
+            npc_name="다몬",
+            npc_role="대장장이",
+            greeting=dialogue_text,
+            affinity_pts=_get_affinity_points(self.aff_manager, "다몬"),
+            affinity_level=_get_affinity_level_name(self.aff_manager, "다몬"),
+            portrait_type="npc",
+            portrait_id="다몬",
+        )
+        file = discord.File(buf, filename="npc_dialogue.png")
+        await interaction.response.edit_message(attachments=[file], view=self)
 
     async def _music_callback(self, interaction: discord.Interaction):
         """연주 곡 선택 View를 전송."""

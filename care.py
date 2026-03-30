@@ -51,8 +51,9 @@ class CareManager:
         """간식주기: 인벤에서 간식 소모 → effect 적용."""
         from items import ALL_ITEMS
 
-        # 인벤 확인
-        if player.inventory.get(snack_id, 0) <= 0:
+        # 하이네스 방 인벤토리에서 확인
+        h_inv = player.get_hyness_inventory()
+        if h_inv.get(snack_id, 0) <= 0:
             item = ALL_ITEMS.get(snack_id) or SNACK_ITEMS.get(snack_id, {})
             return {
                 "success": False,
@@ -64,7 +65,7 @@ class CareManager:
             return {"success": False, "message": "간식이 아닌 아이템임미댜."}
 
         effect = item.get("effect", {})
-        player.remove_item(snack_id)
+        player.remove_hyness_item(snack_id)
 
         changes = {}
         if "condition" in effect:
@@ -189,10 +190,11 @@ class CareManager:
         snack_item = SNACK_ITEMS.get(snack_id, {})
         snack_name = snack_item.get("name", snack_id)
 
-        # 재료 확인
+        # 재료 확인 (하이네스 방 인벤토리에서)
+        h_inv = player.get_hyness_inventory()
         missing = []
         for mat_id, need in recipe["materials"].items():
-            have = player.inventory.get(mat_id, 0)
+            have = h_inv.get(mat_id, 0)
             if have < need:
                 from items import ALL_ITEMS
                 mat = ALL_ITEMS.get(mat_id, {})
@@ -204,18 +206,13 @@ class CareManager:
                 "message": "재료가 부족슴미댜!\n" + "\n".join(f"  ✗ {m}" for m in missing),
             }
 
-        # 재료 소모
+        # 재료 소모 (하이네스 방 인벤토리에서)
         for mat_id, need in recipe["materials"].items():
-            player.remove_item(mat_id, need)
+            player.remove_hyness_item(mat_id, need)
 
-        # 결과물 지급
+        # 결과물 지급 (하이네스 방 인벤토리로)
         count = recipe.get("result_count", 1)
-        ok = player.add_item(snack_id, count)
-        if not ok:
-            # 인벤 공간 부족 → 재료 환불
-            for mat_id, need in recipe["materials"].items():
-                player.add_item(mat_id, need)
-            return {"success": False, "message": "인벤토리가 꽉 찼슴미댜!"}
+        player.add_hyness_item(snack_id, count)
 
         return {
             "success": True,
@@ -234,10 +231,11 @@ class CareManager:
         costume_item = COSTUME_ITEMS.get(costume_id, {})
         costume_name = costume_item.get("name", costume_id)
 
-        # 재료 확인
+        # 재료 확인 (하이네스 방 인벤토리에서)
+        h_inv = player.get_hyness_inventory()
         missing = []
         for mat_id, need in recipe["materials"].items():
-            have = player.inventory.get(mat_id, 0)
+            have = h_inv.get(mat_id, 0)
             if have < need:
                 from items import ALL_ITEMS
                 mat = ALL_ITEMS.get(mat_id, {})
@@ -249,17 +247,13 @@ class CareManager:
                 "message": "재료가 부족슴미댜!\n" + "\n".join(f"  ✗ {m}" for m in missing),
             }
 
-        # 재료 소모
+        # 재료 소모 (하이네스 방 인벤토리에서)
         for mat_id, need in recipe["materials"].items():
-            player.remove_item(mat_id, need)
+            player.remove_hyness_item(mat_id, need)
 
-        # 결과물 지급
+        # 결과물 지급 (하이네스 방 인벤토리로)
         count = recipe.get("result_count", 1)
-        ok = player.add_item(costume_id, count)
-        if not ok:
-            for mat_id, need in recipe["materials"].items():
-                player.add_item(mat_id, need)
-            return {"success": False, "message": "인벤토리가 꽉 찼슴미댜!"}
+        player.add_hyness_item(costume_id, count)
 
         return {
             "success": True,

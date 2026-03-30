@@ -103,7 +103,8 @@ class CostumeManageView(discord.ui.View):
             # 해당 슬롯 의장 아이템 목록을 인벤에서 검색
             from items import ALL_ITEMS
             options = []
-            for item_id, count in self.player.inventory.items():
+            h_inv = self.player.get_hyness_inventory()
+            for item_id, count in h_inv.items():
                 item = ALL_ITEMS.get(item_id, {})
                 if item.get("type") == "costume" and item.get("slot") == slot:
                     grade = item.get("grade", "일반")
@@ -226,7 +227,8 @@ class SnackFeedView(discord.ui.View):
 
         from items import ALL_ITEMS
         options = []
-        for item_id, count in player.inventory.items():
+        h_inv = player.get_hyness_inventory()
+        for item_id, count in h_inv.items():
             item = ALL_ITEMS.get(item_id, {})
             if item.get("type") == "snack":
                 grade = item.get("grade", "일반")
@@ -375,7 +377,7 @@ class SnackCraftView(discord.ui.View):
             grade = snack.get("grade", "일반")
             icon  = GRADE_EMOJI.get(grade, "⚬")
             can_craft = all(
-                player.inventory.get(m, 0) >= n
+                player.get_hyness_inventory().get(m, 0) >= n
                 for m, n in recipe["materials"].items()
             )
             craft_icon = "✅" if can_craft else "❌"
@@ -474,7 +476,7 @@ class CostumeCraftView(discord.ui.View):
             slot    = costume.get("slot", "")
             slot_label = self.SLOT_LABEL.get(slot, slot)
             can_craft = all(
-                player.inventory.get(m, 0) >= n
+                player.get_hyness_inventory().get(m, 0) >= n
                 for m, n in recipe["materials"].items()
             )
             craft_icon = "✅" if can_craft else "❌"
@@ -701,7 +703,7 @@ class CareRoomView(discord.ui.View):
         pool_ids, pool_weights = zip(*self.WALK_ITEMS)
         for _ in range(num_items):
             chosen_id = random.choices(pool_ids, weights=pool_weights)[0]
-            self.player.add_item(chosen_id, 1)
+            self.player.add_hyness_item(chosen_id, 1)
             from items import ALL_ITEMS
             item_name = ALL_ITEMS.get(chosen_id, {}).get("name", chosen_id)
             items_found.append(item_name)

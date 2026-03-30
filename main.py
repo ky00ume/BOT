@@ -792,6 +792,10 @@ async def hunt_cmd(ctx, *, zone: str = None):
                 _killed_zone    = battle_engine.current_zone
                 _killed_monster = battle_engine.current_monster.get("id", "") if battle_engine.current_monster else ""
                 quest_manager.update_kill_count(1, zone=_killed_zone, monster_id=_killed_monster)
+                # 알바 hunt 킬 카운트 추적
+                _hunt_completed = npc_manager.update_hunt_kill(monster_id=_killed_monster, count=1)
+                if _hunt_completed:
+                    await npc_manager.complete_pending_hunts(ctx, _hunt_completed)
                 for ach_id in newly_unlocked:
                     from achievements import ACHIEVEMENT_DEFS
                     ach = ACHIEVEMENT_DEFS.get(ach_id, {})
@@ -848,6 +852,10 @@ async def attack_cmd(ctx, *, skill_input: str = "smash"):
         _killed_zone = battle_engine.current_zone
         _killed_monster = battle_engine.current_monster.get("id", "") if battle_engine.current_monster else ""
         quest_manager.update_kill_count(1, zone=_killed_zone, monster_id=_killed_monster)
+        # 알바 hunt 킬 카운트 추적
+        _hunt_completed = npc_manager.update_hunt_kill(monster_id=_killed_monster, count=1)
+        if _hunt_completed:
+            await npc_manager.complete_pending_hunts(ctx, _hunt_completed)
         for ach_id in newly_unlocked:
             from achievements import ACHIEVEMENT_DEFS
             ach = ACHIEVEMENT_DEFS.get(ach_id, {})
@@ -1139,7 +1147,6 @@ async def help_cmd(ctx):
         value=(
             "`/낚시` — 낚시하기\n"
             "`/채집` — 채집 (기력 15)\n"
-            "`/채광` — 채광 (기력 20)\n"
             "`/벌목` — 벌목 (기력 18)\n"
             "`/물뜨기 [수량]` — 빈 병으로 물 뜨기\n"
             "`/날씨` — 현재 날씨 확인\n"
@@ -1207,7 +1214,7 @@ async def gather_guide_cmd(ctx):
         mark  = GRADE_ICON_PLAIN.get(grade, "⚬")
         lines.append(f"  {mark} {C.WHITE}{item['name']}{C.R}  {C.DARK}등급: {grade}  힘 {item['str_req']} 필요{C.R}")
     lines.append(divider())
-    lines.append(f"  {C.GREEN}/채집{C.R} 또는 {C.GREEN}/채광{C.R} 으로 수집하셰요!")
+    lines.append(f"  {C.GREEN}/채집{C.R} 으로 수집하셰요!")
     await ctx.send(ansi("\n".join(lines)))
 
 
@@ -1232,19 +1239,6 @@ async def gather_cmd(ctx):
     if enc_msg:
         await _send_encounter(ctx, enc_msg)
 
-
-@bot.command(name="채광")
-async def mine_cmd(ctx):
-    if not await _check_channel(ctx):
-        return
-    departure = encounter_manager.clear_encounter()
-    if departure:
-        await ctx.send(departure)
-    await gathering_engine.mine(ctx)
-    save_manager.save(shared_player)
-    enc_msg = encounter_manager.trigger_encounter()
-    if enc_msg:
-        await _send_encounter(ctx, enc_msg)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -1671,7 +1665,14 @@ async def inventory_cmd(ctx):
             color = RC.RARITY.get(grade, RC.TXT_HI)
             rows.append({"label": name, "value": f"×{count}", "color": color})
 
-    card_h = max(380, 120 + len(rows) * 36)
+    n_rows = len(rows)
+    if n_rows > 26:
+        _rh = 24
+    elif n_rows > 14:
+        _rh = 30
+    else:
+        _rh = 36
+    card_h = max(380, 120 + n_rows * _rh)
     card_w = 520 if len(inventory) <= 12 else 640 if len(inventory) <= 24 else 760
     buf = await render_async(
         get_renderer().render_card,
@@ -1715,6 +1716,11 @@ async def inventory_cmd(ctx):
                 from skills_db import COMBAT_SKILLS, MAGIC_SKILLS, RECOVERY_SKILLS, OTHER_SKILLS
                 all_defs = {**COMBAT_SKILLS, **MAGIC_SKILLS, **RECOVERY_SKILLS, **OTHER_SKILLS}
                 skill_name = all_defs.get(_skill_id, {}).get("name", _skill_id)
+                try:
+                    from save_manager import save_manager
+                    save_manager.save(shared_player)
+                except Exception:
+                    pass
                 await interaction.response.send_message(
                     f"✅ [{skill_name}] 스킬을 습득했슴미댜! [연습 랭크]",
                     ephemeral=False,
@@ -1801,9 +1807,42 @@ async def inventory_cmd(ctx):
                             drop = min(_qty, cur)
                             if drop > 0:
                                 shared_player.remove_item(_iid, drop)
+                            # 버린 후 다시 아이템 선택 UI 표시
+                            remaining = shared_player.inventory
+                            if not remaining:
+                                await y_interaction.response.edit_message(
+                                    content=f"🗑️ **{_iname}** ×{drop}을(를) 버렸슴미댜!\n인벤토리가 비었슴미댜!",
+                                    view=None,
+                                )
+                                return
+                            new_opts = []
+                            for r_iid, r_cnt in list(remaining.items())[:25]:
+                                r_item = _AI.get(r_iid, {})
+                                if r_item.get("quest_locked"):
+                                    continue
+                                r_name = r_item.get("name", r_iid)
+                                new_opts.append(discord.SelectOption(
+                                    label=f"{r_name} (×{r_cnt})",
+                                    value=r_iid,
+                                    description=r_item.get("desc", "")[:50],
+                                ))
+                            if not new_opts:
+                                await y_interaction.response.edit_message(
+                                    content=f"🗑️ **{_iname}** ×{drop}을(를) 버렸슴미댜!\n더 이상 버릴 아이템이 없슴미댜!",
+                                    view=None,
+                                )
+                                return
+                            new_select = discord.ui.Select(
+                                placeholder="버릴 아이템을 선택하세요...",
+                                options=new_opts,
+                                custom_id="discard_item_select_cont",
+                            )
+                            new_select.callback = discard_select_callback
+                            new_view = discord.ui.View(timeout=60.0)
+                            new_view.add_item(new_select)
                             await y_interaction.response.edit_message(
-                                content=f"🗑️ **{_iname}** ×{drop}을(를) 버렸슴미댜!",
-                                view=None,
+                                content=f"🗑️ **{_iname}** ×{drop}을(를) 버렸슴미댜! 계속 버릴 아이템을 선택하세요:",
+                                view=new_view,
                             )
                         async def no_cb(n_interaction: discord.Interaction):
                             await n_interaction.response.edit_message(content="취소했슴미댜.", view=None)
@@ -2114,6 +2153,11 @@ async def story_quest_cmd(ctx):
                 f"  {C.GREEN}[힌트 획득]: 「{hint}」{C.R}",
             ]
             story_quest_manager.add_hint(hint)
+            # 키워드 해금
+            kw = qdata.get("keyword")
+            if kw and kw not in shared_player.keywords:
+                shared_player.keywords.append(kw)
+                lines.append(f"  {C.CYAN}🔓 새 키워드: [{kw}]{C.R}")
             story_quest_manager.complete_quest(ch, q)
             story_quest_manager.quest = 2
             save_manager.save(shared_player)
@@ -2162,6 +2206,10 @@ async def story_quest_cmd(ctx):
             await view.wait()
             if view.chosen:
                 story_quest_manager.add_hint(hint)
+                # 키워드 해금
+                kw = qdata.get("keyword")
+                if kw and kw not in shared_player.keywords:
+                    shared_player.keywords.append(kw)
                 story_quest_manager.complete_quest(ch, q)
                 story_quest_manager.quest = 4
                 save_manager.save(shared_player)
@@ -2189,6 +2237,14 @@ async def story_quest_cmd(ctx):
             if title and title not in shared_player.titles:
                 shared_player.titles.append(title)
                 lines.append(f"  {C.GOLD}🏅 칭호 획득: [{title}]{C.R}")
+            # 키워드 해금
+            keywords = qdata.get("keyword", [])
+            if isinstance(keywords, str):
+                keywords = [keywords]
+            for kw in keywords:
+                if kw and kw not in shared_player.keywords:
+                    shared_player.keywords.append(kw)
+                    lines.append(f"  {C.CYAN}🔓 새 키워드: [{kw}]{C.R}")
             story_quest_manager.complete_quest(ch, q)
             story_quest_manager.quest   = 1
             story_quest_manager.chapter = 3
@@ -2214,6 +2270,11 @@ async def story_quest_cmd(ctx):
             if item_id:
                 shared_player.add_item(item_id)
                 lines.append(f"  {C.CYAN}📦 아이템 획득: [몰의 지도 조각]{C.R}")
+            # 키워드 해금
+            kw = qdata.get("keyword")
+            if kw and kw not in shared_player.keywords:
+                shared_player.keywords.append(kw)
+                lines.append(f"  {C.CYAN}🔓 새 키워드: [{kw}]{C.R}")
             # 늪지대 해금 플래그
             story_quest_manager.flags["늪지대_해금"] = True
             story_quest_manager.complete_quest(ch, q)
@@ -2433,6 +2494,14 @@ async def story_collect_cmd(ctx):
             f"  {C.GREEN}✔ 픽시의 날개 가루 획득!{C.R}  ({have}/{qdata['collect_count']})",
         ]
         if have >= qdata["collect_count"]:
+            # 키워드 해금
+            keywords = qdata.get("keyword", [])
+            if isinstance(keywords, str):
+                keywords = [keywords]
+            for kw in keywords:
+                if kw and kw not in shared_player.keywords:
+                    shared_player.keywords.append(kw)
+                    lines.append(f"  {C.CYAN}🔓 새 키워드: [{kw}]{C.R}")
             story_quest_manager.complete_quest(2, 2)
             story_quest_manager.quest = 3
             save_manager.save(shared_player)

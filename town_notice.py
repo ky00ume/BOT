@@ -62,7 +62,7 @@ def make_npc_embed() -> discord.Embed:
         ("엘레라신",   "길드 마스터",  "모험가 길드 / 길드 업무 알바"),
         ("게일의 환영","마법학교 교수","마법학교 / 수업 보조 알바"),
         ("카엘릭",     "교관",         "훈련소 / 훈련 보조 알바 / 수련"),
-        ("그리스타",   "여관 주인",    "비전 타운 여관 / 휴식·회복"),
+        ("파울",       "여관 주인",    "비전 타운 여관 / 휴식·회복"),
     ]
     npc_text = "\n".join(f"• **{name}** [{role}] — {desc}" for name, role, desc in npcs)
     embed.add_field(name="NPC 목록", value=npc_text, inline=False)
@@ -167,7 +167,7 @@ def make_life_embed() -> discord.Embed:
     embed.add_field(
         name="🏨 여관 & 🎵 연주",
         value=(
-            "그리스타 NPC 대화 → **[휴식]** 버튼 — 기력·HP 회복\n"
+            "파울 NPC 대화 → **[휴식]** 버튼 — 기력·HP 회복\n"
             "  └ 간이 휴식(50G) / 숙박(150G) / 특실(300G)\n"
             "알피라 NPC 대화 → **[연주]** 버튼 — 연주 스킬 훈련\n"
             "  └ 연주 스킬북: 브룩샤/알피라 상점에서 구매"
@@ -434,7 +434,7 @@ def make_patchnote_v053_embed() -> discord.Embed:
     embed.add_field(
         name="🏨 신규: 여관 시스템",
         value=(
-            "• NPC **그리스타** (여관 주인) 추가\n"
+            "• NPC **파울** (여관 주인) 추가\n"
             "• 대화 → **[휴식]** 버튼 → 기력·HP 회복\n"
             "  간이 휴식(50G) / 숙박(150G) / 특실(300G)"
         ),

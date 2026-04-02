@@ -2450,7 +2450,7 @@ async def story_quest_cmd(ctx):
             reactions = qdata["auto_reactions"]
             if sync >= reactions["dark"]["threshold"]:
                 result = reactions["dark"]
-            elif sync <= -(reactions["dark"]["threshold"]):
+            elif sync <= reactions["light"]["threshold"]:
                 result = reactions["light"]
             else:
                 result = reactions["neutral"]

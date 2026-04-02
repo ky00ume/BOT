@@ -1,3 +1,4 @@
+from __future__ import annotations
 import sqlite3
 import json
 import os
@@ -482,7 +483,7 @@ def load_village_data() -> Dict[str, int]:
         return {"contribution": 0, "level": 1}
 
 
-def save_player_to_db(player: 'Player') -> None:
+def save_player_to_db(player: Player) -> None:
     """플레이어 데이터를 DB에 저장.
 
     Args:

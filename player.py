@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import Dict, List, Optional, Any
 from utils.logger import setup_logger
 from skills_db import (
@@ -23,7 +24,7 @@ LEVEL_UP_TABLE = {
 }
 
 
-def apply_level_up(player: 'Player') -> Dict[str, int]:
+def apply_level_up(player: Player) -> Dict[str, int]:
     """레벨업 시 스탯 증가를 적용하고 증가 내역 반환.
 
     Args:
@@ -57,7 +58,7 @@ def apply_level_up(player: 'Player') -> Dict[str, int]:
     return result
 
 
-def check_level_up(player: 'Player') -> List[Dict[str, Any]]:
+def check_level_up(player: Player) -> List[Dict[str, Any]]:
     """EXP가 레벨업 기준(level*100)을 초과하면 레벨업 처리.
 
     여러 레벨을 한 번에 올릴 수 있다.

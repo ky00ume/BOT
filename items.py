@@ -865,6 +865,28 @@ STORY_QUEST_ITEMS = {
         "price": 0,
         "desc":  "픽시가 남긴 빛나는 가루. 비릿하고 따뜻한 냄새가 난다.",
     },
+    # ── CH4 아이템 ──
+    "sq_moonlantern_complete_dark": {
+        "name":  "완성된 문랜턴 (속박)",
+        "type":  "quest",
+        "grade": "Legendary",
+        "price": 0,
+        "desc":  "픽시를 가둬 완성한 문랜턴. 강렬하지만 날카로운 빛을 낸다. 유리 너머에서 무언가가 두드리는 소리가 들린다.",
+    },
+    "sq_moonlantern_complete_pact": {
+        "name":  "완성된 문랜턴 (계약)",
+        "type":  "quest",
+        "grade": "Legendary",
+        "price": 0,
+        "desc":  "픽시와의 약속으로 빛나는 문랜턴. 따뜻하지만 불안정한 빛. 약속이 깨지면 꺼질 것이다.",
+    },
+    "sq_pixie_feather": {
+        "name":  "픽시의 깃털",
+        "type":  "quest",
+        "grade": "Epic",
+        "price": 0,
+        "desc":  "픽시가 자발적으로 떨어뜨린 빛나는 깃털. 등불의 동력원은 아니지만, 새로운 가능성의 씨앗.",
+    },
 }
 
 ALL_ITEMS.update(STORY_QUEST_ITEMS)

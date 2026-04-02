@@ -144,6 +144,43 @@ TITLE_EFFECTS = {
             "stat_bonus": {"str": 3, "int": 2, "dex": 2, "will": 2},
         },
     },
+
+    # ── 스토리 계열 ────────────────────────────────────────────────────────
+    "귀를 기울인 자": {
+        "desc": "그림자 등불의 소문에 귀를 기울인 자. (G1 CH1 완료)",
+        "effects": {
+            "stat_bonus": {"will": 1},
+        },
+    },
+    "금기를 엿본 자": {
+        "desc": "등불의 금기된 진실을 엿본 자. (G1 CH2 완료)",
+        "effects": {
+            "stat_bonus": {"int": 2, "will": 1},
+        },
+    },
+    "하늘을 올려다본 자": {
+        "desc": "닿을 수 없는 빛을 올려다본 자. (G1 CH3 완료)",
+        "effects": {
+            "crit_bonus": 1,
+            "stat_bonus": {"dex": 2, "luck": 1},
+        },
+    },
+    "속박의 의미를 아는 자": {
+        "desc": "빛을 가두는 것의 무게를 아는 자. (G1 CH4 완료)",
+        "effects": {
+            "atk_bonus": 2,
+            "def_bonus": 1,
+            "stat_bonus": {"will": 3, "int": 2},
+        },
+    },
+    "등불을 찾은 자": {
+        "desc": "어둠 속에서 빛의 비밀을 끝까지 추적한 자. (G1 완료)",
+        "effects": {
+            "atk_bonus": 2,
+            "def_bonus": 1,
+            "stat_bonus": {"str": 3, "will": 2, "int": 2},
+        },
+    },
 }
 
 

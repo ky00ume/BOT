@@ -2031,16 +2031,16 @@ async def story_quest_cmd(ctx):
     """현재 챕터의 다음 스토리 퀘스트를 진행합니다."""
     if not await _check_channel(ctx):
         return
-    from story_quest_data import STORY_CHAPTERS, CH1_QUESTS, CH2_QUESTS, CH3_QUESTS
+    from story_quest_data import STORY_CHAPTERS, CH1_QUESTS, CH2_QUESTS, CH3_QUESTS, CH4_QUESTS
     from story_quest_ui import ShadowChoiceView, ForcedBattleView, play_cutscene
 
     ch  = story_quest_manager.chapter
     q   = story_quest_manager.quest
 
-    # 챕터 4는 미해금
-    if ch >= 4:
+    # 챕터 5 이상은 미해금
+    if ch >= 5:
         await ctx.send(ansi(
-            f"  {C.DARK}🔒 챕터 4 《거미줄과 속박》 — 미해금{C.R}\n"
+            f"  {C.DARK}🔒 챕터 5 《등불이 비추는 것》 — 미해금{C.R}\n"
             f"  {C.DARK}다음 이야기는 아직 쓰이지 않았습니다.{C.R}"
         ))
         return
@@ -2050,7 +2050,7 @@ async def story_quest_cmd(ctx):
         await ctx.send(ansi(f"  {C.DARK}🔒 이 챕터는 아직 해금되지 않았슴미댜.{C.R}"))
         return
 
-    quests_map = {1: CH1_QUESTS, 2: CH2_QUESTS, 3: CH3_QUESTS}
+    quests_map = {1: CH1_QUESTS, 2: CH2_QUESTS, 3: CH3_QUESTS, 4: CH4_QUESTS}
     quests = quests_map.get(ch, {})
     qdata  = quests.get(q)
     if not qdata:
@@ -2391,7 +2391,161 @@ async def story_quest_cmd(ctx):
             story_quest_manager.chapter = 4
             save_manager.save(shared_player)
             lines.append(divider())
-            lines.append(f"  {C.DARK}🔒 챕터 4 《거미줄과 속박》 — 미해금{C.R}")
+            lines.append(f"  {C.GREEN}📖 챕터 4 《거미줄과 속박》 해금!{C.R}")
+            lines.append(f"  {C.DARK}/스토리퀘스트 로 다음 이야기를 진행하세요.{C.R}")
+            await ctx.send(ansi("\n".join(lines)))
+
+    # ── 챕터 4 퀘스트 처리 ─────────────────────────────────────────────
+    elif ch == 4:
+        if q == 1:
+            # 카르니스의 유산 — NPC 대화
+            if already_done:
+                await ctx.send(ansi(f"  {C.GOLD}✔ [{qdata['title']}] 이미 완료했슴미댜!{C.R}"))
+                return
+            npc_name = qdata["npc"]
+            hint     = qdata["hint"]
+            dialogue = qdata["dialogue"]
+            lines = [
+                header_box(f"📜 챕터 4 Q1: {qdata['title']}"),
+                f"  {C.GOLD}💬 {npc_name}{C.R}",
+                divider(),
+                f"  {C.WHITE}\"{dialogue}\"{C.R}",
+                divider(),
+                f"  {C.GREEN}[힌트 획득]: 「{hint}」{C.R}",
+            ]
+            aff_rewards = qdata.get("rewards", {}).get("affinity", {})
+            for npc, pts in aff_rewards.items():
+                if affinity_manager:
+                    affinity_manager.add_affinity(npc, pts)
+                lines.append(f"  {C.PINK}💖 {npc} 호감도 +{pts}{C.R}")
+            story_quest_manager.add_hint(hint)
+            kw = qdata.get("keyword")
+            if kw and kw not in shared_player.keywords:
+                shared_player.keywords.append(kw)
+                lines.append(f"  {C.CYAN}🔓 새 키워드: [{kw}]{C.R}")
+            story_quest_manager.complete_quest(ch, q)
+            story_quest_manager.quest = 2
+            save_manager.save(shared_player)
+            await ctx.send(ansi("\n".join(lines)))
+
+        elif q == 2:
+            # 다시 들리는 윙윙거림 — 탐색 (스토리탐색4 커맨드 사용)
+            await ctx.send(ansi(
+                f"  {C.WHITE}📜 챕터 4 Q2: {qdata['title']}{C.R}\n"
+                f"  {C.DARK}방울숲에서 비정상적인 소리가 들린다.{C.R}\n"
+                f"  {C.GREEN}/스토리탐색4 명령어로 탐색을 진행하세요.{C.R}"
+            ))
+
+        elif q == 3:
+            # 부러진 날개 — 컷신 + 자동 반응
+            if already_done:
+                await ctx.send(ansi(f"  {C.GOLD}✔ [{qdata['title']}] 이미 완료했슴미댜!{C.R}"))
+                return
+
+            # 컷신 재생
+            await play_cutscene(ctx, qdata["dialogues"])
+
+            # shadow_sync 기반 자동 반응
+            sync = story_quest_manager.shadow_sync
+            reactions = qdata["auto_reactions"]
+            if sync >= reactions["dark"]["threshold"]:
+                result = reactions["dark"]
+            elif sync <= reactions["light"]["threshold"]:
+                result = reactions["light"]
+            else:
+                result = reactions["neutral"]
+
+            story_quest_manager.add_shadow_sync(result["shadow_sync"])
+            lines = [
+                header_box("🕷️  내면의 반응"),
+                divider(),
+                f"  {C.WHITE}{result['text']}{C.R}",
+                divider(),
+            ]
+            if result["shadow_sync"] != 0:
+                sign = f"+{result['shadow_sync']}" if result['shadow_sync'] > 0 else str(result['shadow_sync'])
+                lines.append(f"  {C.DARK}(그림자 공명 {sign}){C.R}")
+
+            story_quest_manager.complete_quest(ch, q)
+            story_quest_manager.quest = 4
+            save_manager.save(shared_player)
+            lines.append(f"  {C.GREEN}/스토리퀘스트 로 다음 퀘스트를 진행하세요.{C.R}")
+            await ctx.send(ansi("\n".join(lines)))
+
+        elif q == 4:
+            # 빛의 무게 — 핵심 분기 선택
+            if already_done:
+                await ctx.send(ansi(f"  {C.GOLD}✔ [{qdata['title']}] 이미 완료했슴미댜!{C.R}"))
+                return
+
+            lines = [
+                header_box("⚖️  빛의 무게"),
+                f"  {C.WHITE}날개가 찢어진 픽시가 눈앞에 있다.{C.R}",
+                f"  {C.WHITE}등불은 차갑게 기다리고 있다.{C.R}",
+                divider(),
+                f"  {C.DARK}선택하세요.{C.R}",
+            ]
+
+            # CH4용 선택지 — 플래그 설정을 포함하는 확장 콜백
+            from story_quest_ui import ShadowChoiceWithFlagView
+            view = ShadowChoiceWithFlagView(
+                qdata["choices"], story_quest_manager, shared_player,
+                choice_results=qdata["choice_results"],
+                author_id=ctx.author.id,
+            )
+            await ctx.send(ansi("\n".join(lines)), view=view)
+            await view.wait()
+
+            # 선택이 실제로 이루어졌는지 확인 (시간 만료/미선택 방지)
+            if not getattr(view, "chosen", False):
+                await ctx.send(ansi(
+                    f"  {C.YELLOW}⏰ 선택 시간이 만료되었거나 아무도 버튼을 누르지 않았슴미댜.{C.R}\n"
+                    f"  {C.DARK}다시 `!스토리탐색` 명령어로 이 퀘스트를 열어서 선택을 완료해 주세요!{C.R}"
+                ))
+                return
+            story_quest_manager.complete_quest(ch, q)
+            story_quest_manager.quest = 5
+            save_manager.save(shared_player)
+
+        elif q == 5:
+            # 속박과 해방 사이 — 분기 엔딩
+            if already_done:
+                await ctx.send(ansi(f"  {C.GOLD}✔ [{qdata['title']}] 이미 완료했슴미댜!{C.R}"))
+                return
+
+            # 어떤 루트인지 확인
+            if story_quest_manager.flags.get("pixie_captured"):
+                route_key = "pixie_captured"
+            elif story_quest_manager.flags.get("pixie_pact"):
+                route_key = "pixie_pact"
+            elif story_quest_manager.flags.get("pixie_healed"):
+                route_key = "pixie_healed"
+            else:
+                route_key = "pixie_pact"  # 기본값
+
+            ending = qdata["ending_texts"][route_key]
+            lines = [
+                header_box("📜 챕터 4 엔딩 — 속박과 해방 사이"),
+                divider(),
+                f"  {C.WHITE}{ending}{C.R}",
+                divider(),
+            ]
+            title_rw = qdata.get("title_reward")
+            if title_rw and title_rw not in shared_player.titles:
+                shared_player.titles.append(title_rw)
+                lines.append(f"  {C.GOLD}🏅 칭호 획득: [{title_rw}]{C.R}")
+            item_id = qdata.get("item_rewards", {}).get(route_key)
+            if item_id:
+                shared_player.add_item(item_id)
+                from items import ALL_ITEMS
+                item_name = ALL_ITEMS.get(item_id, {}).get("name", item_id)
+                lines.append(f"  {C.CYAN}📦 아이템 획득: [{item_name}]{C.R}")
+            story_quest_manager.complete_quest(ch, q)
+            story_quest_manager.quest   = 1
+            story_quest_manager.chapter = 5
+            save_manager.save(shared_player)
+            lines.append(divider())
+            lines.append(f"  {C.DARK}🔒 챕터 5 《등불이 비추는 것》 — 미해금{C.R}")
             lines.append(f"  {C.DARK}다음 이야기는 아직 쓰이지 않았습니다.{C.R}")
             await ctx.send(ansi("\n".join(lines)))
 
@@ -2435,6 +2589,50 @@ async def story_explore_cmd(ctx):
     lines = [
         header_box("🌫️  늪지대 탐색"),
         f"  {C.DARK}안개와 진흙으로 뒤덮인 음습한 늪지대.{C.R}",
+        divider(),
+    ]
+    view = ExploreView(
+        qdata["step_descs"], story_quest_manager, shared_player,
+        on_done_coro=on_explore_done
+    )
+    await ctx.send(ansi("\n".join(lines)), view=view)
+
+
+@bot.command(name="스토리탐색4")
+async def story_explore4_cmd(ctx):
+    """방울숲 탐색 퀘스트 실행 (챕터 4 Q2 전용, 3단계)."""
+    if not await _check_channel(ctx):
+        return
+    from story_quest_data import CH4_QUESTS
+    from story_quest_ui import ExploreView
+
+    ch = story_quest_manager.chapter
+    q  = story_quest_manager.quest
+    if ch != 4 or q != 2:
+        await ctx.send(ansi(
+            f"  {C.RED}✖ 이 탐색은 챕터 4 Q2에서만 가능합미댜!{C.R}\n"
+            f"  {C.DARK}현재: 챕터 {ch} Q{q}{C.R}"
+        ))
+        return
+
+    if story_quest_manager.is_quest_done(4, 2):
+        await ctx.send(ansi(f"  {C.GOLD}✔ 탐색을 이미 완료했슴미댜!{C.R}"))
+        return
+
+    qdata = CH4_QUESTS[2]
+
+    async def on_explore_done(interaction):
+        story_quest_manager.complete_quest(4, 2)
+        story_quest_manager.quest = 3
+        save_manager.save(shared_player)
+        await interaction.channel.send(ansi(
+            f"  {C.GOLD}✔ 탐색 완료! 가시덤불 사이에 무언가가...{C.R}\n"
+            f"  {C.GREEN}/스토리퀘스트 로 다음 퀘스트를 진행하세요.{C.R}"
+        ))
+
+    lines = [
+        header_box("🌿  방울숲 탐색"),
+        f"  {C.DARK}이전과 다른 소리가 숲에서 흘러나온다.{C.R}",
         divider(),
     ]
     view = ExploreView(

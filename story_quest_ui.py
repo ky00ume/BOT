@@ -4,7 +4,7 @@ import discord
 from discord.ui import View, Button
 from bg3_renderer import get_renderer
 from story_quest_data import (
-    STORY_CHAPTERS, CH1_QUESTS, CH2_QUESTS, CH3_QUESTS,
+    STORY_CHAPTERS, CH1_QUESTS, CH2_QUESTS, CH3_QUESTS, CH4_QUESTS,
 )
 
 
@@ -83,6 +83,85 @@ class ShadowChoiceView(View):
                 lines.append(f"(그림자 공명 {sign})")
 
             file = _render_text_card("🕷️  그림자의 응답", lines, system_key="quest")
+            for item in self.children:
+                item.disabled = True
+            await interaction.response.edit_message(
+                attachments=[file], content=None, view=self
+            )
+            self.stop()
+        return _cb
+
+
+class ShadowChoiceWithFlagView(View):
+    """shadow_sync 분기 선택 + 스토리 플래그 설정 (챕터 4 Q4)."""
+
+    STYLE_MAP = {
+        "red":     discord.ButtonStyle.danger,
+        "yellow":  discord.ButtonStyle.secondary,
+        "blurple": discord.ButtonStyle.primary,
+    }
+
+    def __init__(self, choices: dict, sq_manager, player, *,
+                 choice_results: dict = None, author_id: int = None, timeout=120.0):
+        super().__init__(timeout=timeout)
+        self.sq_manager     = sq_manager
+        self.player         = player
+        self.chosen         = False
+        self.choice_results = choice_results or {}
+        self.author_id      = author_id
+        for key, data in choices.items():
+            style = self.STYLE_MAP.get(data.get("style", "yellow"), discord.ButtonStyle.secondary)
+            emoji = {"red": "🔴", "yellow": "🟡", "blurple": "🔵"}.get(data.get("style"), "⚫")
+            btn = Button(
+                label=f"{emoji} {data['label']}",
+                style=style,
+                custom_id=f"shadow_flag_choice_{key}",
+            )
+            btn.callback = self._make_cb(key, data)
+            self.add_item(btn)
+
+    def _make_cb(self, key: str, data: dict):
+        async def _cb(interaction: discord.Interaction):
+            # 커맨드 사용자만 선택 가능
+            if self.author_id and interaction.user.id != self.author_id:
+                await interaction.response.send_message(
+                    "이 선택은 퀘스트 진행자만 할 수 있슴미댜.", ephemeral=True
+                )
+                return
+            if self.chosen:
+                err_file = _render_text_card(
+                    "알림", ["이미 선택했슴미댜."], system_key="quest"
+                )
+                await interaction.response.send_message(
+                    file=err_file, ephemeral=True
+                )
+                return
+            self.chosen = True
+            delta = data.get("shadow_sync", 0)
+            self.sq_manager.add_shadow_sync(delta)
+
+            # 플래그 설정
+            flag = data.get("flag")
+            if flag:
+                self.sq_manager.flags[flag] = True
+
+            result_hint = self.sq_manager.get_shadow_hint()
+            sign = f"+{delta}" if delta > 0 else str(delta)
+
+            lines = [
+                f"선택: {data['label']}",
+                f"\"{result_hint}\"",
+            ]
+            if delta != 0:
+                lines.append(f"(그림자 공명 {sign})")
+
+            # 선택 결과 텍스트
+            result_text = self.choice_results.get(key, "")
+            if result_text:
+                lines.append("")
+                lines.append(result_text)
+
+            file = _render_text_card("⚖️  빛의 무게 — 선택의 결과", lines, system_key="quest")
             for item in self.children:
                 item.disabled = True
             await interaction.response.edit_message(

@@ -18,6 +18,15 @@ def create_status_image(player) -> io.BytesIO:
     stats  = getattr(player, 'base_stats',    {})
     used, max_slots = (player.inventory_check()
                        if hasattr(player, 'inventory_check') else (0, 10))
+
+    # 휴식 중이면 칭호에 💤 표시 추가
+    try:
+        import rest as _rest_mod
+        if _rest_mod.is_resting:
+            title = f"{title}  💤"
+    except Exception:
+        pass
+
     return get_renderer().render_status_card(
         name=name, level=level, title_str=title,
         hp=hp, max_hp=max_hp, mp=mp, max_mp=max_mp,

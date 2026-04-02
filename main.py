@@ -27,7 +27,7 @@ from status_window import create_status_image
 import io
 import status as status_mod
 from bg3_renderer import get_renderer
-from ui_theme     import C, ansi, EMBED_COLOR, FOOTERS, divider
+from ui_theme     import C, ansi, EMBED_COLOR, FOOTERS, divider, header_box
 from town_notice  import send_town_notice, make_intro_embed, make_npc_embed, make_commands_embed
 from fishing      import FishingEngine
 from cooking_db   import CookingEngine
@@ -1447,6 +1447,7 @@ async def rest_cmd(ctx):
 
     rest_engine = RestEngine(shared_player, channel=ctx.channel)
 
+    global _rest_last_used
     _rest_last_used = now
 
     embed = discord.Embed(

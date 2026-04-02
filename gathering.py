@@ -263,11 +263,13 @@ class GatheringEngine:
             )
 
         season_kr = {"spring": "봄", "summer": "여름", "autumn": "가을", "winter": "겨울"}.get(season, season)
+        en_line = ansi(f"  {C.RED}기력 -{energy_cost}{C.R}  ({C.WHITE}{self.player.energy}/{self.player.max_energy}{C.R})")
         if added:
             try:
                 import fishing_card
                 buf = fishing_card.generate_gather_card(item["name"], count, grade)
                 await ctx.send(file=discord.File(buf, filename="gather_result.png"))
+                await ctx.send(en_line)
                 if rank_msg:
                     await ctx.send(ansi(f"  {C.GOLD}{rank_msg}{C.R}"))
             except Exception:
@@ -277,6 +279,7 @@ class GatheringEngine:
                     f"  계절: {C.CYAN}{season_kr}{C.R}",
                     f"  {grade_mark} {C.WHITE}{item['name']}{C.R} x{count} 획득!",
                     f"  {C.GOLD}채집 숙련도 +10{C.R}",
+                    f"  {C.RED}기력 -{energy_cost}{C.R}  ({self.player.energy}/{self.player.max_energy})",
                 ]
                 if rank_msg:
                     lines.append(f"  {C.GOLD}{rank_msg}{C.R}")
@@ -334,6 +337,7 @@ class GatheringEngine:
                 import fishing_card
                 buf = fishing_card.generate_gather_card(item["name"], count, grade)
                 await ctx.send(file=discord.File(buf, filename="mine_result.png"))
+                await ctx.send(ansi(f"  {C.RED}기력 -{energy_cost}{C.R}  ({C.WHITE}{self.player.energy}/{self.player.max_energy}{C.R})"))
                 if rank_msg:
                     await ctx.send(ansi(f"  {C.GOLD}{rank_msg}{C.R}"))
             except Exception:
@@ -343,6 +347,7 @@ class GatheringEngine:
                     f"  힘(STR): {C.RED}{str_stat}{C.R}",
                     f"  {grade_mark} {C.WHITE}{item['name']}{C.R} x{count} 획득!",
                     f"  {C.GOLD}채광 숙련도 +12{C.R}",
+                    f"  {C.RED}기력 -{energy_cost}{C.R}  ({self.player.energy}/{self.player.max_energy})",
                 ]
                 if rank_msg:
                     lines.append(f"  {C.GOLD}{rank_msg}{C.R}")
@@ -394,6 +399,7 @@ class GatheringEngine:
                 import fishing_card
                 buf = fishing_card.generate_gather_card(item["name"], count, grade)
                 await ctx.send(file=discord.File(buf, filename="woodcut_result.png"))
+                await ctx.send(ansi(f"  {C.RED}기력 -{energy_cost}{C.R}  ({C.WHITE}{self.player.energy}/{self.player.max_energy}{C.R})"))
                 if rank_msg:
                     await ctx.send(ansi(f"  {C.GOLD}{rank_msg}{C.R}"))
             except Exception:
@@ -403,6 +409,7 @@ class GatheringEngine:
                     f"  힘(STR): {C.RED}{str_stat}{C.R}",
                     f"  {grade_mark} {C.WHITE}{item['name']}{C.R} x{count} 획득!",
                     f"  {C.GOLD}벌목 숙련도 +11{C.R}",
+                    f"  {C.RED}기력 -{energy_cost}{C.R}  ({self.player.energy}/{self.player.max_energy})",
                 ]
                 if rank_msg:
                     lines.append(f"  {C.GOLD}{rank_msg}{C.R}")

@@ -109,6 +109,28 @@ def _render_banner(location_name: str, description: str,
 
 # ── Views ─────────────────────────────────────────────────────────────────────
 
+class _NPCSelectView(View):
+    """같은 위치에 여러 NPC가 있을 때 대화 상대를 버튼으로 선택하는 뷰."""
+
+    def __init__(self, npcs: list[str], location: str, player, aff_manager, npc_manager_ref):
+        super().__init__(timeout=60)
+        self.player = player
+        self.aff_manager = aff_manager
+        self.npc_manager_ref = npc_manager_ref
+        for npc_name in npcs:
+            btn = Button(label=npc_name, style=discord.ButtonStyle.primary)
+            btn.callback = self._make_npc_callback(npc_name)
+            self.add_item(btn)
+
+    def _make_npc_callback(self, npc_name: str):
+        async def callback(interaction: discord.Interaction):
+            from npc_conversation import ConversationManager
+            conv = ConversationManager(self.player, self.aff_manager, self.npc_manager_ref)
+            await interaction.response.defer()
+            await conv.send_conversation(interaction.channel, npc_name)
+        return callback
+
+
 class VisionTownView(View):
     """비전타운 메인 뷰 (이미지 + 버튼)"""
 
@@ -183,9 +205,11 @@ class VisionTownView(View):
                 await conv.send_conversation(interaction.channel, npc_name)
                 await interaction.delete_original_response()
             else:
+                view = _NPCSelectView(npcs_here, location, self.player, self.aff_manager, self.npc_manager_ref)
                 npc_list = "\n".join(f"• {n}" for n in npcs_here)
                 await interaction.response.send_message(
-                    f"**{location}**에 있는 NPC:\n{npc_list}\n`/대화 [NPC이름]`으로 대화하세요.",
+                    f"**{location}**에 있는 NPC:\n{npc_list}\n누구와 대화하시겠슴미댜?",
+                    view=view,
                     ephemeral=True,
                 )
         return callback

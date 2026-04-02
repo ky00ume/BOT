@@ -385,64 +385,65 @@ def init_db() -> None:
         logger.info("DB 초기화 시작...")
         conn = get_db_connection()
         cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS players (
-            user_id     INTEGER PRIMARY KEY,
-            name        TEXT NOT NULL,
-            level       INTEGER DEFAULT 1,
-            hp          INTEGER DEFAULT 100,
-            max_hp      INTEGER DEFAULT 100,
-            mp          INTEGER DEFAULT 50,
-            max_mp      INTEGER DEFAULT 50,
-            energy      INTEGER DEFAULT 100,
-            max_energy  INTEGER DEFAULT 100,
-            gold        INTEGER DEFAULT 500,
-            base_stats  TEXT DEFAULT '{}',
-            inventory   TEXT DEFAULT '{}',
-            equipment   TEXT DEFAULT '{}',
-            keywords    TEXT DEFAULT '["마을","날씨","소문"]',
-            affinity_data  TEXT DEFAULT '{}',
-            daily_limits   TEXT DEFAULT '{}'
-        )
-    """)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS village (
-            id           INTEGER PRIMARY KEY DEFAULT 1,
-            contribution INTEGER DEFAULT 0,
-            level        INTEGER DEFAULT 1,
-            data         TEXT DEFAULT '{}'
-        )
-    """)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS sheet_music (
-            id       INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id  INTEGER DEFAULT 0,
-            title    TEXT NOT NULL,
-            melody   TEXT NOT NULL,
-            created  TEXT DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS storage (
-            user_id       INTEGER PRIMARY KEY,
-            items         TEXT DEFAULT '{}',
-            max_capacity  INTEGER DEFAULT 20
-        )
-    """)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS players_backup (
-            backup_id  INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id    INTEGER NOT NULL,
-            backed_at  TEXT DEFAULT CURRENT_TIMESTAMP,
-            data       TEXT NOT NULL
-        )
-    """)
-    conn.commit()
-    conn.close()
-    logger.info("DB 초기화 완료")
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS players (
+                user_id     INTEGER PRIMARY KEY,
+                name        TEXT NOT NULL,
+                level       INTEGER DEFAULT 1,
+                hp          INTEGER DEFAULT 100,
+                max_hp      INTEGER DEFAULT 100,
+                mp          INTEGER DEFAULT 50,
+                max_mp      INTEGER DEFAULT 50,
+                energy      INTEGER DEFAULT 100,
+                max_energy  INTEGER DEFAULT 100,
+                gold        INTEGER DEFAULT 500,
+                base_stats  TEXT DEFAULT '{}',
+                inventory   TEXT DEFAULT '{}',
+                equipment   TEXT DEFAULT '{}',
+                keywords    TEXT DEFAULT '["마을","날씨","소문"]',
+                affinity_data  TEXT DEFAULT '{}',
+                daily_limits   TEXT DEFAULT '{}'
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS village (
+                id           INTEGER PRIMARY KEY DEFAULT 1,
+                contribution INTEGER DEFAULT 0,
+                level        INTEGER DEFAULT 1,
+                data         TEXT DEFAULT '{}'
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS sheet_music (
+                id       INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id  INTEGER DEFAULT 0,
+                title    TEXT NOT NULL,
+                melody   TEXT NOT NULL,
+                created  TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS storage (
+                user_id       INTEGER PRIMARY KEY,
+                items         TEXT DEFAULT '{}',
+                max_capacity  INTEGER DEFAULT 20
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS players_backup (
+                backup_id  INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id    INTEGER NOT NULL,
+                backed_at  TEXT DEFAULT CURRENT_TIMESTAMP,
+                data       TEXT NOT NULL
+            )
+        """)
+        conn.commit()
+        logger.info("DB 초기화 완료")
     except sqlite3.Error as e:
         logger.error(f"DB 초기화 실패: {e}", exc_info=True)
         raise
+    finally:
+        conn.close()
 
 
 def save_village_data(contribution: int, level: int) -> None:

@@ -333,6 +333,66 @@ async def play_cutscene(ctx_or_interaction, lines_list: list, delay: float = 2.5
 # 퀘스트 저널 이미지 생성
 # ═══════════════════════════════════════════════════════════════════════════
 
+def make_story_journal_embed(sq_manager) -> discord.Embed:
+    """현재 스토리 퀘스트 저널 Embed를 생성합니다."""
+    embed = discord.Embed(
+        title="📜 스토리 퀘스트 저널",
+        color=0x9B59B6,
+        description="현재 진행 중인 스토리 퀘스트 상태입니다."
+    )
+
+    chapter = sq_manager.chapter
+    quest   = sq_manager.quest
+
+    for ch_num, ch_data in STORY_CHAPTERS.items():
+        if ch_data.get("locked"):
+            embed.add_field(
+                name=f"🔒 챕터 {ch_num}: {ch_data['title']}",
+                value="다음 이야기는 아직 쓰이지 않았습니다.",
+                inline=False
+            )
+            continue
+
+        quests = ch_data["quests"]
+        max_q  = ch_data["max_quest"]
+        quest_lines = []
+        for q_key in (list(range(1, max_q + 1)) + ch_data.get("extra_keys", [])):
+            qdata = quests.get(q_key)
+            if not qdata:
+                continue
+            done = sq_manager.is_quest_done(ch_num, q_key)
+            if done:
+                mark = "✅"
+            elif ch_num == chapter and q_key == quest:
+                mark = "▶️"
+            else:
+                mark = "○"
+            title_str = qdata.get("title", str(q_key))
+            quest_lines.append(f"{mark} {title_str}")
+
+        ch_status = "진행 중" if ch_num == chapter else ("완료" if ch_num < chapter else "미해금")
+        embed.add_field(
+            name=f"📖 챕터 {ch_num}: {ch_data['title']}",
+            value=f"[{ch_status}] " + " / ".join(quest_lines) if quest_lines else "—",
+            inline=False
+        )
+
+    # shadow_sync 힌트
+    shadow_hint = sq_manager.get_shadow_hint()
+    embed.add_field(name="🌑 그림자 상태", value=shadow_hint, inline=False)
+
+    # 힌트 수
+    game_time = sq_manager.get_game_time()
+    hint_count = len(sq_manager.hints)
+    embed.add_field(
+        name="수집한 힌트",
+        value=f"{hint_count}개  |  {'🌙 밤' if game_time == 'night' else '☀️ 낮'}",
+        inline=False
+    )
+
+    return embed
+
+
 def make_story_journal_image(sq_manager) -> discord.File:
     """현재 스토리 퀘스트 저널 이미지를 생성합니다."""
     chapter = sq_manager.chapter
@@ -359,7 +419,7 @@ def make_story_journal_image(sq_manager) -> discord.File:
                 mark = "✅"
             elif ch_num == chapter and (
                 (isinstance(q_key, int) and q_key == quest)
-                or (isinstance(q_key, str) and ch_num == chapter)
+                or (isinstance(q_key, str) and q_key == quest)
             ):
                 mark = "▶️"
             else:

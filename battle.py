@@ -1,3 +1,4 @@
+from __future__ import annotations
 import random
 import io
 from typing import Optional, Dict, List, Tuple, Any
@@ -30,7 +31,7 @@ def _calc_battle_grade(player_hp: int, player_max_hp: int) -> str:
 
 
 class BattleEngine:
-    def __init__(self, player: 'Player', npc_manager: Optional[Any] = None) -> None:
+    def __init__(self, player: Player, npc_manager: Optional[Any] = None) -> None:
         self.player      = player
         self.npc_manager = npc_manager
         self.in_battle   = False

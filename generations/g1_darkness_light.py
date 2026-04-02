@@ -104,7 +104,7 @@ G1_CHAPTER_1 = create_chapter(
 )
 
 # ═══════════════════════════════════════════════════════════════════════════
-# 챕터 2: 픽시의 흔적
+# 챕터 2: 팅커 벨의 흔적
 # ═══════════════════════════════════════════════════════════════════════════
 
 G1_CH2_QUESTS = {
@@ -186,7 +186,7 @@ G1_CH2_QUESTS = {
 G1_CHAPTER_2 = create_chapter(
     chapter_id=2,
     generation_id=1,
-    title="픽시의 흔적",
+    title="팅커 벨의 흔적",
     subtitle="Traces of the Pixie",
     description="갇힌 요정의 흔적을 찾아 나선다.",
     quests=G1_CH2_QUESTS,
@@ -221,14 +221,14 @@ G1_CH3_QUESTS = {
         quest_id="g1_ch3_q3",
         title="시끄러운 불청객",
         quest_type=QuestType.CUTSCENE,
-        npc="픽시",
-        description="픽시와의 첫 만남. 비행하는 시끄러운 존재.",
+        npc="팅커 벨",
+        description="팅커 벨과의 첫 만남. 비행하는 시끄러운 존재.",
     ),
     4: create_quest(
         quest_id="g1_ch3_q4",
         title="닿지 않는 전투",
         quest_type=QuestType.BATTLE,
-        npc="픽시",
+        npc="팅커 벨",
         description="강제 패배 전투. 모든 공격이 닿지 않는다.",
     ),
     5: create_quest(
@@ -285,14 +285,14 @@ G1_CH4_QUESTS = {
         quest_id="g1_ch4_q3",
         title="부러진 날개",
         quest_type=QuestType.CUTSCENE,
-        npc="픽시",
-        description="날개가 찢어진 픽시와의 재회. shadow_sync에 따른 자동 반응.",
+        npc="팅커 벨",
+        description="날개가 찢어진 팅커 벨과의 재회. shadow_sync에 따른 자동 반응.",
     ),
     4: create_quest(
         quest_id="g1_ch4_q4",
         title="빛의 무게",
         quest_type=QuestType.CHOICE,
-        npc="픽시",
+        npc="팅커 벨",
         description="핵심 분기 선택. 가두다/거래하다/치료하다.",
         choices={
             "dark": {
@@ -323,7 +323,7 @@ G1_CHAPTER_4 = create_chapter(
     generation_id=1,
     title="거미줄과 속박",
     subtitle="Webs and Bonds",
-    description="날개 다친 픽시와 재회하고, 등불의 운명을 결정한다.",
+    description="날개 다친 팅커 벨과 재회하고, 등불의 운명을 결정한다.",
     quests=G1_CH4_QUESTS,
     theme_color=0x330033,
     unlock_level=7,

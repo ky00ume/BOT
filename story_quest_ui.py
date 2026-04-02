@@ -185,7 +185,7 @@ BATTLE_TURN_EMOJIS = {
 
 
 class ForcedBattleView(View):
-    """픽시 강제 패배 전투 (챕터 3 Q4)."""
+    """팅커 벨 강제 패배 전투 (챕터 3 Q4)."""
 
     def __init__(self, turns: list, sq_manager, player, on_done_coro=None, *, timeout=180.0):
         super().__init__(timeout=timeout)
@@ -224,7 +224,7 @@ class ForcedBattleView(View):
 
             lines = [
                 f"MISS!  {miss}",
-                f"픽시의 반격: {pixie}  HP -{dmg}",
+                f"팅커 벨의 반격: {pixie}  HP -{dmg}",
             ]
             if stun:
                 lines.append("★ 기절! 눈앞이 하얗게 번쩍인다...")

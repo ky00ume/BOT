@@ -2131,7 +2131,7 @@ async def story_quest_cmd(ctx):
                 story_quest_manager.chapter = 2
                 save_manager.save(shared_player)
                 await ctx.send(ansi(
-                    f"  {C.GREEN}✔ 챕터 1 완료! 챕터 2 《픽시의 흔적》으로 진행합니다.{C.R}\n"
+                    f"  {C.GREEN}✔ 챕터 1 완료! 챕터 2 《팅커 벨의 흔적》으로 진행합니다.{C.R}\n"
                     + (f"  {C.GOLD}🏅 칭호 획득: [{title}]{C.R}" if title else "")
                     + (f"\n  {C.CYAN}📦 아이템 획득: [{item_id}]{C.R}" if item_id else "")
                 ))
@@ -2309,14 +2309,14 @@ async def story_quest_cmd(ctx):
             ))
 
         elif q == 3:
-            # 시끄러운 불청객 — 픽시 컷신
+            # 시끄러운 불청객 — 팅커 벨 컷신
             if already_done:
                 await ctx.send(ansi(f"  {C.GOLD}✔ [{qdata['title']}] 이미 완료했슴미댜!{C.R}"))
                 return
             scenes = []
             for dlg in qdata["dialogues"]:
                 scenes.append(
-                    f"  {C.GOLD}✨ 픽시{C.R}\n"
+                    f"  {C.GOLD}✨ 팅커 벨{C.R}\n"
                     f"  {C.WHITE}\"{dlg}\"{C.R}"
                 )
             await play_cutscene(ctx, scenes, delay=3.0)
@@ -2357,7 +2357,7 @@ async def story_quest_cmd(ctx):
 
             lines = [
                 header_box("⚔️  닿지 않는 전투"),
-                f"  {C.WHITE}픽시가 공중으로 솟구쳤다.{C.R}",
+                f"  {C.WHITE}팅커 벨이 공중으로 솟구쳤다.{C.R}",
                 divider(),
                 f"  {C.DARK}공격 버튼을 눌러 전투를 진행하세요.{C.R}",
             ]
@@ -2386,7 +2386,7 @@ async def story_quest_cmd(ctx):
                 lines.append(f"  {C.GOLD}🏅 칭호 획득: [{title}] (원거리 명중률 +3%){C.R}")
             if item_id:
                 shared_player.add_item(item_id)
-                lines.append(f"  {C.CYAN}📦 아이템 획득: [한 줌의 픽시 가루]{C.R}")
+                lines.append(f"  {C.CYAN}📦 아이템 획득: [한 줌의 팅커 벨 가루]{C.R}")
             story_quest_manager.complete_quest(ch, q)
             story_quest_manager.quest   = 1
             story_quest_manager.chapter = 4
@@ -2481,7 +2481,7 @@ async def story_quest_cmd(ctx):
 
             lines = [
                 header_box("⚖️  빛의 무게"),
-                f"  {C.WHITE}날개가 찢어진 픽시가 눈앞에 있다.{C.R}",
+                f"  {C.WHITE}날개가 찢어진 팅커 벨이 눈앞에 있다.{C.R}",
                 f"  {C.WHITE}등불은 차갑게 기다리고 있다.{C.R}",
                 divider(),
                 f"  {C.DARK}선택하세요.{C.R}",
@@ -2645,7 +2645,7 @@ async def story_explore4_cmd(ctx):
 
 @bot.command(name="스토리수집")
 async def story_collect_cmd(ctx):
-    """챕터 2 Q2 — 픽시의 날개 가루 수집 (방울숲 전용)."""
+    """챕터 2 Q2 — 팅커 벨의 날개 가루 수집 (방울숲 전용)."""
     if not await _check_channel(ctx):
         return
     import random
@@ -2690,7 +2690,7 @@ async def story_collect_cmd(ctx):
         shared_player.add_item(qdata["collect_item"])
         have = shared_player.inventory.get(qdata["collect_item"], 0)
         lines = [
-            f"  {C.GREEN}✔ 픽시의 날개 가루 획득!{C.R}  ({have}/{qdata['collect_count']})",
+            f"  {C.GREEN}✔ 팅커 벨의 날개 가루 획득!{C.R}  ({have}/{qdata['collect_count']})",
         ]
         if have >= qdata["collect_count"]:
             # 키워드 해금

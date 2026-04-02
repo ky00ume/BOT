@@ -43,17 +43,17 @@ ARMORS = {
     "ar_body_04":   {"name": "미스릴갑옷",   "type": "armor", "subtype": "body",   "grade": "Legendary", "defense": 75,  "price": 45000, "desc": "미스릴로 주조한 경갑옷.",        "slot": "body"},
     "ar_body_05":   {"name": "드래곤아머",   "type": "armor", "subtype": "body",   "grade": "Mythic",    "defense": 130, "price": 200000,"desc": "드래곤 비늘 전신 갑옷.",         "slot": "body"},
     # ── 장갑 계열 5단계 ──────────────────────────────────────────────────────
-    "ar_glove_01":  {"name": "천장갑",       "type": "armor", "subtype": "glove",  "grade": "Normal",    "defense": 2,   "price": 200,   "desc": "기본 천 장갑.",                  "slot": "glove"},
-    "ar_glove_02":  {"name": "가죽장갑",     "type": "armor", "subtype": "glove",  "grade": "Rare",      "defense": 8,   "price": 1500,  "desc": "튼튼한 가죽 장갑.",              "slot": "glove"},
-    "ar_glove_03":  {"name": "강철장갑",     "type": "armor", "subtype": "glove",  "grade": "Epic",      "defense": 18,  "price": 6000,  "desc": "강철 보강 장갑.",                "slot": "glove"},
-    "ar_glove_04":  {"name": "미스릴장갑",   "type": "armor", "subtype": "glove",  "grade": "Legendary", "defense": 32,  "price": 25000, "desc": "미스릴로 만든 정밀 장갑.",       "slot": "glove"},
-    "ar_glove_05":  {"name": "드래곤클로",   "type": "armor", "subtype": "glove",  "grade": "Mythic",    "defense": 55,  "attack": 20,   "price": 120000,"desc": "드래곤 발톱 소재의 장갑.", "slot": "glove"},
+    "ar_glove_01":  {"name": "천장갑",       "type": "armor", "subtype": "glove",  "grade": "Normal",    "defense": 2,   "price": 200,   "desc": "기본 천 장갑.",                  "slot": "hands"},
+    "ar_glove_02":  {"name": "가죽장갑",     "type": "armor", "subtype": "glove",  "grade": "Rare",      "defense": 8,   "price": 1500,  "desc": "튼튼한 가죽 장갑.",              "slot": "hands"},
+    "ar_glove_03":  {"name": "강철장갑",     "type": "armor", "subtype": "glove",  "grade": "Epic",      "defense": 18,  "price": 6000,  "desc": "강철 보강 장갑.",                "slot": "hands"},
+    "ar_glove_04":  {"name": "미스릴장갑",   "type": "armor", "subtype": "glove",  "grade": "Legendary", "defense": 32,  "price": 25000, "desc": "미스릴로 만든 정밀 장갑.",       "slot": "hands"},
+    "ar_glove_05":  {"name": "드래곤클로",   "type": "armor", "subtype": "glove",  "grade": "Mythic",    "defense": 55,  "attack": 20,   "price": 120000,"desc": "드래곤 발톱 소재의 장갑.", "slot": "hands"},
     # ── 신발 계열 5단계 ──────────────────────────────────────────────────────
-    "ar_boot_01":   {"name": "천신발",       "type": "armor", "subtype": "boot",   "grade": "Normal",    "defense": 2,   "price": 200,   "desc": "가벼운 천 신발.",                "slot": "boot"},
-    "ar_boot_02":   {"name": "가죽부츠",     "type": "armor", "subtype": "boot",   "grade": "Rare",      "defense": 7,   "price": 1800,  "desc": "튼튼한 가죽 부츠.",              "slot": "boot"},
-    "ar_boot_03":   {"name": "강철부츠",     "type": "armor", "subtype": "boot",   "grade": "Epic",      "defense": 16,  "price": 5500,  "desc": "강철 보강 부츠.",                "slot": "boot"},
-    "ar_boot_04":   {"name": "미스릴부츠",   "type": "armor", "subtype": "boot",   "grade": "Legendary", "defense": 30,  "price": 22000, "desc": "미스릴로 만든 가벼운 부츠.",     "slot": "boot"},
-    "ar_boot_05":   {"name": "드래곤부츠",   "type": "armor", "subtype": "boot",   "grade": "Mythic",    "defense": 50,  "price": 100000,"desc": "드래곤 비늘 부츠.",              "slot": "boot"},
+    "ar_boot_01":   {"name": "천신발",       "type": "armor", "subtype": "boot",   "grade": "Normal",    "defense": 2,   "price": 200,   "desc": "가벼운 천 신발.",                "slot": "feet"},
+    "ar_boot_02":   {"name": "가죽부츠",     "type": "armor", "subtype": "boot",   "grade": "Rare",      "defense": 7,   "price": 1800,  "desc": "튼튼한 가죽 부츠.",              "slot": "feet"},
+    "ar_boot_03":   {"name": "강철부츠",     "type": "armor", "subtype": "boot",   "grade": "Epic",      "defense": 16,  "price": 5500,  "desc": "강철 보강 부츠.",                "slot": "feet"},
+    "ar_boot_04":   {"name": "미스릴부츠",   "type": "armor", "subtype": "boot",   "grade": "Legendary", "defense": 30,  "price": 22000, "desc": "미스릴로 만든 가벼운 부츠.",     "slot": "feet"},
+    "ar_boot_05":   {"name": "드래곤부츠",   "type": "armor", "subtype": "boot",   "grade": "Mythic",    "defense": 50,  "price": 100000,"desc": "드래곤 비늘 부츠.",              "slot": "feet"},
 }
 
 CONSUMABLES = {

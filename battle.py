@@ -1,11 +1,12 @@
 import random
 import io
+from typing import Optional, Dict, List, Tuple, Any
 import discord
 from bg3_renderer import get_renderer
 from monsters_db import MONSTERS_DB, MONSTER_SIZES, roll_monster_size, apply_size_to_monster
 
 
-def _bar_text(current, max_val, width=10):
+def _bar_text(current: int, max_val: int, width: int = 10) -> str:
     current = max(0, current)
     if max_val <= 0:
         filled = 0
@@ -29,7 +30,7 @@ def _calc_battle_grade(player_hp: int, player_max_hp: int) -> str:
 
 
 class BattleEngine:
-    def __init__(self, player, npc_manager=None):
+    def __init__(self, player: 'Player', npc_manager: Optional[Any] = None) -> None:
         self.player      = player
         self.npc_manager = npc_manager
         self.in_battle   = False
@@ -70,7 +71,7 @@ class BattleEngine:
         )
 
     @property
-    def zone_list(self):
+    def zone_list(self) -> List[str]:
         return list(MONSTERS_DB.keys())
 
     def enter_zone(self, zone_name: str) -> str:
@@ -92,7 +93,7 @@ class BattleEngine:
             f"/사냥 {zone_name} 으로 전투를 시작하셰요!"
         )
 
-    def start_encounter(self, zone_name: str = None) -> tuple:
+    def start_encounter(self, zone_name: Optional[str] = None) -> Tuple[bool, Any]:
         """전투 시작. (성공여부, image_buf_or_error_str) 반환."""
         zone_key = zone_name or self.current_zone
         zone = MONSTERS_DB.get(zone_key)
@@ -155,7 +156,7 @@ class BattleEngine:
         from battle_log_data import CHEER_RESPONSE_LOGS
         return random.choice(CHEER_RESPONSE_LOGS) + f" (남은 응원: {3 - self.cheer_count}회)"
 
-    def _get_condition_modifiers(self) -> dict:
+    def _get_condition_modifiers(self) -> Dict[str, float]:
         """돌봄 상태(컨디션/안정감/피로도)에 따른 전투 보정값 반환"""
         mods = {
             "atk_mult":    1.0,
@@ -475,7 +476,7 @@ class BattleEngine:
                 footer="전투 시스템",
             )
 
-    def auto_battle(self, skill_id: str = "smash") -> tuple:
+    def auto_battle(self, skill_id: str = "smash") -> Tuple[List[str], io.BytesIO]:
         """
         전투가 끝날 때까지 자동으로 턴을 진행하고 전체 로그 + 최종 결과 반환.
         Returns: (log_lines: list[str], final_result: io.BytesIO)
@@ -520,7 +521,7 @@ class BattleEngine:
             )
         return log_lines, final_result
 
-    def _apply_event_effect(self, effect: dict):
+    def _apply_event_effect(self, effect: Dict[str, Any]) -> None:
         """전투 이벤트 효과 적용 (즉시 적용 가능한 것만)"""
         player = self.player
         monster = self.current_monster
@@ -541,7 +542,7 @@ class BattleEngine:
             if candidates:
                 player.add_item(random.choice(candidates))
 
-    def _calc_reward(self, monster: dict, grade: str = "안정") -> dict:
+    def _calc_reward(self, monster: Dict[str, Any], grade: str = "안정") -> Dict[str, Any]:
         from battle_log_data import GRADE_MULT
         mult = GRADE_MULT.get(grade, 1.0)
 
@@ -588,7 +589,7 @@ class BattleEngine:
             "new_level":   self.player.level,
         }
 
-    def _add_village_contribution_battle(self):
+    def _add_village_contribution_battle(self) -> None:
         try:
             from village import village_manager
             village_manager.add_contribution(3, "battle")

@@ -1,6 +1,7 @@
 import sqlite3
 import json
 import os
+from typing import Optional, Dict, Any, List
 from utils.logger import setup_logger
 
 logger = setup_logger('database')
@@ -366,7 +367,7 @@ NPC_DATA = {
 }
 
 
-def get_db_connection():
+def get_db_connection() -> sqlite3.Connection:
     """DB 연결 반환."""
     try:
         conn = sqlite3.connect(DB_PATH)
@@ -378,7 +379,7 @@ def get_db_connection():
         raise
 
 
-def init_db():
+def init_db() -> None:
     """데이터베이스 초기화 및 테이블 생성."""
     try:
         logger.info("DB 초기화 시작...")
@@ -444,7 +445,7 @@ def init_db():
         raise
 
 
-def save_village_data(contribution: int, level: int):
+def save_village_data(contribution: int, level: int) -> None:
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
@@ -455,7 +456,7 @@ def save_village_data(contribution: int, level: int):
     conn.close()
 
 
-def load_village_data() -> dict:
+def load_village_data() -> Dict[str, int]:
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -469,7 +470,7 @@ def load_village_data() -> dict:
         return {"contribution": 0, "level": 1}
 
 
-def save_player_to_db(player):
+def save_player_to_db(player: 'Player') -> None:
     conn = get_db_connection()
     cursor = conn.cursor()
     # 기존 테이블에 컬럼이 없을 경우 마이그레이션
@@ -539,7 +540,7 @@ def save_player_to_db(player):
     conn.close()
 
 
-def _migrate_players_table(cursor):
+def _migrate_players_table(cursor: sqlite3.Cursor) -> None:
     """기존 players 테이블에 새 컬럼이 없으면 추가합니다."""
     try:
         cursor.execute("PRAGMA table_info(players)")
@@ -624,7 +625,7 @@ def _migrate_players_table(cursor):
         pass
 
 
-def load_player_from_db(user_id):
+def load_player_from_db(user_id: int) -> Optional[Dict[str, Any]]:
     conn = get_db_connection()
     cursor = conn.cursor()
     _migrate_players_table(cursor)
@@ -752,7 +753,7 @@ def load_player_from_db(user_id):
     return result
 
 
-def save_sheet_music(user_id: int, title: str, melody: str):
+def save_sheet_music(user_id: int, title: str, melody: str) -> None:
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
@@ -763,7 +764,7 @@ def save_sheet_music(user_id: int, title: str, melody: str):
     conn.close()
 
 
-def load_sheet_music_list(user_id: int) -> list:
+def load_sheet_music_list(user_id: int) -> List[Dict[str, Any]]:
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -778,7 +779,7 @@ def load_sheet_music_list(user_id: int) -> list:
         return []
 
 
-def load_sheet_music(user_id: int, title_or_id: str) -> dict | None:
+def load_sheet_music(user_id: int, title_or_id: str) -> Optional[Dict[str, str]]:
     """제목 또는 숫자 ID로 악보를 조회합니다."""
     if not title_or_id:
         return None

@@ -363,10 +363,7 @@ def make_story_journal_embed(sq_manager) -> discord.Embed:
             done = sq_manager.is_quest_done(ch_num, q_key)
             if done:
                 mark = "✅"
-            elif ch_num == chapter and (
-                (isinstance(q_key, int) and q_key == quest)
-                or (isinstance(q_key, str) and q_key == quest)
-            ):
+            elif ch_num == chapter and q_key == quest:
                 mark = "▶️"
             else:
                 mark = "○"

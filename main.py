@@ -2491,12 +2491,13 @@ async def story_quest_cmd(ctx):
             view = ShadowChoiceWithFlagView(
                 qdata["choices"], story_quest_manager, shared_player,
                 choice_results=qdata["choice_results"],
+                author_id=ctx.author.id,
             )
             await ctx.send(ansi("\n".join(lines)), view=view)
             await view.wait()
 
             # 선택이 실제로 이루어졌는지 확인 (시간 만료/미선택 방지)
-            if not getattr(view, "chosen", None):
+            if not getattr(view, "chosen", False):
                 await ctx.send(ansi(
                     f"  {C.YELLOW}⏰ 선택 시간이 만료되었거나 아무도 버튼을 누르지 않았슴미댜.{C.R}\n"
                     f"  {C.DARK}다시 `!스토리탐색` 명령어로 이 퀘스트를 열어서 선택을 완료해 주세요!{C.R}"

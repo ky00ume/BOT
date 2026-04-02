@@ -102,12 +102,13 @@ class ShadowChoiceWithFlagView(View):
     }
 
     def __init__(self, choices: dict, sq_manager, player, *,
-                 choice_results: dict = None, timeout=120.0):
+                 choice_results: dict = None, author_id: int = None, timeout=120.0):
         super().__init__(timeout=timeout)
         self.sq_manager     = sq_manager
         self.player         = player
         self.chosen         = False
         self.choice_results = choice_results or {}
+        self.author_id      = author_id
         for key, data in choices.items():
             style = self.STYLE_MAP.get(data.get("style", "yellow"), discord.ButtonStyle.secondary)
             emoji = {"red": "🔴", "yellow": "🟡", "blurple": "🔵"}.get(data.get("style"), "⚫")
@@ -121,6 +122,12 @@ class ShadowChoiceWithFlagView(View):
 
     def _make_cb(self, key: str, data: dict):
         async def _cb(interaction: discord.Interaction):
+            # 커맨드 사용자만 선택 가능
+            if self.author_id and interaction.user.id != self.author_id:
+                await interaction.response.send_message(
+                    "이 선택은 퀘스트 진행자만 할 수 있슴미댜.", ephemeral=True
+                )
+                return
             if self.chosen:
                 err_file = _render_text_card(
                     "알림", ["이미 선택했슴미댜."], system_key="quest"

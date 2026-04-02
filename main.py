@@ -1444,7 +1444,6 @@ async def rest_cmd(ctx):
 
     rest_engine = RestEngine(shared_player, channel=ctx.channel)
 
-    global _rest_last_used
     _rest_last_used = now
 
     embed = discord.Embed(

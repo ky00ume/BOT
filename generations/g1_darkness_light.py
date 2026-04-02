@@ -1,6 +1,6 @@
 """generations/g1_darkness_light.py — G1: 어둠 속의 빛
 
-현재 story_quest_data.py의 챕터 1~4을 제네레이션 시스템으로 마이그레이션한 버전.
+현재 story_quest_data.py의 챕터 1~4를 제네레이션 시스템으로 마이그레이션한 버전.
 
 스토리 개요:
   드라이더 츄라이더가 '그림자 등불'의 비밀을 추적하며

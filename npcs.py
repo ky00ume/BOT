@@ -429,6 +429,8 @@ class VillageNPC:
 
         if card_sent and reward_item_line:
             await ctx.send(ansi(reward_item_line.strip()))
+        if card_sent:
+            await ctx.send(ansi(f"  {C.RED}기력 -{energy_cost}{C.R}  ({C.WHITE}{self.player.energy}/{self.player.max_energy}{C.R})"))
 
         if not card_sent:
             lines = [
@@ -436,6 +438,7 @@ class VillageNPC:
                 f"  {C.WHITE}{job['name']}{C.R}",
                 divider(),
                 f"  {C.GOLD}+{reward_gold}G{C.R}  {C.GREEN}EXP +{reward_exp}{C.R}",
+                f"  {C.RED}기력 -{energy_cost}{C.R}  ({self.player.energy}/{self.player.max_energy})",
             ]
             if result_note == "실패":
                 lines.insert(2, f"  {C.RED}⚠ 사냥에 실패했슴미댜. 보상이 30%만 지급됩니다.{C.R}")

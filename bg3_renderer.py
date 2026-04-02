@@ -244,19 +244,21 @@ def _load_banner(zone_type: str, zone_id: str,
     배너 씬 이미지 로드 및 크롭.
     zone_type: 'town' | 'hunting' | 'gathering' | 'fishing'
     zone_id:   파일명 (확장자 제외, 예: '비전타운', '고블린동굴')
-    없으면 None → 호출부에서 플레이스홀더 처리
+    없으면 _default 폴백 → 그래도 없으면 None → 호출부에서 플레이스홀더 처리
     """
     if not _safe_id(zone_id) or not _safe_id(zone_type):
         return None
     folder = os.path.join(_BAN_D, zone_type)
-    for ext in (".png", ".webp", ".jpg", ".jpeg"):
-        p = os.path.join(folder, zone_id + ext)
-        if os.path.isfile(p):
-            try:
-                img = Image.open(p).convert("RGBA")
-                return _smart_crop(img, w, h, face_center=0.5)
-            except (OSError, IOError, ValueError) as e:
-                _log.warning("Banner load failed: %s (%s)", p, e)
+    # zone_id 우선, 없으면 _default 폴백
+    for name in (zone_id, "_default"):
+        for ext in (".png", ".webp", ".jpg", ".jpeg"):
+            p = os.path.join(folder, name + ext)
+            if os.path.isfile(p):
+                try:
+                    img = Image.open(p).convert("RGBA")
+                    return _smart_crop(img, w, h, face_center=0.5)
+                except (OSError, IOError, ValueError) as e:
+                    _log.warning("Banner load failed: %s (%s)", p, e)
     return None
 
 

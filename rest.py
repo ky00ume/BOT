@@ -3,6 +3,9 @@ import asyncio
 import time
 import discord
 
+# 현재 휴식 중 여부 (외부에서 확인용)
+is_resting: bool = False
+
 
 class RestEngine:
     def __init__(self, player, channel=None):
@@ -28,15 +31,18 @@ class RestEngine:
 
     async def start_rest(self):
         """휴식 루프를 백그라운드 태스크로 시작합니다."""
+        import rest as _rest_mod
         if self.resting:
             return
         self.resting = True
+        _rest_mod.is_resting = True
         self._start_time = time.time()
         self._start_energy = self.player.energy
         self._task = asyncio.create_task(self._rest_loop())
 
     async def _rest_loop(self):
         """2초마다 기력을 회복합니다."""
+        import rest as _rest_mod
         try:
             while self.resting:
                 await asyncio.sleep(2)
@@ -47,10 +53,13 @@ class RestEngine:
                 )
                 if self.player.energy >= self.player.max_energy:
                     self.resting = False
+                    _rest_mod.is_resting = False
                     await self._send_complete_card()
                     break
         except asyncio.CancelledError:
+            import rest as _rest_mod
             self.resting = False
+            _rest_mod.is_resting = False
 
     async def _send_complete_card(self):
         """휴식 완료 시 PIL 카드를 채널에 전송합니다."""

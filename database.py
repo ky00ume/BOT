@@ -1,6 +1,10 @@
 import sqlite3
 import json
 import os
+from typing import Optional, Dict, Any, List
+from utils.logger import setup_logger
+
+logger = setup_logger('database')
 
 # DB_PATH 환경변수로 경로 지정 가능 (기본값: 봇 폴더 내 vision_town.db)
 # 머지/재배포 시 데이터 유지를 위해 .env에 DB_PATH=/data/vision_town.db 처럼 repo 외부 경로 설정 권장
@@ -363,15 +367,24 @@ NPC_DATA = {
 }
 
 
-def get_db_connection():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+def get_db_connection() -> sqlite3.Connection:
+    """DB 연결 반환."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        logger.debug(f"DB 연결 성공: {DB_PATH}")
+        return conn
+    except sqlite3.Error as e:
+        logger.error(f"DB 연결 실패: {DB_PATH}, 오류={e}", exc_info=True)
+        raise
 
 
-def init_db():
-    conn = get_db_connection()
-    cursor = conn.cursor()
+def init_db() -> None:
+    """데이터베이스 초기화 및 테이블 생성."""
+    try:
+        logger.info("DB 초기화 시작...")
+        conn = get_db_connection()
+        cursor = conn.cursor()
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS players (
             user_id     INTEGER PRIMARY KEY,
@@ -426,9 +439,19 @@ def init_db():
     """)
     conn.commit()
     conn.close()
+    logger.info("DB 초기화 완료")
+    except sqlite3.Error as e:
+        logger.error(f"DB 초기화 실패: {e}", exc_info=True)
+        raise
 
 
-def save_village_data(contribution: int, level: int):
+def save_village_data(contribution: int, level: int) -> None:
+    """마을 데이터 저장.
+
+    Args:
+        contribution: 마을 기여도
+        level: 마을 레벨
+    """
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
@@ -439,7 +462,12 @@ def save_village_data(contribution: int, level: int):
     conn.close()
 
 
-def load_village_data() -> dict:
+def load_village_data() -> Dict[str, int]:
+    """마을 데이터 로드.
+
+    Returns:
+        {"contribution": int, "level": int} 형태의 딕셔너리
+    """
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -453,7 +481,12 @@ def load_village_data() -> dict:
         return {"contribution": 0, "level": 1}
 
 
-def save_player_to_db(player):
+def save_player_to_db(player: 'Player') -> None:
+    """플레이어 데이터를 DB에 저장.
+
+    Args:
+        player: 저장할 Player 객체
+    """
     conn = get_db_connection()
     cursor = conn.cursor()
     # 기존 테이블에 컬럼이 없을 경우 마이그레이션
@@ -523,7 +556,7 @@ def save_player_to_db(player):
     conn.close()
 
 
-def _migrate_players_table(cursor):
+def _migrate_players_table(cursor: sqlite3.Cursor) -> None:
     """기존 players 테이블에 새 컬럼이 없으면 추가합니다."""
     try:
         cursor.execute("PRAGMA table_info(players)")
@@ -608,7 +641,15 @@ def _migrate_players_table(cursor):
         pass
 
 
-def load_player_from_db(user_id):
+def load_player_from_db(user_id: int) -> Optional[Dict[str, Any]]:
+    """DB에서 플레이어 데이터 로드.
+
+    Args:
+        user_id: Discord 유저 ID
+
+    Returns:
+        플레이어 데이터 딕셔너리, 존재하지 않으면 None
+    """
     conn = get_db_connection()
     cursor = conn.cursor()
     _migrate_players_table(cursor)
@@ -736,7 +777,14 @@ def load_player_from_db(user_id):
     return result
 
 
-def save_sheet_music(user_id: int, title: str, melody: str):
+def save_sheet_music(user_id: int, title: str, melody: str) -> None:
+    """악보 저장.
+
+    Args:
+        user_id: Discord 유저 ID
+        title: 악보 제목
+        melody: 악보 멜로디 문자열
+    """
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
@@ -747,7 +795,15 @@ def save_sheet_music(user_id: int, title: str, melody: str):
     conn.close()
 
 
-def load_sheet_music_list(user_id: int) -> list:
+def load_sheet_music_list(user_id: int) -> List[Dict[str, Any]]:
+    """유저의 모든 악보 목록 조회.
+
+    Args:
+        user_id: Discord 유저 ID
+
+    Returns:
+        악보 목록 ({"id": int, "title": str, "melody": str, "created": str})
+    """
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -762,8 +818,16 @@ def load_sheet_music_list(user_id: int) -> list:
         return []
 
 
-def load_sheet_music(user_id: int, title_or_id: str) -> dict | None:
-    """제목 또는 숫자 ID로 악보를 조회합니다."""
+def load_sheet_music(user_id: int, title_or_id: str) -> Optional[Dict[str, str]]:
+    """제목 또는 숫자 ID로 악보를 조회합니다.
+
+    Args:
+        user_id: Discord 유저 ID
+        title_or_id: 악보 제목 또는 ID
+
+    Returns:
+        악보 데이터 ({"id": int, "title": str, "melody": str}), 없으면 None
+    """
     if not title_or_id:
         return None
     try:
@@ -789,6 +853,15 @@ def load_sheet_music(user_id: int, title_or_id: str) -> dict | None:
 
 
 def delete_sheet_music(user_id: int, title_or_id: str) -> bool:
+    """악보 삭제.
+
+    Args:
+        user_id: Discord 유저 ID
+        title_or_id: 악보 제목 또는 ID
+
+    Returns:
+        삭제 성공 시 True, 실패 시 False
+    """
     if not title_or_id:
         return False
     try:

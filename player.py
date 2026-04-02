@@ -1,7 +1,11 @@
+from typing import Dict, List, Optional, Any
+from utils.logger import setup_logger
 from skills_db import (
     RANK_ORDER, RANK_UP_THRESHOLD, SKILL_RANK_THRESHOLD, MASTERY_SKILLS,
     COMBAT_SKILLS, MAGIC_SKILLS, RECOVERY_SKILLS, OTHER_SKILLS,
 )
+
+logger = setup_logger('player')
 
 # ─── 레벨업 스탯 증가 테이블 ─────────────────────────────────────────────
 LEVEL_UP_TABLE = {
@@ -19,8 +23,15 @@ LEVEL_UP_TABLE = {
 }
 
 
-def apply_level_up(player) -> dict:
-    """레벨업 시 스탯 증가를 적용하고 증가 내역 반환."""
+def apply_level_up(player: 'Player') -> Dict[str, int]:
+    """레벨업 시 스탯 증가를 적용하고 증가 내역 반환.
+
+    Args:
+        player: 플레이어 인스턴스
+
+    Returns:
+        증가된 스탯 딕셔너리
+    """
     gains = LEVEL_UP_TABLE.get(player.level, LEVEL_UP_TABLE["_default"])
     result = {}
     if "max_hp" in gains:
@@ -46,11 +57,16 @@ def apply_level_up(player) -> dict:
     return result
 
 
-def check_level_up(player) -> list:
+def check_level_up(player: 'Player') -> List[Dict[str, Any]]:
     """EXP가 레벨업 기준(level*100)을 초과하면 레벨업 처리.
 
     여러 레벨을 한 번에 올릴 수 있다.
-    Returns: [{old_level, new_level, gains}, ...] 레벨업 내역 리스트 (없으면 빈 리스트)
+
+    Args:
+        player: 플레이어 인스턴스
+
+    Returns:
+        [{old_level, new_level, gains}, ...] 레벨업 내역 리스트 (없으면 빈 리스트)
     """
     results = []
     while True:
@@ -81,7 +97,9 @@ _SLOT_NAMES = {
 
 
 class Player:
-    def __init__(self, name="모험가"):
+    """플레이어 캐릭터 데이터 클래스."""
+
+    def __init__(self, name: str = "모험가") -> None:
         self.name           = name
         self.level          = 1
         self.exp            = 0.0
@@ -147,7 +165,12 @@ class Player:
         self._quest_manager = None  # QuestManager (main.py에서 주입)
         self._flags: dict = {}  # 1회성 이벤트 플래그 (예: levelup_potion_granted)
 
-    def get_max_slots(self):
+    def get_max_slots(self) -> int:
+        """최대 인벤토리 슬롯 수 계산.
+
+        Returns:
+            기본 슬롯 + 가방 슬롯 합계
+        """
         extra = 0
         from database import BAGS
         for bag_id in self.bags:
@@ -157,28 +180,62 @@ class Player:
         return BASE_INVENTORY_SLOTS + extra
 
     def add_item(self, item_id: str, count: int = 1) -> bool:
-        """인벤토리에 아이템 추가. 공간 부족 시 False 반환."""
+        """인벤토리에 아이템 추가.
+
+        Args:
+            item_id: 아이템 ID
+            count: 추가할 수량
+
+        Returns:
+            공간이 있어 추가 성공 시 True, 실패 시 False
+        """
         current_unique = len(self.inventory)
         already_have   = item_id in self.inventory
         max_slots      = self.get_max_slots()
 
         if not already_have and current_unique >= max_slots:
+            logger.warning(
+                f"인벤토리 가득 찼음: player={self.name}, "
+                f"current={current_unique}, max={max_slots}, item={item_id}"
+            )
             return False
 
         self.inventory[item_id] = self.inventory.get(item_id, 0) + count
+        logger.debug(f"아이템 추가: player={self.name}, item={item_id}, count={count}")
         return True
 
     def remove_item(self, item_id: str, count: int = 1) -> bool:
-        """인벤토리에서 아이템 제거. 부족 시 False 반환."""
-        if self.inventory.get(item_id, 0) < count:
+        """인벤토리에서 아이템 제거.
+
+        Args:
+            item_id: 아이템 ID
+            count: 제거할 수량
+
+        Returns:
+            충분한 수량이 있어 제거 성공 시 True, 실패 시 False
+        """
+        current = self.inventory.get(item_id, 0)
+        if current < count:
+            logger.warning(
+                f"아이템 부족: player={self.name}, item={item_id}, "
+                f"필요={count}, 보유={current}"
+            )
             return False
+
         self.inventory[item_id] -= count
         if self.inventory[item_id] <= 0:
             del self.inventory[item_id]
+
+        logger.debug(f"아이템 제거: player={self.name}, item={item_id}, count={count}")
         return True
 
-    def add_hyness_item(self, item_id: str, count: int = 1):
-        """하이네스 방 전용 인벤토리에 아이템 추가."""
+    def add_hyness_item(self, item_id: str, count: int = 1) -> None:
+        """하이네스 방 전용 인벤토리에 아이템 추가.
+
+        Args:
+            item_id: 아이템 ID
+            count: 추가할 수량
+        """
         if not hasattr(self, "_flags") or self._flags is None:
             self._flags = {}
         inv = self._flags.setdefault("hyness_inventory", {})
@@ -196,7 +253,7 @@ class Player:
             del inv[item_id]
         return True
 
-    def get_hyness_inventory(self) -> dict:
+    def get_hyness_inventory(self) -> Dict[str, int]:
         """하이네스 방 전용 인벤토리 반환."""
         if not hasattr(self, "_flags") or self._flags is None:
             return {}

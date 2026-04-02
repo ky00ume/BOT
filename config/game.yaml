@@ -1,0 +1,51 @@
+# 비전 타운 봇 게임 설정 파일
+# 이 파일의 값들은 게임 내 상수로 사용됩니다.
+
+game:
+  # 레벨링 시스템
+  level_up_base: 100           # 레벨업 기본 경험치
+  level_up_multiplier: 1.5     # 레벨당 경험치 증가 배율
+  max_level: 100               # 최대 레벨
+
+  # 에너지 시스템
+  max_energy: 100              # 최대 기력
+  energy_regen_rate: 1         # 분당 기력 회복량
+
+  # 인벤토리
+  base_inventory_slots: 20     # 기본 인벤토리 슬롯
+  max_inventory_slots: 100     # 최대 인벤토리 슬롯
+
+economy:
+  # 상점 시스템
+  shop_fee_rate: 0.1           # 상점 수수료율 (10%)
+  npc_shop_discount_rate: 0.05 # NPC 호감도 할인율 (5%)
+
+  # 거래 제한
+  min_trade_gold: 1            # 최소 거래 골드
+  max_trade_gold: 999999       # 최대 거래 골드
+
+combat:
+  # 전투 확률
+  base_crit_chance: 0.05       # 기본 치명타 확률 (5%)
+  base_dodge_chance: 0.05      # 기본 회피 확률 (5%)
+  flee_success_rate: 0.7       # 도망 성공률 (70%)
+
+  # 경험치 배율
+  exp_multiplier_easy: 0.8     # 쉬움 난이도 경험치 (80%)
+  exp_multiplier_normal: 1.0   # 보통 난이도 경험치 (100%)
+  exp_multiplier_hard: 1.5     # 어려움 난이도 경험치 (150%)
+
+gathering:
+  # 채집 시스템
+  base_success_rate: 0.8       # 기본 채집 성공률 (80%)
+  quality_bonus_multiplier: 1.2 # 품질 보너스 배율
+
+fishing:
+  # 낚시 시스템
+  catch_window_ms: 2000        # 물고기 잡기 시간 (밀리초)
+  perfect_window_ms: 500       # 완벽한 타이밍 시간 (밀리초)
+
+movement:
+  # 이동 시스템
+  cooldown_seconds: 300        # 이동 쿨다운 (초)
+  energy_cost_multiplier: 1.0  # 기력 소모 배율

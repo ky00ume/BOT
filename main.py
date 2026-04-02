@@ -2495,6 +2495,13 @@ async def story_quest_cmd(ctx):
             await ctx.send(ansi("\n".join(lines)), view=view)
             await view.wait()
 
+            # 선택이 실제로 이루어졌는지 확인 (시간 만료/미선택 방지)
+            if not getattr(view, "chosen", None):
+                await ctx.send(ansi(
+                    f"  {C.YELLOW}⏰ 선택 시간이 만료되었거나 아무도 버튼을 누르지 않았슴미댜.{C.R}\n"
+                    f"  {C.DARK}다시 `!스토리탐색` 명령어로 이 퀘스트를 열어서 선택을 완료해 주세요!{C.R}"
+                ))
+                return
             story_quest_manager.complete_quest(ch, q)
             story_quest_manager.quest = 5
             save_manager.save(shared_player)

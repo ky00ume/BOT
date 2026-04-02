@@ -446,6 +446,12 @@ def init_db() -> None:
 
 
 def save_village_data(contribution: int, level: int) -> None:
+    """마을 데이터 저장.
+
+    Args:
+        contribution: 마을 기여도
+        level: 마을 레벨
+    """
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
@@ -457,6 +463,11 @@ def save_village_data(contribution: int, level: int) -> None:
 
 
 def load_village_data() -> Dict[str, int]:
+    """마을 데이터 로드.
+
+    Returns:
+        {"contribution": int, "level": int} 형태의 딕셔너리
+    """
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -471,6 +482,11 @@ def load_village_data() -> Dict[str, int]:
 
 
 def save_player_to_db(player: 'Player') -> None:
+    """플레이어 데이터를 DB에 저장.
+
+    Args:
+        player: 저장할 Player 객체
+    """
     conn = get_db_connection()
     cursor = conn.cursor()
     # 기존 테이블에 컬럼이 없을 경우 마이그레이션
@@ -626,6 +642,14 @@ def _migrate_players_table(cursor: sqlite3.Cursor) -> None:
 
 
 def load_player_from_db(user_id: int) -> Optional[Dict[str, Any]]:
+    """DB에서 플레이어 데이터 로드.
+
+    Args:
+        user_id: Discord 유저 ID
+
+    Returns:
+        플레이어 데이터 딕셔너리, 존재하지 않으면 None
+    """
     conn = get_db_connection()
     cursor = conn.cursor()
     _migrate_players_table(cursor)
@@ -754,6 +778,13 @@ def load_player_from_db(user_id: int) -> Optional[Dict[str, Any]]:
 
 
 def save_sheet_music(user_id: int, title: str, melody: str) -> None:
+    """악보 저장.
+
+    Args:
+        user_id: Discord 유저 ID
+        title: 악보 제목
+        melody: 악보 멜로디 문자열
+    """
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
@@ -765,6 +796,14 @@ def save_sheet_music(user_id: int, title: str, melody: str) -> None:
 
 
 def load_sheet_music_list(user_id: int) -> List[Dict[str, Any]]:
+    """유저의 모든 악보 목록 조회.
+
+    Args:
+        user_id: Discord 유저 ID
+
+    Returns:
+        악보 목록 ({"id": int, "title": str, "melody": str, "created": str})
+    """
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -780,7 +819,15 @@ def load_sheet_music_list(user_id: int) -> List[Dict[str, Any]]:
 
 
 def load_sheet_music(user_id: int, title_or_id: str) -> Optional[Dict[str, str]]:
-    """제목 또는 숫자 ID로 악보를 조회합니다."""
+    """제목 또는 숫자 ID로 악보를 조회합니다.
+
+    Args:
+        user_id: Discord 유저 ID
+        title_or_id: 악보 제목 또는 ID
+
+    Returns:
+        악보 데이터 ({"id": int, "title": str, "melody": str}), 없으면 None
+    """
     if not title_or_id:
         return None
     try:
@@ -806,6 +853,15 @@ def load_sheet_music(user_id: int, title_or_id: str) -> Optional[Dict[str, str]]
 
 
 def delete_sheet_music(user_id: int, title_or_id: str) -> bool:
+    """악보 삭제.
+
+    Args:
+        user_id: Discord 유저 ID
+        title_or_id: 악보 제목 또는 ID
+
+    Returns:
+        삭제 성공 시 True, 실패 시 False
+    """
     if not title_or_id:
         return False
     try:

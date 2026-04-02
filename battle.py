@@ -45,7 +45,16 @@ class BattleEngine:
 
     def build_battle_image(self, action_name: str = "",
                            dmg: int = 0, is_crit: bool = False) -> io.BytesIO:
-        """현재 전투 상태를 BG3 스타일 이미지로 반환"""
+        """현재 전투 상태를 BG3 스타일 이미지로 반환.
+
+        Args:
+            action_name: 수행한 행동 이름 (예: "강타", "파이어볼")
+            dmg: 입힌 피해량
+            is_crit: 크리티컬 여부
+
+        Returns:
+            전투 카드 이미지 BytesIO 객체, 전투 중이 아니면 None
+        """
         if not self.in_battle or not self.current_monster:
             return None
         from monsters_db import MONSTER_SIZES
@@ -75,6 +84,14 @@ class BattleEngine:
         return list(MONSTERS_DB.keys())
 
     def enter_zone(self, zone_name: str) -> str:
+        """사냥터 입장.
+
+        Args:
+            zone_name: 입장할 사냥터 이름 (예: "방울숲", "고블린동굴")
+
+        Returns:
+            입장 결과 메시지
+        """
         zone = MONSTERS_DB.get(zone_name)
         if not zone:
             return f"[{zone_name}]은(는) 존재하지 않는 사냥터임미댜!"
@@ -146,7 +163,11 @@ class BattleEngine:
         return True, buf
 
     def use_cheer(self) -> str:
-        """응원 사용. 이번 턴 공격력 15% 상승. 최대 3회."""
+        """응원 사용. 이번 턴 공격력 15% 상승. 최대 3회.
+
+        Returns:
+            응원 결과 메시지
+        """
         if not self.in_battle:
             return "현재 전투 중이 아님미댜!"
         if self.cheer_count >= 3:
@@ -195,6 +216,14 @@ class BattleEngine:
         return mods
 
     def process_turn(self, skill_id: str = "smash") -> io.BytesIO:
+        """전투 턴 진행.
+
+        Args:
+            skill_id: 사용할 스킬 ID (예: "smash", "defense", "fireball")
+
+        Returns:
+            전투 결과 이미지 BytesIO 객체
+        """
         if not self.in_battle or not self.current_monster:
             return get_renderer().render_card(
                 title="⚔ 전투 오류",
@@ -437,6 +466,11 @@ class BattleEngine:
         return buf
 
     def flee(self) -> io.BytesIO:
+        """전투에서 도주 시도.
+
+        Returns:
+            도주 결과 이미지 BytesIO 객체
+        """
         if not self.in_battle:
             return get_renderer().render_card(
                 title="⚔ 오류",

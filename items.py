@@ -995,6 +995,20 @@ SPECIAL_USE_ITEMS = {
 }
 ALL_ITEMS.update(SPECIAL_USE_ITEMS)
 
+# ─── 팅커벨 전용 아이템 ──────────────────────────────────────────────────────
+TINKER_BELL_ITEMS = {
+    "tinkerbell_bell": {
+        "name":     "팅커벨의 벨",
+        "type":     "special",
+        "grade":    "Legendary",
+        "price":    0,
+        "desc":     "팅커벨이 소중히 여기는 낡고 정교한 방울. 딸랑딸랑 소리가 나며, 가지고 있으면 묘하게 기분이 좋아진다고 한다.",
+        "sellable": False,
+        "icon":     "tinkerbell_bell",
+    },
+}
+ALL_ITEMS.update(TINKER_BELL_ITEMS)
+
 # ─── 의장·간식 아이템 ─────────────────────────────────────────────────────────
 from costume_data import COSTUME_ITEMS, SNACK_ITEMS
 ALL_ITEMS.update(COSTUME_ITEMS)

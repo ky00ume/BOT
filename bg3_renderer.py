@@ -550,11 +550,11 @@ class BG3Renderer:
         # 아이템 수에 따라 글씨 크기 유동 조절
         n_rows = len(rows)
         if n_rows > 26:
-            _lh_val = 15; _font_val = 13; _font_lbl = 12; _row_min = 24
+            _lh_val = 18; _font_val = 16; _font_lbl = 14; _row_min = 28
         elif n_rows > 14:
-            _lh_val = 18; _font_val = 16; _font_lbl = 14; _row_min = 30
+            _lh_val = 22; _font_val = 20; _font_lbl = 18; _row_min = 35
         else:
-            _lh_val = 22; _font_val = 19; _font_lbl = 17; _row_min = 36
+            _lh_val = 26; _font_val = 23; _font_lbl = 20; _row_min = 42
 
         fV = _f(_font_val, True)
         fL = _f(_font_lbl)
@@ -831,7 +831,15 @@ class BG3Renderer:
         if port:
             mk = Image.new("L",(pw2,ph2),0)
             ImageDraw.Draw(mk).rounded_rectangle([0,0,pw2-1,ph2-1],radius=6,fill=255)
-            img.paste(port,(PX0+1,PY0+1), mk)
+            # 포트레잇 알파를 둥근 사각형으로 클리핑 후 alpha_composite 사용
+            # (paste+L마스크는 투명 픽셀을 직접 복사해 체크패턴을 만드는 버그가 있음)
+            _r, _g, _b, _a = port.split()
+            clipped_a = Image.new("L", (pw2, ph2), 0)
+            clipped_a.paste(_a, mask=mk)
+            port.putalpha(clipped_a)
+            _tmp_port = Image.new("RGBA", img.size, (0,0,0,0))
+            _tmp_port.paste(port, (PX0+1, PY0+1))
+            img.alpha_composite(_tmp_port)
         else:
             _ph_portrait(img,d, PX0,PY0,PX1,PY1)
 

@@ -438,11 +438,12 @@ def init_db() -> None:
             )
         """)
         conn.commit()
-        conn.close()
         logger.info("DB 초기화 완료")
     except sqlite3.Error as e:
         logger.error(f"DB 초기화 실패: {e}", exc_info=True)
         raise
+    finally:
+        conn.close()
 
 
 def save_village_data(contribution: int, level: int) -> None:

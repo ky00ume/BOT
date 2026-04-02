@@ -3,6 +3,7 @@
 모든 gold/exp/item 변동을 단일 경로로 처리하는 중재자 모듈.
 모든 메서드는 transaction_log.tx_log를 호출하여 [LOG: TRANSACTION]을 자동 기록합니다.
 """
+from typing import Optional, Dict
 from transaction_log import tx_log
 from utils.logger import setup_logger
 
@@ -12,7 +13,7 @@ logger = setup_logger('economy')
 class Economy:
     """gold/exp/item 변동의 단일 진입점."""
 
-    def __init__(self, player):
+    def __init__(self, player: 'Player') -> None:  # Forward reference
         self.player = player
 
     def _name(self) -> str:
@@ -22,9 +23,9 @@ class Economy:
         self,
         source: str,
         gold: int = 0,
-        exp: float = 0,
-        items: dict = None,
-    ):
+        exp: float = 0.0,
+        items: Optional[Dict[str, int]] = None,
+    ) -> None:
         """보상 지급 — 골드·EXP 추가, 아이템 추가 + 자동 트랜잭션 로그.
 
         Args:
@@ -60,8 +61,8 @@ class Economy:
         self,
         source: str,
         gold: int = 0,
-        items: dict = None,
-    ):
+        items: Optional[Dict[str, int]] = None,
+    ) -> None:
         """차감 — 골드·아이템 제거 + 자동 트랜잭션 로그.
 
         Args:

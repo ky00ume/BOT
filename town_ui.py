@@ -112,11 +112,12 @@ def _render_banner(location_name: str, description: str,
 class _NPCSelectView(View):
     """같은 위치에 여러 NPC가 있을 때 대화 상대를 버튼으로 선택하는 뷰."""
 
-    def __init__(self, npcs: list[str], location: str, player, aff_manager, npc_manager_ref):
+    def __init__(self, npcs: list[str], player, aff_manager, npc_manager_ref, *, author_id: int = 0):
         super().__init__(timeout=60)
         self.player = player
         self.aff_manager = aff_manager
         self.npc_manager_ref = npc_manager_ref
+        self.author_id = author_id
         for npc_name in npcs:
             btn = Button(label=npc_name, style=discord.ButtonStyle.primary)
             btn.callback = self._make_npc_callback(npc_name)
@@ -124,6 +125,11 @@ class _NPCSelectView(View):
 
     def _make_npc_callback(self, npc_name: str):
         async def callback(interaction: discord.Interaction):
+            if self.author_id and interaction.user.id != self.author_id:
+                await interaction.response.send_message(
+                    "다른 플레이어의 NPC 선택입니다!", ephemeral=True
+                )
+                return
             from npc_conversation import ConversationManager
             conv = ConversationManager(self.player, self.aff_manager, self.npc_manager_ref)
             await interaction.response.defer()
@@ -205,7 +211,7 @@ class VisionTownView(View):
                 await conv.send_conversation(interaction.channel, npc_name)
                 await interaction.delete_original_response()
             else:
-                view = _NPCSelectView(npcs_here, location, self.player, self.aff_manager, self.npc_manager_ref)
+                view = _NPCSelectView(npcs_here, self.player, self.aff_manager, self.npc_manager_ref, author_id=interaction.user.id)
                 npc_list = "\n".join(f"• {n}" for n in npcs_here)
                 await interaction.response.send_message(
                     f"**{location}**에 있는 NPC:\n{npc_list}\n누구와 대화하시겠슴미댜?",

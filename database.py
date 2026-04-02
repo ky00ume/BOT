@@ -1,6 +1,9 @@
 import sqlite3
 import json
 import os
+from utils.logger import setup_logger
+
+logger = setup_logger('database')
 
 # DB_PATH 환경변수로 경로 지정 가능 (기본값: 봇 폴더 내 vision_town.db)
 # 머지/재배포 시 데이터 유지를 위해 .env에 DB_PATH=/data/vision_town.db 처럼 repo 외부 경로 설정 권장
@@ -364,14 +367,23 @@ NPC_DATA = {
 
 
 def get_db_connection():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+    """DB 연결 반환."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        logger.debug(f"DB 연결 성공: {DB_PATH}")
+        return conn
+    except sqlite3.Error as e:
+        logger.error(f"DB 연결 실패: {DB_PATH}, 오류={e}", exc_info=True)
+        raise
 
 
 def init_db():
-    conn = get_db_connection()
-    cursor = conn.cursor()
+    """데이터베이스 초기화 및 테이블 생성."""
+    try:
+        logger.info("DB 초기화 시작...")
+        conn = get_db_connection()
+        cursor = conn.cursor()
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS players (
             user_id     INTEGER PRIMARY KEY,
@@ -426,6 +438,10 @@ def init_db():
     """)
     conn.commit()
     conn.close()
+    logger.info("DB 초기화 완료")
+    except sqlite3.Error as e:
+        logger.error(f"DB 초기화 실패: {e}", exc_info=True)
+        raise
 
 
 def save_village_data(contribution: int, level: int):

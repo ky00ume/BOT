@@ -4,6 +4,9 @@
 모든 메서드는 transaction_log.tx_log를 호출하여 [LOG: TRANSACTION]을 자동 기록합니다.
 """
 from transaction_log import tx_log
+from utils.logger import setup_logger
+
+logger = setup_logger('economy')
 
 
 class Economy:
@@ -30,22 +33,28 @@ class Economy:
             exp: 지급할 EXP 양
             items: {item_id: count} 형태의 지급 아이템 dict
         """
-        changes: dict = {}
-        if gold:
-            self.player.gold += gold
-            changes["gold"] = gold
-        if exp:
-            self.player.exp = getattr(self.player, "exp", 0.0) + exp
-            changes["exp"] = exp
-        if items:
-            for item_id, count in items.items():
-                self.player.add_item(item_id, count)
-                changes[item_id] = count
-        tx_log.log(self._name(), "TRANSACTION", source, "보상 지급", changes)
-        # EXP 획득 후 레벨업 자동 체크
-        if exp:
-            from player import check_level_up
-            self._last_level_ups = check_level_up(self.player)
+        try:
+            logger.info(f"보상 지급 시작: source={source}, gold={gold}, exp={exp}, items={items}")
+            changes: dict = {}
+            if gold:
+                self.player.gold += gold
+                changes["gold"] = gold
+            if exp:
+                self.player.exp = getattr(self.player, "exp", 0.0) + exp
+                changes["exp"] = exp
+            if items:
+                for item_id, count in items.items():
+                    self.player.add_item(item_id, count)
+                    changes[item_id] = count
+            tx_log.log(self._name(), "TRANSACTION", source, "보상 지급", changes)
+            # EXP 획득 후 레벨업 자동 체크
+            if exp:
+                from player import check_level_up
+                self._last_level_ups = check_level_up(self.player)
+            logger.info(f"보상 지급 완료: player={self._name()}, changes={changes}")
+        except Exception as e:
+            logger.error(f"보상 지급 실패: source={source}, 오류={e}", exc_info=True)
+            raise
 
     def deduct(
         self,
@@ -60,15 +69,21 @@ class Economy:
             gold: 차감할 골드 양
             items: {item_id: count} 형태의 차감 아이템 dict
         """
-        changes: dict = {}
-        if gold:
-            self.player.gold -= gold
-            changes["gold"] = -gold
-        if items:
-            for item_id, count in items.items():
-                self.player.remove_item(item_id, count)
-                changes[item_id] = -count
-        tx_log.log(self._name(), "TRANSACTION", source, "차감", changes)
+        try:
+            logger.info(f"차감 시작: source={source}, gold={gold}, items={items}")
+            changes: dict = {}
+            if gold:
+                self.player.gold -= gold
+                changes["gold"] = -gold
+            if items:
+                for item_id, count in items.items():
+                    self.player.remove_item(item_id, count)
+                    changes[item_id] = -count
+            tx_log.log(self._name(), "TRANSACTION", source, "차감", changes)
+            logger.info(f"차감 완료: player={self._name()}, changes={changes}")
+        except Exception as e:
+            logger.error(f"차감 실패: source={source}, 오류={e}", exc_info=True)
+            raise
 
     def add_item(self, source: str, item_id: str, count: int = 1) -> bool:
         """아이템 추가 + 로그.
@@ -85,6 +100,9 @@ class Economy:
                 f"아이템 추가: {item_id}",
                 {item_id: count},
             )
+            logger.debug(f"아이템 추가 성공: item_id={item_id}, count={count}")
+        else:
+            logger.warning(f"아이템 추가 실패 (인벤토리 부족): item_id={item_id}, count={count}")
         return result
 
     def remove_item(self, source: str, item_id: str, count: int = 1) -> bool:
@@ -102,6 +120,9 @@ class Economy:
                 f"아이템 제거: {item_id}",
                 {item_id: -count},
             )
+            logger.debug(f"아이템 제거 성공: item_id={item_id}, count={count}")
+        else:
+            logger.warning(f"아이템 제거 실패 (수량 부족): item_id={item_id}, count={count}")
         return result
 
     def check_item(self, item_id: str, count: int = 1) -> bool:

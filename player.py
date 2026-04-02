@@ -1,8 +1,11 @@
 from typing import Dict, List, Optional, Any
+from utils.logger import setup_logger
 from skills_db import (
     RANK_ORDER, RANK_UP_THRESHOLD, SKILL_RANK_THRESHOLD, MASTERY_SKILLS,
     COMBAT_SKILLS, MAGIC_SKILLS, RECOVERY_SKILLS, OTHER_SKILLS,
 )
+
+logger = setup_logger('player')
 
 # ─── 레벨업 스탯 증가 테이블 ─────────────────────────────────────────────
 LEVEL_UP_TABLE = {
@@ -191,9 +194,14 @@ class Player:
         max_slots      = self.get_max_slots()
 
         if not already_have and current_unique >= max_slots:
+            logger.warning(
+                f"인벤토리 가득 찼음: player={self.name}, "
+                f"current={current_unique}, max={max_slots}, item={item_id}"
+            )
             return False
 
         self.inventory[item_id] = self.inventory.get(item_id, 0) + count
+        logger.debug(f"아이템 추가: player={self.name}, item={item_id}, count={count}")
         return True
 
     def remove_item(self, item_id: str, count: int = 1) -> bool:
@@ -206,11 +214,19 @@ class Player:
         Returns:
             충분한 수량이 있어 제거 성공 시 True, 실패 시 False
         """
-        if self.inventory.get(item_id, 0) < count:
+        current = self.inventory.get(item_id, 0)
+        if current < count:
+            logger.warning(
+                f"아이템 부족: player={self.name}, item={item_id}, "
+                f"필요={count}, 보유={current}"
+            )
             return False
+
         self.inventory[item_id] -= count
         if self.inventory[item_id] <= 0:
             del self.inventory[item_id]
+
+        logger.debug(f"아이템 제거: player={self.name}, item={item_id}, count={count}")
         return True
 
     def add_hyness_item(self, item_id: str, count: int = 1) -> None:

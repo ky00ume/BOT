@@ -4,5 +4,5 @@
 discord.py==2.3.2
 pytz==2023.3
 python-dotenv==1.0.0
-Pillow==10.1.0
+Pillow==10.3.0  # Updated for security fix (CVE: buffer overflow vulnerability)
 PyYAML==6.0.1

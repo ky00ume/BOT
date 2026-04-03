@@ -8,6 +8,10 @@
 - Keep solutions simple and direct.
 - User instructions always override this file.
 
+## Selective Mode
+- For tasks that are complex, ambiguous, or hard to reverse, read `.claude/careful-mode.md` and follow it before acting.
+- Triggers: new feature design, unclear requirements, bulk file changes, destructive operations, external service integration.
+
 ---
 
 # Agents Profile

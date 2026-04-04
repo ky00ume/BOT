@@ -32,3 +32,4 @@ status.json
 bulletin.json
 weekly_fishing.json
 logs/
+.claude/command-log.txt

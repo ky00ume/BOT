@@ -1,0 +1,77 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/block-dangerous.sh",
+            "statusMessage": "위험한 명령어 검사 중..."
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/log-commands.sh",
+            "async": true
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/protect-files.sh",
+            "statusMessage": "보호된 파일 확인 중..."
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__github__create_pull_request",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/require-tests-for-pr.sh",
+            "statusMessage": "PR 생성 전 테스트 실행 중...",
+            "timeout": 120
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // \"\"' | { read -r f; [ -n \"$f\" ] && echo \"$f\" | grep -qE '\\.py$' && black \"$f\" 2>/dev/null || true; }",
+            "statusMessage": "black으로 포맷팅 중..."
+          },
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // \"\"' | { read -r f; [ -n \"$f\" ] && echo \"$f\" | grep -qE '\\.py$' && flake8 \"$f\" 2>&1 | tail -10 || true; }",
+            "statusMessage": "flake8으로 린트 중..."
+          },
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // \"\"' | { read -r f; [ -n \"$f\" ] && echo \"$f\" | grep -qE '\\.py$' && pytest tests/ -q --tb=short 2>&1 | tail -5 || true; }",
+            "statusMessage": "테스트 실행 중...",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/auto-commit.sh",
+            "statusMessage": "변경사항 자동 커밋 중..."
+          }
+        ]
+      }
+    ]
+  }
+}

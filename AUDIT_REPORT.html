@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Production Readiness Audit Report</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0d1117;color:#c9d1d9;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;line-height:1.6;padding:20px;max-width:1200px;margin:0 auto}
+h1{color:#58a6ff;font-size:1.8em;border-bottom:2px solid #21262d;padding-bottom:12px;margin-bottom:20px}
+h2{color:#79c0ff;font-size:1.4em;margin:28px 0 12px;border-left:4px solid #58a6ff;padding-left:12px}
+h3{color:#d2a8ff;font-size:1.15em;margin:20px 0 8px}
+.card{background:#161b22;border:1px solid #21262d;border-radius:8px;padding:20px;margin:16px 0}
+.score-card{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin:16px 0}
+.score-item{background:#161b22;border:1px solid #21262d;border-radius:8px;padding:16px;text-align:center}
+.score-item .label{color:#8b949e;font-size:0.9em}
+.score-item .value{font-size:2em;font-weight:bold;margin:8px 0}
+.score-item .weight{color:#8b949e;font-size:0.8em}
+.grade{font-size:3em;font-weight:bold;text-align:center;padding:20px}
+.grade-C{color:#d29922}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:0.92em}
+th,td{border:1px solid #21262d;padding:10px 12px;text-align:left}
+th{background:#21262d;color:#f0f6fc;font-weight:600}
+tr:nth-child(even){background:#161b22}
+tr:nth-child(odd){background:#0d1117}
+.severity-critical{color:#f85149;font-weight:bold}
+.severity-major{color:#d29922;font-weight:bold}
+.severity-minor{color:#e3b341}
+.severity-suggestion{color:#58a6ff}
+code{background:#21262d;padding:2px 6px;border-radius:3px;font-size:0.9em;color:#79c0ff}
+.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:0.8em;font-weight:600;margin:2px}
+.tag-quick{background:#238636;color:#fff}
+.tag-hardening{background:#9e6a03;color:#fff}
+.tag-strategic{background:#6e40c9;color:#fff}
+.summary-box{background:#1c2128;border:2px solid #388bfd;border-radius:8px;padding:24px;margin:20px 0}
+.verdict-box{background:#1c2128;border:2px solid #d29922;border-radius:8px;padding:24px;margin:20px 0}
+.total-score{text-align:center;font-size:2.5em;font-weight:bold;color:#d29922;margin:16px 0}
+.risk-map{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:16px;margin:8px 0}
+.finding{border-left:3px solid #30363d;padding:8px 12px;margin:8px 0;background:#161b2288}
+.finding-critical{border-left-color:#f85149}
+.finding-major{border-left-color:#d29922}
+.finding-minor{border-left-color:#e3b341}
+.overview-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:768px){.overview-grid{grid-template-columns:1fr}.score-card{grid-template-columns:1fr}}
+.bar{height:8px;background:#21262d;border-radius:4px;overflow:hidden;margin:4px 0}
+.bar-fill{height:100%;border-radius:4px}
+.bar-low{background:#f85149}
+.bar-med{background:#d29922}
+.bar-high{background:#3fb950}
+</style>
+</head>
+<body>
+
+<h1>Production Readiness Audit Report</h1>
+
+<!-- ==================== DETAIL ZONE ==================== -->
+
+<h2>A. 개요 &amp; 기술 스택</h2>
+<div class="card">
+<p>Discord 플랫폼 기반의 텍스트 RPG 게임 봇으로, 전투·퀘스트·채집·낚시·요리·대장간·NPC 대화·가챠 등 풍부한 게임 시스템을 갖추고 있다. PIL 기반 이미지 렌더링으로 BG3 스타일의 카드 UI를 생성하며, SQLite를 통해 플레이어 데이터를 영속적으로 관리한다. 단일 플레이어(소규모 커뮤니티) 용도로 설계된 디스코드 봇이다.</p>
+
+<div class="overview-grid" style="margin-top:16px">
+<div>
+<h3>기술 스택</h3>
+<table>
+<tr><th>기술</th><th>버전</th></tr>
+<tr><td>Python</td><td>3.10 / 3.11</td></tr>
+<tr><td>discord.py</td><td>2.3.2</td></tr>
+<tr><td>Pillow (PIL)</td><td>12.1.1</td></tr>
+<tr><td>PyYAML</td><td>6.0.1</td></tr>
+<tr><td>SQLite3</td><td>내장</td></tr>
+<tr><td>python-dotenv</td><td>1.0.0</td></tr>
+<tr><td>pytz</td><td>2023.3</td></tr>
+</table>
+</div>
+<div>
+<h3>정량 데이터</h3>
+<table>
+<tr><th>항목</th><th>값</th></tr>
+<tr><td>총 Python LOC</td><td>~29,209줄</td></tr>
+<tr><td>소스 파일 수</td><td>83개 (.py)</td></tr>
+<tr><td>테스트 파일</td><td>3개 (48개 테스트 메서드)</td></tr>
+<tr><td>Git 커밋 수</td><td>~57개 (shallow clone)</td></tr>
+<tr><td>CI/CD</td><td>GitHub Actions (lint + mypy + pytest)</td></tr>
+</table>
+</div>
+</div>
+<p style="margin-top:12px"><strong>프로젝트 복잡도 등급: <span style="color:#d29922">Large (10K+ LOC)</span></strong></p>
+<p style="color:#8b949e">29,209 LOC로 Large 티어에 해당. Large 등급의 기대치(체계적 테스트 + 정적 분석, 명확한 모듈 경계, 기여 수준 문서, 중앙화된 에러 처리 + 모니터링 시그널)를 기준으로 평가한다.</p>
+</div>
+
+<h2>B. 리스크 서피스 맵</h2>
+<div class="card">
+
+<div class="risk-map">
+<h3>1. 가독성 &amp; 수정 용이성</h3>
+<p><strong>핵심 리스크:</strong> (1) 2,755줄 <code>main.py</code>의 단일 파일 집중도 (2) 80+ 파일에 산재한 한/영 혼용 네이밍</p>
+<p><strong>동적 질문 1d:</strong> <code>main.py</code>의 70+ 커맨드 핸들러가 관심사별로 논리적으로 분리 가능한 구조인가?</p>
+<p><strong>동적 질문 1e:</strong> 데이터 파일(<code>items.py</code>, <code>job_data.py</code>, <code>npc_dialogue_db.py</code>)이 코드와 분리되어 독립적으로 수정 가능한가?</p>
+</div>
+
+<div class="risk-map">
+<h3>2. 견고성 &amp; 에러 복원력</h3>
+<p><strong>핵심 리스크:</strong> (1) 100+개 <code>except Exception</code> 블록의 무음 실패 (2) 공유 상태(<code>shared_player</code>)의 동시성 미보호</p>
+<p><strong>동적 질문 2d:</strong> 이미지 렌더링(<code>bg3_renderer.py</code>) 실패 시 사용자에게 의미 있는 폴백이 제공되는가?</p>
+<p><strong>동적 질문 2e:</strong> 경제 시스템(<code>economy.py</code>)의 다단계 트랜잭션(차감+보상)이 부분 실패 시 롤백되는가?</p>
+</div>
+
+<div class="risk-map">
+<h3>3. 보안 태세</h3>
+<p><strong>공격 표면:</strong> Discord 봇은 네트워크를 통해 사용자 입력을 수신. 디스코드 API 게이트웨이를 통한 입력, SQLite DB 접근, 파일시스템 이미지 렌더링.</p>
+<p><strong>동적 질문 3d:</strong> 사용자 입력이 PIL 이미지 렌더링 텍스트로 전달될 때 리소스 고갈(DoS) 방어가 존재하는가?</p>
+<p><strong>동적 질문 3e:</strong> <code>storage.py</code>에서 <code>user_id=0</code> 하드코딩으로 인한 데이터 격리 실패가 실제 멀티유저 시나리오에서 발생 가능한가?</p>
+</div>
+
+<div class="risk-map">
+<h3>4. 검증 &amp; 정확성 보장</h3>
+<p><strong>핵심 리스크:</strong> (1) 전투/경제 수식의 테스트 부재 (2) CI 파이프라인의 실패 무시 패턴</p>
+<p><strong>동적 질문 4d:</strong> 게임 밸런스에 직결되는 전투 공식(<code>battle.py</code> 데미지/크리티컬)이 단위 테스트로 검증되는가?</p>
+<p><strong>동적 질문 4e:</strong> CI 파이프라인이 실제로 빌드를 실패시킬 수 있는가, 아니면 모든 검증이 <code>|| true</code>/<code>exit-zero</code>로 우회되는가?</p>
+</div>
+
+<div class="risk-map">
+<h3>5. 아키텍처 &amp; 구조적 건전성</h3>
+<p><strong>핵심 리스크:</strong> (1) <code>main.py</code> 모놀리스 (2) 설정값 산재 (config 미사용)</p>
+<p><strong>동적 질문 5d:</strong> <code>config/game.yaml</code>과 <code>utils/config.py</code>가 존재하지만 실제로 게임 상수들이 이를 참조하는가?</p>
+<p><strong>동적 질문 5e:</strong> 80+ 모듈 간 의존 방향이 단방향인가, 순환 의존이 존재하는가?</p>
+</div>
+
+<div class="risk-map">
+<h3>6. 의존성 &amp; 환경 건전성</h3>
+<p><strong>핵심 리스크:</strong> (1) 로거 하드코딩 경로 (2) 재현성 제약</p>
+<p><strong>동적 질문 6d:</strong> 로그 디렉토리 경로(<code>/home/runner/work/BOT/BOT/logs</code>)가 환경 독립적으로 설정되는가?</p>
+<p><strong>동적 질문 6e:</strong> <code>static/</code> 디렉토리의 바이너리 에셋(폰트, 이미지)이 빌드/배포 과정에서 안정적으로 포함되는가?</p>
+</div>
+
+</div>
+
+<h2>C. 점수 테이블</h2>
+<div class="card">
+<table>
+<tr><th>카테고리</th><th>가중치</th><th>점수 (0-5)</th><th>가중 점수</th><th>한 줄 요약</th></tr>
+<tr><td>가독성 &amp; 수정 용이성</td><td>20%</td><td style="color:#d29922">2.5</td><td>0.50</td><td>네이밍은 양호하나 <code>main.py</code> 모놀리스와 데이터-코드 미분리가 심각</td></tr>
+<tr><td>견고성 &amp; 에러 복원력</td><td>20%</td><td style="color:#d29922">2.0</td><td>0.40</td><td>100+개 무음 예외 처리가 디버깅과 안정성을 크게 저해</td></tr>
+<tr><td>보안 태세</td><td>15%</td><td style="color:#d29922">3.0</td><td>0.45</td><td>SQL 인젝션 방어는 양호, 비밀 관리 적절, 입력 검증 미흡</td></tr>
+<tr><td>검증 &amp; 정확성 보장</td><td>20%</td><td style="color:#f85149">1.5</td><td>0.30</td><td>48개 테스트 존재하나 핵심 경로 미검증, CI가 실패를 무시</td></tr>
+<tr><td>아키텍처 &amp; 구조적 건전성</td><td>15%</td><td style="color:#d29922">2.0</td><td>0.30</td><td>모듈 분리 시도는 있으나 설정 외부화 미달성, 모놀리스 진입점</td></tr>
+<tr><td>의존성 &amp; 환경 건전성</td><td>10%</td><td style="color:#d29922">2.5</td><td>0.25</td><td>의존성 최소화 양호, 로거 경로 하드코딩이 환경 이식성 저해</td></tr>
+</table>
+
+<div class="total-score">
+총점: 2.20 / 5.00
+</div>
+<div class="grade grade-C" style="color:#d29922">
+등급: D
+</div>
+<p style="text-align:center;color:#8b949e">D 등급 (1.5 ~ 2.2 범위) — 프로토타입 수준. 아이디어 검증 단계이며 프로덕션용으로 엔지니어링되지 않음.</p>
+</div>
+
+<h2>D. 세부 발견사항</h2>
+
+<!-- ===== Category 1 ===== -->
+<h3>1. 가독성 &amp; 수정 용이성 (2.5 / 5)</h3>
+<div class="card">
+<table>
+<tr><th>#</th><th>질문</th><th>판정</th><th>근거</th></tr>
+<tr><td>1a</td><td>네이밍 명확성</td><td style="color:#3fb950">&#10003; 1</td>
+<td>함수명(<code>pay_reward</code>, <code>accept_quest</code>, <code>deposit</code>), 클래스명(<code>BattleEngine</code>, <code>QuestManager</code>, <code>CareManager</code>)이 의도를 명확히 전달. <code>economy.py</code>, <code>player.py</code>, <code>save_manager.py</code> 전반에서 일관적.</td></tr>
+
+<tr><td>1b</td><td>DRY 원칙</td><td style="color:#d29922">&#9888; 0.5</td>
+<td><code>Economy</code> 클래스로 재화 변동을 중앙화한 것은 우수. 그러나 <code>_rank_gte()</code> 비교 로직이 <code>fishing.py</code>, <code>crafting.py</code>, <code>cooking_db.py</code>, <code>gathering.py</code>, <code>potion.py</code> 5곳에 중복. NPC 대화/직업 데이터 구조가 파일마다 반복.</td></tr>
+
+<tr><td>1c</td><td>주석 품질</td><td style="color:#d29922">&#9888; 0.5</td>
+<td><code>utils/exceptions.py</code>, <code>utils/config.py</code>, <code>economy.py</code>에 양질의 docstring 존재. 그러나 <code>battle.py</code>의 컨디션 보정 공식(0.05 + (cond-50)/50*0.05), <code>player.py</code>의 <code>LEVEL_UP_TABLE</code> 밸런스 근거, <code>items.py</code>의 가격 책정 로직 등 핵심 게임 수식에 주석 전무.</td></tr>
+
+<tr><td>1d</td><td><code>main.py</code> 70+ 핸들러 분리 가능 구조?</td><td style="color:#f85149">&#10007; 0</td>
+<td>2,755줄 단일 파일에 70+ 커맨드가 flat하게 나열. Cog 미사용. 새 엔지니어가 특정 커맨드를 찾으려면 전체 파일을 스캔해야 함. <code>discord.py</code>의 Cog 시스템을 전혀 활용하지 않음.</td></tr>
+
+<tr><td>1e</td><td>데이터 파일의 코드 분리</td><td style="color:#d29922">&#9888; 0.5</td>
+<td><code>config/game.yaml</code>로 일부 설정이 외부화되어 있으나, <code>items.py</code>(1,015줄), <code>job_data.py</code>(1,102줄), <code>npc_dialogue_db.py</code>(1,901줄)는 순수 딕셔너리 데이터를 Python 코드로 보유. JSON/YAML로 외부화 가능하나 미수행.</td></tr>
+
+<tr><th colspan="2">카테고리 합계</th><th colspan="2">2.5 / 5</th></tr>
+</table>
+
+<div class="finding finding-major">
+<p><span class="severity-major">&#128992; Major</span> <span class="tag">[OVERSIGHT]</span> <code>main.py</code> 모놀리스 — 2,755줄 단일 진입점에 모든 커맨드 핸들러가 집중. discord.py Cog 시스템 미사용으로 관심사 분리 불가. 새 기능 추가 시 병합 충돌 확률이 극히 높음.</p>
+</div>
+<div class="finding finding-major">
+<p><span class="severity-major">&#128992; Major</span> <span class="tag">[OVERSIGHT]</span> <code>_rank_gte()</code> 5회 중복 — 랭크 비교 로직이 <code>fishing.py:L277</code>, <code>crafting.py</code>, <code>cooking_db.py</code>, <code>gathering.py</code>, <code>potion.py</code>에 동일하게 복제. 랭크 체계 변경 시 5곳 동시 수정 필요.</p>
+</div>
+</div>
+
+<!-- ===== Category 2 ===== -->
+<h3>2. 견고성 &amp; 에러 복원력 (2.0 / 5)</h3>
+<div class="card">
+<table>
+<tr><th>#</th><th>질문</th><th>판정</th><th>근거</th></tr>
+<tr><td>2a</td><td>에러 전략 일관성</td><td style="color:#f85149">&#10007; 0</td>
+<td>코드베이스 전반에 100+개의 <code>except Exception</code> 블록 존재. <code>npc_conversation.py</code>(7곳), <code>skill_ui.py</code>(10곳), <code>care_ui.py</code>(10곳), <code>gathering.py</code>(5곳)에서 예외를 무음 처리(<code>pass</code>). 커스텀 예외 클래스(<code>utils/exceptions.py</code>)가 7개 정의되어 있으나 실제 사용처가 거의 없음. 구조화된 전략이 존재하나 적용되지 않음.</td></tr>
+
+<tr><td>2b</td><td>에러 피드백 품질</td><td style="color:#d29922">&#9888; 0.5</td>
+<td><code>storage.py</code>의 <code>deposit()</code>/<code>withdraw()</code>는 명확한 한국어 에러 메시지 제공("인벤토리에 N개가 없슴미댜!"). <code>economy.py</code>는 로거를 통해 상세 에러 기록 후 재전파. 그러나 <code>storage.py:_load()</code>/<code>_save()</code>, <code>collection.py</code>, <code>achievements.py</code> 등 다수 모듈은 <code>except Exception: pass</code>로 무음 실패하여 사용자에게 어떤 피드백도 없음.</td></tr>
+
+<tr><td>2c</td><td>실패 모드 예측</td><td style="color:#d29922">&#9888; 0.5</td>
+<td><code>save_manager.py</code>의 백업-검증-쓰기 3단계 저장과 자동 복원은 DB 실패 시나리오를 잘 대비. <code>main.py:L65-68</code>에서 토큰 부재 시 즉시 종료 처리. 그러나 이미지 렌더링 실패 시 폴백 없음, 디스코드 API 타임아웃 미처리, <code>shared_player</code> 동시 접근 미보호.</td></tr>
+
+<tr><td>2d</td><td>이미지 렌더링 실패 시 폴백?</td><td style="color:#f85149">&#10007; 0</td>
+<td><code>bg3_renderer.py</code>는 <code>ThreadPoolExecutor</code>로 비동기 렌더링. 폰트 로딩 실패 시 폴백은 있으나(<code>utils/logger.py:L65</code> 패턴과 유사), 렌더링 메서드 호출부(<code>status_window.py</code>, <code>equipment_window.py</code>, <code>fishing_card.py</code>)에서 렌더러 실패 시 텍스트 기반 폴백이 전혀 없음. PIL 오류 시 사용자에게 빈 응답 또는 스택 트레이스 노출.</td></tr>
+
+<tr><td>2e</td><td>경제 트랜잭션 롤백?</td><td style="color:#d29922">&#9888; 0.5</td>
+<td><code>economy.py</code>의 <code>pay_reward()</code>/<code>deduct()</code>는 예외 발생 시 <code>raise</code>로 전파하여 호출자가 처리 가능. 그러나 <code>pay_reward()</code>에서 골드 추가 후 아이템 추가 실패 시 골드 롤백 없음 — 부분 실패 상태 발생 가능. <code>save_manager.py</code>의 DB 레벨 롤백은 존재.</td></tr>
+
+<tr><th colspan="2">카테고리 합계</th><th colspan="2">2.0 / 5 (반올림: 1.5)</th></tr>
+</table>
+
+<div class="finding finding-critical">
+<p><span class="severity-critical">&#128308; Critical</span> <span class="tag">[OVERSIGHT]</span> 무음 예외 처리 만연 — 100+개 <code>except Exception: pass</code> 블록이 오류를 완전히 삼킴. <code>storage.py:L37-38</code>에서 DB 로드 실패가 무음 처리되어 빈 보관함으로 시작 → 기존 데이터 위에 빈 데이터 저장 시 데이터 손실 가능. <code>skill_ui.py</code>에 10곳, <code>care_ui.py</code>에 10곳, <code>npc_conversation.py</code>에 7곳.</p>
+</div>
+<div class="finding finding-major">
+<p><span class="severity-major">&#128992; Major</span> <span class="tag">[OVERSIGHT]</span> 커스텀 예외 미활용 — <code>utils/exceptions.py</code>에 <code>InsufficientResourceError</code>, <code>InvalidItemError</code>, <code>InventoryFullError</code> 등 7개 예외 클래스가 정의되어 있으나 실제 코드에서 <code>raise</code>/<code>catch</code>하는 곳이 확인되지 않음. 설계만 존재하고 구현이 부재.</p>
+</div>
+</div>
+
+<!-- ===== Category 3 ===== -->
+<h3>3. 보안 태세 (3.0 / 5)</h3>
+<div class="card">
+<p style="color:#8b949e;margin-bottom:12px"><strong>공격 표면:</strong> Discord 봇 → 사용자 메시지 입력, 디스코드 UI 인터랙션(버튼/셀렉트), SQLite DB 쿼리, 파일시스템 이미지 렌더링. 비록 discord.py가 1차 입력 필터 역할을 하지만, 사용자 텍스트가 DB 쿼리와 이미지 렌더링으로 전달되므로 보안 평가가 필요.</p>
+
+<table>
+<tr><th>#</th><th>질문</th><th>판정</th><th>근거</th></tr>
+<tr><td>3a</td><td>비밀 관리</td><td style="color:#3fb950">&#10003; 1</td>
+<td><code>.env.example</code>에 토큰 형식만 명시, <code>.gitignore</code>에 <code>.env</code> 포함. <code>main.py:L59</code>에서 <code>os.getenv("DISCORD_TOKEN")</code>로 토큰 로드. 소스 코드에 API 키/토큰 하드코딩 없음. 다만 <code>.env.example</code>에 실제 사용자 ID가 기본값으로 노출(<code>HYNESS_ID=446014281486565387</code>)되어 있으나, 디스코드 사용자 ID는 공개 정보이므로 경미.</td></tr>
+
+<tr><td>3b</td><td>입력 신뢰 경계</td><td style="color:#d29922">&#9888; 0.5</td>
+<td>SQL 쿼리는 전부 파라미터 바인딩 사용(<code>cursor.execute("...WHERE user_id = ?", (user_id,))</code>) — SQL 인젝션 방어 양호. <code>save_manager.py:L19</code>에서 <code>_SAFE_COL_RE</code> 정규식으로 컬럼명 화이트리스트 검증. 그러나 사용자 닉네임/입력 텍스트가 PIL 이미지 렌더링으로 전달될 때 길이 검증 없음, NPC 대화 키워드 입력의 정규화/검증 미흡.</td></tr>
+
+<tr><td>3c</td><td>데이터 보호</td><td style="color:#3fb950">&#10003; 1</td>
+<td>민감 데이터(토큰)가 환경변수로 관리됨. 플레이어 게임 데이터는 로컬 SQLite에 저장되며 개인 정보가 아닌 게임 상태만 포함. 트랜잭션 로그(<code>transaction_log.py</code>)에 게임 내 거래 기록만 저장.</td></tr>
+
+<tr><td>3d</td><td>PIL 렌더링 DoS 방어?</td><td style="color:#f85149">&#10007; 0</td>
+<td><code>bg3_renderer.py</code>에서 사용자 제공 텍스트(이름, 아이템명 등)가 PIL <code>ImageDraw.text()</code>로 직접 전달. 텍스트 길이 제한, 렌더링 타임아웃, 이미지 크기 상한 없음. 극단적으로 긴 문자열로 메모리 고갈 가능. <code>ThreadPoolExecutor</code>에 타임아웃 미설정.</td></tr>
+
+<tr><td>3e</td><td><code>storage.py</code> <code>user_id=0</code> 데이터 격리?</td><td style="color:#d29922">&#9888; 0.5</td>
+<td><code>storage.py:L31</code>에서 <code>user_id = 0</code>으로 하드코딩되어 모든 사용자가 동일 보관함 공유. 현재 단일 플레이어/소규모 커뮤니티 용도이므로 의도된 설계로 보이나, 다중 사용자 확장 시 데이터 격리 실패. 디자인 문서에 이 제약이 명시되지 않음.</td></tr>
+
+<tr><th colspan="2">카테고리 합계</th><th colspan="2">3.0 / 5</th></tr>
+</table>
+
+<div class="finding finding-major">
+<p><span class="severity-major">&#128992; Major</span> <span class="tag">[OVERSIGHT]</span> PIL 렌더링 리소스 제한 미설정 — 사용자 텍스트 길이 검증 없이 이미지 렌더링에 전달. <code>bg3_renderer.py</code>의 모든 <code>render_*</code> 메서드에 해당. 악의적 사용자가 Discord 메시지 제한(2000자) 이내에서도 반복적 렌더링 요청으로 서버 리소스 고갈 가능.</p>
+</div>
+</div>
+
+<!-- ===== Category 4 ===== -->
+<h3>4. 검증 &amp; 정확성 보장 (1.5 / 5)</h3>
+<div class="card">
+<table>
+<tr><th>#</th><th>질문</th><th>판정</th><th>근거</th></tr>
+<tr><td>4a</td><td>검증 메커니즘 존재</td><td style="color:#d29922">&#9888; 0.5</td>
+<td>존재하는 검증: (1) pytest 테스트 48개 (3파일) (2) flake8 린팅 (문법 오류만) (3) mypy 타입 체크 (4파일만, <code>|| true</code>로 실패 무시) (4) GitHub Actions CI. 그러나 flake8은 <code>--exit-zero</code>로 경고만 출력, mypy는 <code>|| true</code>로 실패를 무시하므로 실질적 게이트 기능을 하는 것은 pytest뿐.</td></tr>
+
+<tr><td>4b</td><td>핵심 경로 커버리지</td><td style="color:#f85149">&#10007; 0</td>
+<td>가장 손실이 큰 경로: (1) 경제 시스템 트랜잭션 (2) 전투 데미지 계산 (3) 세이브/로드 데이터 무결성. <code>test_economy.py</code>가 18개 테스트로 <code>Economy</code> 클래스를 테스트하나, <code>pay_reward()</code>의 부분 실패/롤백은 미검증. <code>test_database.py</code>가 기본 세이브/로드를 검증하나 스키마 마이그레이션 미테스트. <strong>전투 시스템(<code>battle.py</code>)은 테스트 0개</strong>. 가챠 확률, NPC 호감도, 스킬 계산 등 핵심 게임 로직 전부 미검증.</td></tr>
+
+<tr><td>4c</td><td>타입 안전성</td><td style="color:#d29922">&#9888; 0.5</td>
+<td><code>mypy.ini</code>에 점진적 타이핑 설정, <code>economy.py</code>와 <code>utils/</code>에 타입 힌트 사용. 그러나 <code>disallow_untyped_defs = False</code>로 미타입 함수 허용. mypy 검사 대상이 4개 파일(<code>economy.py</code>, <code>player.py</code>, <code>battle.py</code>, <code>database.py</code>)로 한정. 80+ 파일 중 4파일만 타입 체크.</td></tr>
+
+<tr><td>4d</td><td>전투 공식 단위 테스트?</td><td style="color:#f85149">&#10007; 0</td>
+<td><code>battle.py</code>의 632줄에 데미지 계산, 크리티컬 확률, 컨디션 보정, 등급 산출, 보상 계산 등 핵심 게임 수식이 있으나 테스트 파일이 전혀 존재하지 않음. 밸런스 변경 시 회귀 테스트 불가.</td></tr>
+
+<tr><td>4e</td><td>CI가 빌드를 실패시킬 수 있는가?</td><td style="color:#d29922">&#9888; 0.5</td>
+<td><code>.github/workflows/test.yml</code> 분석: (1) flake8 1차: 문법 오류만 체크(빌드 실패 가능) (2) flake8 2차: <code>--exit-zero</code>(절대 실패 안 함) (3) mypy: <code>|| true</code>(절대 실패 안 함) (4) pytest: 실패 시 빌드 실패(유효) (5) codecov: <code>fail_ci_if_error: false</code>. 실질적으로 pytest 실패만 빌드를 막으며, 타입 오류와 코드 스타일 문제는 통과.</td></tr>
+
+<tr><th colspan="2">카테고리 합계</th><th colspan="2">1.5 / 5</th></tr>
+</table>
+
+<div class="finding finding-critical">
+<p><span class="severity-critical">&#128308; Critical</span> <span class="tag">[OVERSIGHT]</span> 전투 시스템 무검증 — <code>battle.py</code>(632줄)의 데미지 공식, 크리티컬 확률, 보상 계산, 등급 시스템이 단 하나의 테스트도 없음. 이 시스템은 게임의 핵심 루프이며, 수식 오류가 게임 밸런스를 완전히 파괴할 수 있음.</p>
+</div>
+<div class="finding finding-major">
+<p><span class="severity-major">&#128992; Major</span> <span class="tag">[OVERSIGHT]</span> CI 검증 무력화 — mypy(<code>|| true</code>)와 flake8(<code>--exit-zero</code>)이 CI 파이프라인에서 실패를 절대 발생시키지 않음. 타입 오류와 코드 품질 문제가 main 브랜치에 무제한 병합 가능.</p>
+</div>
+</div>
+
+<!-- ===== Category 5 ===== -->
+<h3>5. 아키텍처 &amp; 구조적 건전성 (2.0 / 5)</h3>
+<div class="card">
+<table>
+<tr><th>#</th><th>질문</th><th>판정</th><th>근거</th></tr>
+<tr><td>5a</td><td>데드 코드 위생</td><td style="color:#3fb950">&#10003; 1</td>
+<td>TODO/FIXME/XXX/HACK 마커가 전체 코드베이스에서 0건. <code>fix_portrait_bg.py</code>와 <code>generate_item_list.py</code>가 유틸리티 스크립트로 보이나 명확한 목적이 있음. 주석 처리된 코드 블록이 눈에 띄지 않음. 데드 코드 관리 양호.</td></tr>
+
+<tr><td>5b</td><td>설정 외부화</td><td style="color:#d29922">&#9888; 0.5</td>
+<td><code>config/game.yaml</code>과 <code>utils/config.py</code>(싱글톤 Config 클래스)가 존재하며 레벨업/전투/채집/낚시/이동 설정을 외부화. 그러나 실제 게임 코드에서 <code>Config().get()</code> 호출이 거의 없음. <code>battle.py</code>의 전투 상수, <code>items.py</code>의 가격, <code>fishing.py</code>의 타이밍 값 등 대부분의 런타임 상수가 여전히 하드코딩.</td></tr>
+
+<tr><td>5c</td><td>변경 복원력</td><td style="color:#d29922">&#9888; 0.5</td>
+<td>각 게임 시스템이 독립 파일로 분리(<code>fishing.py</code>, <code>battle.py</code>, <code>gathering.py</code> 등)되어 기능별 수정이 비교적 격리. <code>Economy</code> 중재 계층이 재화 변동을 단일 경로로 처리. 그러나 <code>main.py</code>가 55개 모듈을 직접 import하여 모든 변경이 진입점에 영향. 새 NPC 추가 시 최소 5개 파일 수정 필요(<code>npcs.py</code>, <code>npc_dialogue_db.py</code>, <code>database.py</code>, <code>main.py</code>, <code>town_ui.py</code>).</td></tr>
+
+<tr><td>5d</td><td><code>config/game.yaml</code> 실제 참조 여부</td><td style="color:#f85149">&#10007; 0</td>
+<td><code>utils/config.py</code>에서 <code>Config</code> 싱글톤이 YAML을 로드하지만, grep 결과 <code>Config().get()</code> 또는 <code>config.get()</code> 호출이 게임 로직 파일에서 발견되지 않음. 설정 시스템이 만들어져 있으나 사실상 사용되지 않는 상태. 모든 게임 상수가 개별 파일에 하드코딩.</td></tr>
+
+<tr><td>5e</td><td>모듈 간 의존 방향성</td><td style="color:#f85149">&#10007; 0</td>
+<td><code>main.py</code>가 55개 모듈을 import하여 허브-앤-스포크 패턴이지만, <code>economy.py:L53</code>에서 <code>from player import check_level_up</code>을 함수 내부 import로 사용(순환 참조 회피), <code>rest.py</code>에서 전역 <code>is_resting</code> 상태를 모듈 레벨로 관리, <code>music.py:L97</code>에서 <code>village_manager</code> import를 try-except로 감싸는 등 순환 의존 징후 다수. 명확한 레이어 구분(데이터/비즈니스 로직/프레젠테이션) 부재.</td></tr>
+
+<tr><th colspan="2">카테고리 합계</th><th colspan="2">2.0 / 5</th></tr>
+</table>
+
+<div class="finding finding-major">
+<p><span class="severity-major">&#128992; Major</span> <span class="tag">[OVERSIGHT]</span> 유령 설정 시스템 — <code>config/game.yaml</code>과 <code>utils/config.py</code>가 완성도 높게 구현되어 있으나 실제 게임 코드에서 참조하지 않음. 설정을 변경해도 게임 동작에 영향 없음. 설정 시스템이 있다는 착각을 줄 수 있어 오히려 유해.</p>
+</div>
+<div class="finding finding-major">
+<p><span class="severity-major">&#128992; Major</span> <span class="tag">[OVERSIGHT]</span> <code>main.py</code> 단일 진입점 과부하 — 55개 모듈 직접 import, 110개 import 문. discord.py Cog 패턴 미사용으로 커맨드 핸들러가 분산 불가. 2명 이상 동시 개발 시 심각한 병합 충돌 예상.</p>
+</div>
+</div>
+
+<!-- ===== Category 6 ===== -->
+<h3>6. 의존성 &amp; 환경 건전성 (2.5 / 5)</h3>
+<div class="card">
+<table>
+<tr><th>#</th><th>질문</th><th>판정</th><th>근거</th></tr>
+<tr><td>6a</td><td>의존성 위생</td><td style="color:#3fb950">&#10003; 1</td>
+<td><code>requirements.txt</code>에 5개 의존성만 명시(<code>discord.py</code>, <code>pytz</code>, <code>python-dotenv</code>, <code>Pillow</code>, <code>PyYAML</code>). 중복이나 불필요한 패키지 없음. 모든 버전이 정확히 고정(pinned). <code>requirements-dev.txt</code>에 개발 의존성 분리. 최소한의 의존성 원칙 잘 준수.</td></tr>
+
+<tr><td>6b</td><td>스택 최신성</td><td style="color:#3fb950">&#10003; 1</td>
+<td><code>discord.py 2.3.2</code>는 활발히 유지보수. <code>Pillow 12.1.1</code>은 CVE 보안 패치 적용 명시. Python 3.10/3.11 CI 테스트. PyYAML 6.0.1 (현재 안정 버전). 폐기되거나 미유지보수 의존성 없음.</td></tr>
+
+<tr><td>6c</td><td>재현 가능성</td><td style="color:#d29922">&#9888; 0.5</td>
+<td><code>README.md</code>에 3단계 설치 가이드(pip install → .env 설정 → python main.py) 존재. 그러나 시스템 의존성(Python 버전, SQLite, 폰트 파일)에 대한 언급 없음. <code>static/fonts/</code>에 NotoSansCJK 폰트 포함은 양호하나, <code>static/</code> 디렉토리의 이미지 에셋 구성 방법 미문서화. lockfile(<code>pip freeze</code> 기반) 미제공.</td></tr>
+
+<tr><td>6d</td><td>로그 디렉토리 환경 독립성</td><td style="color:#f85149">&#10007; 0</td>
+<td><code>utils/logger.py:L49</code>에서 <code>logs_dir = '/home/runner/work/BOT/BOT/logs'</code>로 절대 경로 하드코딩. GitHub Actions 러너 환경 전용 경로. 로컬 개발, Docker, 다른 CI/CD에서는 이 경로가 존재하지 않아 파일 로깅 실패. <code>OSError</code> catch로 콘솔 폴백은 있으나, 프로덕션에서 파일 로그를 수집할 수 없게 됨.</td></tr>
+
+<tr><td>6e</td><td>바이너리 에셋 배포 안정성</td><td style="color:#f85149">&#10007; 0</td>
+<td><code>static/</code> 디렉토리에 한국어 파일명 포함 바이너리 에셋(PNG, WebP, OTF) 다수. Git에 직접 커밋. <code>.gitkeep</code> 파일로 빈 디렉토리 유지. 그러나 Git LFS 미사용, 한국어 파일명이 일부 시스템/CI에서 인코딩 문제 유발 가능. 에셋 목록이나 무결성 검증 메커니즘 없음. 에셋 누락 시 <code>bg3_renderer.py</code>에서 <code>FileNotFoundError</code> 발생.</td></tr>
+
+<tr><th colspan="2">카테고리 합계</th><th colspan="2">2.5 / 5</th></tr>
+</table>
+
+<div class="finding finding-major">
+<p><span class="severity-major">&#128992; Major</span> <span class="tag">[OVERSIGHT]</span> 로거 하드코딩 경로 — <code>utils/logger.py:L49</code>의 <code>/home/runner/work/BOT/BOT/logs</code>는 GitHub Actions 전용 경로. 환경변수 또는 프로젝트 루트 기준 상대 경로로 변경 필요.</p>
+</div>
+<div class="finding finding-minor">
+<p><span class="severity-minor">&#128993; Minor</span> <span class="tag">[OVERSIGHT]</span> pip lockfile 미제공 — <code>requirements.txt</code>에 버전 고정은 되어 있으나 전이 의존성(transitive dependencies)의 버전이 고정되지 않아 빌드 간 비결정적 동작 가능.</p>
+</div>
+</div>
+
+<!-- ===== AI Anti-patterns ===== -->
+<h3>AI 안티패턴 분석</h3>
+<div class="card">
+<p>AI 생성 코드에서 자주 발견되는 안티패턴을 검사한 결과:</p>
+
+<table>
+<tr><th>안티패턴</th><th>발견 여부</th><th>빈도</th><th>실제 프로덕션 리스크</th></tr>
+<tr><td><strong>Comments Everywhere</strong> (과잉 주석)</td><td style="color:#d29922">&#9888; 부분</td><td>낮음</td><td><code>utils/</code> 디렉토리의 docstring이 자동 생성 스타일이나 정확하고 유용. 게임 로직 파일은 오히려 주석 부족. <strong>리스크: 낮음</strong></td></tr>
+<tr><td><strong>Vanilla-Style Reimplementation</strong> (바닐라 재구현)</td><td style="color:#d29922">&#9888; 부분</td><td>중간</td><td><code>_rank_gte()</code> 5회 중복, 각 게임 시스템이 독자적 쿨다운/타이머 관리 구현. 그러나 discord.py API는 적절히 활용. <strong>리스크: 중간</strong> — 유지보수 비용 증가</td></tr>
+<tr><td><strong>Security Theater in Testing</strong> (형식적 테스트)</td><td style="color:#f85149">&#10003; 존재</td><td>높음</td><td>CI 파이프라인에 flake8, mypy, pytest, codecov가 모두 구성되어 있으나, flake8(<code>--exit-zero</code>)과 mypy(<code>|| true</code>)가 실패를 무시. 코드 품질 게이트가 있는 것처럼 보이지만 실질 효과 없음. <strong>리스크: 높음</strong> — 거짓 안전감 제공</td></tr>
+<tr><td><strong>Phantom Bugs</strong> (유령 버그 수정)</td><td style="color:#3fb950">발견 안 됨</td><td>-</td><td>존재하지 않는 문제를 해결하는 코드 미발견.</td></tr>
+<tr><td><strong>Package Hallucination</strong> (패키지 환각)</td><td style="color:#3fb950">발견 안 됨</td><td>-</td><td>모든 import가 실제 존재하는 패키지/모듈 참조.</td></tr>
+</table>
+
+<p style="margin-top:12px;color:#d29922"><strong>핵심 발견:</strong> CI 파이프라인의 "Security Theater" 패턴이 가장 우려스러움. 4단계 검증 시스템(lint → type → test → coverage)이 구축되어 있으나 실질적으로 pytest만 게이트 역할 수행. 이는 코드 품질 관리가 되고 있다는 착각을 줌.</p>
+</div>
+
+<h2>E. 액션 플랜</h2>
+<div class="card">
+<table>
+<tr><th>#</th><th>항목</th><th>유형</th><th>영향도</th><th>설명</th></tr>
+
+<tr><td>1</td>
+<td><code>except Exception: pass</code> 제거</td>
+<td><span class="tag tag-quick">Quick Win</span></td>
+<td><span class="severity-critical">&#128308; Critical</span></td>
+<td>100+개 무음 예외를 <code>logger.error()</code>로 교체. 최소한 <code>storage.py</code>, <code>database.py</code>, <code>npc_conversation.py</code>, <code>skill_ui.py</code>부터. <code>utils/exceptions.py</code>의 커스텀 예외를 실제로 사용.</td></tr>
+
+<tr><td>2</td>
+<td>CI 파이프라인 실질화</td>
+<td><span class="tag tag-quick">Quick Win</span></td>
+<td><span class="severity-critical">&#128308; Critical</span></td>
+<td><code>test.yml</code>에서 mypy의 <code>|| true</code> 제거, flake8의 <code>--exit-zero</code>를 <code>--max-line-length=127 --exit-zero</code>에서 exit-zero 제거. CI가 실제로 코드 품질을 강제하도록.</td></tr>
+
+<tr><td>3</td>
+<td><code>main.py</code> Cog 분리</td>
+<td><span class="tag tag-hardening">Hardening</span></td>
+<td><span class="severity-major">&#128992; Major</span></td>
+<td>2,755줄 <code>main.py</code>를 discord.py Cog 시스템으로 분리. 전투, 퀘스트, 상점, 채집, NPC 대화 등 기능별 Cog 생성. 협업 가능성과 유지보수성 대폭 향상.</td></tr>
+
+<tr><td>4</td>
+<td>전투/경제 핵심 테스트 추가</td>
+<td><span class="tag tag-hardening">Hardening</span></td>
+<td><span class="severity-critical">&#128308; Critical</span></td>
+<td><code>battle.py</code> 데미지 공식, 크리티컬 확률, 등급 산출에 대한 단위 테스트 작성. <code>economy.py</code>의 부분 실패 시나리오 테스트. 현재 48개 → 최소 80개 목표.</td></tr>
+
+<tr><td>5</td>
+<td>설정 시스템 실제 연결</td>
+<td><span class="tag tag-hardening">Hardening</span></td>
+<td><span class="severity-major">&#128992; Major</span></td>
+<td><code>config/game.yaml</code>의 설정값을 실제 게임 코드에서 <code>Config().get()</code>으로 참조하도록 변경. <code>battle.py</code>, <code>fishing.py</code>, <code>gathering.py</code>의 매직 넘버를 설정으로 이동.</td></tr>
+
+<tr><td>6</td>
+<td>로거 경로 환경변수화</td>
+<td><span class="tag tag-quick">Quick Win</span></td>
+<td><span class="severity-major">&#128992; Major</span></td>
+<td><code>utils/logger.py:L49</code>의 <code>/home/runner/work/BOT/BOT/logs</code>를 <code>os.environ.get("LOG_DIR", os.path.join(BASE_DIR, "logs"))</code>로 변경.</td></tr>
+
+<tr><td>7</td>
+<td>데이터 파일 JSON 외부화</td>
+<td><span class="tag tag-strategic">Strategic</span></td>
+<td><span class="severity-minor">&#128993; Minor</span></td>
+<td><code>items.py</code>(1,015줄), <code>job_data.py</code>(1,102줄), <code>npc_dialogue_db.py</code>(1,901줄)의 순수 데이터를 JSON/YAML로 외부화. 게임 디자이너가 코드 수정 없이 밸런스 조정 가능하도록.</td></tr>
+</table>
+</div>
+
+<!-- ==================== SUMMARY ZONE ==================== -->
+
+<h2 style="border-bottom:2px solid #388bfd;padding-bottom:12px;margin-top:40px">요약</h2>
+
+<h3>F. 코드베이스 성격</h3>
+<div class="summary-box">
+<p style="font-size:1.1em"><strong>인프라 설계(설정 시스템, 커스텀 예외, 트랜잭션 로그, 세이브 매니저)는 시니어 수준으로 구축되어 있으나, 실제 게임 로직에서 이를 활용하지 않는 "설계-구현 디커플링" 패턴이 지배적인 코드베이스.</strong></p>
+</div>
+
+<h3>G. 최종 판정</h3>
+<div class="verdict-box">
+
+<p><strong>프로젝트 설명:</strong> 채팅 플랫폼 기반의 텍스트 RPG 봇. 전투, 퀘스트, 채집, 낚시, 요리, 대장간, NPC 대화, 가챠, 도감, 업적 등 풍부한 게임 시스템을 단일 봇으로 제공.</p>
+
+<p><strong>기술 스택:</strong> Python / discord.py / SQLite / Pillow (이미지 렌더링) / PyYAML</p>
+
+<div style="margin:20px 0">
+<table>
+<tr><th>카테고리</th><th>점수</th><th>평가</th></tr>
+<tr><td>가독성 &amp; 수정 용이성</td><td style="color:#d29922">2.5/5</td><td>네이밍 양호, 2,755줄 진입점이 최대 병목</td></tr>
+<tr><td>견고성 &amp; 에러 복원력</td><td style="color:#f85149">2.0/5</td><td>세이브 시스템 견고, 나머지 무음 실패 만연</td></tr>
+<tr><td>보안 태세</td><td style="color:#d29922">3.0/5</td><td>SQL 인젝션 방어 양호, 렌더링 DoS 미방어</td></tr>
+<tr><td>검증 &amp; 정확성 보장</td><td style="color:#f85149">1.5/5</td><td>전투 시스템 무검증, CI 게이트 형식적</td></tr>
+<tr><td>아키텍처 &amp; 구조적 건전성</td><td style="color:#f85149">2.0/5</td><td>설정 시스템 미연결, 모놀리스 진입점</td></tr>
+<tr><td>의존성 &amp; 환경 건전성</td><td style="color:#d29922">2.5/5</td><td>최소 의존성 우수, 로거 경로 하드코딩</td></tr>
+</table>
+</div>
+
+<div class="total-score" style="font-size:2.8em">
+총점: 2.20 / 5.00
+</div>
+<div class="grade" style="font-size:3.5em;color:#d29922;margin:0">
+D
+</div>
+
+<div style="margin-top:24px;padding:16px;border-top:1px solid #30363d">
+<p style="font-size:1.05em;line-height:1.8">
+이 프로젝트는 야심찬 기능 범위(30+ 게임 시스템)와 견고한 인프라 설계(3단계 세이브, 트랜잭션 로거, YAML 설정 시스템, 커스텀 예외 계층)를 갖추고 있으며, 이는 아키텍처적 사고력이 반영된 결과다. 그러나 결정적인 문제는 이 인프라가 실제 게임 코드와 연결되지 않았다는 점이다 — YAML 설정은 참조되지 않고, 커스텀 예외는 raise되지 않으며, 100+개의 무음 예외가 오류를 삼키고 있다. CI 파이프라인은 4단계 검증을 갖추었으나 실질적으로 pytest만 빌드를 막을 수 있고, 게임의 핵심인 전투 시스템에는 테스트가 한 건도 없다. 2,755줄 모놀리스 진입점과 55개 직접 import는 협업과 유지보수를 근본적으로 제약한다.
+</p>
+<p style="font-size:1.15em;font-weight:bold;color:#f85149;margin-top:16px;text-align:center">
+&#9888; 프로덕션 배포 불가. 에러 처리 정상화, CI 실질화, 핵심 경로 테스트 추가 후 재평가 필요.
+</p>
+</div>
+
+</div>
+
+</body>
+</html>

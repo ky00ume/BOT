@@ -8,11 +8,14 @@
 import discord
 from discord.ui import View, Button, Select
 from ui_theme import EMBED_COLOR
+from utils.logger import setup_logger
 from skills_db import (
     COMBAT_SKILLS, MAGIC_SKILLS, RECOVERY_SKILLS,
     OTHER_SKILLS, MASTERY_SKILLS, RANK_ORDER,
     RANK_UP_THRESHOLD, SKILL_RANK_THRESHOLD,
 )
+
+logger = setup_logger('skill_ui')
 
 # 생활 스킬 ID → 엔진 종류 (레시피 기반 스킬)
 _LIFE_SKILL_ENGINE = {
@@ -283,7 +286,8 @@ def make_recipe_list_embed(player, skill_id: str, recipes: dict) -> discord.Embe
         try:
             from skills_db import RANK_ORDER
             unlocked = RANK_ORDER.index(rank) >= RANK_ORDER.index(rank_req)
-        except Exception:
+        except Exception as e:
+            logger.debug("레시피 랭크 잠금 확인 실패, 잠금 해제로 폴백 (make_recipe_list_embed): %s", e)
             unlocked = True
         status = "✅" if unlocked else "🔒"
         name = recipe.get("name", rid)
@@ -453,7 +457,8 @@ class LifeSkillSelect(Select):
             try:
                 rank_idx = RANK_ORDER.index(rank)
                 needed = threshold.get(rank, 100.0)
-            except Exception:
+            except Exception as e:
+                logger.debug("스킬 랭크 인덱스/임계값 조회 실패, 기본값 사용 (LifeSkillSelect): %s", e)
                 needed = 100.0
             pct = min(100.0, (skill_exp / needed * 100)) if needed > 0 else 0
             icon = skill_data.get("icon", "🌿")
@@ -473,7 +478,8 @@ class LifeSkillSelect(Select):
                 rank_req = recipe.get("rank_req", "연습")
                 try:
                     unlocked = RANK_ORDER.index(rank) >= RANK_ORDER.index(rank_req)
-                except Exception:
+                except Exception as e:
+                    logger.debug("레시피 랭크 잠금 확인 실패, 잠금 해제로 폴백 (LifeSkillSelect.callback): %s", e)
                     unlocked = True
                 recipes_info.append((recipe.get("name", rid), rank_req, unlocked))
             r = get_renderer()
@@ -483,7 +489,8 @@ class LifeSkillSelect(Select):
                 embed=None,
                 view=view,
             )
-        except Exception:
+        except Exception as e:
+            logger.warning("레시피 목록 이미지 렌더링 실패, 임베드 폴백 사용 (LifeSkillSelect): %s", e, exc_info=True)
             embed = make_recipe_list_embed(self.player, skill_id, recipes)
             await interaction.response.edit_message(embed=embed, view=view)
 
@@ -499,7 +506,8 @@ class RecipeSelect(Select):
             rank_req = recipe.get("rank_req", "연습")
             try:
                 unlocked = RANK_ORDER.index(rank) >= RANK_ORDER.index(rank_req)
-            except Exception:
+            except Exception as e:
+                logger.debug("레시피 랭크 잠금 확인 실패, 잠금 해제로 폴백 (RecipeSelect): %s", e)
                 unlocked = True
             status = "✅" if unlocked else "🔒"
             options.append(discord.SelectOption(
@@ -572,7 +580,8 @@ class RecipeSelect(Select):
                 embed=None,
                 view=view,
             )
-        except Exception:
+        except Exception as e:
+            logger.warning("레시피 상세 이미지 렌더링 실패, 임베드 폴백 사용 (RecipeSelect): %s", e, exc_info=True)
             embed, _ = make_recipe_detail_embed(self.player, recipe_id, recipe)
             await interaction.response.edit_message(embed=embed, view=view)
 
@@ -624,8 +633,8 @@ class SkillMainView(View):
             try:
                 from save_manager import save_manager
                 save_manager.save(self.player)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("플레이어 저장 실패 (skill_ui._make_healing_callback): %s", e, exc_info=True)
         return callback
 
     def _make_craft_callback(self, skill_id: str, recipe_id: str):
@@ -682,7 +691,8 @@ class SkillMainView(View):
                     embed=None,
                     view=self,
                 )
-            except Exception:
+            except Exception as e:
+                logger.warning("레시피 상세 이미지 렌더링 실패, 임베드 폴백 사용 (_make_craft_callback): %s", e, exc_info=True)
                 new_embed, _ = make_recipe_detail_embed(self.player, recipe_id, recipe)
                 await interaction.response.edit_message(embed=new_embed, view=self)
 
@@ -720,7 +730,8 @@ class SkillMainView(View):
                 else:
                     # fallback: 문자열 결과 (호환)
                     await interaction.followup.send(str(result), ephemeral=False)
-            except Exception:
+            except Exception as e:
+                logger.warning("제작 결과 이미지 렌더링 실패, 텍스트 폴백 사용 (_make_craft_callback): %s", e, exc_info=True)
                 # PIL 미설치 등 폴백: 텍스트로 전송
                 if isinstance(result, dict):
                     msg = result.get("result_name") or result.get("error", "결과 없음")
@@ -730,8 +741,8 @@ class SkillMainView(View):
             try:
                 from save_manager import save_manager
                 save_manager.save(self.player)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("플레이어 저장 실패 (skill_ui._make_craft_callback): %s", e, exc_info=True)
         return callback
 
 

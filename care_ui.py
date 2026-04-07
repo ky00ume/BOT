@@ -8,6 +8,9 @@ from costume_data import (
     GRADE_EMOJI, GRADE_LABELS,
 )
 from database import save_player_to_db
+from utils.logger import setup_logger
+
+logger = setup_logger('care_ui')
 
 
 # ── 헬퍼: stat bar ──────────────────────────────────────────────────────────
@@ -146,8 +149,8 @@ class CostumeManageView(discord.ui.View):
         grade_eng = GRADE_LABELS.get(grade_key, "Normal")
         try:
             save_player_to_db(self.player)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("플레이어 저장 실패 (care_ui 의장 장착): %s", e, exc_info=True)
         file = _result_card(
             "의장 장착",
             [{"label": "결과", "value": msg}],
@@ -181,8 +184,8 @@ class CostumeManageView(discord.ui.View):
             msg = self.player.unequip_costume(slot_chosen)
             try:
                 save_player_to_db(self.player)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("플레이어 저장 실패 (care_ui 의장 해제): %s", e, exc_info=True)
             file = _result_card("의장 해제", [{"label": "결과", "value": msg}])
             await inter.response.edit_message(content=None, attachments=[file], view=None)
 
@@ -283,8 +286,8 @@ class SnackFeedView(discord.ui.View):
         if result["success"]:
             try:
                 save_player_to_db(self.player)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("플레이어 저장 실패 (care_ui 간식 주기): %s", e, exc_info=True)
         file = _result_card("🍪 간식 주기", rows, grade=grade)
         await interaction.response.edit_message(
             content=None, attachments=[file], view=self
@@ -345,8 +348,8 @@ class RockPaperScissorsView(discord.ui.View):
             if result.get("success"):
                 try:
                     save_player_to_db(self.player)
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.warning("플레이어 저장 실패 (care_ui 놀아주기): %s", e, exc_info=True)
 
             file = _result_card("🎮 놀아주기 결과", rows, grade=grade)
             await interaction.response.edit_message(
@@ -438,8 +441,8 @@ class SnackCraftView(discord.ui.View):
         if result["success"]:
             try:
                 save_player_to_db(self.player)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("플레이어 저장 실패 (care_ui 간식 제작): %s", e, exc_info=True)
         file = _result_card("🍳 간식 제작", rows, grade=grade)
         await interaction.response.edit_message(content=None, attachments=[file], view=self)
 
@@ -537,8 +540,8 @@ class CostumeCraftView(discord.ui.View):
         if result["success"]:
             try:
                 save_player_to_db(self.player)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("플레이어 저장 실패 (care_ui 의장 제작): %s", e, exc_info=True)
         file = _result_card("✂️ 의장 제작", rows, grade=grade)
         await interaction.response.edit_message(content=None, attachments=[file], view=self)
 
@@ -650,13 +653,13 @@ class CareRoomView(discord.ui.View):
         if result["success"]:
             try:
                 save_player_to_db(self.player)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("플레이어 저장 실패 (care_ui 쓰담쓰담): %s", e, exc_info=True)
             try:
                 import main as _main
                 _main.diary_manager.increment("pet_count", 1)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("다이어리 통계 갱신 실패 (care_ui 쓰담쓰담): %s", e, exc_info=True)
         file = _result_card("🐾 쓰담쓰담", rows, grade=grade)
         await interaction.response.edit_message(content=None, attachments=[file], view=self)
 
@@ -723,8 +726,8 @@ class CareRoomView(discord.ui.View):
 
         try:
             save_player_to_db(self.player)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("플레이어 저장 실패 (care_ui 산책): %s", e, exc_info=True)
         file = _result_card("🚶 산책 결과", rows)
         await interaction.response.edit_message(content=None, attachments=[file], view=self)
 
@@ -802,5 +805,5 @@ class CareRoomView(discord.ui.View):
         if self._message:
             try:
                 await self._message.edit(view=self)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("타임아웃 시 메시지 수정 실패 (care_ui.on_timeout): %s", e)

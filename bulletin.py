@@ -96,6 +96,7 @@ class BulletinBoard:
                 with open(BULLETIN_PATH, "r", encoding="utf-8") as f:
                     self.entries = json.load(f)
         except Exception:
+            logger.warning('bulletin: BulletinBoard.load 실패 — 빈 목록으로 초기화', exc_info=True)
             self.entries = []
 
 
@@ -192,6 +193,7 @@ class WeeklyFishing:
                 self.records    = data.get("records",    [])
                 self.week_start = data.get("week_start", None)
         except Exception:
+            logger.warning('bulletin: WeeklyFishing.load 실패 — 빈 상태로 초기화', exc_info=True)
             self.records    = []
             self.week_start = None
 

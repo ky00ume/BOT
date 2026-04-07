@@ -1,5 +1,8 @@
 import json
 import os
+from utils.logger import setup_logger
+
+logger = setup_logger('status')
 
 STATUS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "status.json")
 
@@ -43,6 +46,7 @@ def ensure_status_json():
             try:
                 data = json.load(f)
             except json.JSONDecodeError:
+                logger.warning('status: status.json JSON 파싱 실패 — 기본값으로 복구', exc_info=True)
                 data = {}
         updated = False
         for key, val in DEFAULT_STATUS.items():

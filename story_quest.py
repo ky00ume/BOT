@@ -5,6 +5,9 @@ try:
 except ImportError:
     pytz = None
 
+from utils.logger import setup_logger
+logger = setup_logger('story_quest')
+
 
 class StoryQuestManager:
     """챕터 1~3 스토리 퀘스트 진행을 관리하는 클래스."""
@@ -47,7 +50,8 @@ class StoryQuestManager:
             now = datetime.datetime.now(kst)
             hour = now.hour
         except Exception:
-            # pytz 미설치 시 UTC 폴백
+            # pytz 미설치 또는 시간대 오류 시 UTC 폴백
+            logger.debug('pytz 시간대 변환 실패 — UTC 폴백 사용', exc_info=True)
             now = datetime.datetime.utcnow()
             hour = (now.hour + 9) % 24
         return "day" if 6 <= hour < 18 else "night"

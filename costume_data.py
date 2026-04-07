@@ -1,7 +1,7 @@
 """costume_data.py — 의장 아이템 DB, 간식 아이템 DB, 제작 레시피"""
 
 # ─── 의장 아이템 ────────────────────────────────────────────────────────────
-# type: "costume", slot: toy|hat|outfit|shoes|accessory
+# Item type: "costume"; slot: toy|hat|outfit|shoes|accessory
 COSTUME_ITEMS = {
     # ── 장난감 (toy) ──────────────────────────────────────────────────────
     "ct_toy_stick": {

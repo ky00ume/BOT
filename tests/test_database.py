@@ -7,6 +7,12 @@ from player import Player
 from database import save_player_to_db, load_player_from_db, init_db
 
 
+def _save(user_id: int, player: Player) -> None:
+    """테스트 헬퍼: user_id를 플레이어에 설정 후 저장."""
+    player.user_id = user_id
+    save_player_to_db(player)
+
+
 class TestDatabase:
     """Database 저장/로드 테스트."""
 
@@ -19,16 +25,16 @@ class TestDatabase:
         player.max_hp = 100
 
         # 저장
-        save_player_to_db(123456, player)
+        _save(123456, player)
 
         # 로드
         loaded = load_player_from_db(123456)
 
         assert loaded is not None
-        assert loaded.gold == 500
-        assert loaded.level == 5
-        assert loaded.hp == 80
-        assert loaded.max_hp == 100
+        assert loaded["gold"] == 500
+        assert loaded["level"] == 5
+        assert loaded["hp"] == 80
+        assert loaded["max_hp"] == 100
 
     def test_save_preserves_inventory(self, temp_db):
         """인벤토리 데이터 보존 테스트."""
@@ -39,12 +45,12 @@ class TestDatabase:
             "potion_hp": 3,
         }
 
-        save_player_to_db(123456, player)
+        _save(123456, player)
         loaded = load_player_from_db(123456)
 
-        assert loaded.inventory.get("herb_01") == 10
-        assert loaded.inventory.get("ore_iron") == 5
-        assert loaded.inventory.get("potion_hp") == 3
+        assert loaded["inventory"].get("herb_01") == 10
+        assert loaded["inventory"].get("ore_iron") == 5
+        assert loaded["inventory"].get("potion_hp") == 3
 
     def test_save_preserves_equipment(self, temp_db):
         """장비 데이터 보존 테스트."""
@@ -58,13 +64,13 @@ class TestDatabase:
             "feet": None,
         }
 
-        save_player_to_db(123456, player)
+        _save(123456, player)
         loaded = load_player_from_db(123456)
 
-        assert loaded.equipment.get("main") == "wp_sword_01"
-        assert loaded.equipment.get("sub") == "wp_shield_01"
-        assert loaded.equipment.get("body") == "armor_plate_01"
-        assert loaded.equipment.get("head") is None
+        assert loaded["equipment"].get("main") == "wp_sword_01"
+        assert loaded["equipment"].get("sub") == "wp_shield_01"
+        assert loaded["equipment"].get("body") == "armor_plate_01"
+        assert loaded["equipment"].get("head") is None
 
     def test_save_update_existing(self, temp_db):
         """기존 플레이어 데이터 업데이트 테스트."""
@@ -72,19 +78,19 @@ class TestDatabase:
         player.gold = 100
 
         # 첫 번째 저장
-        save_player_to_db(123456, player)
+        _save(123456, player)
 
         # 데이터 변경
         player.gold = 500
         player.level = 10
 
         # 두 번째 저장 (업데이트)
-        save_player_to_db(123456, player)
+        _save(123456, player)
 
         # 로드 후 확인
         loaded = load_player_from_db(123456)
-        assert loaded.gold == 500
-        assert loaded.level == 10
+        assert loaded["gold"] == 500
+        assert loaded["level"] == 10
 
     def test_load_nonexistent_player(self, temp_db):
         """존재하지 않는 플레이어 로드 시도."""
@@ -106,29 +112,29 @@ class TestDatabase:
         player3.level = 15
 
         # 저장
-        save_player_to_db(111111, player1)
-        save_player_to_db(222222, player2)
-        save_player_to_db(333333, player3)
+        _save(111111, player1)
+        _save(222222, player2)
+        _save(333333, player3)
 
         # 로드 및 확인
         loaded1 = load_player_from_db(111111)
         loaded2 = load_player_from_db(222222)
         loaded3 = load_player_from_db(333333)
 
-        assert loaded1.gold == 100 and loaded1.level == 5
-        assert loaded2.gold == 200 and loaded2.level == 10
-        assert loaded3.gold == 300 and loaded3.level == 15
+        assert loaded1["gold"] == 100 and loaded1["level"] == 5
+        assert loaded2["gold"] == 200 and loaded2["level"] == 10
+        assert loaded3["gold"] == 300 and loaded3["level"] == 15
 
     def test_save_empty_inventory(self, temp_db):
         """빈 인벤토리 저장 테스트."""
         player = Player(name="빈인벤토리")
         player.inventory = {}
 
-        save_player_to_db(123456, player)
+        _save(123456, player)
         loaded = load_player_from_db(123456)
 
-        assert isinstance(loaded.inventory, dict)
-        assert len(loaded.inventory) == 0
+        assert isinstance(loaded["inventory"], dict)
+        assert len(loaded["inventory"]) == 0
 
     def test_save_large_inventory(self, temp_db):
         """큰 인벤토리 저장 테스트."""
@@ -138,12 +144,12 @@ class TestDatabase:
         for i in range(50):
             player.inventory[f"item_{i}"] = i * 10
 
-        save_player_to_db(123456, player)
+        _save(123456, player)
         loaded = load_player_from_db(123456)
 
-        assert len(loaded.inventory) == 50
+        assert len(loaded["inventory"]) == 50
         for i in range(50):
-            assert loaded.inventory.get(f"item_{i}") == i * 10
+            assert loaded["inventory"].get(f"item_{i}") == i * 10
 
     def test_save_preserves_stats(self, temp_db):
         """스탯 데이터 보존 테스트."""
@@ -156,11 +162,11 @@ class TestDatabase:
             "luck": 8,
         }
 
-        save_player_to_db(123456, player)
+        _save(123456, player)
         loaded = load_player_from_db(123456)
 
-        assert loaded.base_stats.get("str") == 15
-        assert loaded.base_stats.get("int") == 20
-        assert loaded.base_stats.get("dex") == 10
-        assert loaded.base_stats.get("will") == 12
-        assert loaded.base_stats.get("luck") == 8
+        assert loaded["base_stats"].get("str") == 15
+        assert loaded["base_stats"].get("int") == 20
+        assert loaded["base_stats"].get("dex") == 10
+        assert loaded["base_stats"].get("will") == 12
+        assert loaded["base_stats"].get("luck") == 8

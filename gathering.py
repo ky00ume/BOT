@@ -276,6 +276,7 @@ class GatheringEngine:
                 if rank_msg:
                     await ctx.send(ansi(f"  {C.GOLD}{rank_msg}{C.R}"))
             except Exception:
+                logger.warning('gathering: 채집 결과 카드 렌더링 실패 — 텍스트 폴백 사용', exc_info=True)
                 grade_mark = GRADE_ICON_PLAIN.get(grade, "⚬")
                 lines = [
                     header_box("🌿 채집 완료!"),
@@ -344,6 +345,7 @@ class GatheringEngine:
                 if rank_msg:
                     await ctx.send(ansi(f"  {C.GOLD}{rank_msg}{C.R}"))
             except Exception:
+                logger.warning('gathering: 채광 결과 카드 렌더링 실패 — 텍스트 폴백 사용', exc_info=True)
                 grade_mark = GRADE_ICON_PLAIN.get(grade, "⚬")
                 lines = [
                     header_box("⛏ 채광 완료!"),
@@ -406,6 +408,7 @@ class GatheringEngine:
                 if rank_msg:
                     await ctx.send(ansi(f"  {C.GOLD}{rank_msg}{C.R}"))
             except Exception:
+                logger.warning('gathering: 벌목 결과 카드 렌더링 실패 — 텍스트 폴백 사용', exc_info=True)
                 grade_mark = GRADE_ICON_PLAIN.get(grade, "⚬")
                 lines = [
                     header_box("🪓 벌목 완료!"),

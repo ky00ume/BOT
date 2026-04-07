@@ -94,6 +94,7 @@ class RestEngine:
 
             await self._channel.send(embed=embed, file=file)
         except Exception:
+            logger.warning('rest: 휴식 완료 카드 렌더링 실패 — 텍스트 폴백 사용', exc_info=True)
             rank_msg = self.player.train_skill("rest", 20.0)
             embed.description = (
                 f"기력이 완전히 회복됐슴미댜!\n"

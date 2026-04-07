@@ -4,6 +4,9 @@ import datetime
 import io
 from ui_theme import C, ansi, header_box, divider, EMBED_COLOR
 from database import NPC_DATA
+from utils.logger import setup_logger
+
+logger = setup_logger('special_npc')
 
 # ─── 특수 NPC 목록 ─────────────────────────────────────────────────────────
 SPECIAL_NPCS = ["라파엘", "카르니스", "루바토"]
@@ -129,6 +132,7 @@ def render_encounter_image(npc_name: str | None, intro_text: str) -> io.BytesIO 
         )
         return buf
     except Exception:
+        logger.warning('special_npc: render_encounter_image 렌더링 실패', exc_info=True)
         return None
 
 

@@ -54,6 +54,7 @@ from achievements import achievement_manager
 from special_npc  import SpecialNPCEncounterManager
 from care         import CareManager
 from care_ui      import CareRoomView, _make_room_card
+from utils.player_lock import get_player_lock
 
 # ─── 상수 (환경변수로 관리) ────────────────────────────────────────────────
 # REMEDIATION_PLAN 3-D: Discord 사용자 ID 를 소스에 하드코딩하지 않는다.
@@ -734,18 +735,23 @@ async def lubato_buff_cmd(ctx):
 async def job_cmd(ctx, *, name: str = None):
     if not await _check_channel(ctx):
         return
-    if not name:
-        await ctx.send(ansi(f"  {C.RED}✖ /알바 [NPC이름] 형식으로 입력하셰요!{C.R}"))
+    lock = get_player_lock(ctx.author.id)
+    if lock.locked():
+        await ctx.send("⏳ 이전 명령을 처리 중입니다. 잠시 기다려주세요!")
         return
-    # 다른 행동 시 인카운터 NPC 퇴장 처리
-    departure = encounter_manager.clear_encounter()
-    if departure:
-        await ctx.send(departure)
-    await npc_manager.start_job_async(ctx, name)
-    # 인카운터 체크
-    enc_msg = encounter_manager.trigger_encounter()
-    if enc_msg:
-        await _send_encounter(ctx, enc_msg)
+    async with lock:
+        if not name:
+            await ctx.send(ansi(f"  {C.RED}✖ /알바 [NPC이름] 형식으로 입력하셰요!{C.R}"))
+            return
+        # 다른 행동 시 인카운터 NPC 퇴장 처리
+        departure = encounter_manager.clear_encounter()
+        if departure:
+            await ctx.send(departure)
+        await npc_manager.start_job_async(ctx, name)
+        # 인카운터 체크
+        enc_msg = encounter_manager.trigger_encounter()
+        if enc_msg:
+            await _send_encounter(ctx, enc_msg)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -781,128 +787,143 @@ async def zone_list_cmd(ctx):
 async def hunt_cmd(ctx, *, zone: str = None):
     if not await _check_channel(ctx):
         return
-    if not zone:
-        await ctx.send(ansi(f"  {C.RED}✖ /사냥 [사냥터이름] 형식으로 입력하셰요!{C.R}"))
+    lock = get_player_lock(ctx.author.id)
+    if lock.locked():
+        await ctx.send("⏳ 이전 명령을 처리 중입니다. 잠시 기다려주세요!")
         return
-    # 다른 행동 시 인카운터 NPC 퇴장 처리
-    departure = encounter_manager.clear_encounter()
-    if departure:
-        await ctx.send(departure)
-    success, result = battle_engine.start_encounter(zone)
-    # 전투 시작 카드
-    if success:
-        _bimg = battle_engine.build_battle_image()
+    async with lock:
+        if not zone:
+            await ctx.send(ansi(f"  {C.RED}✖ /사냥 [사냥터이름] 형식으로 입력하셰요!{C.R}"))
+            return
+        # 다른 행동 시 인카운터 NPC 퇴장 처리
+        departure = encounter_manager.clear_encounter()
+        if departure:
+            await ctx.send(departure)
+        success, result = battle_engine.start_encounter(zone)
+        # 전투 시작 카드
+        if success:
+            _bimg = battle_engine.build_battle_image()
 
-        async def _on_battle_end(won: bool):
-            if won:
-                newly_unlocked = achievement_manager.increment("battles_won", 1)
-                diary_manager.increment("battles_won", 1)
-                _killed_zone    = battle_engine.current_zone
-                _killed_monster = battle_engine.current_monster.get("id", "") if battle_engine.current_monster else ""
-                quest_manager.update_kill_count(1, zone=_killed_zone, monster_id=_killed_monster)
-                # 알바 hunt 킬 카운트 추적
-                _hunt_completed = npc_manager.update_hunt_kill(monster_id=_killed_monster, count=1)
-                if _hunt_completed:
-                    await npc_manager.complete_pending_hunts(ctx, _hunt_completed)
-                for ach_id in newly_unlocked:
-                    from achievements import ACHIEVEMENT_DEFS
-                    ach = ACHIEVEMENT_DEFS.get(ach_id, {})
-                    await ctx.send(
-                        f"🏆✨ **업적 달성!** [{ach.get('name', ach_id)}]\n"
-                        f"  {ach.get('desc', '')}\n"
-                        f"  🎀 타이틀 획득: **{ach.get('title', '')}**"
-                    )
-            save_manager.save(shared_player)
+            async def _on_battle_end(won: bool):
+                if won:
+                    newly_unlocked = achievement_manager.increment("battles_won", 1)
+                    diary_manager.increment("battles_won", 1)
+                    _killed_zone    = battle_engine.current_zone
+                    _killed_monster = battle_engine.current_monster.get("id", "") if battle_engine.current_monster else ""
+                    quest_manager.update_kill_count(1, zone=_killed_zone, monster_id=_killed_monster)
+                    # 알바 hunt 킬 카운트 추적
+                    _hunt_completed = npc_manager.update_hunt_kill(monster_id=_killed_monster, count=1)
+                    if _hunt_completed:
+                        await npc_manager.complete_pending_hunts(ctx, _hunt_completed)
+                    for ach_id in newly_unlocked:
+                        from achievements import ACHIEVEMENT_DEFS
+                        ach = ACHIEVEMENT_DEFS.get(ach_id, {})
+                        await ctx.send(
+                            f"🏆✨ **업적 달성!** [{ach.get('name', ach_id)}]\n"
+                            f"  {ach.get('desc', '')}\n"
+                            f"  🎀 타이틀 획득: **{ach.get('title', '')}**"
+                        )
+                save_manager.save(shared_player)
 
-        from battle_view import BattleView
-        view = BattleView(battle_engine, ctx, on_battle_end=_on_battle_end)
-        if _bimg:
-            _bimg.seek(0)
-            await ctx.send(file=discord.File(fp=_bimg, filename='battle.png'), view=view)
-        elif isinstance(result, io.BytesIO):
-            result.seek(0)
-            await ctx.send(file=discord.File(fp=result, filename='battle.png'), view=view)
+            from battle_view import BattleView
+            view = BattleView(battle_engine, ctx, on_battle_end=_on_battle_end)
+            if _bimg:
+                _bimg.seek(0)
+                await ctx.send(file=discord.File(fp=_bimg, filename='battle.png'), view=view)
+            elif isinstance(result, io.BytesIO):
+                result.seek(0)
+                await ctx.send(file=discord.File(fp=result, filename='battle.png'), view=view)
+            else:
+                await ctx.send(str(result), view=view)
         else:
-            await ctx.send(str(result), view=view)
-    else:
-        if isinstance(result, io.BytesIO):
-            await _send_image(ctx, result, 'battle.png')
-        else:
-            await _send_msg_card(ctx, "전투 오류", str(result), system_key="battle", grade="Fail")
-    # 인카운터 체크 (사냥 후)
-    if success:
-        enc_msg = encounter_manager.trigger_encounter()
-        if enc_msg:
-            await _send_encounter(ctx, enc_msg)
+            if isinstance(result, io.BytesIO):
+                await _send_image(ctx, result, 'battle.png')
+            else:
+                await _send_msg_card(ctx, "전투 오류", str(result), system_key="battle", grade="Fail")
+        # 인카운터 체크 (사냥 후)
+        if success:
+            enc_msg = encounter_manager.trigger_encounter()
+            if enc_msg:
+                await _send_encounter(ctx, enc_msg)
 
 
 @bot.command(name="공격")
 async def attack_cmd(ctx, *, skill_input: str = "smash"):
     if not await _check_channel(ctx):
         return
-    if not battle_engine.in_battle:
-        await _send_msg_card(ctx, "오류", "현재 전투 중이 아님미댜! /사냥 으로 전투 시작.", system_key="battle", grade="Fail")
+    lock = get_player_lock(ctx.author.id)
+    if lock.locked():
+        await ctx.send("⏳ 이전 명령을 처리 중입니다. 잠시 기다려주세요!")
         return
+    async with lock:
+        if not battle_engine.in_battle:
+            await _send_msg_card(ctx, "오류", "현재 전투 중이 아님미댜! /사냥 으로 전투 시작.", system_key="battle", grade="Fail")
+            return
 
-    # 스킬 이름 → ID 변환 (모듈 레벨 캐시 사용)
-    skill_id = skill_input.strip()
-    if skill_id not in _ALL_BATTLE_SKILLS:
-        skill_id = _SKILL_NAME_TO_ID.get(skill_id, skill_id)
+        # 스킬 이름 → ID 변환 (모듈 레벨 캐시 사용)
+        skill_id = skill_input.strip()
+        if skill_id not in _ALL_BATTLE_SKILLS:
+            skill_id = _SKILL_NAME_TO_ID.get(skill_id, skill_id)
 
-    was_in_battle = battle_engine.in_battle
-    result = battle_engine.process_turn(skill_id)
+        was_in_battle = battle_engine.in_battle
+        result = battle_engine.process_turn(skill_id)
 
-    # 전투 종료 후 업적/퀘스트 체크 (승리 시)
-    if was_in_battle and not battle_engine.in_battle and shared_player.hp > 0:
-        newly_unlocked = achievement_manager.increment("battles_won", 1)
-        diary_manager.increment("battles_won", 1)
-        # 퀘스트 킬 카운트 업데이트 (사냥터/몬스터 매칭)
-        _killed_zone = battle_engine.current_zone
-        _killed_monster = battle_engine.current_monster.get("id", "") if battle_engine.current_monster else ""
-        quest_manager.update_kill_count(1, zone=_killed_zone, monster_id=_killed_monster)
-        # 알바 hunt 킬 카운트 추적
-        _hunt_completed = npc_manager.update_hunt_kill(monster_id=_killed_monster, count=1)
-        if _hunt_completed:
-            await npc_manager.complete_pending_hunts(ctx, _hunt_completed)
-        for ach_id in newly_unlocked:
-            from achievements import ACHIEVEMENT_DEFS
-            ach = ACHIEVEMENT_DEFS.get(ach_id, {})
-            await ctx.send(
-                f"🏆✨ **업적 달성!** [{ach.get('name', ach_id)}]\n"
-                f"  {ach.get('desc', '')}\n"
-                f"  🎀 타이틀 획득: **{ach.get('title', '')}**"
-            )
+        # 전투 종료 후 업적/퀘스트 체크 (승리 시)
+        if was_in_battle and not battle_engine.in_battle and shared_player.hp > 0:
+            newly_unlocked = achievement_manager.increment("battles_won", 1)
+            diary_manager.increment("battles_won", 1)
+            # 퀘스트 킬 카운트 업데이트 (사냥터/몬스터 매칭)
+            _killed_zone = battle_engine.current_zone
+            _killed_monster = battle_engine.current_monster.get("id", "") if battle_engine.current_monster else ""
+            quest_manager.update_kill_count(1, zone=_killed_zone, monster_id=_killed_monster)
+            # 알바 hunt 킬 카운트 추적
+            _hunt_completed = npc_manager.update_hunt_kill(monster_id=_killed_monster, count=1)
+            if _hunt_completed:
+                await npc_manager.complete_pending_hunts(ctx, _hunt_completed)
+            for ach_id in newly_unlocked:
+                from achievements import ACHIEVEMENT_DEFS
+                ach = ACHIEVEMENT_DEFS.get(ach_id, {})
+                await ctx.send(
+                    f"🏆✨ **업적 달성!** [{ach.get('name', ach_id)}]\n"
+                    f"  {ach.get('desc', '')}\n"
+                    f"  🎀 타이틀 획득: **{ach.get('title', '')}**"
+                )
 
-    # BG3 전투 카드
-    _sname = _ALL_BATTLE_SKILLS.get(skill_id, {}).get('name', skill_id)
-    if battle_engine.in_battle:
-        _bimg = battle_engine.build_battle_image(_sname)
-        if _bimg:
-            await _send_image(ctx, _bimg, 'battle.png')
-        elif isinstance(result, io.BytesIO):
-            await _send_image(ctx, result, 'battle.png')
-        else:
-            await _send_msg_card(ctx, "전투", str(result), system_key="battle")
-    # 전투 종료 (승리/패배)
-    if not battle_engine.in_battle:
-        if isinstance(result, io.BytesIO):
-            await _send_image(ctx, result, 'battle_result.png')
-        else:
-            await _send_msg_card(ctx, "전투 결과", str(result), system_key="battle")
-        save_manager.save(shared_player)
+        # BG3 전투 카드
+        _sname = _ALL_BATTLE_SKILLS.get(skill_id, {}).get('name', skill_id)
+        if battle_engine.in_battle:
+            _bimg = battle_engine.build_battle_image(_sname)
+            if _bimg:
+                await _send_image(ctx, _bimg, 'battle.png')
+            elif isinstance(result, io.BytesIO):
+                await _send_image(ctx, result, 'battle.png')
+            else:
+                await _send_msg_card(ctx, "전투", str(result), system_key="battle")
+        # 전투 종료 (승리/패배)
+        if not battle_engine.in_battle:
+            if isinstance(result, io.BytesIO):
+                await _send_image(ctx, result, 'battle_result.png')
+            else:
+                await _send_msg_card(ctx, "전투 결과", str(result), system_key="battle")
+            save_manager.save(shared_player)
 
 
 @bot.command(name="도주")
 async def flee_cmd(ctx):
     if not await _check_channel(ctx):
         return
-    result = battle_engine.flee()
-    if isinstance(result, io.BytesIO):
-        await _send_image(ctx, result, 'flee.png')
-    else:
-        await _send_msg_card(ctx, "도주", str(result), system_key="battle")
-    if not battle_engine.in_battle:
-        save_manager.save(shared_player)
+    lock = get_player_lock(ctx.author.id)
+    if lock.locked():
+        await ctx.send("⏳ 이전 명령을 처리 중입니다. 잠시 기다려주세요!")
+        return
+    async with lock:
+        result = battle_engine.flee()
+        if isinstance(result, io.BytesIO):
+            await _send_image(ctx, result, 'flee.png')
+        else:
+            await _send_msg_card(ctx, "도주", str(result), system_key="battle")
+        if not battle_engine.in_battle:
+            save_manager.save(shared_player)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -913,84 +934,89 @@ async def flee_cmd(ctx):
 async def adventure_cmd(ctx, *, zone: str = None):
     if not await _check_channel(ctx):
         return
-    if not zone:
-        from adventure_data import ADVENTURE_SCENARIOS
-        avail_zones = list(ADVENTURE_SCENARIOS.keys())
-        await ctx.send(ansi(
-            f"  {C.GOLD}탐험 가능한 지역{C.R}\n"
-            + "\n".join(f"  {C.GREEN}/탐험 {z}{C.R}" for z in avail_zones)
-        ))
+    lock = get_player_lock(ctx.author.id)
+    if lock.locked():
+        await ctx.send("⏳ 이전 명령을 처리 중입니다. 잠시 기다려주세요!")
         return
+    async with lock:
+        if not zone:
+            from adventure_data import ADVENTURE_SCENARIOS
+            avail_zones = list(ADVENTURE_SCENARIOS.keys())
+            await ctx.send(ansi(
+                f"  {C.GOLD}탐험 가능한 지역{C.R}\n"
+                + "\n".join(f"  {C.GREEN}/탐험 {z}{C.R}" for z in avail_zones)
+            ))
+            return
 
-    departure = encounter_manager.clear_encounter()
-    if departure:
-        await ctx.send(departure)
+        departure = encounter_manager.clear_encounter()
+        if departure:
+            await ctx.send(departure)
 
-    result = adventure_engine.start_adventure(zone)
-    if not result["ok"]:
-        await _send_msg_card(ctx, "탐험 오류", result["error"], system_key="battle", grade="Fail")
-        return
+        result = adventure_engine.start_adventure(zone)
+        if not result["ok"]:
+            await _send_msg_card(ctx, "탐험 오류", result["error"], system_key="battle", grade="Fail")
+            return
 
-    # 숨겨진 트리거
-    if result.get("hidden"):
-        hidden = result["hidden"]
-        event  = hidden.get("event", {})
-        reward = event.get("reward", {})
-        rparts = []
-        if reward.get("gold"):   rparts.append(f"+{reward['gold']}G")
-        if reward.get("exp"):    rparts.append(f"+{reward['exp']} EXP")
-        if reward.get("item"):
-            from items import ALL_ITEMS
-            iname = ALL_ITEMS.get(reward["item"], {}).get("name", reward["item"])
-            rparts.append(f"{iname} 획득")
-        await _send_msg_card(
-            ctx,
-            f"✨ {event.get('title', '숨겨진 이벤트')}",
-            f"{event.get('desc', '')}\n\n🎁 {', '.join(rparts)}",
-            system_key="battle",
+        # 숨겨진 트리거
+        if result.get("hidden"):
+            hidden = result["hidden"]
+            event  = hidden.get("event", {})
+            reward = event.get("reward", {})
+            rparts = []
+            if reward.get("gold"):   rparts.append(f"+{reward['gold']}G")
+            if reward.get("exp"):    rparts.append(f"+{reward['exp']} EXP")
+            if reward.get("item"):
+                from items import ALL_ITEMS
+                iname = ALL_ITEMS.get(reward["item"], {}).get("name", reward["item"])
+                rparts.append(f"{iname} 획득")
+            await _send_msg_card(
+                ctx,
+                f"✨ {event.get('title', '숨겨진 이벤트')}",
+                f"{event.get('desc', '')}\n\n🎁 {', '.join(rparts)}",
+                system_key="battle",
+            )
+            return
+
+        # NPC 인카운터
+        if result.get("npc"):
+            npc = result["npc"]
+            from adventure import NPCInteractionView
+            view = NPCInteractionView(adventure_engine, npc)
+            embed = discord.Embed(
+                title=f"👤 {npc['race']} — {npc['name']} ({npc['type']})",
+                description=f"{npc['desc']}\n\n{npc.get('greeting', '')}",
+                color=0x8B4513,
+            )
+            await ctx.send(embed=embed, view=view)
+            return
+
+        # 시나리오 탐험
+        scenario  = result["scenario"]
+        step_data = result["step_data"]
+        if not scenario or not step_data:
+            await _send_msg_card(ctx, "탐험", "이 지역에는 탐험할 것이 없슴미댜.", system_key="battle")
+            return
+
+        from adventure import AdventureView
+
+        async def _on_adv_end(adv_result: dict):
+            # 탐험 후 랜덤 이벤트 (10%)
+            post_evt = adventure_engine.post_adventure_event(zone)
+            if post_evt:
+                await ctx.send(f"📬 {post_evt.get('text', '')}")
+            save_manager.save(shared_player)
+
+        view = AdventureView(
+            adventure_engine=adventure_engine,
+            step_data=step_data,
+            scenario_title=scenario.get("title", "탐험"),
+            on_end=_on_adv_end,
+            zone_name=zone,
         )
-        return
-
-    # NPC 인카운터
-    if result.get("npc"):
-        npc = result["npc"]
-        from adventure import NPCInteractionView
-        view = NPCInteractionView(adventure_engine, npc)
-        embed = discord.Embed(
-            title=f"👤 {npc['race']} — {npc['name']} ({npc['type']})",
-            description=f"{npc['desc']}\n\n{npc.get('greeting', '')}",
-            color=0x8B4513,
+        await ctx.send(
+            f"📖 **[{scenario.get('title', '탐험')}]** — {zone}\n\n{step_data['desc']}",
+            view=view,
         )
-        await ctx.send(embed=embed, view=view)
-        return
-
-    # 시나리오 탐험
-    scenario  = result["scenario"]
-    step_data = result["step_data"]
-    if not scenario or not step_data:
-        await _send_msg_card(ctx, "탐험", "이 지역에는 탐험할 것이 없슴미댜.", system_key="battle")
-        return
-
-    from adventure import AdventureView
-
-    async def _on_adv_end(adv_result: dict):
-        # 탐험 후 랜덤 이벤트 (10%)
-        post_evt = adventure_engine.post_adventure_event(zone)
-        if post_evt:
-            await ctx.send(f"📬 {post_evt.get('text', '')}")
-        save_manager.save(shared_player)
-
-    view = AdventureView(
-        adventure_engine=adventure_engine,
-        step_data=step_data,
-        scenario_title=scenario.get("title", "탐험"),
-        on_end=_on_adv_end,
-        zone_name=zone,
-    )
-    await ctx.send(
-        f"📖 **[{scenario.get('title', '탐험')}]** — {zone}\n\n{step_data['desc']}",
-        view=view,
-    )
 
 
 # ─── 의장(코스튬) 명령어 ────────────────────────────────────────────────
@@ -1034,10 +1060,15 @@ async def unequip_costume_cmd(ctx, *, slot: str = None):
 async def room_command(ctx):
     if not await _check_channel(ctx):
         return
-    view = CareRoomView(shared_player, care_manager)
-    file = _make_room_card(shared_player)
-    msg  = await ctx.send(file=file, view=view)
-    view._message = msg
+    lock = get_player_lock(ctx.author.id)
+    if lock.locked():
+        await ctx.send("⏳ 이전 명령을 처리 중입니다. 잠시 기다려주세요!")
+        return
+    async with lock:
+        view = CareRoomView(shared_player, care_manager)
+        file = _make_room_card(shared_player)
+        msg  = await ctx.send(file=file, view=view)
+        view._message = msg
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -1235,14 +1266,19 @@ async def weather_cmd(ctx):
 async def gather_cmd(ctx):
     if not await _check_channel(ctx):
         return
-    departure = encounter_manager.clear_encounter()
-    if departure:
-        await ctx.send(departure)
-    await gathering_engine.gather(ctx)
-    save_manager.save(shared_player)
-    enc_msg = encounter_manager.trigger_encounter()
-    if enc_msg:
-        await _send_encounter(ctx, enc_msg)
+    lock = get_player_lock(ctx.author.id)
+    if lock.locked():
+        await ctx.send("⏳ 이전 명령을 처리 중입니다. 잠시 기다려주세요!")
+        return
+    async with lock:
+        departure = encounter_manager.clear_encounter()
+        if departure:
+            await ctx.send(departure)
+        await gathering_engine.gather(ctx)
+        save_manager.save(shared_player)
+        enc_msg = encounter_manager.trigger_encounter()
+        if enc_msg:
+            await _send_encounter(ctx, enc_msg)
 
 
 
@@ -1974,8 +2010,13 @@ async def scold_cmd(ctx):
 async def woodcut_cmd(ctx):
     if not await _check_channel(ctx):
         return
-    await gathering_engine.woodcut(ctx)
-    save_manager.save(shared_player)
+    lock = get_player_lock(ctx.author.id)
+    if lock.locked():
+        await ctx.send("⏳ 이전 명령을 처리 중입니다. 잠시 기다려주세요!")
+        return
+    async with lock:
+        await gathering_engine.woodcut(ctx)
+        save_manager.save(shared_player)
 
 
 # ═══════════════════════════════════════════════════════════════════════════

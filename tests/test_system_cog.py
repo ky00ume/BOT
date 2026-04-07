@@ -1,11 +1,15 @@
 """tests/test_system_cog.py — SystemCog 단위 테스트 (REMEDIATION_PLAN 1-A).
 
 SystemCog 클래스의 기본 구조와 명령어 등록을 검증합니다.
+discord 가 없는 환경에서는 자동으로 skip 된다.
 """
 from __future__ import annotations
 
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+# discord 가 설치되지 않은 환경(CI 테스트 컨테이너 외)에서 전체 모듈 skip
+pytest.importorskip("discord")
 
 
 class TestSystemCogImport:

@@ -6,6 +6,9 @@ from discord.ui import View, Button
 from database import NPC_DATA
 from npc_dialogue_db import NPC_KEYWORDS, DEFAULT_KEYWORDS, AFFINITY_UNLOCK_KEYWORDS
 from bg3_renderer import get_renderer
+from utils.logger import setup_logger
+
+logger = setup_logger('npc_conversation')
 
 # ── NPC 초상화 파일 ID 매핑 ─────────────────────────────────────────────────
 # BG3 위키 매칭 NPC: 파일명은 static/portraits/npc/{portrait_id}.png
@@ -319,8 +322,8 @@ class NPCConversationView(View):
             try:
                 from save_manager import save_manager
                 save_manager.save(self.player)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.error("대화 후 저장 실패 (npc=%s): %s", self.npc_name, e, exc_info=True)
 
         await interaction.response.edit_message(attachments=[file], embed=None, view=self)
 
@@ -387,8 +390,8 @@ class NPCConversationView(View):
         try:
             from save_manager import save_manager
             save_manager.save(self.player)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error("제련 스킬 학습 후 저장 실패: %s", e, exc_info=True)
         # 버튼 재구성 (배우기 버튼 제거)
         self._build_buttons()
         dialogue_text = (
@@ -492,8 +495,8 @@ class _TrainingView(View):
             try:
                 from save_manager import save_manager
                 save_manager.save(self.player)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.error("수련 후 저장 실패: %s", e, exc_info=True)
             menu_buf = self.render_menu()
             file = discord.File(menu_buf, filename="train_menu.png")
             await interaction.response.edit_message(attachments=[file], view=self)
@@ -598,8 +601,8 @@ class _InnRestView(View):
             try:
                 from save_manager import save_manager
                 save_manager.save(p)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.error("여관 휴식 후 저장 실패: %s", e, exc_info=True)
             for child in self.children:
                 child.disabled = True
             await interaction.response.edit_message(view=self)
@@ -633,8 +636,8 @@ class ConversationManager:
             deliver_msg = quest_manager.deliver_to_npc(npc_name)
             if deliver_msg:
                 await ctx.send(deliver_msg)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("퀘스트 배달 처리 실패 (npc=%s): %s", npc_name, e, exc_info=True)
 
         # 알바 배달형: 보류 중인 배달 작업 완료 처리
         try:
@@ -670,10 +673,10 @@ class ConversationManager:
                 try:
                     from save_manager import save_manager
                     save_manager.save(self.player)
-                except Exception:
-                    pass
-        except Exception:
-            pass
+                except Exception as e:
+                    logger.error("배달 완료 후 저장 실패: %s", e, exc_info=True)
+        except Exception as e:
+            logger.error("배달 알바 자동 완료 처리 실패: %s", e, exc_info=True)
 
         # 일일 제한 확인 (차단 없음, 경고만)
         show_limit_warning = False

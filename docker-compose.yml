@@ -1,0 +1,38 @@
+version: "3.9"
+
+services:
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    image: vision-town-bot:latest
+    restart: unless-stopped
+
+    # Supply secrets via an .env file (never commit real tokens)
+    env_file:
+      - .env
+
+    environment:
+      # Override log directory to use the mounted volume
+      BOT_LOG_DIR: /app/logs
+      # Set to 1 to enable DEBUG-level file logging
+      DEBUG: "0"
+
+    volumes:
+      # Persist SQLite database and logs outside the container
+      - bot_data:/app/data
+      - bot_logs:/app/logs
+
+    # Resource guardrails — tune for your host
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          memory: 128M
+
+volumes:
+  bot_data:
+  bot_logs:

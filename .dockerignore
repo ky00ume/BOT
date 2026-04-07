@@ -1,0 +1,40 @@
+# ── Python cache ────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# ── Virtual environments ─────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+
+# ── Test & coverage artifacts ────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# ── Secrets & local config ───────────────────────────────────────────────────
+.env
+*.key
+*.pem
+
+# ── Runtime data that should live in Docker volumes ─────────────────────────
+data/
+logs/
+*.db
+*.sqlite
+*.sqlite3
+
+# ── OS / editor artefacts ────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# ── Git & CI ─────────────────────────────────────────────────────────────────
+.git/
+.github/

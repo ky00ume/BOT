@@ -292,7 +292,7 @@ class Player:
         Returns:
             소모 성공 시 True, 기력 부족 시 False (상태 변경 없음).
         """
-        if self.energy < amount:
+        if amount < 0 or self.energy < amount:
             return False
         self.energy -= amount
         return True

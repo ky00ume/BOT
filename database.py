@@ -483,7 +483,8 @@ def load_village_data() -> Dict[str, int]:
         if not row:
             return {"contribution": 0, "level": 1}
         return {"contribution": row["contribution"], "level": row["level"]}
-    except Exception:
+    except Exception as e:
+        logger.warning("마을 데이터 로드 실패: %s", e, exc_info=True)
         return {"contribution": 0, "level": 1}
 
 
@@ -643,8 +644,8 @@ def _migrate_players_table(cursor: sqlite3.Cursor) -> None:
             cursor.execute(
                 "ALTER TABLE players ADD COLUMN collection_data TEXT DEFAULT '{}'"
             )
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("players 테이블 마이그레이션 실패: %s", e, exc_info=True)
 
 
 def load_player_from_db(user_id: int) -> Optional[Dict[str, Any]]:
@@ -670,7 +671,8 @@ def load_player_from_db(user_id: int) -> Optional[Dict[str, Any]]:
             if val is None:
                 return default
             return json.loads(val)
-        except Exception:
+        except Exception as e:
+            logger.warning("JSON 파싱 실패 (기본값 반환): %s", e, exc_info=True)
             return default
 
     result = {
@@ -820,7 +822,8 @@ def load_sheet_music_list(user_id: int) -> List[Dict[str, Any]]:
         rows = cursor.fetchall()
         conn.close()
         return [{"id": r["id"], "title": r["title"], "melody": r["melody"], "created": r["created"]} for r in rows]
-    except Exception:
+    except Exception as e:
+        logger.warning("악보 목록 조회 실패 (user_id=%s): %s", user_id, e, exc_info=True)
         return []
 
 
@@ -854,7 +857,8 @@ def load_sheet_music(user_id: int, title_or_id: str) -> Optional[Dict[str, str]]
         if row:
             return {"id": row["id"], "title": row["title"], "melody": row["melody"]}
         return None
-    except Exception:
+    except Exception as e:
+        logger.warning("악보 조회 실패 (user_id=%s, key=%s): %s", user_id, title_or_id, e, exc_info=True)
         return None
 
 
@@ -887,5 +891,6 @@ def delete_sheet_music(user_id: int, title_or_id: str) -> bool:
         conn.commit()
         conn.close()
         return affected > 0
-    except Exception:
+    except Exception as e:
+        logger.error("악보 삭제 실패 (user_id=%s, key=%s): %s", user_id, title_or_id, e, exc_info=True)
         return False

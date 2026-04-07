@@ -32,3 +32,9 @@ status.json
 bulletin.json
 weekly_fishing.json
 logs/
+
+# 테스트/커버리지 아티팩트
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/

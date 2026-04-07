@@ -10,7 +10,7 @@ REMEDIATION_PLAN 2-C / 5-C 적용:
 """
 from typing import Dict, Optional
 
-from player import check_level_up
+from player import Player, check_level_up
 from transaction_log import tx_log
 from utils.exceptions import InsufficientResourceError, InventoryFullError
 from utils.logger import setup_logger
@@ -21,7 +21,7 @@ logger = setup_logger('economy')
 class Economy:
     """gold/exp/item 변동의 단일 진입점."""
 
-    def __init__(self, player: 'Player') -> None:  # Forward reference
+    def __init__(self, player: Player) -> None:
         self.player = player
 
     # ------------------------------------------------------------------ utils

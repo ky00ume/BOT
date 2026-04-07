@@ -6,9 +6,12 @@ from typing import Optional, Dict, List, Tuple, Any, TYPE_CHECKING
 import discord
 from bg3_renderer import get_renderer
 from monsters_db import MONSTERS_DB, MONSTER_SIZES, roll_monster_size, apply_size_to_monster
+from utils.logger import setup_logger
 
 if TYPE_CHECKING:
     from player import Player
+
+logger = setup_logger('battle')
 
 
 def _bar_text(current: int, max_val: int, width: int = 10) -> str:
@@ -359,7 +362,7 @@ class BattleEngine:
                     enc_mgr = SpecialNPCEncounterManager(self.player)
                     contract_msg = enc_mgr.record_kill(monster_id)
                 except Exception:
-                    pass
+                    logger.warning('battle: SpecialNPCEncounterManager.record_kill 실패', exc_info=True)
 
             size      = monster.get("_size", "M")
             size_info = MONSTER_SIZES.get(size, MONSTER_SIZES["M"])
@@ -633,5 +636,4 @@ class BattleEngine:
             from village import village_manager
             village_manager.add_contribution(3, "battle")
         except Exception:
-            pass
-
+            logger.warning('battle: village_manager.add_contribution 실패', exc_info=True)

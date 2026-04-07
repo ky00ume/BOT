@@ -3,6 +3,9 @@ import json
 import os
 import random
 from datetime import datetime
+from utils.logger import setup_logger
+
+logger = setup_logger('diary')
 
 DIARY_FILE = os.path.join(os.path.dirname(__file__), "diaries.json")
 MAX_DIARY_ENTRIES = 365
@@ -101,7 +104,7 @@ class DiaryManager:
             with open(DIARY_FILE, "w", encoding="utf-8") as f:
                 json.dump(entries, f, ensure_ascii=False, indent=2)
         except Exception:
-            pass
+            logger.error('diary: _save_diaries 실패', exc_info=True)
 
     def _generate_entry_text(self) -> str:
         stats = self._daily_stats

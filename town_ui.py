@@ -3,6 +3,9 @@ import discord
 import io
 from discord.ui import View, Button
 from bg3_renderer import get_renderer
+from utils.logger import setup_logger
+
+logger = setup_logger('town_ui')
 
 
 # ── 비전타운 묘사 ────────────────────────────────────────────────────────────
@@ -472,7 +475,7 @@ class GatheringZoneView(View):
         try:
             await interaction.delete_original_response()
         except Exception:
-            pass
+            logger.warning('town_ui: GatheringZoneView._gather_callback delete_original_response 실패', exc_info=True)
 
     async def _mine_callback(self, interaction: discord.Interaction):
         await interaction.response.defer()
@@ -484,7 +487,7 @@ class GatheringZoneView(View):
         try:
             await interaction.delete_original_response()
         except Exception:
-            pass
+            logger.warning('town_ui: GatheringZoneView._mine_callback delete_original_response 실패', exc_info=True)
 
     async def _back_callback(self, interaction: discord.Interaction):
         view = WorldMapView(self.player, self.aff_manager, self.npc_manager_ref)
@@ -576,7 +579,7 @@ class FishingZoneView(View):
         try:
             await interaction.delete_original_response()
         except Exception:
-            pass
+            logger.warning('town_ui: FishingZoneView._fish_callback delete_original_response 실패', exc_info=True)
 
     async def _water_callback(self, interaction: discord.Interaction):
         """물뜨기 — 빈 병 1개를 물 1개로 전환 (기력 5 소모)."""

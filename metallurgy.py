@@ -1,5 +1,8 @@
 import random
 from ui_theme import C, section, divider, header_box, ansi, rank_badge, FOOTERS
+from utils.logger import setup_logger
+
+logger = setup_logger('metallurgy')
 
 SMELT_RECIPES = {
     "copper_ore": {
@@ -190,7 +193,7 @@ class MetallurgyEngine:
                     grade = ALL_ITEMS.get(out_id, {}).get("grade", "Normal")
                     is_new, total = collection_manager.register("제련", out_id, out_name, grade)
                 except Exception:
-                    pass
+                    logger.warning('metallurgy: collection_manager.register 실패', exc_info=True)
 
             exp = recipe.get("exp", 10.0)
             rank_msg = self.player.train_skill("metallurgy", exp)

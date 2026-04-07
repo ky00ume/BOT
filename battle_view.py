@@ -2,6 +2,9 @@
 import discord
 import random
 import io
+from utils.logger import setup_logger
+
+logger = setup_logger('battle_view')
 
 MAX_AUTO_LOG_LINES = 20  # Auto 전투 로그 최대 표시 줄 수
 
@@ -176,7 +179,7 @@ class BattleView(discord.ui.View):
             try:
                 await interaction.followup.send(f"오류 발생: {e}", ephemeral=True)
             except Exception:
-                pass
+                logger.warning('battle_view: interaction.followup.send 실패', exc_info=True)
 
     async def _cheer_callback(self, interaction: discord.Interaction):
         if not self.battle_engine.in_battle:

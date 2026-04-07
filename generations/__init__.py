@@ -4,6 +4,9 @@
 """
 from typing import Dict
 from story_generation import Generation
+from utils.logger import setup_logger
+
+logger = setup_logger('generations')
 
 # 제네레이션 레지스트리
 GENERATIONS: Dict[int, Generation] = {}
@@ -29,10 +32,10 @@ try:
     from .g1_darkness_light import G1_GENERATION
     register_generation(G1_GENERATION)
 except ImportError:
-    pass
+    logger.warning('generations: g1_darkness_light 로드 실패', exc_info=True)
 
 try:
     from .g2_template import G2_GENERATION
     register_generation(G2_GENERATION)
 except ImportError:
-    pass
+    logger.debug('generations: g2_template 미구현 — 건너뜀')

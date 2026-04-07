@@ -288,6 +288,9 @@ def make_recipe_list_embed(player, skill_id: str, recipes: dict) -> discord.Embe
         except ValueError as e:
             logger.warning("랭크 비교 실패 (make_recipe_list_embed): %s", e)
             unlocked = True
+        status = "✅" if unlocked else "🔒"
+        name = recipe.get("name", rid)
+        ing_parts = []
         for ing_id, cnt in recipe.get("ingredients", {}).items():
             ing_name = ALL_ITEMS.get(ing_id, {}).get("name", ing_id)
             ing_parts.append(f"{ing_name}×{cnt}")
@@ -356,7 +359,7 @@ class SkillCategorySelect(Select):
 
     async def callback(self, interaction: discord.Interaction):
         category = self.values[0]
-        view: SkillMainView = self.view
+        view = self.view
         view.current_category = category
         embed = make_category_embed(self.player, category)
 
@@ -380,7 +383,7 @@ class SkillCategorySelect(Select):
         await interaction.response.edit_message(embed=embed, view=view)
 
 
-def _add_skill_info_buttons(view: "SkillMainView", player, skill_db: dict):
+def _add_skill_info_buttons(view: discord.ui.View, player, skill_db: dict):
     """보유 스킬마다 [ℹ️ 스킬이름] 정보 버튼을 view에 추가한다."""
     skill_ranks = getattr(player, "skill_ranks", {})
     skill_exp   = getattr(player, "skill_exp", {})
@@ -434,7 +437,7 @@ class LifeSkillSelect(Select):
             await interaction.response.send_message("보유한 생활 스킬이 없습니다.", ephemeral=True)
             return
 
-        view: SkillMainView = self.view
+        view = self.view
         recipes = _get_recipes_for_skill(skill_id)
         view.clear_items()
         view.add_item(SkillCategorySelect(self.player))
@@ -519,7 +522,7 @@ class RecipeSelect(Select):
             await interaction.response.send_message("레시피를 찾을 수 없습니다.", ephemeral=True)
             return
 
-        view: SkillMainView = self.view
+        view = self.view
         # 재료 현황 계산
         from items import ALL_ITEMS
         can_craft = True
@@ -625,6 +628,9 @@ class RecipeSelect(Select):
                 save_manager.save(self.player)
             except Exception as e:
                 logger.error("힐링 후 저장 실패: %s", e, exc_info=True)
+        return callback
+
+    def _make_craft_callback(self, skill_id: str, recipe_id: str):
         async def callback(interaction: discord.Interaction):
             result = None
             if skill_id == "alchemy" and self.potion_engine:

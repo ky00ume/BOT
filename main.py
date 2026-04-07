@@ -195,9 +195,9 @@ async def _send_encounter(ctx, enc_msg: str):
 async def auto_save_loop():
     """2분마다 플레이어 데이터를 자동 저장합니다."""
     try:
-        save_manager.save(shared_player)
+        await save_manager.save_async(shared_player)
     except Exception as e:
-        print(f"[자동저장] 실패: {e}")
+        logger.error("[자동저장] 실패: %s", e, exc_info=True)
 
 
 # ─── 이벤트 ──────────────────────────────────────────────────────────────

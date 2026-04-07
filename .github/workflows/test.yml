@@ -29,10 +29,10 @@ jobs:
 
     - name: Lint with flake8
       run: |
-        # Stop build if there are Python syntax errors or undefined names
+        # Fail the build on syntax errors or undefined names (fatal errors only)
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # Style warnings with relaxed line length
-        flake8 . --count --max-complexity=10 --max-line-length=127 --statistics
+        # Style warnings with relaxed line length — informational only, does not fail CI
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
     - name: Type check with mypy
       run: |

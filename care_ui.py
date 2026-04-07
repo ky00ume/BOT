@@ -285,6 +285,7 @@ class SnackFeedView(discord.ui.View):
                 save_player_to_db(self.player)
             except Exception as e:
                 logger.error("간식 급여 후 저장 실패: %s", e, exc_info=True)
+        file = _make_room_card(self.player)
         await interaction.response.edit_message(
             content=None, attachments=[file], view=self
         )
@@ -294,8 +295,6 @@ class SnackFeedView(discord.ui.View):
         await interaction.response.edit_message(
             content=None, attachments=[file], view=self.parent_view
         )
-
-
 # ── 가위바위보 서브 View ─────────────────────────────────────────────────────
 class RockPaperScissorsView(discord.ui.View):
     def __init__(self, player, care_manager, parent_view):
@@ -346,6 +345,7 @@ class RockPaperScissorsView(discord.ui.View):
                     save_player_to_db(self.player)
                 except Exception as e:
                     logger.error("놀아주기 후 저장 실패: %s", e, exc_info=True)
+            file = _make_room_card(self.player)
             await interaction.response.edit_message(
                 content=None, attachments=[file], view=self
             )
@@ -437,6 +437,7 @@ class SnackCraftView(discord.ui.View):
                 save_player_to_db(self.player)
             except Exception as e:
                 logger.error("간식 제작 후 저장 실패: %s", e, exc_info=True)
+        file = _make_room_card(self.player)
         await interaction.response.edit_message(content=None, attachments=[file], view=self)
 
     async def _on_back(self, interaction: discord.Interaction):
@@ -535,6 +536,7 @@ class CostumeCraftView(discord.ui.View):
                 save_player_to_db(self.player)
             except Exception as e:
                 logger.error("의장 제작 후 저장 실패: %s", e, exc_info=True)
+        file = _make_room_card(self.player)
         await interaction.response.edit_message(content=None, attachments=[file], view=self)
 
     async def _on_back(self, interaction: discord.Interaction):

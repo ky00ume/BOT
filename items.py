@@ -61,10 +61,12 @@ ALL_ITEMS: dict = {
 }
 
 # ─── 가방 ──────────────────────────────────────────────────────────────────
+# BAGS는 database.py에서 관리하며, JSON 로딩 이후에 임포트한다.
 from database import BAGS  # noqa: E402
 ALL_ITEMS.update(BAGS)
 
 # ─── 의장·간식 아이템 ─────────────────────────────────────────────────────────
+# COSTUME_ITEMS/SNACK_ITEMS는 costume_data.py에서 관리하며, JSON 로딩 이후에 임포트한다.
 from costume_data import COSTUME_ITEMS, SNACK_ITEMS  # noqa: E402
 ALL_ITEMS.update(COSTUME_ITEMS)
 ALL_ITEMS.update(SNACK_ITEMS)

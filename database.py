@@ -645,7 +645,7 @@ def _migrate_players_table(cursor: sqlite3.Cursor) -> None:
                 "ALTER TABLE players ADD COLUMN collection_data TEXT DEFAULT '{}'"
             )
     except Exception as e:
-        logger.warning("players 테이블 마이그레이션 실패: %s", e, exc_info=True)
+        logger.error("players 테이블 마이그레이션 실패: %s", e, exc_info=True)
 
 
 def load_player_from_db(user_id: int) -> Optional[Dict[str, Any]]:

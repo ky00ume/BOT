@@ -1,5 +1,6 @@
 import random
 from ui_theme import C, section, divider, header_box, ansi, rank_badge, FOOTERS
+from utils.ranks import rank_gte as _rank_gte
 
 # method: "cook" = 가열 요리 (도구 필요), "mix" = 혼합 요리 (비가열, 도구 불필요)
 RECIPES = {
@@ -486,16 +487,6 @@ RECIPES = {
         "desc":        "비버뱅 + 버섯 + 물 + 고춧가루 → 비버뱅 전골",
     },
 }
-
-RANK_ORDER_COOKING = ["연습", "F", "E", "D", "C", "B", "A", "9", "8", "7", "6", "5", "4", "3", "2", "1"]
-
-
-def _rank_gte(rank_a: str, rank_b: str) -> bool:
-    """rank_a >= rank_b 이면 True."""
-    if rank_a not in RANK_ORDER_COOKING or rank_b not in RANK_ORDER_COOKING:
-        return False
-    return RANK_ORDER_COOKING.index(rank_a) >= RANK_ORDER_COOKING.index(rank_b)
-
 
 class CookingEngine:
     def __init__(self, player):

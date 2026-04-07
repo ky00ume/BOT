@@ -72,6 +72,7 @@ def _find_fonts():
                         candidates_serif.append(fp)
             except OSError:
                 _log.debug('bg3_renderer: Windows 폰트 디렉터리 읽기 실패 (%s)', d, exc_info=True)
+    else:  # Linux / macOS
         linux_paths = [
             # Serif (우선)
             "/usr/share/fonts/opentype/noto/NotoSerifCJK-Regular.ttc",
@@ -109,6 +110,7 @@ def _find_fonts():
                                 linux_paths.append(_fp)
             except OSError:
                 _log.debug('bg3_renderer: 폰트 디렉터리 탐색 실패 (%s)', _ed, exc_info=True)
+        for p in linux_paths:
             if os.path.isfile(p):
                 fl = os.path.basename(p).lower()
                 if "bold" in fl:

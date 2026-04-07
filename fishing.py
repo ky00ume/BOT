@@ -271,6 +271,8 @@ class FishingView(discord.ui.View):
                 card_sent = True
             except Exception:
                 logger.warning('fishing: 낚시 결과 카드 렌더링 실패 — 텍스트 폴백 사용', exc_info=True)
+
+        if not card_sent:
             grade_mark = {"Normal": "⚬", "Rare": "◆", "Epic": "❖", "Legendary": "✦"}.get(grade, "⚬")
             embed_color = GRADE_EMBED_COLOR.get(grade, 0x00aa44)
             if added:
@@ -368,6 +370,9 @@ class FishingView(discord.ui.View):
                     await self._message.edit(embed=embed, view=self)
                 except Exception:
                     logger.warning('fishing: on_timeout 메시지 편집 실패', exc_info=True)
+
+
+class FishingEngine:
     def __init__(self, player):
         self.player       = player
         self.current_spot = "방울숲 강"

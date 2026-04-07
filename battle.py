@@ -363,6 +363,8 @@ class BattleEngine:
                     contract_msg = enc_mgr.record_kill(monster_id)
                 except Exception:
                     logger.warning('battle: SpecialNPCEncounterManager.record_kill 실패', exc_info=True)
+
+            size      = monster.get("_size", "M")
             size_info = MONSTER_SIZES.get(size, MONSTER_SIZES["M"])
 
             grade_label  = GRADE_LABELS.get(grade, grade)

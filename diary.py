@@ -105,6 +105,8 @@ class DiaryManager:
                 json.dump(entries, f, ensure_ascii=False, indent=2)
         except Exception:
             logger.error('diary: _save_diaries 실패', exc_info=True)
+
+    def _generate_entry_text(self) -> str:
         stats = self._daily_stats
         triggered = []
         for key, threshold, fn in _DIARY_TEMPLATES:

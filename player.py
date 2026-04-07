@@ -578,6 +578,9 @@ class Player:
             base += eff.get("stat_bonus", {}).get("str", 0) // 2
         except Exception:
             logger.warning('player: get_attack title_data 로드 실패', exc_info=True)
+        return base
+
+    def get_defense(self) -> int:
         base = self.base_stats.get("will", 10) // 5
         from items import ALL_ITEMS
         for slot in ("sub", "body", "head", "hands", "feet"):
@@ -598,3 +601,4 @@ class Player:
             base += eff.get("def_bonus", 0)
         except Exception:
             logger.warning('player: get_defense title_data 로드 실패', exc_info=True)
+        return base

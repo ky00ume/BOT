@@ -36,6 +36,8 @@ class CollectionManager:
                 json.dump(self._data, f, ensure_ascii=False, indent=2)
         except Exception:
             logger.error('collection: _save 실패', exc_info=True)
+
+    def register(self, category: str, item_id: str, name: str, grade: str = "Normal", size: float = 0.0) -> tuple[bool, int]:
         """
         도감에 아이템을 등록합니다.
         Returns:

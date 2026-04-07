@@ -109,6 +109,8 @@ class RestEngine:
             save_manager.save(self.player)
         except Exception:
             logger.error('rest: 휴식 완료 후 save_manager.save 실패', exc_info=True)
+
+    def stop_rest(self):
         """휴식을 강제 종료합니다."""
         if self._task and not self._task.done():
             self._task.cancel()

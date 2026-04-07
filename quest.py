@@ -579,6 +579,8 @@ class QuestManager:
             village_manager.add_contribution(8, "quest")
         except Exception:
             logger.warning('quest: village_manager.add_contribution 실패', exc_info=True)
+
+        del self.active_quests[quest_id]
         self.completed_quests.add(quest_id)
 
         return ansi(

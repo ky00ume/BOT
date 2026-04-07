@@ -194,6 +194,9 @@ class MetallurgyEngine:
                     is_new, total = collection_manager.register("제련", out_id, out_name, grade)
                 except Exception:
                     logger.warning('metallurgy: collection_manager.register 실패', exc_info=True)
+
+            exp = recipe.get("exp", 10.0)
+            rank_msg = self.player.train_skill("metallurgy", exp)
             return {
                 "success": True,
                 "recipe_name": recipe["name"],

@@ -580,6 +580,8 @@ class FishingZoneView(View):
             await interaction.delete_original_response()
         except Exception:
             logger.warning('town_ui: FishingZoneView._fish_callback delete_original_response 실패', exc_info=True)
+
+    async def _water_callback(self, interaction: discord.Interaction):
         """물뜨기 — 빈 병 1개를 물 1개로 전환 (기력 5 소모)."""
         from main import save_manager, shared_player
         from ui_theme import C, ansi

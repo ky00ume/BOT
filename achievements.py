@@ -42,6 +42,8 @@ class AchievementManager:
             self._unlocked = data.get("unlocked", [])
         except Exception:
             logger.warning('achievements: _load 실패', exc_info=True)
+
+    def _save(self):
         try:
             with open(ACHIEVEMENTS_FILE, "w", encoding="utf-8") as f:
                 json.dump({
@@ -50,6 +52,8 @@ class AchievementManager:
                 }, f, ensure_ascii=False, indent=2)
         except Exception:
             logger.error('achievements: _save 실패', exc_info=True)
+
+    def increment(self, counter_key: str, amount: int = 1) -> list[str]:
         self._counters[counter_key] = self._counters.get(counter_key, 0) + amount
         newly_unlocked = []
 

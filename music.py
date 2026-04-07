@@ -99,6 +99,8 @@ class MusicView(discord.ui.View):
                     village_manager.add_contribution(contrib, "music")
             except Exception:
                 logger.warning('music: village_manager.add_contribution 실패', exc_info=True)
+
+            # 연주 스킬 EXP 획득
             if "music" in self.player.skill_ranks:
                 exp_gain = pct * 0.5  # 정확도에 비례한 EXP
                 rank_up_msg = self.player.train_skill("music", exp_gain)
@@ -158,6 +160,9 @@ class MusicView(discord.ui.View):
                 await self._message.edit(embed=embed, view=self)
             except Exception:
                 logger.warning('music: on_timeout 메시지 편집 실패', exc_info=True)
+
+
+class MusicEngine:
     def __init__(self, player):
         self.player = player
 

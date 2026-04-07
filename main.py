@@ -56,15 +56,23 @@ from care         import CareManager
 from care_ui      import CareRoomView, _make_room_card
 
 # ─── 상수 (환경변수로 관리) ────────────────────────────────────────────────
-TOKEN              = os.getenv("DISCORD_TOKEN", "")
-HYNESS_ID          = int(os.getenv("HYNESS_ID",          "446014281486565387"))
-MAJESTY_ID         = int(os.getenv("MAJESTY_ID",         "778476921117343744"))
-DRIDER_ID          = int(os.getenv("DRIDER_ID",          "1396150414549717207"))
-ALLOWED_CHANNEL_ID = int(os.getenv("ALLOWED_CHANNEL_ID", "1483987513575215207"))
+# REMEDIATION_PLAN 3-D: Discord 사용자 ID 를 소스에 하드코딩하지 않는다.
+# 누락된 환경변수는 명확한 에러 메시지와 함께 즉시 실패하도록 한다.
+from utils.env import (
+    ConfigError as _EnvConfigError,
+    load_discord_token,
+    load_required_int,
+)
 
-if not TOKEN:
-    print("[오류] DISCORD_TOKEN 환경변수가 설정되지 않았슴미댜!")
-    print("  .env 파일에 DISCORD_TOKEN=<봇 토큰> 을 추가하셰요.")
+try:
+    TOKEN              = load_discord_token("DISCORD_TOKEN")
+    HYNESS_ID          = load_required_int("HYNESS_ID")
+    MAJESTY_ID         = load_required_int("MAJESTY_ID")
+    DRIDER_ID          = load_required_int("DRIDER_ID")
+    ALLOWED_CHANNEL_ID = load_required_int("ALLOWED_CHANNEL_ID")
+except _EnvConfigError as _env_err:
+    print(f"[오류] 환경변수 구성 실패: {_env_err}")
+    print("  .env.example 을 참고해 .env 파일을 채워 주세요.")
     sys.exit(1)
 
 # 먹을 수 있는 아이템 합산

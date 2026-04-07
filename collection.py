@@ -28,6 +28,7 @@ class CollectionManager:
             with open(COLLECTION_FILE, "r", encoding="utf-8") as f:
                 self._data = json.load(f)
         except Exception:
+            logger.warning('collection: _load 실패 — 빈 도감으로 초기화', exc_info=True)
             self._data = {}
 
     def _save(self):

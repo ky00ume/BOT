@@ -97,6 +97,7 @@ class DiaryManager:
             with open(DIARY_FILE, "r", encoding="utf-8") as f:
                 return json.load(f)
         except Exception:
+            logger.warning('diary: _load_diaries 실패 — 빈 목록으로 초기화', exc_info=True)
             return []
 
     def _save_diaries(self, entries: list):

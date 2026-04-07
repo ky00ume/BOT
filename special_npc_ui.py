@@ -5,6 +5,9 @@ from special_npc import (
     SPECIAL_NPCS, ENCOUNTER_SHORT_GREETINGS, ENCOUNTER_NPC_ROLES,
     render_encounter_image,
 )
+from utils.logger import setup_logger
+
+logger = setup_logger('special_npc_ui')
 
 # 특수 NPC 키워드 목록
 SPECIAL_NPC_KEYWORDS = {
@@ -105,9 +108,8 @@ class SpecialNPCView(View):
             file = discord.File(fp=buf, filename="npc_response.png")
             await interaction.response.send_message(file=file, view=self, ephemeral=False)
         except Exception:
+            logger.warning('special_npc_ui: _greet_callback 렌더링 실패 — 텍스트 폴백 사용', exc_info=True)
             await interaction.response.send_message(greeting, ephemeral=False)
-
-    async def _talk_callback(self, interaction: discord.Interaction):
         """키워드 Select 드롭다운을 에페메랄 메시지로 표시합니다."""
         keywords = SPECIAL_NPC_KEYWORDS.get(self.npc_name, [])
         if not keywords:
@@ -143,6 +145,7 @@ class SpecialNPCView(View):
                 file = discord.File(fp=buf, filename="npc_response.png")
                 await sel_interaction.response.send_message(file=file, ephemeral=False)
             except Exception:
+                logger.warning('special_npc_ui: kw_callback 렌더링 실패 — 텍스트 폴백 사용', exc_info=True)
                 await sel_interaction.response.send_message(response_text, ephemeral=False)
         kw_select.callback = kw_callback
         kw_view = View(timeout=60.0)
@@ -242,6 +245,7 @@ class SpecialNPCView(View):
                     ephemeral=False,
                 )
             except Exception:
+                logger.warning('special_npc_ui: gift_select_cb 렌더링 실패 — 텍스트 폴백 사용', exc_info=True)
                 await sel_interaction.response.send_message(response, ephemeral=False)
         gift_select.callback = gift_select_cb
         gift_view = View(timeout=60.0)

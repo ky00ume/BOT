@@ -1,6 +1,9 @@
 """collection.py — 수집일기(도감) 시스템"""
 import json
 import os
+from utils.logger import setup_logger
+
+logger = setup_logger('collection')
 
 COLLECTION_FILE = os.path.join(os.path.dirname(__file__), "collections.json")
 
@@ -32,7 +35,7 @@ class CollectionManager:
             with open(COLLECTION_FILE, "w", encoding="utf-8") as f:
                 json.dump(self._data, f, ensure_ascii=False, indent=2)
         except Exception:
-            pass
+            logger.error('collection: _save 실패', exc_info=True)
 
     def register(self, category: str, item_id: str, name: str, grade: str = "Normal", size: float = 0.0) -> tuple[bool, int]:
         """

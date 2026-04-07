@@ -4,6 +4,9 @@ import os
 from datetime import datetime, timedelta
 import discord
 from ui_theme import C, ansi, header_box, divider, EMBED_COLOR
+from utils.logger import setup_logger
+
+logger = setup_logger('bulletin')
 
 _DIR = os.path.dirname(os.path.abspath(__file__))
 BULLETIN_PATH       = os.path.join(_DIR, "bulletin.json")
@@ -85,7 +88,7 @@ class BulletinBoard:
             with open(BULLETIN_PATH, "w", encoding="utf-8") as f:
                 json.dump(self.entries, f, ensure_ascii=False, indent=2)
         except Exception:
-            pass
+            logger.error('bulletin: BulletinBoard.save 실패', exc_info=True)
 
     def load(self):
         try:
@@ -179,7 +182,7 @@ class WeeklyFishing:
             with open(WEEKLY_FISHING_PATH, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
         except Exception:
-            pass
+            logger.error('bulletin: WeeklyFishing.save 실패', exc_info=True)
 
     def load(self):
         try:

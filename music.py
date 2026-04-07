@@ -3,6 +3,9 @@ import asyncio
 import random
 import discord
 from ui_theme import C, ansi, header_box, divider, EMBED_COLOR
+from utils.logger import setup_logger
+
+logger = setup_logger('music')
 
 NOTES = ["도", "레", "미", "파", "솔", "라", "시"]
 NOTE_EMOJIS = {
@@ -95,7 +98,7 @@ class MusicView(discord.ui.View):
                 if contrib:
                     village_manager.add_contribution(contrib, "music")
             except Exception:
-                pass
+                logger.warning('music: village_manager.add_contribution 실패', exc_info=True)
 
             # 연주 스킬 EXP 획득
             if "music" in self.player.skill_ranks:
@@ -156,7 +159,7 @@ class MusicView(discord.ui.View):
                 )
                 await self._message.edit(embed=embed, view=self)
             except Exception:
-                pass
+                logger.warning('music: on_timeout 메시지 편집 실패', exc_info=True)
 
 
 class MusicEngine:

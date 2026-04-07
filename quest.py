@@ -1,6 +1,9 @@
 """quest.py — 알바/의뢰 퀘스트 시스템 (전면 재설계)"""
 import time
 from ui_theme import C, ansi, header_box, divider, GRADE_ICON_PLAIN
+from utils.logger import setup_logger
+
+logger = setup_logger('quest')
 
 GOLD_TO_CONTRIBUTION_RATIO = 50  # gold ÷ ratio = village contribution points
 
@@ -575,7 +578,7 @@ class QuestManager:
             from village import village_manager
             village_manager.add_contribution(8, "quest")
         except Exception:
-            pass
+            logger.warning('quest: village_manager.add_contribution 실패', exc_info=True)
 
         del self.active_quests[quest_id]
         self.completed_quests.add(quest_id)

@@ -1,0 +1,1722 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>보완 설계서 — 프로덕션 준비도 5/5 달성 가이드</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0d1117;color:#c9d1d9;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;line-height:1.7;padding:20px;max-width:1200px;margin:0 auto}
+h1{color:#58a6ff;font-size:1.9em;border-bottom:2px solid #21262d;padding-bottom:12px;margin-bottom:8px}
+.subtitle{color:#8b949e;margin-bottom:24px}
+h2{color:#79c0ff;font-size:1.5em;margin:36px 0 14px;border-left:5px solid #58a6ff;padding-left:14px}
+h3{color:#d2a8ff;font-size:1.25em;margin:24px 0 10px}
+h4{color:#f0b86c;font-size:1.05em;margin:18px 0 8px}
+.card{background:#161b22;border:1px solid #21262d;border-radius:8px;padding:22px;margin:18px 0}
+.problem{background:#2d1b1b;border-left:4px solid #f85149;padding:14px 18px;margin:12px 0;border-radius:4px}
+.solution{background:#0f2419;border-left:4px solid #3fb950;padding:14px 18px;margin:12px 0;border-radius:4px}
+.target{background:#1a2338;border-left:4px solid #58a6ff;padding:14px 18px;margin:12px 0;border-radius:4px}
+.problem h4,.solution h4,.target h4{margin-top:0;color:#f0b86c}
+.problem h4{color:#ff7b72}
+.solution h4{color:#3fb950}
+.target h4{color:#79c0ff}
+code{background:#21262d;padding:2px 6px;border-radius:3px;font-size:0.9em;color:#79c0ff;font-family:"SF Mono",Monaco,Consolas,monospace}
+pre{background:#0b0f14;border:1px solid #21262d;border-radius:6px;padding:14px;overflow-x:auto;margin:10px 0;font-size:0.88em}
+pre code{background:transparent;padding:0;color:#c9d1d9}
+.bad{color:#ff7b72}
+.good{color:#7ee787}
+.kw{color:#ff7b72}
+.str{color:#a5d6ff}
+.comment{color:#8b949e;font-style:italic}
+.func{color:#d2a8ff}
+.num{color:#79c0ff}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:0.92em}
+th,td{border:1px solid #21262d;padding:10px 12px;text-align:left}
+th{background:#21262d;color:#f0f6fc;font-weight:600}
+tr:nth-child(even){background:#161b22}
+.toc{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:20px;margin:20px 0}
+.toc ol{padding-left:24px}
+.toc li{margin:6px 0}
+.toc a{color:#58a6ff;text-decoration:none}
+.toc a:hover{text-decoration:underline}
+.checklist{background:#0f2419;border:1px solid #2ea043;border-radius:6px;padding:16px;margin:12px 0}
+.checklist h4{color:#3fb950}
+.checklist ul{list-style:none;padding:0}
+.checklist li{padding:4px 0 4px 26px;position:relative}
+.checklist li::before{content:"☐";position:absolute;left:0;color:#3fb950;font-weight:bold}
+.severity-critical{background:#f85149;color:#fff;padding:2px 8px;border-radius:4px;font-size:0.8em;font-weight:bold}
+.severity-major{background:#d29922;color:#000;padding:2px 8px;border-radius:4px;font-size:0.8em;font-weight:bold}
+.severity-minor{background:#58a6ff;color:#fff;padding:2px 8px;border-radius:4px;font-size:0.8em;font-weight:bold}
+.effort{background:#30363d;color:#c9d1d9;padding:2px 8px;border-radius:4px;font-size:0.8em}
+.cat-header{display:flex;justify-content:space-between;align-items:center;margin-top:36px;padding-top:20px;border-top:3px solid #30363d}
+.score-before{color:#f85149;font-size:1.1em}
+.score-after{color:#3fb950;font-size:1.1em}
+.arrow{color:#8b949e;margin:0 8px}
+.intro-box{background:#1c2128;border:2px solid #388bfd;border-radius:8px;padding:24px;margin:20px 0}
+ol,ul{padding-left:24px;margin:8px 0}
+li{margin:4px 0}
+</style>
+</head>
+<body>
+
+<h1>보완 설계서 — 프로덕션 준비도 5/5 달성 가이드</h1>
+<p class="subtitle">Vision Town Discord Bot · 인수인계 엔지니어를 위한 단계별 개선 명세</p>
+
+<div class="intro-box">
+<h3 style="margin-top:0">이 문서의 목적</h3>
+<p>본 문서는 감사 보고서(<code>AUDIT_REPORT.html</code>)에서 식별된 모든 결함에 대해, 인수인계 받은 엔지니어가 <strong>6개 카테고리 모두에서 5/5 점수를 달성</strong>할 수 있도록 구체적인 해결 방안을 제시한다.</p>
+<p style="margin-top:10px">각 항목은 다음 구조를 따른다:</p>
+<ol>
+<li><strong>문제 (Problem)</strong> — 파일:라인 근거와 함께 정확한 결함 명시</li>
+<li><strong>해결 (Solution)</strong> — 실행 가능한 코드 예시와 단계별 지침</li>
+<li><strong>수용 기준 (Acceptance Criteria)</strong> — 5/5 판정을 받기 위한 체크리스트</li>
+</ol>
+<p style="margin-top:10px;color:#f0b86c"><strong>작업 순서 권고:</strong> Phase 0(사전 준비) → Phase 1(Critical 수정) → Phase 2(아키텍처 개선) → Phase 3(테스트 보강) → Phase 4(문서화 및 검증).</p>
+</div>
+
+<div class="toc">
+<h3 style="margin-top:0">목차</h3>
+<ol>
+<li><a href="#phase0">Phase 0 — 사전 준비 (작업 환경 셋업)</a></li>
+<li><a href="#cat1">카테고리 1 — 가독성 &amp; 수정 용이성 (2.5 → 5.0)</a></li>
+<li><a href="#cat2">카테고리 2 — 견고성 &amp; 에러 복원력 (2.0 → 5.0)</a></li>
+<li><a href="#cat3">카테고리 3 — 보안 태세 (3.0 → 5.0)</a></li>
+<li><a href="#cat4">카테고리 4 — 검증 &amp; 정확성 보장 (1.5 → 5.0)</a></li>
+<li><a href="#cat5">카테고리 5 — 아키텍처 &amp; 구조적 건전성 (2.0 → 5.0)</a></li>
+<li><a href="#cat6">카테고리 6 — 의존성 &amp; 환경 건전성 (2.5 → 5.0)</a></li>
+<li><a href="#phase4">Phase 4 — 최종 검증 및 회귀 테스트</a></li>
+</ol>
+</div>
+
+<h2 id="phase0">Phase 0 — 사전 준비 (작업 환경 셋업)</h2>
+<div class="card">
+<p>실제 수정을 시작하기 전에 다음 환경을 먼저 구축해야 한다. 이 단계 없이 수정을 진행하면 회귀를 검출할 수 없다.</p>
+
+<h3>0.1 개발 환경 준비</h3>
+<pre><code><span class="comment"># 1. 가상환경 생성 및 활성화</span>
+python3.11 -m venv .venv
+source .venv/bin/activate
+
+<span class="comment"># 2. 의존성 설치</span>
+pip install -r requirements.txt
+pip install -r requirements-dev.txt
+pip install pip-tools  <span class="comment"># 락파일 생성용 (Phase 6)</span>
+
+<span class="comment"># 3. 현재 상태 기준선 저장</span>
+pytest tests/ -v --cov=. --cov-report=term &gt; baseline_coverage.txt
+mypy economy.py player.py battle.py database.py --config-file=mypy.ini &gt; baseline_mypy.txt 2&gt;&amp;1
+flake8 . --count --max-complexity=10 --max-line-length=127 --statistics &gt; baseline_flake8.txt 2&gt;&amp;1</code></pre>
+
+<h3>0.2 작업 브랜치 전략</h3>
+<p>각 Phase별로 별도 브랜치를 만들어 작업하고, 단위별로 PR을 올릴 것. 모든 수정을 한 번에 병합하면 회귀 발생 시 원인 파악이 불가능하다.</p>
+<pre><code>git checkout -b remediation/phase1-error-handling
+git checkout -b remediation/phase2-architecture
+git checkout -b remediation/phase3-testing</code></pre>
+
+<div class="checklist">
+<h4>Phase 0 체크리스트</h4>
+<ul>
+<li>Python 3.11 가상환경 구축 완료</li>
+<li>모든 기존 테스트가 통과하는지 확인 (baseline)</li>
+<li>현재 mypy/flake8 경고 수를 기록</li>
+<li>Phase별 작업 브랜치 계획 수립</li>
+<li>작업 전 전체 백업 또는 main 태깅: <code>git tag pre-remediation-v0</code></li>
+</ul>
+</div>
+</div>
+
+<!-- ==================== CATEGORY 1 ==================== -->
+<h2 id="cat1">카테고리 1 — 가독성 &amp; 수정 용이성</h2>
+<div class="cat-header">
+<div><span class="score-before">현재 2.5 / 5</span> <span class="arrow">→</span> <span class="score-after">목표 5.0 / 5</span></div>
+<div><span class="effort">예상 공수: 대형</span></div>
+</div>
+
+<div class="card">
+<h3>1-A. <code>main.py</code> 모놀리스 분해 (핵심)</h3>
+
+<div class="problem">
+<h4>문제 1-A</h4>
+<p><code>main.py</code>가 2,755줄에 70+ 커맨드 핸들러를 flat하게 나열하고 있다. 55개 모듈을 직접 import하며, discord.py의 <strong>Cog 시스템을 전혀 사용하지 않는다</strong>. 새 엔지니어가 특정 커맨드를 찾으려면 파일 전체를 스캔해야 하고, 2명 이상 동시 작업 시 병합 충돌이 불가피하다.</p>
+<p><strong>근거:</strong> <code>main.py:1-2755</code>, <code>from X import Y</code> 라인 55개(L17-56), <code>@bot.command</code> 데코레이터 70+개</p>
+</div>
+
+<div class="solution">
+<h4>해결 1-A — Cog 기반 재구성</h4>
+<p>다음과 같이 <code>cogs/</code> 디렉토리로 재구성한다:</p>
+<pre><code>cogs/
+├── __init__.py
+├── battle_cog.py         <span class="comment"># /전투, /자동전투, /도망, /응원 등</span>
+├── economy_cog.py        <span class="comment"># /상점, /인벤토리, /판매 등</span>
+├── quest_cog.py          <span class="comment"># /퀘스트, /알바, /직업 등</span>
+├── social_cog.py         <span class="comment"># /대화, /선물, /호감도 등</span>
+├── gathering_cog.py      <span class="comment"># /채집, /낚시, /요리 등</span>
+├── care_cog.py           <span class="comment"># /방, /목욕, /먹이주기 등</span>
+├── system_cog.py         <span class="comment"># /도움말, /저장, /프로필 등</span>
+└── admin_cog.py          <span class="comment"># /어드민, 디버그 명령어</span></code></pre>
+
+<p>각 Cog의 구조 예시:</p>
+<pre><code><span class="comment"># cogs/battle_cog.py</span>
+<span class="kw">import</span> discord
+<span class="kw">from</span> discord.ext <span class="kw">import</span> commands
+<span class="kw">from</span> battle <span class="kw">import</span> BattleEngine
+<span class="kw">from</span> utils.logger <span class="kw">import</span> setup_logger
+
+logger = setup_logger(<span class="str">'cogs.battle'</span>)
+
+
+<span class="kw">class</span> <span class="func">BattleCog</span>(commands.Cog, name=<span class="str">"전투"</span>):
+    <span class="str">"""전투 관련 커맨드."""</span>
+
+    <span class="kw">def</span> <span class="func">__init__</span>(self, bot: commands.Bot):
+        self.bot = bot
+        self.battle_engine = BattleEngine()
+
+    @commands.command(name=<span class="str">"전투"</span>, help=<span class="str">"몬스터와 전투를 시작합니다"</span>)
+    @commands.guild_only()
+    <span class="kw">async def</span> <span class="func">start_battle</span>(self, ctx: commands.Context, *, target: str = <span class="kw">None</span>):
+        <span class="comment"># ... 커맨드 로직 ...</span>
+        logger.info(<span class="str">f"전투 시작: user={ctx.author.id}, target={target}"</span>)
+
+
+<span class="kw">async def</span> <span class="func">setup</span>(bot: commands.Bot):
+    <span class="kw">await</span> bot.add_cog(BattleCog(bot))</code></pre>
+
+<p><code>main.py</code>는 다음과 같이 축소된다 (목표: 300줄 미만):</p>
+<pre><code><span class="comment"># main.py (축소 후)</span>
+<span class="kw">import</span> asyncio
+<span class="kw">import</span> os
+<span class="kw">import</span> signal
+<span class="kw">import</span> sys
+<span class="kw">from</span> pathlib <span class="kw">import</span> Path
+
+<span class="kw">import</span> discord
+<span class="kw">from</span> discord.ext <span class="kw">import</span> commands
+<span class="kw">from</span> dotenv <span class="kw">import</span> load_dotenv
+
+<span class="kw">from</span> utils.config <span class="kw">import</span> config
+<span class="kw">from</span> utils.logger <span class="kw">import</span> setup_logger
+<span class="kw">from</span> database <span class="kw">import</span> init_db
+
+load_dotenv()
+logger = setup_logger(<span class="str">'main'</span>)
+
+TOKEN = os.getenv(<span class="str">"DISCORD_TOKEN"</span>)
+<span class="kw">if not</span> TOKEN:
+    logger.critical(<span class="str">"DISCORD_TOKEN 환경변수가 설정되지 않았습니다"</span>)
+    sys.exit(1)
+
+intents = discord.Intents.default()
+intents.message_content = <span class="kw">True</span>
+bot = commands.Bot(command_prefix=<span class="str">"/"</span>, intents=intents)
+
+COGS = [
+    <span class="str">"cogs.battle_cog"</span>,
+    <span class="str">"cogs.economy_cog"</span>,
+    <span class="str">"cogs.quest_cog"</span>,
+    <span class="str">"cogs.social_cog"</span>,
+    <span class="str">"cogs.gathering_cog"</span>,
+    <span class="str">"cogs.care_cog"</span>,
+    <span class="str">"cogs.system_cog"</span>,
+    <span class="str">"cogs.admin_cog"</span>,
+]
+
+
+@bot.event
+<span class="kw">async def</span> <span class="func">on_ready</span>():
+    logger.info(<span class="str">f"로그인: {bot.user}"</span>)
+    init_db()
+    <span class="kw">for</span> cog <span class="kw">in</span> COGS:
+        <span class="kw">try</span>:
+            <span class="kw">await</span> bot.load_extension(cog)
+            logger.info(<span class="str">f"Cog 로드 완료: {cog}"</span>)
+        <span class="kw">except</span> Exception <span class="kw">as</span> e:
+            logger.error(<span class="str">f"Cog 로드 실패: {cog}, 오류: {e}"</span>, exc_info=<span class="kw">True</span>)
+
+
+<span class="kw">def</span> <span class="func">main</span>():
+    bot.run(TOKEN)
+
+
+<span class="kw">if</span> __name__ == <span class="str">"__main__"</span>:
+    main()</code></pre>
+
+<p><strong>이전 전략:</strong> 한 번에 옮기지 말고, Cog 하나씩 추출하며 각 단계마다 봇이 정상 동작하는지 수동 검증. 추출 순서는 독립성이 높은 <code>admin_cog</code> → <code>system_cog</code> → <code>economy_cog</code> → 나머지.</p>
+</div>
+</div>
+
+<div class="card">
+<h3>1-B. <code>_rank_gte()</code> 5회 중복 제거</h3>
+
+<div class="problem">
+<h4>문제 1-B</h4>
+<p>랭크 비교 로직이 <code>fishing.py</code>, <code>crafting.py</code>, <code>cooking_db.py</code>, <code>gathering.py</code>, <code>potion.py</code> 5개 파일에 복제되어 있다. 랭크 체계를 변경하려면 5곳을 동시에 수정해야 한다. 각 구현이 미묘하게 달라 inconsistency 리스크도 존재한다.</p>
+</div>
+
+<div class="solution">
+<h4>해결 1-B — 중앙 랭크 시스템 구축</h4>
+<p><code>utils/ranks.py</code> 신규 파일 생성:</p>
+<pre><code><span class="comment">"""utils/ranks.py — 생활/전투 스킬 랭크 체계 중앙 관리."""</span>
+<span class="kw">from</span> enum <span class="kw">import</span> IntEnum
+<span class="kw">from</span> typing <span class="kw">import</span> Union
+
+
+<span class="kw">class</span> <span class="func">Rank</span>(IntEnum):
+    <span class="str">"""스킬 랭크. 숫자값으로 대소 비교 가능."""</span>
+    PRACTICE = 0   <span class="comment"># 연습</span>
+    BEGINNER = 1   <span class="comment"># 초급</span>
+    INTERMEDIATE = 2  <span class="comment"># 중급</span>
+    ADVANCED = 3   <span class="comment"># 상급</span>
+    EXPERT = 4     <span class="comment"># 전문가</span>
+    MASTER = 5     <span class="comment"># 달인</span>
+
+    @classmethod
+    <span class="kw">def</span> <span class="func">from_str</span>(cls, name: str) -&gt; <span class="str">"Rank"</span>:
+        <span class="str">"""한글 랭크명을 Rank enum으로 변환."""</span>
+        mapping = {
+            <span class="str">"연습"</span>: cls.PRACTICE,
+            <span class="str">"초급"</span>: cls.BEGINNER,
+            <span class="str">"중급"</span>: cls.INTERMEDIATE,
+            <span class="str">"상급"</span>: cls.ADVANCED,
+            <span class="str">"전문가"</span>: cls.EXPERT,
+            <span class="str">"달인"</span>: cls.MASTER,
+        }
+        <span class="kw">if</span> name <span class="kw">not in</span> mapping:
+            <span class="kw">raise</span> ValueError(<span class="str">f"알 수 없는 랭크: {name}"</span>)
+        <span class="kw">return</span> mapping[name]
+
+    <span class="kw">def</span> <span class="func">to_str</span>(self) -&gt; str:
+        <span class="kw">return</span> [<span class="str">"연습"</span>, <span class="str">"초급"</span>, <span class="str">"중급"</span>, <span class="str">"상급"</span>, <span class="str">"전문가"</span>, <span class="str">"달인"</span>][self.value]
+
+
+<span class="kw">def</span> <span class="func">rank_gte</span>(current: Union[str, Rank], required: Union[str, Rank]) -&gt; bool:
+    <span class="str">"""현재 랭크가 요구 랭크 이상인지 확인.
+
+    Args:
+        current: 플레이어의 현재 랭크 (한글 또는 Rank)
+        required: 요구되는 최소 랭크 (한글 또는 Rank)
+
+    Returns:
+        current &gt;= required 이면 True
+
+    Raises:
+        ValueError: 유효하지 않은 랭크명이 전달된 경우
+    """</span>
+    cur = Rank.from_str(current) <span class="kw">if</span> isinstance(current, str) <span class="kw">else</span> current
+    req = Rank.from_str(required) <span class="kw">if</span> isinstance(required, str) <span class="kw">else</span> required
+    <span class="kw">return</span> cur &gt;= req</code></pre>
+
+<p><strong>마이그레이션:</strong> 5개 파일의 중복 함수를 삭제하고 <code>from utils.ranks import rank_gte</code>로 교체. <code>fishing.py:277</code>, <code>crafting.py</code>, <code>cooking_db.py</code>, <code>gathering.py</code>, <code>potion.py</code>에서 순차 수정.</p>
+</div>
+</div>
+
+<div class="card">
+<h3>1-C. 핵심 수식에 이유(why) 주석 추가</h3>
+
+<div class="problem">
+<h4>문제 1-C</h4>
+<p><code>battle.py</code>의 컨디션 보정 공식 <code>0.05 + (cond - 50) / 50 * 0.05</code>, <code>player.py</code>의 <code>LEVEL_UP_TABLE</code> 수치, <code>items.py</code>의 가격 책정이 주석 없이 마법 숫자로 존재한다. 밸런싱 변경 시 의도를 알 수 없어 회귀가 발생할 수 있다.</p>
+</div>
+
+<div class="solution">
+<h4>해결 1-C — "왜 이 값인가"를 문서화</h4>
+<p><strong>원칙:</strong> 주석은 "무엇"이 아닌 "왜"를 설명한다. 코드가 이미 말하는 것을 반복하지 않는다.</p>
+<pre><code><span class="comment"># battle.py — 수정 전</span>
+<span class="kw">if</span> cond &gt;= 50:
+    bonus = 0.05 + (cond - 50) / 50 * 0.05
+    mods[<span class="str">"atk_mult"</span>] += bonus
+
+<span class="comment"># battle.py — 수정 후</span>
+<span class="comment"># 컨디션 보정: 평균(50) 이상일 때만 공격력 보너스 적용.
+# 기본 +5%, 최대 컨디션(100)에서 +10%까지 선형 증가.
+# 밸런스 결정: 상위 랭크 유저가 컨디션 관리에 보상받도록 설계.
+# 변경 시 tests/test_battle_formulas.py::test_condition_bonus 확인.</span>
+COND_THRESHOLD = 50
+BASE_COND_BONUS = 0.05
+MAX_COND_BONUS = 0.10
+
+<span class="kw">if</span> cond &gt;= COND_THRESHOLD:
+    bonus = BASE_COND_BONUS + (cond - COND_THRESHOLD) / 50 * BASE_COND_BONUS
+    mods[<span class="str">"atk_mult"</span>] += bonus</code></pre>
+<p>모든 매직 넘버에 대해 동일한 패턴 적용. <code>player.py</code>의 <code>LEVEL_UP_TABLE</code> 위에는 레벨 스파이크의 밸런스 근거를 작성.</p>
+</div>
+</div>
+
+<div class="card">
+<h3>1-D. 데이터 파일 JSON/YAML 외부화</h3>
+
+<div class="problem">
+<h4>문제 1-D</h4>
+<p><code>items.py</code>(1,015줄), <code>job_data.py</code>(1,102줄), <code>npc_dialogue_db.py</code>(1,901줄) 등 순수 데이터 파일이 Python 코드로 존재한다. 디자이너가 밸런스를 조정하려면 코드를 수정해야 하고, diff가 코드 변경과 섞인다.</p>
+</div>
+
+<div class="solution">
+<h4>해결 1-D — 데이터 로더 패턴</h4>
+<pre><code>data/
+├── items/
+│   ├── consumables.json
+│   ├── cooked_dishes.json
+│   ├── gathering.json
+│   └── materials.json
+├── jobs/
+│   └── npc_jobs.json
+├── dialogue/
+│   ├── aelia.json
+│   ├── damon.json
+│   └── ...
+└── schemas/
+    ├── item.schema.json
+    └── job.schema.json</code></pre>
+
+<p><code>items.py</code>는 로더로 축소:</p>
+<pre><code><span class="comment">"""items.py — 아이템 데이터 로더 (데이터는 data/items/*.json에 저장)."""</span>
+<span class="kw">import</span> json
+<span class="kw">from</span> pathlib <span class="kw">import</span> Path
+<span class="kw">from</span> typing <span class="kw">import</span> Dict, Any
+
+_DATA_DIR = Path(__file__).parent / <span class="str">"data"</span> / <span class="str">"items"</span>
+
+
+<span class="kw">def</span> <span class="func">_load_json</span>(filename: str) -&gt; Dict[str, Any]:
+    path = _DATA_DIR / filename
+    <span class="kw">if not</span> path.exists():
+        <span class="kw">raise</span> FileNotFoundError(<span class="str">f"데이터 파일 없음: {path}"</span>)
+    <span class="kw">with</span> path.open(encoding=<span class="str">"utf-8"</span>) <span class="kw">as</span> f:
+        <span class="kw">return</span> json.load(f)
+
+
+CONSUMABLES = _load_json(<span class="str">"consumables.json"</span>)
+COOKED_DISHES = _load_json(<span class="str">"cooked_dishes.json"</span>)
+GATHERING_ITEMS = _load_json(<span class="str">"gathering.json"</span>)
+<span class="comment"># ...</span>
+
+ALL_ITEMS: Dict[str, Any] = {
+    **CONSUMABLES,
+    **COOKED_DISHES,
+    **GATHERING_ITEMS,
+}</code></pre>
+
+<p>스키마 검증(<code>jsonschema</code> 라이브러리 또는 <code>pydantic</code> 사용)을 추가하여 데이터 무결성 보장.</p>
+</div>
+</div>
+
+<div class="target">
+<h4>카테고리 1 수용 기준 (5/5 달성)</h4>
+<ul>
+<li><strong>1a (네이밍)</strong>: 이미 양호 → 유지. 한글/영어 네이밍 규칙 문서화(<code>CONTRIBUTING.md</code>).</li>
+<li><strong>1b (DRY)</strong>: <code>utils/ranks.py</code> 도입으로 5회 중복 제거. grep 결과 <code>_rank_gte</code> 정의가 1곳만 존재해야 함.</li>
+<li><strong>1c (주석)</strong>: <code>battle.py</code>, <code>player.py</code>의 모든 매직 넘버에 "왜" 주석 추가. <code>grep -rn "magic number\|TODO" --include="*.py"</code> 결과 0건.</li>
+<li><strong>1d (main.py 분리)</strong>: <code>main.py</code> 500줄 미만, Cog 8개로 분리. <code>wc -l main.py</code>가 500 미만.</li>
+<li><strong>1e (데이터 외부화)</strong>: <code>items.py</code>, <code>job_data.py</code>, <code>npc_dialogue_db.py</code>가 로더 패턴으로 축소. 각 파일 300줄 미만.</li>
+</ul>
+</div>
+
+<!-- ==================== CATEGORY 2 ==================== -->
+<h2 id="cat2">카테고리 2 — 견고성 &amp; 에러 복원력</h2>
+<div class="cat-header">
+<div><span class="score-before">현재 2.0 / 5</span> <span class="arrow">→</span> <span class="score-after">목표 5.0 / 5</span></div>
+<div><span class="effort">예상 공수: 대형</span></div>
+</div>
+
+<div class="card">
+<h3>2-A. 100+개 무음 예외 처리 제거 (최우선 Critical)</h3>
+
+<div class="problem">
+<h4>문제 2-A <span class="severity-critical">CRITICAL</span></h4>
+<p>코드베이스 전반에 <code>except Exception: pass</code> 패턴이 100+개 존재한다. 주요 집중 지점:</p>
+<ul>
+<li><code>skill_ui.py</code>: L286, L456, L476, L486, L502, L575, L627, L685, L723, L733 (10곳)</li>
+<li><code>care_ui.py</code>: L149, L184, L286, L348, L441, L540, L653, L658, L726, L805 (10곳)</li>
+<li><code>npcs.py</code>: L324, L338, L364, L376, L427, L452, L515, L529 (8곳)</li>
+<li><code>npc_conversation.py</code>: L322, L390, L495, L601, L636, L673, L675 (7곳)</li>
+<li><code>storage.py</code>: L37-38, L50-51 (DB 로드/저장 무음 실패 — 데이터 손실 리스크)</li>
+<li><code>database.py</code>: L481, L641, L668, L818, L852, L885</li>
+</ul>
+<p><strong>가장 위험한 사례 — <code>storage.py:L27-38</code>:</strong> DB 로드 실패 시 <code>except Exception: pass</code>로 무음 처리되어 빈 보관함으로 시작. 이후 <code>_save()</code>가 호출되면 기존 데이터 위에 빈 데이터를 덮어쓴다. <strong>데이터 손실이 발생해도 감지할 수 없다.</strong></p>
+</div>
+
+<div class="solution">
+<h4>해결 2-A — 3단계 전략</h4>
+
+<h4>단계 1: 커스텀 예외 실제 사용 시작</h4>
+<p><code>utils/exceptions.py</code>는 이미 정의되어 있으나 실제로 raise/catch되지 않는다. 먼저 게임 로직에서 이를 raise 하도록 전환:</p>
+<pre><code><span class="comment"># economy.py — 개선 후</span>
+<span class="kw">from</span> utils.exceptions <span class="kw">import</span> InsufficientResourceError, InventoryFullError
+
+
+<span class="kw">def</span> <span class="func">deduct</span>(self, source: str, gold: int = 0, items: Optional[Dict[str, int]] = <span class="kw">None</span>) -&gt; <span class="kw">None</span>:
+    <span class="comment"># 사전 검증: 모든 자원이 충분한지 먼저 확인</span>
+    <span class="kw">if</span> gold &gt; 0 <span class="kw">and</span> self.player.gold &lt; gold:
+        <span class="kw">raise</span> InsufficientResourceError(
+            <span class="str">f"골드 부족: 필요={gold}, 보유={self.player.gold}"</span>
+        )
+    <span class="kw">if</span> items:
+        <span class="kw">for</span> item_id, count <span class="kw">in</span> items.items():
+            <span class="kw">if</span> self.player.inventory.get(item_id, 0) &lt; count:
+                <span class="kw">raise</span> InsufficientResourceError(
+                    <span class="str">f"아이템 부족: {item_id} 필요={count}, 보유={self.player.inventory.get(item_id, 0)}"</span>
+                )
+
+    <span class="comment"># 모든 검증 통과 후에만 실제 차감 (원자성 보장)</span>
+    <span class="kw">try</span>:
+        changes: dict = {}
+        <span class="kw">if</span> gold:
+            self.player.gold -= gold
+            changes[<span class="str">"gold"</span>] = -gold
+        <span class="kw">if</span> items:
+            <span class="kw">for</span> item_id, count <span class="kw">in</span> items.items():
+                self.player.remove_item(item_id, count)
+                changes[item_id] = -count
+        tx_log.log(self._name(), <span class="str">"TRANSACTION"</span>, source, <span class="str">"차감"</span>, changes)
+    <span class="kw">except</span> Exception <span class="kw">as</span> e:
+        logger.error(<span class="str">f"차감 실패: source={source}, 오류={e}"</span>, exc_info=<span class="kw">True</span>)
+        <span class="kw">raise</span></code></pre>
+
+<h4>단계 2: 무음 pass를 로깅으로 교체</h4>
+<p>다음 sed/수동 전략으로 교체한다:</p>
+<pre><code><span class="comment"># 패턴 1: 완전 무음 → 로깅으로</span>
+<span class="bad"># BAD</span>
+<span class="kw">try</span>:
+    risky_operation()
+<span class="kw">except</span> Exception:
+    <span class="kw">pass</span>
+
+<span class="good"># GOOD</span>
+<span class="kw">try</span>:
+    risky_operation()
+<span class="kw">except</span> Exception <span class="kw">as</span> e:
+    logger.warning(<span class="str">f"{operation_name} 실패 (무시 가능): {e}"</span>, exc_info=<span class="kw">True</span>)
+    <span class="comment"># 의도적으로 무시하는 이유를 명시</span></code></pre>
+
+<h4>단계 3: <code>storage.py</code> 특별 수정 (데이터 손실 방지)</h4>
+<pre><code><span class="comment"># storage.py — 수정 후</span>
+<span class="kw">from</span> utils.exceptions <span class="kw">import</span> DatabaseError
+<span class="kw">from</span> utils.logger <span class="kw">import</span> setup_logger
+
+logger = setup_logger(<span class="str">'storage'</span>)
+
+
+<span class="kw">class</span> <span class="func">StorageEngine</span>:
+    <span class="kw">def</span> <span class="func">__init__</span>(self, player):
+        self.player = player
+        self.items = {}
+        self.max_capacity = 20
+        self._loaded_successfully = <span class="kw">False</span>  <span class="comment"># 로드 성공 여부 추적</span>
+        self._load()
+
+    <span class="kw">def</span> <span class="func">_load</span>(self) -&gt; <span class="kw">None</span>:
+        <span class="str">"""DB에서 보관함 데이터 로드.
+
+        Raises:
+            DatabaseError: DB 연결 또는 데이터 파싱 실패 시.
+        """</span>
+        <span class="kw">try</span>:
+            <span class="kw">with</span> get_db_connection() <span class="kw">as</span> conn:
+                cursor = conn.cursor()
+                cursor.execute(
+                    <span class="str">"SELECT items, max_capacity FROM storage WHERE user_id = ?"</span>,
+                    (self.player.user_id,)  <span class="comment"># 하드코딩 제거 (3-B 참조)</span>
+                )
+                row = cursor.fetchone()
+                <span class="kw">if</span> row:
+                    self.items = json.loads(row[<span class="str">"items"</span>])
+                    self.max_capacity = row[<span class="str">"max_capacity"</span>]
+                self._loaded_successfully = <span class="kw">True</span>
+        <span class="kw">except</span> sqlite3.Error <span class="kw">as</span> e:
+            logger.error(<span class="str">f"보관함 로드 실패 (user_id={self.player.user_id}): {e}"</span>, exc_info=<span class="kw">True</span>)
+            <span class="kw">raise</span> DatabaseError(<span class="str">f"보관함 로드 실패: {e}"</span>) <span class="kw">from</span> e
+        <span class="kw">except</span> json.JSONDecodeError <span class="kw">as</span> e:
+            logger.error(<span class="str">f"보관함 데이터 파싱 실패 (user_id={self.player.user_id}): {e}"</span>)
+            <span class="kw">raise</span> DatabaseError(<span class="str">f"보관함 데이터 손상: {e}"</span>) <span class="kw">from</span> e
+
+    <span class="kw">def</span> <span class="func">_save</span>(self) -&gt; <span class="kw">None</span>:
+        <span class="str">"""보관함 저장. 로드가 실패했으면 저장하지 않음 (데이터 손실 방지)."""</span>
+        <span class="kw">if not</span> self._loaded_successfully:
+            logger.critical(
+                <span class="str">f"보관함이 제대로 로드되지 않아 저장을 거부합니다 "</span>
+                <span class="str">f"(user_id={self.player.user_id}). 데이터 손실 방지."</span>
+            )
+            <span class="kw">raise</span> DatabaseError(<span class="str">"로드 실패 상태에서 저장 시도 차단"</span>)
+        <span class="comment"># ... 실제 저장 로직 ...</span></code></pre>
+
+<p>이 패턴을 모든 영속성 관련 파일(<code>collection.py</code>, <code>achievements.py</code>, <code>diary.py</code>, <code>bulletin.py</code>)에 적용한다.</p>
+</div>
+</div>
+
+<div class="card">
+<h3>2-B. 이미지 렌더링 실패 시 텍스트 폴백</h3>
+
+<div class="problem">
+<h4>문제 2-B</h4>
+<p><code>bg3_renderer.py</code>의 <code>render_*</code> 메서드 호출부(<code>status_window.py</code>, <code>equipment_window.py</code>, <code>fishing_card.py</code> 등)에서 렌더링 실패 시 폴백이 없다. PIL 오류 시 사용자는 빈 응답 또는 스택 트레이스를 받는다.</p>
+</div>
+
+<div class="solution">
+<h4>해결 2-B — 데코레이터 기반 폴백</h4>
+<pre><code><span class="comment"># bg3_renderer.py — 추가</span>
+<span class="kw">from</span> functools <span class="kw">import</span> wraps
+<span class="kw">from</span> utils.exceptions <span class="kw">import</span> RenderError
+<span class="kw">from</span> utils.logger <span class="kw">import</span> setup_logger
+
+logger = setup_logger(<span class="str">'renderer'</span>)
+
+
+<span class="kw">def</span> <span class="func">with_text_fallback</span>(fallback_fn):
+    <span class="str">"""렌더링 실패 시 텍스트 폴백을 반환하는 데코레이터."""</span>
+    <span class="kw">def</span> <span class="func">decorator</span>(render_fn):
+        @wraps(render_fn)
+        <span class="kw">def</span> <span class="func">wrapper</span>(*args, **kwargs):
+            <span class="kw">try</span>:
+                <span class="kw">return</span> render_fn(*args, **kwargs)
+            <span class="kw">except</span> (OSError, MemoryError, ValueError) <span class="kw">as</span> e:
+                logger.error(
+                    <span class="str">f"렌더링 실패: {render_fn.__name__}, 오류={e}"</span>,
+                    exc_info=<span class="kw">True</span>
+                )
+                <span class="kw">return</span> fallback_fn(*args, **kwargs)
+        <span class="kw">return</span> wrapper
+    <span class="kw">return</span> decorator
+
+
+<span class="kw">def</span> <span class="func">_status_text_fallback</span>(player, **kwargs) -&gt; str:
+    <span class="str">"""상태창 렌더링 실패 시 텍스트 버전."""</span>
+    <span class="kw">return</span> (
+        <span class="str">f"**{player.name}** (Lv.{player.level})\n"</span>
+        <span class="str">f"HP: {player.hp}/{player.max_hp} | "</span>
+        <span class="str">f"MP: {player.mp}/{player.max_mp} | "</span>
+        <span class="str">f"기력: {player.energy}/{player.max_energy}\n"</span>
+        <span class="str">f"골드: {player.gold:,}G"</span>
+    )
+
+
+@with_text_fallback(_status_text_fallback)
+<span class="kw">def</span> <span class="func">render_status_card</span>(player, **kwargs):
+    <span class="comment"># 기존 PIL 렌더링 코드 ...</span>
+    <span class="kw">pass</span></code></pre>
+
+<p>호출자(<code>status_window.py</code>)는 결과가 이미지인지 문자열인지에 따라 적절히 응답 분기:</p>
+<pre><code>result = render_status_card(player)
+<span class="kw">if</span> isinstance(result, (bytes, io.BytesIO)):
+    <span class="kw">await</span> ctx.send(file=discord.File(result, <span class="str">"status.png"</span>))
+<span class="kw">else</span>:
+    <span class="kw">await</span> ctx.send(result)  <span class="comment"># 텍스트 폴백</span></code></pre>
+</div>
+</div>
+
+<div class="card">
+<h3>2-C. <code>pay_reward()</code> 부분 실패 롤백</h3>
+
+<div class="problem">
+<h4>문제 2-C</h4>
+<p><code>economy.py:pay_reward()</code>에서 골드 추가 후 아이템 추가가 실패하면 골드는 증가한 채 아이템은 지급되지 않는 부분 실패 상태가 발생한다. 플레이어가 부당 이득을 얻거나 손해를 본다.</p>
+</div>
+
+<div class="solution">
+<h4>해결 2-C — 사전 검증 + 복원 패턴</h4>
+<pre><code><span class="kw">def</span> <span class="func">pay_reward</span>(
+    self,
+    source: str,
+    gold: int = 0,
+    exp: float = 0.0,
+    items: Optional[Dict[str, int]] = <span class="kw">None</span>,
+) -&gt; <span class="kw">None</span>:
+    <span class="str">"""보상 지급 — 모든 작업이 성공해야만 커밋 (원자성).
+
+    Raises:
+        InventoryFullError: 인벤토리가 가득 차서 아이템 추가 실패 시.
+    """</span>
+    <span class="comment"># 1. 사전 검증: 모든 아이템이 수용 가능한지 확인</span>
+    <span class="kw">if</span> items:
+        used, max_slots = self.player.inventory_check()
+        new_slots = sum(
+            1 <span class="kw">for</span> iid <span class="kw">in</span> items
+            <span class="kw">if</span> iid <span class="kw">not in</span> self.player.inventory
+        )
+        <span class="kw">if</span> used + new_slots &gt; max_slots:
+            <span class="kw">raise</span> InventoryFullError(
+                <span class="str">f"인벤토리 부족: {used}/{max_slots}, 추가 필요={new_slots}"</span>
+            )
+
+    <span class="comment"># 2. 스냅샷 저장 (롤백용)</span>
+    snapshot = {
+        <span class="str">"gold"</span>: self.player.gold,
+        <span class="str">"exp"</span>: getattr(self.player, <span class="str">"exp"</span>, 0.0),
+        <span class="str">"inventory"</span>: dict(self.player.inventory),
+    }
+
+    <span class="kw">try</span>:
+        changes: dict = {}
+        <span class="kw">if</span> gold:
+            self.player.gold += gold
+            changes[<span class="str">"gold"</span>] = gold
+        <span class="kw">if</span> exp:
+            self.player.exp += exp
+            changes[<span class="str">"exp"</span>] = exp
+        <span class="kw">if</span> items:
+            <span class="kw">for</span> item_id, count <span class="kw">in</span> items.items():
+                <span class="kw">if not</span> self.player.add_item(item_id, count):
+                    <span class="kw">raise</span> InventoryFullError(<span class="str">f"추가 실패: {item_id}"</span>)
+                changes[item_id] = count
+
+        tx_log.log(self._name(), <span class="str">"TRANSACTION"</span>, source, <span class="str">"보상 지급"</span>, changes)
+        logger.info(<span class="str">f"보상 지급 완료: changes={changes}"</span>)
+
+    <span class="kw">except</span> Exception <span class="kw">as</span> e:
+        <span class="comment"># 롤백: 스냅샷으로 복원</span>
+        self.player.gold = snapshot[<span class="str">"gold"</span>]
+        self.player.exp = snapshot[<span class="str">"exp"</span>]
+        self.player.inventory = snapshot[<span class="str">"inventory"</span>]
+        logger.error(<span class="str">f"보상 지급 실패, 롤백됨: source={source}, 오류={e}"</span>, exc_info=<span class="kw">True</span>)
+        <span class="kw">raise</span></code></pre>
+</div>
+</div>
+
+<div class="card">
+<h3>2-D. 동시성 보호 (<code>shared_player</code> 및 전역 상태)</h3>
+
+<div class="problem">
+<h4>문제 2-D</h4>
+<p><code>main.py</code>의 <code>shared_player</code> 싱글톤이 모든 커맨드에 공유되지만, discord.py의 async 컨텍스트에서 동시 접근 보호가 없다. <code>alarms.py</code>의 <code>_last_random_minute</code> 전역 상태도 마찬가지. 동시 커맨드 실행 시 race condition 가능.</p>
+</div>
+
+<div class="solution">
+<h4>해결 2-D — asyncio.Lock 도입</h4>
+<pre><code><span class="comment"># utils/locks.py 신규</span>
+<span class="kw">import</span> asyncio
+<span class="kw">from</span> collections <span class="kw">import</span> defaultdict
+
+<span class="comment"># 사용자별 락 (user_id를 키로)</span>
+_user_locks: dict = defaultdict(asyncio.Lock)
+
+
+<span class="kw">def</span> <span class="func">get_user_lock</span>(user_id: int) -&gt; asyncio.Lock:
+    <span class="str">"""특정 사용자의 작업 직렬화를 위한 락."""</span>
+    <span class="kw">return</span> _user_locks[user_id]</code></pre>
+
+<p>모든 상태 변경 커맨드에서 락 사용:</p>
+<pre><code><span class="kw">from</span> utils.locks <span class="kw">import</span> get_user_lock
+
+@commands.command(name=<span class="str">"전투"</span>)
+<span class="kw">async def</span> <span class="func">start_battle</span>(self, ctx):
+    <span class="kw">async with</span> get_user_lock(ctx.author.id):
+        <span class="comment"># 이 블록 안에서는 동일 사용자의 다른 커맨드가 대기</span>
+        player = load_player(ctx.author.id)
+        <span class="comment"># ... 전투 로직 ...</span>
+        save_player(player)</code></pre>
+</div>
+</div>
+
+<div class="target">
+<h4>카테고리 2 수용 기준 (5/5 달성)</h4>
+<ul>
+<li><strong>2a (에러 전략)</strong>: <code>grep -rn "except Exception" --include="*.py" | grep -c "pass"</code> 결과 0건. 모든 예외가 로깅 또는 커스텀 예외 raise로 처리.</li>
+<li><strong>2b (피드백)</strong>: 사용자-facing 에러 메시지가 모든 실패 경로에 존재. Discord 임베드 에러 응답 통일.</li>
+<li><strong>2c (실패 예측)</strong>: <code>save_manager</code> 수준의 복원 로직이 경제/인벤토리 시스템에도 적용됨.</li>
+<li><strong>2d (렌더링 폴백)</strong>: 모든 <code>render_*</code> 함수에 <code>@with_text_fallback</code> 데코레이터 적용.</li>
+<li><strong>2e (경제 원자성)</strong>: <code>pay_reward</code>, <code>deduct</code>가 스냅샷 기반 롤백 보유. 부분 실패 시나리오 테스트 작성.</li>
+</ul>
+</div>
+
+<!-- ==================== CATEGORY 3 ==================== -->
+<h2 id="cat3">카테고리 3 — 보안 태세</h2>
+<div class="cat-header">
+<div><span class="score-before">현재 3.0 / 5</span> <span class="arrow">→</span> <span class="score-after">목표 5.0 / 5</span></div>
+<div><span class="effort">예상 공수: 중형</span></div>
+</div>
+
+<div class="card">
+<h3>3-A. 사용자 입력 검증 레이어 구축</h3>
+
+<div class="problem">
+<h4>문제 3-A</h4>
+<p>SQL 쿼리는 파라미터 바인딩으로 안전하나, 사용자 입력이 PIL 렌더링, NPC 대화 키워드 검색, 파일 경로 조합에 검증 없이 전달된다. 닉네임 길이 제한 없음, 아이템 이름 정규화 없음.</p>
+</div>
+
+<div class="solution">
+<h4>해결 3-A — 중앙 검증 모듈</h4>
+<pre><code><span class="comment">"""utils/validators.py — 사용자 입력 검증."""</span>
+<span class="kw">import</span> re
+<span class="kw">from</span> utils.exceptions <span class="kw">import</span> GameError
+
+
+<span class="kw">class</span> <span class="func">ValidationError</span>(GameError):
+    <span class="str">"""입력 검증 실패."""</span>
+    <span class="kw">pass</span>
+
+
+MAX_NAME_LENGTH = 20
+MAX_MESSAGE_LENGTH = 500
+ITEM_ID_PATTERN = re.compile(<span class="str">r'^[a-z0-9_]+$'</span>)
+<span class="comment"># 한글, 영숫자, 공백, 일부 특수문자만 허용</span>
+SAFE_TEXT_PATTERN = re.compile(<span class="str">r'^[\w\s가-힣.,!?\-()]+$'</span>, re.UNICODE)
+
+
+<span class="kw">def</span> <span class="func">validate_player_name</span>(name: str) -&gt; str:
+    <span class="str">"""플레이어 이름 검증 및 정규화."""</span>
+    <span class="kw">if not</span> name <span class="kw">or not</span> name.strip():
+        <span class="kw">raise</span> ValidationError(<span class="str">"이름은 비어 있을 수 없습니다"</span>)
+    name = name.strip()
+    <span class="kw">if</span> len(name) &gt; MAX_NAME_LENGTH:
+        <span class="kw">raise</span> ValidationError(<span class="str">f"이름은 {MAX_NAME_LENGTH}자 이하여야 합니다"</span>)
+    <span class="kw">if not</span> SAFE_TEXT_PATTERN.match(name):
+        <span class="kw">raise</span> ValidationError(<span class="str">"이름에 허용되지 않는 문자가 포함되어 있습니다"</span>)
+    <span class="kw">return</span> name
+
+
+<span class="kw">def</span> <span class="func">validate_item_id</span>(item_id: str) -&gt; str:
+    <span class="str">"""아이템 ID 형식 검증."""</span>
+    <span class="kw">if not</span> ITEM_ID_PATTERN.match(item_id):
+        <span class="kw">raise</span> ValidationError(<span class="str">f"잘못된 아이템 ID 형식: {item_id}"</span>)
+    <span class="kw">return</span> item_id
+
+
+<span class="kw">def</span> <span class="func">validate_count</span>(count: int, min_val: int = 1, max_val: int = 999) -&gt; int:
+    <span class="str">"""수량 범위 검증."""</span>
+    <span class="kw">if not</span> isinstance(count, int) <span class="kw">or</span> count &lt; min_val <span class="kw">or</span> count &gt; max_val:
+        <span class="kw">raise</span> ValidationError(<span class="str">f"수량은 {min_val}~{max_val} 사이여야 합니다"</span>)
+    <span class="kw">return</span> count
+
+
+<span class="kw">def</span> <span class="func">truncate_for_render</span>(text: str, max_len: int = 100) -&gt; str:
+    <span class="str">"""PIL 렌더링용 텍스트 길이 제한."""</span>
+    <span class="kw">if</span> len(text) &gt; max_len:
+        <span class="kw">return</span> text[:max_len - 3] + <span class="str">"..."</span>
+    <span class="kw">return</span> text</code></pre>
+</div>
+</div>
+
+<div class="card">
+<h3>3-B. PIL 렌더링 DoS 방어</h3>
+
+<div class="problem">
+<h4>문제 3-B</h4>
+<p><code>bg3_renderer.py</code>가 사용자 텍스트를 <code>ImageDraw.text()</code>로 직접 전달하며 길이 제한, 타임아웃, 크기 상한이 없다. 반복 렌더링 요청으로 서버 리소스 고갈 가능.</p>
+</div>
+
+<div class="solution">
+<h4>해결 3-B — 3중 방어</h4>
+<pre><code><span class="comment"># bg3_renderer.py 개선</span>
+<span class="kw">import</span> asyncio
+<span class="kw">from</span> concurrent.futures <span class="kw">import</span> ThreadPoolExecutor, TimeoutError <span class="kw">as</span> FuturesTimeout
+<span class="kw">from</span> utils.validators <span class="kw">import</span> truncate_for_render
+
+RENDER_TIMEOUT_SEC = 5.0  <span class="comment"># 렌더링 최대 시간</span>
+MAX_IMAGE_PIXELS = 4_000_000  <span class="comment"># 약 2000x2000</span>
+MAX_TEXT_LEN = 200
+
+
+<span class="kw">class</span> <span class="func">BG3Renderer</span>:
+    <span class="kw">def</span> <span class="func">__init__</span>(self):
+        self._executor = ThreadPoolExecutor(max_workers=4)
+
+    <span class="kw">def</span> <span class="func">_safe_text</span>(self, text: str) -&gt; str:
+        <span class="str">"""렌더링 전 텍스트 sanitize."""</span>
+        <span class="kw">return</span> truncate_for_render(str(text), MAX_TEXT_LEN)
+
+    <span class="kw">def</span> <span class="func">_draw_image</span>(self, width: int, height: int) -&gt; Image.Image:
+        <span class="kw">if</span> width * height &gt; MAX_IMAGE_PIXELS:
+            <span class="kw">raise</span> RenderError(<span class="str">f"이미지 크기 초과: {width}x{height}"</span>)
+        <span class="kw">return</span> Image.new(<span class="str">"RGBA"</span>, (width, height))
+
+    <span class="kw">async def</span> <span class="func">render_async</span>(self, fn, *args, **kwargs):
+        <span class="str">"""타임아웃이 적용된 비동기 렌더링."""</span>
+        loop = asyncio.get_event_loop()
+        <span class="kw">try</span>:
+            <span class="kw">return await</span> asyncio.wait_for(
+                loop.run_in_executor(self._executor, fn, *args, **kwargs),
+                timeout=RENDER_TIMEOUT_SEC
+            )
+        <span class="kw">except</span> asyncio.TimeoutError:
+            logger.error(<span class="str">f"렌더링 타임아웃: {fn.__name__}"</span>)
+            <span class="kw">raise</span> RenderError(<span class="str">"렌더링 시간 초과"</span>)</code></pre>
+
+<p>추가로 Discord 커맨드에 rate limit 적용:</p>
+<pre><code><span class="kw">from</span> discord.ext <span class="kw">import</span> commands
+
+@commands.command(name=<span class="str">"상태"</span>)
+@commands.cooldown(rate=3, per=10.0, type=commands.BucketType.user)
+<span class="kw">async def</span> <span class="func">show_status</span>(self, ctx):
+    <span class="comment"># 사용자당 10초에 3회 제한</span>
+    <span class="kw">pass</span></code></pre>
+</div>
+</div>
+
+<div class="card">
+<h3>3-C. <code>storage.py</code> <code>user_id=0</code> 하드코딩 수정</h3>
+
+<div class="problem">
+<h4>문제 3-C</h4>
+<p><code>storage.py:L31, L47</code>에서 <code>user_id = 0</code>으로 하드코딩되어 모든 사용자가 동일 보관함을 공유한다. 현재는 단일 플레이어 용도이지만 멀티유저로 확장 시 데이터 격리 실패.</p>
+</div>
+
+<div class="solution">
+<h4>해결 3-C</h4>
+<pre><code><span class="kw">class</span> <span class="func">StorageEngine</span>:
+    <span class="kw">def</span> <span class="func">__init__</span>(self, player):
+        <span class="kw">if not</span> hasattr(player, <span class="str">"user_id"</span>) <span class="kw">or</span> player.user_id <span class="kw">is None</span>:
+            <span class="kw">raise</span> ValueError(<span class="str">"StorageEngine은 user_id가 있는 Player가 필요합니다"</span>)
+        self.player = player
+        self.user_id = player.user_id  <span class="comment"># 명시적 저장</span>
+        <span class="comment"># ...</span>
+
+    <span class="kw">def</span> <span class="func">_load</span>(self):
+        cursor.execute(
+            <span class="str">"SELECT items, max_capacity FROM storage WHERE user_id = ?"</span>,
+            (self.user_id,)  <span class="comment"># 하드코딩 제거</span>
+        )</code></pre>
+
+<p>DB 마이그레이션: 기존 <code>user_id=0</code> 데이터를 실제 사용자 ID로 이전. <code>save_manager.py</code>에 마이그레이션 스크립트 추가.</p>
+</div>
+</div>
+
+<div class="card">
+<h3>3-D. 환경변수 검증 강화</h3>
+
+<div class="problem">
+<h4>문제 3-D</h4>
+<p><code>main.py:L60-63</code>에서 <code>int(os.getenv(..., "기본값"))</code> 패턴이 기본값으로 실제 사용자 ID를 사용한다. <code>.env.example</code>에도 실제 ID가 노출됨.</p>
+</div>
+
+<div class="solution">
+<h4>해결 3-D</h4>
+<pre><code><span class="comment"># main.py 또는 utils/config.py</span>
+<span class="kw">from</span> utils.exceptions <span class="kw">import</span> ConfigError
+
+
+<span class="kw">def</span> <span class="func">load_required_int_env</span>(name: str) -&gt; int:
+    <span class="str">"""필수 정수 환경변수를 로드. 미설정 시 즉시 실패."""</span>
+    value = os.getenv(name)
+    <span class="kw">if not</span> value:
+        <span class="kw">raise</span> ConfigError(<span class="str">f"필수 환경변수 {name}이 설정되지 않았습니다"</span>)
+    <span class="kw">try</span>:
+        <span class="kw">return</span> int(value)
+    <span class="kw">except</span> ValueError:
+        <span class="kw">raise</span> ConfigError(<span class="str">f"환경변수 {name}은 정수여야 합니다: {value}"</span>)
+
+
+TOKEN = os.getenv(<span class="str">"DISCORD_TOKEN"</span>)
+<span class="kw">if not</span> TOKEN <span class="kw">or</span> len(TOKEN) &lt; 50:
+    <span class="kw">raise</span> ConfigError(<span class="str">"DISCORD_TOKEN이 유효하지 않습니다"</span>)
+
+HYNESS_ID = load_required_int_env(<span class="str">"HYNESS_ID"</span>)
+MAJESTY_ID = load_required_int_env(<span class="str">"MAJESTY_ID"</span>)
+DRIDER_ID = load_required_int_env(<span class="str">"DRIDER_ID"</span>)
+ALLOWED_CHANNEL_ID = load_required_int_env(<span class="str">"ALLOWED_CHANNEL_ID"</span>)</code></pre>
+
+<p><code>.env.example</code>은 placeholder로 교체:</p>
+<pre><code>DISCORD_TOKEN=your_bot_token_here
+HYNESS_ID=000000000000000000
+MAJESTY_ID=000000000000000000
+DRIDER_ID=000000000000000000
+ALLOWED_CHANNEL_ID=000000000000000000</code></pre>
+</div>
+</div>
+
+<div class="target">
+<h4>카테고리 3 수용 기준 (5/5 달성)</h4>
+<ul>
+<li><strong>3a (비밀 관리)</strong>: <code>.env.example</code>에 실제 ID 제거, <code>gitleaks</code> 스캔 통과.</li>
+<li><strong>3b (입력 검증)</strong>: <code>utils/validators.py</code> 도입, 모든 사용자 입력이 Cog 커맨드 경계에서 검증됨.</li>
+<li><strong>3c (데이터 보호)</strong>: 변경 없음 (이미 양호).</li>
+<li><strong>3d (PIL DoS 방어)</strong>: 렌더링 타임아웃 5초, 텍스트 200자 제한, <code>@commands.cooldown</code> 적용. 수동 로드 테스트로 검증.</li>
+<li><strong>3e (데이터 격리)</strong>: <code>storage.py</code>의 <code>user_id=0</code> 제거, 실제 user_id 사용. 멀티유저 격리 테스트 통과.</li>
+</ul>
+</div>
+
+<!-- ==================== CATEGORY 4 ==================== -->
+<h2 id="cat4">카테고리 4 — 검증 &amp; 정확성 보장</h2>
+<div class="cat-header">
+<div><span class="score-before">현재 1.5 / 5</span> <span class="arrow">→</span> <span class="score-after">목표 5.0 / 5</span></div>
+<div><span class="effort">예상 공수: 대형</span></div>
+</div>
+
+<div class="card">
+<h3>4-A. CI 파이프라인 실질화 (가장 시급)</h3>
+
+<div class="problem">
+<h4>문제 4-A <span class="severity-critical">CRITICAL</span></h4>
+<p><code>.github/workflows/test.yml</code>의 검증 단계가 실질적으로 실패를 발생시키지 않는다:</p>
+<ul>
+<li>L35: <code>flake8 . --exit-zero</code> — 모든 경고를 성공으로 처리</li>
+<li>L39: <code>mypy ... || true</code> — mypy 실패를 무시</li>
+<li>L49: <code>fail_ci_if_error: false</code> — coverage 업로드 실패 무시</li>
+</ul>
+<p>결과적으로 pytest만이 유일한 게이트이며, 타입 오류와 스타일 문제가 main 브랜치로 자유롭게 병합된다.</p>
+</div>
+
+<div class="solution">
+<h4>해결 4-A — 엄격한 CI 설정</h4>
+<pre><code><span class="comment"># .github/workflows/test.yml 교체</span>
+name: Python Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [<span class="str">'3.10'</span>, <span class="str">'3.11'</span>]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: <span class="str">'pip'</span>
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r requirements-dev.txt
+
+    - name: Lint with flake8 (strict)
+      run: |
+        <span class="comment"># 문법 오류 및 정의 누락 체크 (기존 유지)</span>
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        <span class="comment"># 전체 lint — 이제는 실패하면 빌드 중단</span>
+        flake8 . --count --max-complexity=15 --max-line-length=127 --statistics
+
+    - name: Type check with mypy (strict)
+      run: |
+        <span class="comment"># || true 제거, 모든 실패가 빌드 중단</span>
+        mypy . --config-file=mypy.ini
+
+    - name: Run tests with coverage gate
+      run: |
+        pytest tests/ -v --cov=. --cov-report=xml --cov-report=term \
+          --cov-fail-under=70   <span class="comment"># 70% 미만이면 실패</span>
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./coverage.xml
+        fail_ci_if_error: true   <span class="comment"># 실패 시 빌드 중단</span></code></pre>
+
+<p><strong>주의:</strong> 이 변경은 기존에 숨겨져 있던 모든 lint/type 오류를 드러낸다. 먼저 별도 PR로 기존 오류를 수정한 뒤 CI를 엄격화해야 한다.</p>
+</div>
+</div>
+
+<div class="card">
+<h3>4-B. <code>mypy.ini</code> 엄격화 및 전체 커버</h3>
+
+<div class="problem">
+<h4>문제 4-B</h4>
+<p>현재 <code>mypy.ini</code>는 <code>disallow_untyped_defs = False</code>로 타입 없는 함수를 허용하며, CI에서 4개 파일(<code>economy.py</code>, <code>player.py</code>, <code>battle.py</code>, <code>database.py</code>)만 검사한다.</p>
+</div>
+
+<div class="solution">
+<h4>해결 4-B</h4>
+<pre><code><span class="comment"># mypy.ini — 점진적 엄격화</span>
+[mypy]
+python_version = 3.10
+warn_return_any = True
+warn_unused_configs = True
+warn_redundant_casts = True
+warn_unused_ignores = True
+warn_no_return = True
+no_implicit_optional = True
+strict_optional = True
+check_untyped_defs = True
+
+<span class="comment"># 점진적 타이핑: 새 코드는 필수, 기존 코드는 허용</span>
+disallow_untyped_defs = False
+disallow_incomplete_defs = True
+
+<span class="comment"># 외부 라이브러리 stub 없음</span>
+[mypy-discord.*]
+ignore_missing_imports = True
+[mypy-PIL.*]
+ignore_missing_imports = True
+[mypy-yaml.*]
+ignore_missing_imports = True
+[mypy-pytz.*]
+ignore_missing_imports = True
+
+<span class="comment"># 핵심 모듈은 엄격 모드</span>
+[mypy-economy]
+disallow_untyped_defs = True
+[mypy-player]
+disallow_untyped_defs = True
+[mypy-battle]
+disallow_untyped_defs = True
+[mypy-utils.*]
+disallow_untyped_defs = True</code></pre>
+</div>
+</div>
+
+<div class="card">
+<h3>4-C. 전투 시스템 테스트 작성 (핵심 경로)</h3>
+
+<div class="problem">
+<h4>문제 4-C <span class="severity-critical">CRITICAL</span></h4>
+<p><code>battle.py</code>(632줄)에 대한 테스트가 단 하나도 없다. 데미지 계산, 크리티컬, 컨디션 보정, 등급 산출, 보상 계산이 전부 미검증. 게임 핵심 루프의 수식 오류가 감지되지 않는다.</p>
+</div>
+
+<div class="solution">
+<h4>해결 4-C — <code>tests/test_battle.py</code> 신규 작성</h4>
+<pre><code><span class="comment">"""tests/test_battle.py — 전투 시스템 회귀 테스트."""</span>
+<span class="kw">import</span> pytest
+<span class="kw">from</span> unittest.mock <span class="kw">import</span> MagicMock, patch
+
+<span class="kw">from</span> battle <span class="kw">import</span> BattleEngine
+<span class="kw">from</span> player <span class="kw">import</span> Player
+
+
+<span class="kw">class</span> <span class="func">TestConditionModifiers</span>:
+    <span class="str">"""컨디션 보정 수식 검증 (battle.py:_get_condition_modifiers)."""</span>
+
+    <span class="kw">def</span> <span class="func">test_condition_50_gives_base_bonus</span>(self, fresh_player):
+        <span class="str">"""컨디션 50(임계값) 정확히일 때 5% 보너스."""</span>
+        fresh_player.condition = 50
+        engine = BattleEngine(fresh_player)
+        mods = engine._get_condition_modifiers()
+        <span class="kw">assert</span> mods[<span class="str">"atk_mult"</span>] == pytest.approx(1.05, abs=0.001)
+
+    <span class="kw">def</span> <span class="func">test_condition_100_gives_max_bonus</span>(self, fresh_player):
+        <span class="str">"""컨디션 100(최대)일 때 10% 보너스."""</span>
+        fresh_player.condition = 100
+        engine = BattleEngine(fresh_player)
+        mods = engine._get_condition_modifiers()
+        <span class="kw">assert</span> mods[<span class="str">"atk_mult"</span>] == pytest.approx(1.10, abs=0.001)
+
+    <span class="kw">def</span> <span class="func">test_condition_below_threshold_no_bonus</span>(self, fresh_player):
+        <span class="str">"""컨디션 49 이하에서 보너스 없음."""</span>
+        fresh_player.condition = 49
+        engine = BattleEngine(fresh_player)
+        mods = engine._get_condition_modifiers()
+        <span class="kw">assert</span> mods[<span class="str">"atk_mult"</span>] == 1.0
+
+
+<span class="kw">class</span> <span class="func">TestDamageCalculation</span>:
+    <span class="str">"""데미지 공식 검증."""</span>
+
+    <span class="kw">def</span> <span class="func">test_basic_damage</span>(self, fresh_player):
+        fresh_player.base_stats[<span class="str">"str"</span>] = 10
+        engine = BattleEngine(fresh_player)
+        monster = {<span class="str">"hp"</span>: 100, <span class="str">"def"</span>: 5}
+        damage = engine._calculate_damage(fresh_player, monster)
+        <span class="kw">assert</span> damage &gt; 0
+        <span class="kw">assert</span> damage &lt;= 50  <span class="comment"># 합리적 상한</span>
+
+    <span class="kw">def</span> <span class="func">test_critical_hit_multiplier</span>(self, fresh_player):
+        <span class="str">"""크리티컬 히트 배율 검증."""</span>
+        <span class="kw">with</span> patch(<span class="str">'random.random'</span>, return_value=0.0):  <span class="comment"># 항상 크리</span>
+            engine = BattleEngine(fresh_player)
+            <span class="comment"># ... 크리티컬 검증 ...</span>
+
+
+<span class="kw">class</span> <span class="func">TestRewardCalculation</span>:
+    <span class="str">"""전투 보상 계산 검증."""</span>
+
+    @pytest.mark.parametrize(<span class="str">"difficulty,expected_mult"</span>, [
+        (<span class="str">"easy"</span>, 0.8),
+        (<span class="str">"normal"</span>, 1.0),
+        (<span class="str">"hard"</span>, 1.5),
+    ])
+    <span class="kw">def</span> <span class="func">test_exp_multiplier_by_difficulty</span>(self, difficulty, expected_mult):
+        <span class="comment"># 난이도별 경험치 배율 검증</span>
+        <span class="kw">pass</span>
+
+
+<span class="kw">class</span> <span class="func">TestGradeCalculation</span>:
+    <span class="str">"""전투 등급(S/A/B/C/D) 산출 검증."""</span>
+
+    @pytest.mark.parametrize(<span class="str">"hp_ratio,expected_grade"</span>, [
+        (1.0, <span class="str">"S"</span>),
+        (0.8, <span class="str">"A"</span>),
+        (0.5, <span class="str">"B"</span>),
+        (0.2, <span class="str">"C"</span>),
+        (0.05, <span class="str">"D"</span>),
+    ])
+    <span class="kw">def</span> <span class="func">test_grade_from_hp_ratio</span>(self, hp_ratio, expected_grade):
+        <span class="kw">pass</span></code></pre>
+
+<p>목표: <code>battle.py</code>의 핵심 public 메서드마다 최소 3개 테스트(happy path, 경계값, 에러 케이스). 총 30+ 테스트 추가.</p>
+</div>
+</div>
+
+<div class="card">
+<h3>4-D. 전체 테스트 커버리지 목표 70%+</h3>
+
+<div class="problem">
+<h4>문제 4-D</h4>
+<p>현재 48개 테스트가 <code>economy.py</code>, <code>player.py</code>, <code>database.py</code>만 커버. 가챠, NPC 호감도, 스킬, 퀘스트, 전투, 저장, 인벤토리 경계 등이 전부 미검증.</p>
+</div>
+
+<div class="solution">
+<h4>해결 4-D — 필수 테스트 파일 목록</h4>
+<table>
+<tr><th>신규 테스트 파일</th><th>검증 대상</th><th>목표 테스트 수</th></tr>
+<tr><td><code>tests/test_battle.py</code></td><td>전투 수식, 크리티컬, 보상, 등급</td><td>30+</td></tr>
+<tr><td><code>tests/test_save_manager.py</code></td><td>백업, 검증, 복원, 마이그레이션</td><td>15+</td></tr>
+<tr><td><code>tests/test_storage.py</code></td><td>보관함 입출고, 용량, 데이터 격리</td><td>15+</td></tr>
+<tr><td><code>tests/test_gacha.py</code></td><td>확률 분포, 10연차 보장</td><td>10+</td></tr>
+<tr><td><code>tests/test_affinity.py</code></td><td>호감도 상승/하락, 일일 제한</td><td>15+</td></tr>
+<tr><td><code>tests/test_quest.py</code></td><td>수락/완료/실패, 보상 지급</td><td>20+</td></tr>
+<tr><td><code>tests/test_ranks.py</code></td><td>랭크 비교, 변환 (1-B)</td><td>10+</td></tr>
+<tr><td><code>tests/test_validators.py</code></td><td>입력 검증 (3-A)</td><td>20+</td></tr>
+<tr><td><code>tests/test_economy_rollback.py</code></td><td>부분 실패 롤백 (2-C)</td><td>10+</td></tr>
+<tr><td><code>tests/test_integration.py</code></td><td>엔드투엔드 시나리오</td><td>10+</td></tr>
+</table>
+<p><strong>최종 목표:</strong> 200+ 테스트, 코드 커버리지 70%+, 핵심 경로(<code>battle</code>, <code>economy</code>, <code>save_manager</code>) 90%+.</p>
+</div>
+</div>
+
+<div class="target">
+<h4>카테고리 4 수용 기준 (5/5 달성)</h4>
+<ul>
+<li><strong>4a (검증 존재)</strong>: CI가 flake8/mypy/pytest/coverage 모두 엄격 검증. PR이 이들 중 하나라도 실패하면 병합 불가.</li>
+<li><strong>4b (핵심 경로)</strong>: <code>battle.py</code>, <code>economy.py</code>, <code>save_manager.py</code>가 90%+ 커버리지.</li>
+<li><strong>4c (타입 안전)</strong>: 모든 <code>utils/</code> 및 핵심 모듈에 완전한 타입 힌트. <code>mypy --strict</code> 통과.</li>
+<li><strong>4d (수식 테스트)</strong>: 전투/경제/밸런스 공식이 parametrize 테스트로 경계값 검증.</li>
+<li><strong>4e (CI 게이트)</strong>: <code>|| true</code>, <code>--exit-zero</code>, <code>fail_ci_if_error: false</code> 등 우회 패턴이 워크플로우에 0건.</li>
+</ul>
+</div>
+
+<!-- ==================== CATEGORY 5 ==================== -->
+<h2 id="cat5">카테고리 5 — 아키텍처 &amp; 구조적 건전성</h2>
+<div class="cat-header">
+<div><span class="score-before">현재 2.0 / 5</span> <span class="arrow">→</span> <span class="score-after">목표 5.0 / 5</span></div>
+<div><span class="effort">예상 공수: 대형</span></div>
+</div>
+
+<div class="card">
+<h3>5-A. 설정 시스템 실제 연결 (유령 시스템 제거)</h3>
+
+<div class="problem">
+<h4>문제 5-A</h4>
+<p><code>config/game.yaml</code>과 <code>utils/config.py</code>가 완성도 높게 구현되어 있으나 <strong>실제 게임 코드에서 <code>Config().get()</code> 호출이 거의 없다</strong>. 설정을 변경해도 게임 동작에 영향이 없는 "유령 시스템" 상태.</p>
+</div>
+
+<div class="solution">
+<h4>해결 5-A — 단계별 참조 전환</h4>
+
+<h4>단계 1: 전역 <code>config</code> 인스턴스를 핵심 모듈에서 import</h4>
+<pre><code><span class="comment"># player.py — 수정 전</span>
+MAX_LEVEL = 100
+LEVEL_UP_BASE = 100
+LEVEL_UP_MULTIPLIER = 1.5
+
+<span class="comment"># player.py — 수정 후</span>
+<span class="kw">from</span> utils.config <span class="kw">import</span> config
+
+MAX_LEVEL: int = config.get(<span class="str">'game.max_level'</span>, 100)
+LEVEL_UP_BASE: int = config.get(<span class="str">'game.level_up_base'</span>, 100)
+LEVEL_UP_MULTIPLIER: float = config.get(<span class="str">'game.level_up_multiplier'</span>, 1.5)</code></pre>
+
+<h4>단계 2: <code>battle.py</code>의 전투 상수도 config로 이동</h4>
+<pre><code><span class="comment"># config/game.yaml 확장</span>
+combat:
+  base_crit_chance: 0.05
+  base_dodge_chance: 0.05
+  flee_success_rate: 0.7
+  condition_threshold: 50          <span class="comment"># 새로 추가</span>
+  condition_base_bonus: 0.05       <span class="comment"># 새로 추가</span>
+  max_cheer_uses: 3                <span class="comment"># 새로 추가</span>
+  exp_multiplier_easy: 0.8
+  exp_multiplier_normal: 1.0
+  exp_multiplier_hard: 1.5</code></pre>
+
+<h4>단계 3: <code>utils/config.py</code> 개선 — 타입 안전 접근자</h4>
+<pre><code><span class="kw">class</span> <span class="func">Config</span>:
+    <span class="kw">def</span> <span class="func">get_int</span>(self, key: str, default: int) -&gt; int:
+        value = self.get(key, default)
+        <span class="kw">if not</span> isinstance(value, int):
+            <span class="kw">raise</span> ConfigError(<span class="str">f"{key}는 정수여야 합니다: {value}"</span>)
+        <span class="kw">return</span> value
+
+    <span class="kw">def</span> <span class="func">get_float</span>(self, key: str, default: float) -&gt; float:
+        value = self.get(key, default)
+        <span class="kw">return</span> float(value)
+
+    <span class="kw">def</span> <span class="func">reload</span>(self) -&gt; <span class="kw">None</span>:
+        <span class="str">"""테스트에서 설정 재로드."""</span>
+        self._load_config()</code></pre>
+</div>
+</div>
+
+<div class="card">
+<h3>5-B. 모듈 의존 방향 정리 (레이어링)</h3>
+
+<div class="problem">
+<h4>문제 5-B</h4>
+<p>순환 의존 징후: <code>economy.py:L53</code>의 함수 내부 <code>from player import check_level_up</code>, <code>rest.py</code>의 전역 <code>is_resting</code>, <code>music.py:L97</code>의 try-except import. 명확한 레이어 경계 부재.</p>
+</div>
+
+<div class="solution">
+<h4>해결 5-B — 4계층 아키텍처</h4>
+<pre><code>Layer 1: Data        (데이터 정의, 스키마)
+  └─ data/*.json, models/*.py (신규 dataclass)
+
+Layer 2: Domain      (게임 규칙, 순수 로직)
+  └─ player.py, battle.py, economy.py, quest.py
+     ↓ Layer 1만 import 가능
+
+Layer 3: Persistence (영속화)
+  └─ database.py, save_manager.py, storage.py
+     ↓ Layer 1, 2만 import 가능
+
+Layer 4: Presentation (Discord UI)
+  └─ cogs/*.py, *_ui.py, bg3_renderer.py
+     ↓ Layer 1, 2, 3만 import 가능</code></pre>
+
+<p>의존성 검사 자동화:</p>
+<pre><code><span class="comment"># requirements-dev.txt에 추가</span>
+import-linter==2.0
+
+<span class="comment"># .importlinter</span>
+[importlinter]
+root_package = BOT
+
+[importlinter:contract:1]
+name = Layered architecture
+type = layers
+layers =
+    cogs
+    database | save_manager | storage
+    player | battle | economy | quest
+    models</code></pre>
+
+<p>CI에 <code>lint-imports</code> 단계 추가로 레이어 위반 시 빌드 실패.</p>
+</div>
+</div>
+
+<div class="card">
+<h3>5-C. 함수 내부 import 제거</h3>
+
+<div class="problem">
+<h4>문제 5-C</h4>
+<p><code>economy.py:L53</code>에서 <code>from player import check_level_up</code>을 함수 내부에서 수행. 이는 순환 의존을 회피하기 위한 패치이지만, 진정한 해결이 아니다.</p>
+</div>
+
+<div class="solution">
+<h4>해결 5-C — 의존성 역전 (Dependency Injection)</h4>
+<pre><code><span class="comment"># player.py에서 check_level_up을 분리 → utils/leveling.py</span>
+<span class="comment"># utils/leveling.py (신규)</span>
+<span class="kw">from</span> typing <span class="kw">import</span> TYPE_CHECKING, List
+
+<span class="kw">if</span> TYPE_CHECKING:
+    <span class="kw">from</span> player <span class="kw">import</span> Player
+
+
+<span class="kw">def</span> <span class="func">check_level_up</span>(player: <span class="str">"Player"</span>) -&gt; List[int]:
+    <span class="str">"""레벨업 조건을 확인하고 적용. 오른 레벨 리스트 반환."""</span>
+    <span class="comment"># ... 기존 로직 ...</span>
+    <span class="kw">return</span> leveled_up
+
+
+<span class="comment"># economy.py</span>
+<span class="kw">from</span> utils.leveling <span class="kw">import</span> check_level_up  <span class="comment"># 이제 상단 import</span>
+
+<span class="kw">class</span> <span class="func">Economy</span>:
+    <span class="kw">def</span> <span class="func">pay_reward</span>(self, ...):
+        <span class="comment"># ...</span>
+        <span class="kw">if</span> exp:
+            self._last_level_ups = check_level_up(self.player)</code></pre>
+</div>
+</div>
+
+<div class="card">
+<h3>5-D. 전역 상태 제거 (<code>alarms.py</code>, <code>rest.py</code>)</h3>
+
+<div class="problem">
+<h4>문제 5-D</h4>
+<p><code>alarms.py</code>의 <code>_last_random_minute</code>, <code>rest.py</code>의 <code>is_resting</code>이 모듈 전역 변수로 관리됨. 스레드 안전하지 않고 테스트하기 어렵다.</p>
+</div>
+
+<div class="solution">
+<h4>해결 5-D — 상태 객체화</h4>
+<pre><code><span class="comment"># alarms.py — 수정 후</span>
+<span class="kw">import</span> asyncio
+<span class="kw">from</span> dataclasses <span class="kw">import</span> dataclass, field
+
+
+@dataclass
+<span class="kw">class</span> <span class="func">AlarmState</span>:
+    last_random_minute: int = -1
+    _lock: asyncio.Lock = field(default_factory=asyncio.Lock)
+
+    <span class="kw">async def</span> <span class="func">set_minute</span>(self, minute: int) -&gt; bool:
+        <span class="str">"""이전과 다른 분이면 업데이트, 같으면 False."""</span>
+        <span class="kw">async with</span> self._lock:
+            <span class="kw">if</span> self.last_random_minute == minute:
+                <span class="kw">return False</span>
+            self.last_random_minute = minute
+            <span class="kw">return True</span>
+
+
+<span class="comment"># 모듈 레벨 싱글톤 대신 Cog 인스턴스 변수로</span>
+<span class="kw">class</span> <span class="func">AlarmsCog</span>(commands.Cog):
+    <span class="kw">def</span> <span class="func">__init__</span>(self, bot):
+        self.bot = bot
+        self.state = AlarmState()</code></pre>
+</div>
+</div>
+
+<div class="card">
+<h3>5-E. 데드 코드는 이미 양호, 설정 외부화로 5/5</h3>
+
+<div class="target">
+<h4>카테고리 5 수용 기준 (5/5 달성)</h4>
+<ul>
+<li><strong>5a (데드 코드)</strong>: 이미 양호(TODO/FIXME 0건). <code>vulture</code> 실행하여 미사용 함수/변수 점검.</li>
+<li><strong>5b (설정 외부화)</strong>: <code>grep -rn "config.get" --include="*.py"</code> 결과 20+ 건. 매직 넘버가 핵심 파일에서 제거됨.</li>
+<li><strong>5c (변경 복원력)</strong>: 새 NPC 추가가 3개 파일 이하 수정으로 가능. 레이어 위반 없음(<code>lint-imports</code> 통과).</li>
+<li><strong>5d (config 실제 사용)</strong>: <code>player.py</code>, <code>battle.py</code>, <code>fishing.py</code>, <code>gathering.py</code>가 <code>config.get()</code> 참조. YAML 변경이 게임 동작에 반영되는지 수동 검증.</li>
+<li><strong>5e (의존 방향)</strong>: 함수 내부 import 0건, 순환 의존 0건. <code>lint-imports</code>가 4계층 constraint 통과.</li>
+</ul>
+</div>
+</div>
+
+<!-- ==================== CATEGORY 6 ==================== -->
+<h2 id="cat6">카테고리 6 — 의존성 &amp; 환경 건전성</h2>
+<div class="cat-header">
+<div><span class="score-before">현재 2.5 / 5</span> <span class="arrow">→</span> <span class="score-after">목표 5.0 / 5</span></div>
+<div><span class="effort">예상 공수: 소형</span></div>
+</div>
+
+<div class="card">
+<h3>6-A. 로거 경로 환경 독립화 (Quick Win)</h3>
+
+<div class="problem">
+<h4>문제 6-A <span class="severity-major">MAJOR</span></h4>
+<p><code>utils/logger.py:L49</code>에서 <code>logs_dir = '/home/runner/work/BOT/BOT/logs'</code>로 GitHub Actions 러너 전용 절대 경로가 하드코딩되어 있다. 로컬 개발, Docker, 다른 CI/CD 환경에서는 이 경로가 존재하지 않아 파일 로깅이 완전히 실패한다.</p>
+</div>
+
+<div class="solution">
+<h4>해결 6-A</h4>
+<pre><code><span class="comment"># utils/logger.py — 수정 후</span>
+<span class="kw">import</span> logging
+<span class="kw">import</span> os
+<span class="kw">from</span> logging.handlers <span class="kw">import</span> RotatingFileHandler
+<span class="kw">from</span> pathlib <span class="kw">import</span> Path
+<span class="kw">from</span> typing <span class="kw">import</span> Optional
+
+<span class="comment"># 프로젝트 루트 기준 상대 경로 (환경변수로 오버라이드 가능)</span>
+_DEFAULT_LOG_DIR = Path(__file__).resolve().parent.parent / <span class="str">"logs"</span>
+LOG_DIR = Path(os.getenv(<span class="str">"BOT_LOG_DIR"</span>, str(_DEFAULT_LOG_DIR)))
+
+
+<span class="kw">def</span> <span class="func">setup_logger</span>(name: str, level: Optional[int] = <span class="kw">None</span>) -&gt; logging.Logger:
+    logger = logging.getLogger(name)
+    <span class="kw">if</span> logger.handlers:
+        <span class="kw">return</span> logger
+
+    <span class="kw">if</span> level <span class="kw">is None</span>:
+        debug_mode = os.getenv(<span class="str">"DEBUG"</span>, <span class="str">""</span>).lower() <span class="kw">in</span> (<span class="str">"1"</span>, <span class="str">"true"</span>, <span class="str">"yes"</span>)
+        level = logging.DEBUG <span class="kw">if</span> debug_mode <span class="kw">else</span> logging.INFO
+    logger.setLevel(level)
+
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    console_handler.setFormatter(
+        logging.Formatter(<span class="str">'[%(levelname)s] %(name)s: %(message)s'</span>)
+    )
+    logger.addHandler(console_handler)
+
+    <span class="kw">try</span>:
+        LOG_DIR.mkdir(parents=<span class="kw">True</span>, exist_ok=<span class="kw">True</span>)
+        file_handler = RotatingFileHandler(
+            LOG_DIR / <span class="str">f"{name}.log"</span>,
+            maxBytes=10 * 1024 * 1024,
+            backupCount=5,
+            encoding=<span class="str">"utf-8"</span>,
+        )
+        file_handler.setLevel(logging.DEBUG)
+        file_handler.setFormatter(
+            logging.Formatter(
+                <span class="str">'[%(asctime)s] %(levelname)s %(name)s:%(lineno)d - %(message)s'</span>,
+                datefmt=<span class="str">'%Y-%m-%d %H:%M:%S'</span>,
+            )
+        )
+        logger.addHandler(file_handler)
+    <span class="kw">except</span> (OSError, PermissionError) <span class="kw">as</span> e:
+        logger.warning(<span class="str">f"파일 로깅 설정 실패 ({LOG_DIR}): {e}"</span>)
+
+    <span class="kw">return</span> logger</code></pre>
+
+<p><code>.gitignore</code>에 <code>logs/</code>는 이미 존재. <code>.env.example</code>에 추가:</p>
+<pre><code><span class="comment"># 선택: 로그 디렉토리 커스터마이징</span>
+<span class="comment"># BOT_LOG_DIR=/var/log/vision_town</span></code></pre>
+</div>
+</div>
+
+<div class="card">
+<h3>6-B. 의존성 락파일 도입</h3>
+
+<div class="problem">
+<h4>문제 6-B</h4>
+<p><code>requirements.txt</code>에 직접 의존성만 고정되어 있고, 전이 의존성(transitive dependencies)의 버전은 고정되지 않는다. 빌드 간 비결정적 동작 가능.</p>
+</div>
+
+<div class="solution">
+<h4>해결 6-B — <code>pip-compile</code> 도입</h4>
+<pre><code><span class="comment"># requirements.in (새 파일 — 직접 의존성만)</span>
+discord.py==2.3.2
+pytz==2023.3
+python-dotenv==1.0.0
+Pillow==12.1.1
+PyYAML==6.0.1
+
+<span class="comment"># requirements-dev.in</span>
+-r requirements.in
+pytest==8.*
+pytest-cov==5.*
+pytest-asyncio==0.*
+mypy==1.*
+flake8==7.*
+import-linter==2.*
+pip-tools</code></pre>
+
+<p>컴파일:</p>
+<pre><code>pip-compile requirements.in -o requirements.txt --generate-hashes
+pip-compile requirements-dev.in -o requirements-dev.txt --generate-hashes</code></pre>
+
+<p>생성된 <code>requirements.txt</code>는 모든 전이 의존성의 정확한 버전과 SHA256 해시를 포함. CI에서는 <code>pip install --require-hashes -r requirements.txt</code>로 검증.</p>
+</div>
+</div>
+
+<div class="card">
+<h3>6-C. 재현성 — Dockerfile 및 문서화</h3>
+
+<div class="problem">
+<h4>문제 6-C</h4>
+<p>README.md에 3단계 설치 가이드는 있으나 시스템 의존성(Python 버전, 폰트 파일, SQLite) 언급 없음. 한국어 파일명 에셋(<code>static/</code>)이 일부 시스템에서 인코딩 문제 유발 가능.</p>
+</div>
+
+<div class="solution">
+<h4>해결 6-C — Dockerfile 및 README 강화</h4>
+<pre><code><span class="comment"># Dockerfile</span>
+FROM python:3.11-slim
+
+<span class="comment"># 한글 로케일 및 폰트 의존성</span>
+RUN apt-get update &amp;&amp; apt-get install -y --no-install-recommends \
+    locales \
+    fonts-noto-cjk \
+    &amp;&amp; rm -rf /var/lib/apt/lists/* \
+    &amp;&amp; localedef -i ko_KR -c -f UTF-8 -A /usr/share/locale/locale.alias ko_KR.UTF-8
+
+ENV LANG=ko_KR.UTF-8 \
+    LC_ALL=ko_KR.UTF-8 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+WORKDIR /app
+
+<span class="comment"># 의존성 먼저 (레이어 캐싱)</span>
+COPY requirements.txt .
+RUN pip install --no-cache-dir --require-hashes -r requirements.txt
+
+<span class="comment"># 소스 복사</span>
+COPY . .
+
+<span class="comment"># 데이터 디렉토리 (볼륨 마운트 권장)</span>
+VOLUME ["/app/logs", "/data"]
+ENV DB_PATH=/data/vision_town.db \
+    BOT_LOG_DIR=/app/logs
+
+<span class="comment"># 비루트 사용자로 실행</span>
+RUN useradd -m -u 1000 botuser &amp;&amp; chown -R botuser:botuser /app
+USER botuser
+
+CMD ["python", "main.py"]</code></pre>
+
+<p><code>README.md</code> 확장 섹션:</p>
+<pre><code>## 시스템 요구사항
+
+- Python 3.10 이상 (3.11 권장)
+- SQLite 3.x (Python 내장)
+- 한글 폰트 (NotoSansCJK, repo에 포함)
+- 최소 512MB RAM
+
+## Docker로 실행
+
+```bash
+docker build -t vision-town-bot .
+docker run -d \
+  -e DISCORD_TOKEN=your_token \
+  -e HYNESS_ID=... \
+  -v $(pwd)/data:/data \
+  -v $(pwd)/logs:/app/logs \
+  vision-town-bot
+```
+
+## 아키텍처
+
+- `cogs/` — Discord 커맨드 핸들러 (프레젠테이션 레이어)
+- `player.py`, `battle.py`, `economy.py` — 도메인 로직
+- `database.py`, `save_manager.py` — 영속화 레이어
+- `data/` — 게임 데이터 (JSON)
+- `config/game.yaml` — 게임 밸런스 설정
+- `static/` — 폰트, 이미지 에셋
+
+## 문제 해결
+
+**Q: 폰트 로드 실패**
+A: `static/fonts/`에 `NotoSansCJKkr-Regular.otf`가 있는지 확인.
+
+**Q: DB 파일 위치 변경**
+A: 환경변수 `DB_PATH=/your/path/vision_town.db` 설정.</code></pre>
+</div>
+</div>
+
+<div class="card">
+<h3>6-D. 에셋 무결성 검증</h3>
+
+<div class="problem">
+<h4>문제 6-D</h4>
+<p><code>static/</code>의 바이너리 에셋(PNG, WebP, OTF)이 Git에 직접 커밋되어 있다. 누락 시 <code>bg3_renderer.py</code>에서 <code>FileNotFoundError</code> 발생. 무결성 검증 메커니즘 없음.</p>
+</div>
+
+<div class="solution">
+<h4>해결 6-D — 시작 시 에셋 검증</h4>
+<pre><code><span class="comment"># utils/assets.py 신규</span>
+<span class="kw">from</span> pathlib <span class="kw">import</span> Path
+<span class="kw">from</span> typing <span class="kw">import</span> List
+<span class="kw">from</span> utils.logger <span class="kw">import</span> setup_logger
+
+logger = setup_logger(<span class="str">'assets'</span>)
+
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent
+STATIC_DIR = _PROJECT_ROOT / <span class="str">"static"</span>
+
+REQUIRED_ASSETS: List[Path] = [
+    STATIC_DIR / <span class="str">"fonts"</span> / <span class="str">"NotoSansCJKkr-Regular.otf"</span>,
+    STATIC_DIR / <span class="str">"fonts"</span> / <span class="str">"NotoSansCJKkr-Bold.otf"</span>,
+    <span class="comment"># ... 필수 에셋 목록 ...</span>
+]
+
+
+<span class="kw">def</span> <span class="func">verify_assets</span>() -&gt; <span class="kw">None</span>:
+    <span class="str">"""필수 에셋이 모두 존재하는지 검증. 없으면 즉시 실패."""</span>
+    missing = [str(p) <span class="kw">for</span> p <span class="kw">in</span> REQUIRED_ASSETS <span class="kw">if not</span> p.exists()]
+    <span class="kw">if</span> missing:
+        logger.critical(<span class="str">f"필수 에셋 누락: {missing}"</span>)
+        <span class="kw">raise</span> FileNotFoundError(<span class="str">f"필수 에셋 {len(missing)}개 누락"</span>)
+    logger.info(<span class="str">f"에셋 검증 완료: {len(REQUIRED_ASSETS)}개"</span>)</code></pre>
+
+<p><code>main.py</code>의 <code>on_ready</code>에서 호출:</p>
+<pre><code>@bot.event
+<span class="kw">async def</span> <span class="func">on_ready</span>():
+    <span class="kw">from</span> utils.assets <span class="kw">import</span> verify_assets
+    verify_assets()  <span class="comment"># 시작 시 즉시 검증</span>
+    <span class="comment"># ... 나머지 초기화 ...</span></code></pre>
+</div>
+</div>
+
+<div class="target">
+<h4>카테고리 6 수용 기준 (5/5 달성)</h4>
+<ul>
+<li><strong>6a (의존성 위생)</strong>: 이미 양호(최소 의존성). 유지.</li>
+<li><strong>6b (스택 최신성)</strong>: 이미 양호. <code>pip-audit</code> 또는 Dependabot 도입으로 자동화.</li>
+<li><strong>6c (재현성)</strong>: Dockerfile 추가, README 확장. <code>docker build</code>로 클린 빌드 성공 확인.</li>
+<li><strong>6d (로거 이식성)</strong>: <code>/home/runner/work/BOT/BOT/logs</code> 하드코딩 제거, 환경변수 <code>BOT_LOG_DIR</code> 지원.</li>
+<li><strong>6e (에셋 무결성)</strong>: 시작 시 에셋 검증, 누락 시 명확한 에러 메시지.</li>
+</ul>
+</div>
+
+<!-- ==================== PHASE 4 ==================== -->
+<h2 id="phase4">Phase 4 — 최종 검증 및 회귀 테스트</h2>
+
+<div class="card">
+<h3>4-1. 전체 검증 체크리스트</h3>
+<p>모든 Phase 수정이 완료된 후, 다음 명령을 순서대로 실행하여 5/5 달성 여부를 확인한다:</p>
+
+<pre><code><span class="comment"># 1. 린팅 (0 warnings 목표)</span>
+flake8 . --count --max-complexity=15 --max-line-length=127 --statistics
+
+<span class="comment"># 2. 타입 체크 (0 errors 목표)</span>
+mypy . --config-file=mypy.ini
+
+<span class="comment"># 3. 레이어 constraint 검증</span>
+lint-imports
+
+<span class="comment"># 4. 테스트 + 커버리지 (70%+ 목표)</span>
+pytest tests/ -v --cov=. --cov-report=term --cov-fail-under=70
+
+<span class="comment"># 5. 핵심 모듈 커버리지 (90%+ 목표)</span>
+pytest tests/ --cov=battle --cov=economy --cov=save_manager --cov-fail-under=90
+
+<span class="comment"># 6. 무음 예외 0건 확인</span>
+grep -rn "except.*pass" --include="*.py" | grep -v "test_" | wc -l  # 결과 0
+
+<span class="comment"># 7. 함수 내부 import 0건 확인</span>
+python -c "import ast, os
+for root, _, files in os.walk('.'):
+    if '.venv' in root or '.git' in root: continue
+    for f in files:
+        if not f.endswith('.py'): continue
+        path = os.path.join(root, f)
+        try:
+            tree = ast.parse(open(path).read())
+            for node in ast.walk(tree):
+                if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    for child in ast.walk(node):
+                        if isinstance(child, (ast.Import, ast.ImportFrom)):
+                            if child != node:
+                                print(f'{path}:{child.lineno} - 함수 내부 import')
+        except: pass"
+
+<span class="comment"># 8. config 참조 횟수 (20+ 기대)</span>
+grep -rn "config.get" --include="*.py" | wc -l
+
+<span class="comment"># 9. 에셋 검증</span>
+python -c "from utils.assets import verify_assets; verify_assets()"
+
+<span class="comment"># 10. Docker 빌드 (재현성 확인)</span>
+docker build -t vision-town-bot-test .</code></pre>
+</div>
+
+<div class="card">
+<h3>4-2. 수동 회귀 테스트 시나리오</h3>
+<p>자동화 테스트로 커버되지 않는 사용자 경험 흐름. 로컬에서 봇을 실행하며 수행:</p>
+
+<table>
+<tr><th>시나리오</th><th>기대 결과</th></tr>
+<tr><td>신규 계정 생성 → 레벨업 → 저장 → 재접속</td><td>모든 데이터 보존, 스키마 마이그레이션 정상</td></tr>
+<tr><td>전투 → 사망 → 마을 복귀</td><td>상태 복구, 보상 정상 지급</td></tr>
+<tr><td>인벤토리 가득 참 상태에서 보상 수령</td><td>명확한 에러 메시지, 부분 실패 없음</td></tr>
+<tr><td>DB 파일 삭제 → 봇 재시작</td><td>자동 초기화 또는 명확한 에러, 크래시 없음</td></tr>
+<tr><td>폰트 파일 삭제 → 봇 재시작</td><td>시작 시 에셋 검증 실패 메시지</td></tr>
+<tr><td>극단적으로 긴 닉네임 시도 (1000자)</td><td>ValidationError, 이미지 렌더링 DoS 없음</td></tr>
+<tr><td>동시 다중 명령 (전투 + 상점)</td><td>락에 의해 직렬화, race condition 없음</td></tr>
+<tr><td>Discord API 연결 끊김 → 복구</td><td>자동 재연결, 상태 보존</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h3>4-3. 최종 5/5 판정 기준</h3>
+<table>
+<tr><th>카테고리</th><th>판정 기준</th></tr>
+<tr><td>1. 가독성</td><td>main.py 500줄 미만, 데이터 파일 외부화, 중복 0건</td></tr>
+<tr><td>2. 견고성</td><td><code>except: pass</code> 0건, 렌더링 폴백 100%, 경제 롤백 테스트 통과</td></tr>
+<tr><td>3. 보안</td><td>입력 검증 레이어, rate limit, 사용자 격리, 시크릿 스캔 통과</td></tr>
+<tr><td>4. 검증</td><td>커버리지 70%+, 핵심 모듈 90%+, CI가 실제로 실패 가능</td></tr>
+<tr><td>5. 아키텍처</td><td>lint-imports 통과, config 실사용 20+건, 전역 상태 0건</td></tr>
+<tr><td>6. 의존성</td><td>Dockerfile 빌드 성공, 락파일 제공, 에셋 검증</td></tr>
+</table>
+</div>
+
+<div class="intro-box">
+<h3 style="margin-top:0">인수인계 엔지니어에게</h3>
+<p>이 문서의 모든 항목이 완료되면 감사 총점이 <strong>2.20 → 5.00</strong>으로 상승하며 D등급에서 S등급에 도달한다. 단, 각 Phase는 독립적으로 작업 가능하지만 <strong>순서를 지키는 것이 중요</strong>하다:</p>
+<ol>
+<li><strong>Phase 1 (견고성)</strong> 먼저 — 다른 변경의 회귀를 감지하려면 에러가 드러나야 한다.</li>
+<li><strong>Phase 2 (테스트)</strong> 다음 — 대규모 리팩토링의 안전망.</li>
+<li><strong>Phase 3 (아키텍처)</strong> — Cog 분리, 레이어링, config 연결.</li>
+<li><strong>Phase 4 (환경)</strong> — Dockerfile, 에셋 검증, 문서화.</li>
+</ol>
+<p style="margin-top:12px"><strong>한 번에 모두 수정하지 말 것.</strong> 각 Phase는 별도 PR로 병합하여 회귀 추적을 보장한다. 모든 PR은 이 문서의 해당 섹션 번호(예: "해결 2-A 적용")를 참조해야 한다.</p>
+<p style="margin-top:12px;color:#f0b86c"><strong>질문이 있다면:</strong> 감사 보고서(<code>AUDIT_REPORT.html</code>)의 근거 섹션을 먼저 확인하고, 문제가 모호하면 원저자와 논의할 것. 게임 밸런스 수식은 디자이너의 의도를 반드시 확인 후 수정.</p>
+</div>
+
+</body>
+</html>

@@ -1,11 +1,11 @@
-import logging
 import random
 from database import NPC_DATA
 from economy import Economy
 from ui_theme import C, section, divider, header_box, ansi, EMBED_COLOR, FOOTERS
 from job_data import get_random_job, get_jobs_by_difficulty, DIFFICULTY_LABELS, NPC_JOB_POOL
+from utils.logger import setup_logger
 
-logger = logging.getLogger(__name__)
+logger = setup_logger('npcs')
 
 
 class VillageNPC:
@@ -321,8 +321,8 @@ class VillageNPC:
             try:
                 from save_manager import save_manager
                 save_manager.save(self.player)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.error("배달 알바 등록 후 저장 실패: %s", e, exc_info=True)
             return
 
         await asyncio.sleep(3)
@@ -336,7 +336,7 @@ class VillageNPC:
             from village import village_manager
             village_manager.add_contribution(5, "job")
         except Exception as e:
-            logger.error(f"[npcs] village contribution 실패: {e}")
+            logger.error("village contribution 실패: %s", e)
 
         result_note = ""
 
@@ -361,8 +361,8 @@ class VillageNPC:
             try:
                 from save_manager import save_manager
                 save_manager.save(self.player)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.error("사냥 알바 등록 후 저장 실패: %s", e, exc_info=True)
 
             from items import ALL_ITEMS as _AI
             monster_name = target_monster
@@ -373,8 +373,8 @@ class VillageNPC:
                     if m.get("id") == target_monster:
                         monster_name = m.get("name", target_monster)
                         break
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("몬스터 이름 조회 실패: %s", e)
 
             await ctx.send(ansi(
                 f"  {C.GOLD}💼 {npc['name']} 알바 수락! [{diff_label}]{C.R}\n"
@@ -424,8 +424,8 @@ class VillageNPC:
             embed.set_image(url="attachment://job_result.png")
             await ctx.send(embed=embed, file=file)
             card_sent = True
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("알바 결과 카드 렌더링 실패: %s", e, exc_info=True)
 
         if card_sent and reward_item_line:
             await ctx.send(ansi(reward_item_line.strip()))
@@ -449,8 +449,8 @@ class VillageNPC:
         try:
             from save_manager import save_manager
             save_manager.save(self.player)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error("알바 완료 후 저장 실패: %s", e, exc_info=True)
 
     def update_hunt_kill(self, monster_id: str = "", count: int = 1) -> list:
         """전투 승리 시 호출 — pending_hunt 진행도 업데이트. 완료된 알바 목록 반환."""
@@ -512,7 +512,8 @@ class VillageNPC:
                 await ctx.send(embed=embed, file=file)
                 if reward_item_line:
                     await ctx.send(ansi(reward_item_line.strip()))
-            except Exception:
+            except Exception as e:
+                logger.warning("사냥 완료 카드 렌더링 실패, 텍스트 폴백: %s", e, exc_info=True)
                 lines = [
                     header_box(f"💼 {npc.get('name', npc_name)} 알바 완료!"),
                     f"  {C.WHITE}{info['job_name']}{C.R}",
@@ -526,8 +527,8 @@ class VillageNPC:
         try:
             from save_manager import save_manager
             save_manager.save(self.player)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error("사냥 완료 후 저장 실패: %s", e, exc_info=True)
 
     def get_pending_hunt_status(self) -> list:
         """현재 진행 중인 hunt 알바 목록 반환."""

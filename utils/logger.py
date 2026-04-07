@@ -5,7 +5,17 @@
 import logging
 import os
 from logging.handlers import RotatingFileHandler
+from pathlib import Path
 from typing import Optional
+
+
+# 프로젝트 루트 기준 상대 경로. 환경변수 BOT_LOG_DIR 로 오버라이드 가능.
+_DEFAULT_LOG_DIR = Path(__file__).resolve().parent.parent / "logs"
+
+
+def _resolve_log_dir() -> Path:
+    override = os.getenv("BOT_LOG_DIR")
+    return Path(override) if override else _DEFAULT_LOG_DIR
 
 
 def setup_logger(name: str, level: Optional[int] = None) -> logging.Logger:
@@ -45,12 +55,12 @@ def setup_logger(name: str, level: Optional[int] = None) -> logging.Logger:
     logger.addHandler(console_handler)
 
     # 파일 핸들러 (모든 레벨, 10MB 로테이션)
+    logs_dir = _resolve_log_dir()
     try:
-        logs_dir = '/home/runner/work/BOT/BOT/logs'
-        os.makedirs(logs_dir, exist_ok=True)
+        logs_dir.mkdir(parents=True, exist_ok=True)
 
         file_handler = RotatingFileHandler(
-            os.path.join(logs_dir, f'{name}.log'),
+            str(logs_dir / f'{name}.log'),
             maxBytes=10 * 1024 * 1024,  # 10MB
             backupCount=5,
             encoding='utf-8'
@@ -64,6 +74,6 @@ def setup_logger(name: str, level: Optional[int] = None) -> logging.Logger:
         logger.addHandler(file_handler)
     except (OSError, PermissionError) as e:
         # 파일 핸들러 생성 실패 시 콘솔만 사용
-        logger.warning(f"파일 로깅 설정 실패: {e}")
+        logger.warning(f"파일 로깅 설정 실패 ({logs_dir}): {e}")
 
     return logger

@@ -1,8 +1,14 @@
 """storage.py — 보관함 시스템 (하이네스의 방)"""
 import json
+import sqlite3
+
 from database import get_db_connection
-from ui_theme import C, ansi, header_box, divider, GRADE_ICON_PLAIN
 from items import ALL_ITEMS
+from ui_theme import C, ansi, divider, GRADE_ICON_PLAIN, header_box
+from utils.exceptions import DatabaseError
+from utils.logger import setup_logger
+
+logger = setup_logger("storage")
 
 UPGRADE_TABLE = {
     20: 3000,
@@ -20,35 +26,89 @@ MAX_CAPACITY = 100
 class StorageEngine:
     def __init__(self, player):
         self.player       = player
+        # user_id 를 player 에서 가져와 명시적으로 보관. 없거나 None 이면 0.
+        # (단일 플레이어 봇의 과거 동작 유지. 멀티유저 확장 시 실제 ID 사용.)
+        self.user_id      = int(getattr(player, "user_id", 0) or 0)
         self.items        = {}
         self.max_capacity = 20
+        # 로드가 성공했는지 추적. 실패 상태에서 저장을 호출하면 데이터 손실이
+        # 발생하므로 _save 에서 이 플래그를 검사한다.
+        self._loaded_successfully = False
         self._load()
 
-    def _load(self):
-        try:
-            conn   = get_db_connection()
-            cursor = conn.cursor()
-            cursor.execute("SELECT items, max_capacity FROM storage WHERE user_id = ?", (0,))
-            row = cursor.fetchone()
-            conn.close()
-            if row:
-                self.items        = json.loads(row["items"])
-                self.max_capacity = row["max_capacity"]
-        except Exception:
-            pass
+    def _load(self) -> None:
+        """DB에서 보관함 데이터를 로드.
 
-    def _save(self):
+        DB 접근 또는 JSON 파싱이 실패하면 ``DatabaseError`` 를 발생시킨다.
+        과거에는 모든 예외를 무음으로 삼켜서 빈 보관함을 반환했기 때문에
+        다음 저장 호출이 기존 데이터를 덮어써 영구적인 손실이 발생했다.
+        """
         try:
-            conn   = get_db_connection()
-            cursor = conn.cursor()
-            cursor.execute("""
-                INSERT OR REPLACE INTO storage (user_id, items, max_capacity)
-                VALUES (?, ?, ?)
-            """, (0, json.dumps(self.items, ensure_ascii=False), self.max_capacity))
-            conn.commit()
-            conn.close()
-        except Exception:
-            pass
+            conn = get_db_connection()
+            try:
+                cursor = conn.cursor()
+                cursor.execute(
+                    "SELECT items, max_capacity FROM storage WHERE user_id = ?",
+                    (self.user_id,),
+                )
+                row = cursor.fetchone()
+            finally:
+                conn.close()
+        except sqlite3.Error as e:
+            logger.error(
+                "보관함 로드 실패 (user_id=%s): %s", self.user_id, e, exc_info=True
+            )
+            raise DatabaseError(f"보관함 로드 실패: {e}") from e
+
+        if row:
+            try:
+                self.items = json.loads(row["items"]) or {}
+            except (TypeError, json.JSONDecodeError) as e:
+                logger.error(
+                    "보관함 데이터 파싱 실패 (user_id=%s): %s",
+                    self.user_id, e, exc_info=True,
+                )
+                raise DatabaseError(f"보관함 데이터 손상: {e}") from e
+            self.max_capacity = row["max_capacity"]
+
+        self._loaded_successfully = True
+
+    def _save(self) -> None:
+        """보관함을 DB에 저장.
+
+        로드가 성공하지 않은 상태에서는 저장을 거부해 데이터 손실을 방지한다.
+        DB 쓰기 실패 시 ``DatabaseError`` 를 발생시킨다.
+        """
+        if not self._loaded_successfully:
+            logger.critical(
+                "보관함이 로드되지 않은 상태에서 저장 시도 차단 (user_id=%s)",
+                self.user_id,
+            )
+            raise DatabaseError("보관함 로드 실패 상태에서 저장 시도 차단")
+
+        try:
+            conn = get_db_connection()
+            try:
+                cursor = conn.cursor()
+                cursor.execute(
+                    """
+                    INSERT OR REPLACE INTO storage (user_id, items, max_capacity)
+                    VALUES (?, ?, ?)
+                    """,
+                    (
+                        self.user_id,
+                        json.dumps(self.items, ensure_ascii=False),
+                        self.max_capacity,
+                    ),
+                )
+                conn.commit()
+            finally:
+                conn.close()
+        except sqlite3.Error as e:
+            logger.error(
+                "보관함 저장 실패 (user_id=%s): %s", self.user_id, e, exc_info=True
+            )
+            raise DatabaseError(f"보관함 저장 실패: {e}") from e
 
     def show(self) -> str:
         lines = [header_box("🗄 하이네스의 보관함")]

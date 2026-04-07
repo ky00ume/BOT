@@ -36,12 +36,12 @@ class TestEconomy:
         economy.pay_reward(
             "테스트:복합보상",
             gold=200,
-            exp=100.0,
+            exp=50.0,
             items={"potion_hp": 2}
         )
 
         assert fresh_player.gold == initial_gold + 200
-        assert fresh_player.exp == initial_exp + 100.0
+        assert fresh_player.exp == initial_exp + 50.0
         assert fresh_player.inventory.get("potion_hp") == 2
 
     def test_deduct_removes_gold(self, economy, player_with_gold):

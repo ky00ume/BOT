@@ -274,6 +274,33 @@ class Player:
         max_slots = self.get_max_slots()
         return used, max_slots
 
+    def get_total_slots(self) -> int:
+        """최대 인벤토리 슬롯 수 반환 (get_max_slots 별칭)."""
+        return self.get_max_slots()
+
+    def take_damage(self, amount: int) -> None:
+        """HP를 amount만큼 감소시킨다 (0 이하로 내려갈 수 있음)."""
+        self.hp -= amount
+
+    def heal(self, amount: int) -> None:
+        """HP를 amount만큼 회복한다 (max_hp를 초과하지 않는다)."""
+        self.hp = min(self.max_hp, self.hp + amount)
+
+    def use_energy(self, amount: int) -> bool:
+        """기력을 amount만큼 소모한다.
+
+        Returns:
+            소모 성공 시 True, 기력 부족 시 False (상태 변경 없음).
+        """
+        if self.energy < amount:
+            return False
+        self.energy -= amount
+        return True
+
+    def restore_energy(self, amount: int) -> None:
+        """기력을 amount만큼 회복한다 (max_energy를 초과하지 않는다)."""
+        self.energy = min(self.max_energy, self.energy + amount)
+
     def equip_item(self, item_id: str) -> str:
         from items import ALL_ITEMS
         item = ALL_ITEMS.get(item_id)
@@ -436,7 +463,7 @@ class Player:
 
     def get_save_data(self) -> dict:
         data = {
-            "user_id":       0,
+            "user_id":       getattr(self, "user_id", 0),
             "name":          self.name,
             "level":         self.level,
             "exp":           self.exp,

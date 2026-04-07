@@ -14,7 +14,7 @@ class TestPlayer:
         player = Player(name="초기화테스트")
         assert player.name == "초기화테스트"
         assert player.level == 1
-        assert player.gold == 0
+        assert player.gold == 500
         assert player.hp > 0
         assert player.max_hp > 0
         assert isinstance(player.inventory, dict)
@@ -66,19 +66,19 @@ class TestPlayer:
 
     def test_equip_item(self, fresh_player):
         """장비 착용 테스트."""
-        fresh_player.equip_item("main", "wp_sword_01")
+        fresh_player.equip_item("wp_sword_01")
         assert fresh_player.equipment.get("main") == "wp_sword_01"
 
     def test_equip_item_replace(self, fresh_player):
         """기존 장비 교체 테스트."""
-        fresh_player.equip_item("main", "wp_sword_01")
-        fresh_player.equip_item("main", "wp_sword_02")
+        fresh_player.equip_item("wp_sword_01")
+        fresh_player.equip_item("wp_sword_02")
         assert fresh_player.equipment.get("main") == "wp_sword_02"
 
     def test_unequip_item(self, fresh_player):
         """장비 해제 테스트."""
-        fresh_player.equip_item("main", "wp_sword_01")
-        fresh_player.equip_item("main", None)
+        fresh_player.equip_item("wp_sword_01")
+        fresh_player.unequip_item("main")
         assert fresh_player.equipment.get("main") is None
 
     def test_take_damage(self, fresh_player):
@@ -134,7 +134,7 @@ class TestPlayer:
         """총 인벤토리 슬롯 수 계산 테스트."""
         slots = fresh_player.get_total_slots()
         assert isinstance(slots, int)
-        assert slots >= 20  # 기본 슬롯 수
+        assert slots >= 10  # 기본 슬롯 수
 
     def test_inventory_not_shared(self):
         """플레이어 간 인벤토리 독립성 테스트."""

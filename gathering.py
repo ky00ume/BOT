@@ -3,6 +3,9 @@ import asyncio
 import random
 import discord
 from ui_theme import C, ansi, header_box, divider, EMBED_COLOR, GRADE_ICON_PLAIN, GRADE_EMBED_COLOR
+from utils.logger import setup_logger
+
+logger = setup_logger('gathering')
 
 GATHER_ITEMS_BY_SEASON = {
     "spring": [
@@ -330,7 +333,7 @@ class GatheringEngine:
             from village import village_manager
             village_manager.add_contribution(2, "gathering")
         except Exception:
-            pass
+            logger.warning('gathering: village_manager.add_contribution (mine) 실패', exc_info=True)
 
         if added:
             try:
@@ -392,7 +395,7 @@ class GatheringEngine:
             from village import village_manager
             village_manager.add_contribution(2, "gathering")
         except Exception:
-            pass
+            logger.warning('gathering: village_manager.add_contribution (woodcut) 실패', exc_info=True)
 
         if added:
             try:

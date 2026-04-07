@@ -2,6 +2,9 @@
 import asyncio
 import time
 import discord
+from utils.logger import setup_logger
+
+logger = setup_logger('rest')
 
 # 현재 휴식 중 여부 (외부에서 확인용)
 is_resting: bool = False
@@ -105,9 +108,7 @@ class RestEngine:
             from save_manager import save_manager
             save_manager.save(self.player)
         except Exception:
-            pass
-
-    def stop_rest(self):
+            logger.error('rest: 휴식 완료 후 save_manager.save 실패', exc_info=True)
         """휴식을 강제 종료합니다."""
         if self._task and not self._task.done():
             self._task.cancel()

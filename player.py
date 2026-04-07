@@ -577,10 +577,7 @@ class Player:
             base += eff.get("atk_bonus", 0)
             base += eff.get("stat_bonus", {}).get("str", 0) // 2
         except Exception:
-            pass
-        return base
-
-    def get_defense(self) -> int:
+            logger.warning('player: get_attack title_data 로드 실패', exc_info=True)
         base = self.base_stats.get("will", 10) // 5
         from items import ALL_ITEMS
         for slot in ("sub", "body", "head", "hands", "feet"):
@@ -600,5 +597,4 @@ class Player:
             eff = get_title_effects(self.current_title)
             base += eff.get("def_bonus", 0)
         except Exception:
-            pass
-        return base
+            logger.warning('player: get_defense title_data 로드 실패', exc_info=True)

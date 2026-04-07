@@ -8,10 +8,11 @@ bg3_renderer.py — 발더스게이트3 스타일 PIL 렌더링 엔진 (최종)
   배너:    static/banners/{town|hunting|gathering|fishing}/{zone_id}.png|.webp
   → 파일이 없으면 플레이스홀더 자동 표시, 레이아웃 미붕괴 보장
 """
-import io, os, math, re, logging, threading
+import io, os, math, re, threading
 from typing import Optional
 from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor
+from utils.logger import setup_logger
 
 try:
     from PIL import Image, ImageDraw, ImageFont, ImageFilter
@@ -19,7 +20,7 @@ try:
 except ImportError:
     PIL_AVAILABLE = False
 
-_log = logging.getLogger(__name__)
+_log = setup_logger('bg3_renderer')
 
 # ══════════════════════════════════════════════════════════════════
 # 경로
@@ -70,8 +71,7 @@ def _find_fonts():
                     elif "lora" in fl:
                         candidates_serif.append(fp)
             except OSError:
-                pass
-    else:  # Linux / macOS
+                _log.debug('bg3_renderer: Windows 폰트 디렉터리 읽기 실패 (%s)', d, exc_info=True)
         linux_paths = [
             # Serif (우선)
             "/usr/share/fonts/opentype/noto/NotoSerifCJK-Regular.ttc",
@@ -108,8 +108,7 @@ def _find_fonts():
                             if _fp not in linux_paths:
                                 linux_paths.append(_fp)
             except OSError:
-                pass
-        for p in linux_paths:
+                _log.debug('bg3_renderer: 폰트 디렉터리 탐색 실패 (%s)', _ed, exc_info=True)
             if os.path.isfile(p):
                 fl = os.path.basename(p).lower()
                 if "bold" in fl:

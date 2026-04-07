@@ -4,6 +4,9 @@ import random
 import discord
 from ui_theme import C, ansi, header_box, divider, rank_badge, FOOTERS, GRADE_EMBED_COLOR
 from utils.ranks import rank_gte as _rank_gte
+from utils.logger import setup_logger
+
+logger = setup_logger('fishing')
 
 FISH_DB = {
     # ── Normal ──────────────────────────────────────────────────────────────
@@ -267,9 +270,7 @@ class FishingView(discord.ui.View):
                     await interaction.followup.send(ansi(f"  {C.GOLD}{rank_msg}{C.R}"))
                 card_sent = True
             except Exception:
-                pass
-
-        if not card_sent:
+                logger.warning('fishing: 낚시 결과 카드 렌더링 실패 — 텍스트 폴백 사용', exc_info=True)
             grade_mark = {"Normal": "⚬", "Rare": "◆", "Epic": "❖", "Legendary": "✦"}.get(grade, "⚬")
             embed_color = GRADE_EMBED_COLOR.get(grade, 0x00aa44)
             if added:
@@ -366,10 +367,7 @@ class FishingView(discord.ui.View):
                     )
                     await self._message.edit(embed=embed, view=self)
                 except Exception:
-                    pass
-
-
-class FishingEngine:
+                    logger.warning('fishing: on_timeout 메시지 편집 실패', exc_info=True)
     def __init__(self, player):
         self.player       = player
         self.current_spot = "방울숲 강"

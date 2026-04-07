@@ -2,6 +2,9 @@
 import discord
 from items import ALL_ITEMS
 from bg3_renderer import get_renderer
+from utils.logger import setup_logger
+
+logger = setup_logger('shop_ui')
 
 GRADE_ICON_PLAIN = {
     "Normal":    "⚬",
@@ -121,7 +124,7 @@ class SellView(discord.ui.View):
             from save_manager import save_manager
             save_manager.save(self.player)
         except Exception:
-            pass
+            logger.error('shop_ui: SellView 판매 후 save_manager.save 실패', exc_info=True)
 
         for child in self.children:
             child.disabled = True
@@ -160,10 +163,7 @@ class SellView(discord.ui.View):
                 )
                 await self._message.edit(content=None, attachments=[file], view=self)
             except Exception:
-                pass
-
-
-class BuyView(discord.ui.View):
+                logger.warning('shop_ui: SellView.on_timeout 메시지 편집 실패', exc_info=True)
     def __init__(self, player, shop_manager, npc_name: str, catalog: dict):
         super().__init__(timeout=60)
         self.player       = player
@@ -283,7 +283,7 @@ class BuyView(discord.ui.View):
             from save_manager import save_manager
             save_manager.save(self.player)
         except Exception:
-            pass
+            logger.error('shop_ui: BuyView 구매 후 save_manager.save 실패', exc_info=True)
 
         for child in self.children:
             child.disabled = True
@@ -324,4 +324,4 @@ class BuyView(discord.ui.View):
                 )
                 await self._message.edit(content=None, attachments=[file], view=self)
             except Exception:
-                pass
+                logger.warning('shop_ui: BuyView.on_timeout 메시지 편집 실패', exc_info=True)

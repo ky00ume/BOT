@@ -1,6 +1,9 @@
 import random
 from ui_theme import C, section, divider, header_box, ansi, rank_badge, FOOTERS
 from utils.ranks import rank_gte as _rank_gte
+from utils.logger import setup_logger
+
+logger = setup_logger('cooking_db')
 
 # method: "cook" = 가열 요리 (도구 필요), "mix" = 혼합 요리 (비가열, 도구 불필요)
 RECIPES = {
@@ -581,17 +584,17 @@ class CookingEngine:
                     from collection import collection_manager
                     is_new, total = collection_manager.register("요리", result_id, result_name)
                 except Exception:
-                    pass
+                    logger.warning('cooking_db: collection_manager.register 실패', exc_info=True)
                 try:
                     from achievements import achievement_manager
                     achievement_manager.increment("items_cooked", 1)
                 except Exception:
-                    pass
+                    logger.warning('cooking_db: achievement_manager.increment 실패', exc_info=True)
                 try:
                     from diary import diary_manager
                     diary_manager.increment("items_cooked", 1)
                 except Exception:
-                    pass
+                    logger.warning('cooking_db: diary_manager.increment 실패', exc_info=True)
 
             exp = recipe.get("exp", 10.0)
             rank_msg = self.player.train_skill("cooking", exp)

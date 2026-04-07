@@ -3,6 +3,9 @@ import asyncio
 import random
 import discord
 from ui_theme import C, ansi, header_box, divider, EMBED_COLOR, FOOTERS
+from utils.logger import setup_logger
+
+logger = setup_logger('restaurant')
 
 
 DELIVERY_MENU = {
@@ -109,7 +112,7 @@ class RestaurantEngine:
                 if hasattr(aff, "add_affinity"):
                     aff.add_affinity(npc_name, aff_bonus)
         except Exception:
-            pass
+            logger.warning('restaurant: affinity_manager.add_affinity 실패', exc_info=True)
 
         lines = [
             header_box(f"🎁 {npc_name}에게 선물!"),

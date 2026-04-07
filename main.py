@@ -55,6 +55,9 @@ from special_npc  import SpecialNPCEncounterManager
 from care         import CareManager
 from care_ui      import CareRoomView, _make_room_card
 from utils.player_lock import get_player_lock
+from utils.logger import setup_logger
+
+logger = setup_logger('main')
 
 # ─── 상수 (환경변수로 관리) ────────────────────────────────────────────────
 # REMEDIATION_PLAN 3-D: Discord 사용자 ID 를 소스에 하드코딩하지 않는다.
@@ -1761,7 +1764,7 @@ async def inventory_cmd(ctx):
                     from save_manager import save_manager
                     save_manager.save(shared_player)
                 except Exception:
-                    pass
+                    logger.error('main: 스킬북 학습 후 save_manager.save 실패', exc_info=True)
                 await interaction.response.send_message(
                     f"✅ [{skill_name}] 스킬을 습득했슴미댜! [연습 랭크]",
                     ephemeral=False,

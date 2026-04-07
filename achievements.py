@@ -1,6 +1,9 @@
 """achievements.py — 업적(Achievement) & 타이틀 시스템"""
 import json
 import os
+from utils.logger import setup_logger
+
+logger = setup_logger('achievements')
 
 ACHIEVEMENTS_FILE = os.path.join(os.path.dirname(__file__), "achievements.json")
 
@@ -38,9 +41,7 @@ class AchievementManager:
             self._counters = data.get("counters", {})
             self._unlocked = data.get("unlocked", [])
         except Exception:
-            pass
-
-    def _save(self):
+            logger.warning('achievements: _load 실패', exc_info=True)
         try:
             with open(ACHIEVEMENTS_FILE, "w", encoding="utf-8") as f:
                 json.dump({
@@ -48,9 +49,7 @@ class AchievementManager:
                     "unlocked": self._unlocked,
                 }, f, ensure_ascii=False, indent=2)
         except Exception:
-            pass
-
-    def increment(self, counter_key: str, amount: int = 1) -> list[str]:
+            logger.error('achievements: _save 실패', exc_info=True)
         self._counters[counter_key] = self._counters.get(counter_key, 0) + amount
         newly_unlocked = []
 

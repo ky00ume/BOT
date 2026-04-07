@@ -6,6 +6,9 @@
   - hunt:    몬스터 N마리 처치 후 보고
 """
 import random
+from utils.logger import setup_logger
+
+logger = setup_logger('job_data')
 
 # 각 NPC별 알바 풀 (9개)
 # 난이도: easy / normal / hard
@@ -1032,7 +1035,7 @@ def _can_do_job(job: dict, player) -> bool:
             player_rank = getattr(player, "skill_ranks", {}).get("crafting", "연습")
             return craft_gte(player_rank, rank_req)
     except Exception:
-        pass
+        logger.warning('job_data: crafting 랭크 확인 실패', exc_info=True)
     try:
         from metallurgy import SMELT_RECIPES, _rank_gte as smelt_gte
         for recipe in SMELT_RECIPES.values():
@@ -1041,7 +1044,7 @@ def _can_do_job(job: dict, player) -> bool:
                 player_rank = getattr(player, "skill_ranks", {}).get("metallurgy", "연습")
                 return smelt_gte(player_rank, rank_req)
     except Exception:
-        pass
+        logger.warning('job_data: metallurgy 랭크 확인 실패', exc_info=True)
     return True
 
 

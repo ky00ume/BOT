@@ -5,6 +5,9 @@
 
 저장 순서: backup() → validate() → write()
 실패 시 backup에서 자동 복원.
+
+asyncio.Lock을 통해 동일 user_id에 대한 동시 저장 경합(race condition)을
+방지합니다. 비동기 컨텍스트에서는 save_async()를 사용하세요.
 """
 import json
 import logging
@@ -12,6 +15,7 @@ import re
 
 from database import get_db_connection
 from user_data import UserData
+from utils.player_lock import get_player_lock
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +66,25 @@ class SaveManager:
             except Exception as re:
                 logger.error(f"[SaveManager] 복원도 실패 (user_id={user_id}): {re}")
             return False
+
+    async def save_async(self, player) -> bool:
+        """asyncio.Lock으로 동시 저장 경합을 방지하는 비동기 세이브.
+
+        동일 user_id에 대한 동시 호출은 Lock으로 직렬화됩니다.
+        비동기 컨텍스트(Discord 명령 핸들러 등)에서 사용하세요.
+
+        Returns:
+            저장 성공 시 True, 실패 시 False.
+        """
+        user_id = getattr(player, "user_id", 0)
+        lock = get_player_lock(user_id)
+        if lock.locked():
+            logger.warning(
+                "[SaveManager] user_id=%s 이미 저장 중 — Lock 대기",
+                user_id,
+            )
+        async with lock:
+            return self.save(player)
 
     def load(self, user_id) -> dict | None:
         """DB에서 로드 → 스키마 마이그레이션 → 반환.

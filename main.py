@@ -360,7 +360,95 @@ async def equipment_cmd(ctx):
     if not await _check_channel(ctx):
         return
     buf = create_equipment_image(shared_player)
-    await _send_image(ctx, buf, 'equipment.png')
+    file = discord.File(fp=buf, filename='equipment.png')
+
+    # D-1: 장비 인터랙티브 View (장착/해제 버튼 포함)
+    class _EquipView(discord.ui.View):
+        def __init__(self):
+            super().__init__(timeout=120.0)
+            self._build_buttons()
+
+        def _build_buttons(self):
+            self.clear_items()
+            # 장착 가능한 장비 아이템이 인벤토리에 있으면 장착 버튼 추가
+            equippable = []
+            for item_id, count in shared_player.inventory.items():
+                idata = ALL_ITEMS.get(item_id, {})
+                if idata.get("type") in ("weapon", "armor") and count > 0:
+                    equippable.append((item_id, idata))
+            if equippable:
+                options = []
+                for item_id, idata in equippable[:25]:
+                    options.append(discord.SelectOption(
+                        label=idata.get("name", item_id),
+                        value=item_id,
+                        description=f"슬롯: {idata.get('slot', '?')}",
+                    ))
+                equip_select = discord.ui.Select(
+                    placeholder="장착할 아이템 선택...",
+                    options=options,
+                )
+                equip_select.callback = self._equip_callback
+                self.add_item(equip_select)
+
+            # 현재 장착중인 장비 해제 버튼
+            _SLOT_KR = {"main": "주무기", "sub": "보조무기", "body": "갑옷",
+                        "head": "투구", "hands": "장갑", "feet": "신발"}
+            equipped_slots = [(slot, eid) for slot, eid in shared_player.equipment.items() if eid]
+            if equipped_slots:
+                options = []
+                for slot, eid in equipped_slots:
+                    idata = ALL_ITEMS.get(eid, {})
+                    options.append(discord.SelectOption(
+                        label=f"[{_SLOT_KR.get(slot, slot)}] {idata.get('name', eid)}",
+                        value=slot,
+                        description="해제하기",
+                    ))
+                unequip_select = discord.ui.Select(
+                    placeholder="해제할 장비 선택...",
+                    options=options,
+                )
+                unequip_select.callback = self._unequip_callback
+                self.add_item(unequip_select)
+
+            # 무기 교환 버튼
+            swap_btn = discord.ui.Button(label="🔄 무기 교환", style=discord.ButtonStyle.secondary)
+            swap_btn.callback = self._swap_callback
+            self.add_item(swap_btn)
+
+        async def _equip_callback(self, interaction: discord.Interaction):
+            item_id = interaction.data["values"][0]
+            msg = shared_player.equip_item(item_id)
+            save_manager.save(shared_player)
+            new_buf = create_equipment_image(shared_player)
+            new_file = discord.File(fp=new_buf, filename='equipment.png')
+            self._build_buttons()
+            await interaction.response.edit_message(
+                content=msg, attachments=[new_file], view=self,
+            )
+
+        async def _unequip_callback(self, interaction: discord.Interaction):
+            slot = interaction.data["values"][0]
+            msg = shared_player.unequip_slot(slot)
+            save_manager.save(shared_player)
+            new_buf = create_equipment_image(shared_player)
+            new_file = discord.File(fp=new_buf, filename='equipment.png')
+            self._build_buttons()
+            await interaction.response.edit_message(
+                content=msg, attachments=[new_file], view=self,
+            )
+
+        async def _swap_callback(self, interaction: discord.Interaction):
+            shared_player.swap_weapons()
+            save_manager.save(shared_player)
+            new_buf = create_equipment_image(shared_player)
+            new_file = discord.File(fp=new_buf, filename='equipment.png')
+            self._build_buttons()
+            await interaction.response.edit_message(
+                content="주·보조 무기를 교환했슴미댜!", attachments=[new_file], view=self,
+            )
+
+    await ctx.send(file=file, view=_EquipView())
 
 
 @bot.command(name="스왑")

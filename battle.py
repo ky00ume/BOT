@@ -136,6 +136,11 @@ class BattleEngine:
                 f"필요 기력: {energy_cost}"
             )
 
+        # A-1 fix: HP가 0 이하면 max_hp로 복원 (상태 창과 전투 HP 불일치 방지)
+        if self.player.hp <= 0:
+            self.player.hp = self.player.max_hp
+            logger.info('battle: HP가 0 이하로 감지됨 — max_hp로 복원: %d', self.player.max_hp)
+
         monster_base = random.choice(zone["monsters"])
         size         = roll_monster_size()
         monster_data = apply_size_to_monster(monster_base, size)

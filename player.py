@@ -513,10 +513,10 @@ class Player:
         self.name          = data.get("name",          self.name)
         self.level         = data.get("level",         self.level)
         self.exp           = data.get("exp",           self.exp)
-        self.hp            = data.get("hp",            self.hp)
         self.max_hp        = data.get("max_hp",        self.max_hp)
-        self.mp            = data.get("mp",            self.mp)
+        self.hp            = data.get("hp",            self.hp)
         self.max_mp        = data.get("max_mp",        self.max_mp)
+        self.mp            = data.get("mp",            self.mp)
         self.energy        = data.get("energy",        self.energy)
         self.max_energy    = data.get("max_energy",    self.max_energy)
         self.gold          = data.get("gold",          self.gold)
@@ -524,6 +524,16 @@ class Player:
         self.condition     = data.get("condition",     getattr(self, "condition", 50))
         self.stability     = data.get("stability",     getattr(self, "stability", 50))
         self.current_title = data.get("current_title", self.current_title)
+
+        # A-1 fix: HP/MP 값 유효성 보정 (0 이하이면 최대값으로 복원, max 초과 방지)
+        if self.hp <= 0:
+            self.hp = self.max_hp
+        elif self.hp > self.max_hp:
+            self.hp = self.max_hp
+        if self.mp < 0:
+            self.mp = self.max_mp
+        elif self.mp > self.max_mp:
+            self.mp = self.max_mp
 
         if "titles" in data and isinstance(data["titles"], list):
             self.titles = data["titles"]

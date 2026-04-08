@@ -188,7 +188,17 @@ class BattleView(discord.ui.View):
         msg = self.battle_engine.use_cheer()
         await interaction.response.defer()
         self._rebuild_buttons()
-        await interaction.followup.send(msg, view=self)
+        # B-4 fix: 응원 시 몬스터 카드 이미지 유지
+        battle_img = self.battle_engine.build_battle_image()
+        if battle_img:
+            battle_img.seek(0)
+            await interaction.followup.send(
+                content=msg,
+                file=discord.File(fp=battle_img, filename="battle.png"),
+                view=self,
+            )
+        else:
+            await interaction.followup.send(msg, view=self)
 
     async def _auto_callback(self, interaction: discord.Interaction):
         if not self.battle_engine.in_battle:

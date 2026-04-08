@@ -10,7 +10,9 @@ except ImportError:
     SKILL_BOOKS = {}
 
 # ── 포션/연금술 재료 전용 카탈로그 (오멜룸) ─────────────────────────────────
-_OMELUM_POTIONS = {k: v for k, v in CONSUMABLES.items()}
+# C-4 fix: 빵/우유는 브룩샤로 이전됨 — 오멜룸 카탈로그에서 제외
+_OMELUM_EXCLUDE = {"con_bread", "con_milk"}
+_OMELUM_POTIONS = {k: v for k, v in CONSUMABLES.items() if k not in _OMELUM_EXCLUDE}
 _OMELUM_POTIONS.update({
     k: v for k, v in ALL_ITEMS.items()
     if v.get("type") == "gathering" and k in (
@@ -249,8 +251,14 @@ class ShopManager:
         if item.get("type") == "bag":
             new_slots = item.get("slots", 0)
             current_bags = getattr(self.player, "bags", [])
-            if current_bags:
-                cur_bag_id = current_bags[0]
+            # C-2 fix: 이미 같은 가방을 보유한 경우 중복 구매 방지
+            if item_id in current_bags:
+                return ansi(
+                    f"  {C.RED}✖ 이미 같은 가방을 가지고 있슴미댜! "
+                    f"({name}, +{new_slots}칸){C.R}"
+                )
+            # C-2 fix: 기존에 보유한 가방보다 작은 가방은 경고
+            for cur_bag_id in current_bags:
                 cur_bag = BAGS.get(cur_bag_id, {})
                 cur_slots = cur_bag.get("slots", 0)
                 if new_slots <= cur_slots:
@@ -259,11 +267,13 @@ class ShopManager:
                         f"({cur_bag.get('name', cur_bag_id)}, +{cur_slots}칸){C.R}"
                     )
             economy.deduct(source=f"구매:{name}", gold=final_price)
-            self.player.bags = [item_id]
+            # C-2 fix: 기존 가방 유지하면서 새 가방 추가 (여러 가방 동시 보유)
+            self.player.bags.append(item_id)
+            total_extra = sum(BAGS.get(b, {}).get("slots", 0) for b in self.player.bags)
             return ansi(
                 f"  {C.GREEN}✔{C.R} {C.WHITE}{name}{C.R} 구매 완료!{discount_str}\n"
                 f"  {C.RED}-{final_price:,}G{C.R} (현재: {C.GOLD}{self.player.gold:,}G{C.R})\n"
-                f"  {C.GOLD}🎒 현재 가방: {name} (+{new_slots}칸){C.R}"
+                f"  {C.GOLD}🎒 가방 추가: {name} (+{new_slots}칸) | 총 추가 슬롯: +{total_extra}칸{C.R}"
             )
         # ──────────────────────────────────────────────────────────────────
 

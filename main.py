@@ -1334,7 +1334,11 @@ async def gather_cmd(ctx):
         departure = encounter_manager.clear_encounter()
         if departure:
             await ctx.send(departure)
-        await gathering_engine.gather(ctx)
+        # D-4: 플레이어 현재 위치 기반 자동 채집
+        current_zone = getattr(shared_player, 'current_zone', None)
+        from gathering import GATHER_ZONE_ITEMS
+        zone_arg = current_zone if current_zone and current_zone in GATHER_ZONE_ITEMS else None
+        await gathering_engine.gather(ctx, zone_name=zone_arg)
         save_manager.save(shared_player)
         enc_msg = encounter_manager.trigger_encounter()
         if enc_msg:
@@ -2116,6 +2120,62 @@ async def move_cmd(ctx, *, destination: str = None):
 # ═══════════════════════════════════════════════════════════════════════════
 
 # /수련 명령어 삭제됨 — 카엘릭 NPC 대화에서 수련 버튼으로 접근
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# E-6: 설정 명령어 (오토 전투 포션 사용 토글 등)
+# ═══════════════════════════════════════════════════════════════════════════
+
+@bot.command(name="설정")
+async def settings_cmd(ctx):
+    """게임 설정을 변경합니다."""
+    if not await _check_channel(ctx):
+        return
+    potion_status = "ON ✅" if shared_player.auto_use_potion else "OFF ❌"
+    from bg3_renderer import get_renderer, render_async
+    buf = await render_async(
+        get_renderer().render_card,
+        "⚙️ 설정",
+        [
+            {"label": "오토 포션 사용", "value": potion_status},
+            {"label": "설명", "value": "오토 전투 시 HP 40% 이하에서 포션 자동 사용"},
+        ],
+        system_key="status",
+        footer="아래 버튼으로 설정을 변경하세요",
+    )
+    file = discord.File(fp=buf, filename="settings.png")
+
+    class _SettingsView(discord.ui.View):
+        def __init__(self):
+            super().__init__(timeout=60.0)
+            label = "오토 포션: OFF" if shared_player.auto_use_potion else "오토 포션: ON"
+            self.toggle_btn = discord.ui.Button(
+                label=label,
+                style=discord.ButtonStyle.primary,
+                emoji="💊",
+            )
+            self.toggle_btn.callback = self._toggle
+            self.add_item(self.toggle_btn)
+
+        async def _toggle(self, interaction: discord.Interaction):
+            shared_player.auto_use_potion = not shared_player.auto_use_potion
+            save_manager.save(shared_player)
+            new_status = "ON ✅" if shared_player.auto_use_potion else "OFF ❌"
+            new_buf = get_renderer().render_card(
+                "⚙️ 설정",
+                [
+                    {"label": "오토 포션 사용", "value": new_status},
+                    {"label": "설명", "value": "오토 전투 시 HP 40% 이하에서 포션 자동 사용"},
+                ],
+                system_key="status",
+                footer="아래 버튼으로 설정을 변경하세요",
+            )
+            new_label = "오토 포션: OFF" if shared_player.auto_use_potion else "오토 포션: ON"
+            self.toggle_btn.label = new_label
+            new_file = discord.File(fp=new_buf, filename="settings.png")
+            await interaction.response.edit_message(attachments=[new_file], view=self)
+
+    await ctx.send(file=file, view=_SettingsView())
 
 
 # ═══════════════════════════════════════════════════════════════════════════

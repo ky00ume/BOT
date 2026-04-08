@@ -10,24 +10,24 @@ NIGHT_HOUR     = 23
 DIARY_HOUR     = 22
 
 _RANDOM_EVENTS = [
-    "🕷️ 츄라이더가 마을을 산책하다가 **10골드**를 주웠슴미댜!",
-    "🕷️ 츄라이더가 지금 **목공을 연습**하고 있슴미댜...",
-    "🕷️ 츄라이더가 강가에서 **돌멩이를 던지며** 놀고 있슴미댜~",
-    "🕷️ 츄라이더가 **거미줄을 새로 짰슴미댜**! 반짝반짝임미댜~",
-    "🕷️ 츄라이더가 마을 게시판 앞에서 **공지를 읽고** 있슴미댜.",
-    "🕷️ 츄라이더가 **버섯을 채집**하다가 예쁜 꽃도 발견했슴미댜! 🌸",
-    "🕷️ 츄라이더가 **낮잠을 자다** 깼슴미댜... 기분이 좋슴미댜~",
-    "🕷️ 츄라이더가 하늘을 보며 **구름 모양을 세고** 있슴미댜... 🌤",
-    "🕷️ 츄라이더가 **새로운 레시피를 연습** 중임미댜! 맛있게 만들 수 있을까~",
-    "🕷️ 츄라이더가 모험가 길드 앞에서 **게시물을 구경**하고 있슴미댜.",
-    "🕷️ 츄라이더가 **광산 근처를 탐험**하다가 돌아왔슴미댜! 돌멩이가 예쁘슴미댜~",
-    "🕷️ 츄라이더가 **일지를 쓰고** 있슴미댜... 오늘 뭘 했는지 기록 중임미댜.",
-    "🕷️ 츄라이더가 **거미줄 해먹에 누워** 바람을 즐기고 있슴미댜~ 🍃",
-    "🕷️ 츄라이더가 **귀엽게 스트레칭** 중임미댜! 다리가 여덟 개라 시간이 걸리슴미댜;;",
-    "🕷️ 츄라이더가 **별자리를 공부**하고 있슴미댜... 오늘은 쌍둥이자리네요~ ✨",
-    "🕷️ 츄라이더가 냇가에서 **발(?)을 담그고** 쉬는 중임미댜~ 🌊",
-    "🕷️ 츄라이더가 **친구에게 편지를 쓰고** 있슴미댜! (친구가 있는지는 모르겠슴미댜;;)",
-    "🕷️ 츄라이더가 마을 도서관에서 **책을 빌려왔슴미댜**! 어떤 책인지 궁금하슴미댜~",
+    ("🕷️ 츄라이더가 마을을 산책하다가 **10골드**를 주웠슴미댜!", "gold", 10),
+    ("🕷️ 츄라이더가 지금 **목공을 연습**하고 있슴미댜...", "skill", "woodwork"),
+    ("🕷️ 츄라이더가 강가에서 **돌멩이를 던지며** 놀고 있슴미댜~", None, None),
+    ("🕷️ 츄라이더가 **거미줄을 새로 짰슴미댜**! 반짝반짝임미댜~", None, None),
+    ("🕷️ 츄라이더가 마을 게시판 앞에서 **공지를 읽고** 있슴미댜.", None, None),
+    ("🕷️ 츄라이더가 **버섯을 채집**하다가 예쁜 꽃도 발견했슴미댜! 🌸", "item", "herb"),
+    ("🕷️ 츄라이더가 **낮잠을 자다** 깼슴미댜... 기분이 좋슴미댜~", "energy", 5),
+    ("🕷️ 츄라이더가 하늘을 보며 **구름 모양을 세고** 있슴미댜... 🌤", None, None),
+    ("🕷️ 츄라이더가 **새로운 레시피를 연습** 중임미댜! 맛있게 만들 수 있을까~", "skill", "cooking"),
+    ("🕷️ 츄라이더가 모험가 길드 앞에서 **게시물을 구경**하고 있슴미댜.", "exp", 5),
+    ("🕷️ 츄라이더가 **광산 근처를 탐험**하다가 돌아왔슴미댜! 돌멩이가 예쁘슴미댜~", "item", "stone"),
+    ("🕷️ 츄라이더가 **일지를 쓰고** 있슴미댜... 오늘 뭘 했는지 기록 중임미댜.", None, None),
+    ("🕷️ 츄라이더가 **거미줄 해먹에 누워** 바람을 즐기고 있슴미댜~ 🍃", "energy", 3),
+    ("🕷️ 츄라이더가 **귀엽게 스트레칭** 중임미댜! 다리가 여덟 개라 시간이 걸리슴미댜;;", None, None),
+    ("🕷️ 츄라이더가 **별자리를 공부**하고 있슴미댜... 오늘은 쌍둥이자리네요~ ✨", "exp", 3),
+    ("🕷️ 츄라이더가 냇가에서 **발(?)을 담그고** 쉬는 중임미댜~ 🌊", "energy", 5),
+    ("🕷️ 츄라이더가 **친구에게 편지를 쓰고** 있슴미댜! (친구가 있는지는 모르겠슴미댜;;)", None, None),
+    ("🕷️ 츄라이더가 마을 도서관에서 **책을 빌려왔슴미댜**! 어떤 책인지 궁금하슴미댜~", "exp", 5),
 ]
 
 _DAILY_SCENES = [
@@ -156,8 +156,36 @@ def setup_alarms(bot, channel_id: int, drider_id: int, hyness_id: int = None, ma
         if minute in (0, 30) and minute != _last_random_minute:
             _last_random_minute = minute
             if random.random() < 0.60:
-                msg = random.choice(_RANDOM_EVENTS)
-                await channel.send(msg)
+                msg_text, reward_type, reward_val = random.choice(_RANDOM_EVENTS)
+                # E-3: 랜덤 메시지에 실제 보상 지급
+                reward_msg = ""
+                try:
+                    from main import shared_player
+                    from save_manager import save_manager
+                    if reward_type == "gold" and reward_val:
+                        shared_player.gold += reward_val
+                        reward_msg = f"\n💰 +{reward_val}G"
+                    elif reward_type == "exp" and reward_val:
+                        shared_player.exp += reward_val
+                        reward_msg = f"\n✨ +{reward_val} EXP"
+                    elif reward_type == "energy" and reward_val:
+                        shared_player.energy = min(shared_player.max_energy,
+                                                   shared_player.energy + reward_val)
+                        reward_msg = f"\n⚡ 기력 +{reward_val}"
+                    elif reward_type == "item" and reward_val:
+                        shared_player.add_item(reward_val, 1)
+                        from items import ALL_ITEMS
+                        item_name = ALL_ITEMS.get(reward_val, {}).get("name", reward_val)
+                        reward_msg = f"\n📦 {item_name} ×1 획득!"
+                    elif reward_type == "skill" and reward_val:
+                        rank_msg = shared_player.train_skill(reward_val, 5.0)
+                        if rank_msg:
+                            reward_msg = f"\n{rank_msg}"
+                    if reward_type:
+                        save_manager.save(shared_player)
+                except Exception:
+                    pass  # 보상 지급 실패해도 메시지는 전송
+                await channel.send(msg_text + reward_msg)
 
         if hour == 15 and minute == 0 and today != _daily_scene_sent_date:
             _daily_scene_sent_date = today

@@ -360,7 +360,95 @@ async def equipment_cmd(ctx):
     if not await _check_channel(ctx):
         return
     buf = create_equipment_image(shared_player)
-    await _send_image(ctx, buf, 'equipment.png')
+    file = discord.File(fp=buf, filename='equipment.png')
+
+    # D-1: 장비 인터랙티브 View (장착/해제 버튼 포함)
+    class _EquipView(discord.ui.View):
+        def __init__(self):
+            super().__init__(timeout=120.0)
+            self._build_buttons()
+
+        def _build_buttons(self):
+            self.clear_items()
+            # 장착 가능한 장비 아이템이 인벤토리에 있으면 장착 버튼 추가
+            equippable = []
+            for item_id, count in shared_player.inventory.items():
+                idata = ALL_ITEMS.get(item_id, {})
+                if idata.get("type") in ("weapon", "armor") and count > 0:
+                    equippable.append((item_id, idata))
+            if equippable:
+                options = []
+                for item_id, idata in equippable[:25]:
+                    options.append(discord.SelectOption(
+                        label=idata.get("name", item_id),
+                        value=item_id,
+                        description=f"슬롯: {idata.get('slot', '?')}",
+                    ))
+                equip_select = discord.ui.Select(
+                    placeholder="장착할 아이템 선택...",
+                    options=options,
+                )
+                equip_select.callback = self._equip_callback
+                self.add_item(equip_select)
+
+            # 현재 장착중인 장비 해제 버튼
+            _SLOT_KR = {"main": "주무기", "sub": "보조무기", "body": "갑옷",
+                        "head": "투구", "hands": "장갑", "feet": "신발"}
+            equipped_slots = [(slot, eid) for slot, eid in shared_player.equipment.items() if eid]
+            if equipped_slots:
+                options = []
+                for slot, eid in equipped_slots:
+                    idata = ALL_ITEMS.get(eid, {})
+                    options.append(discord.SelectOption(
+                        label=f"[{_SLOT_KR.get(slot, slot)}] {idata.get('name', eid)}",
+                        value=slot,
+                        description="해제하기",
+                    ))
+                unequip_select = discord.ui.Select(
+                    placeholder="해제할 장비 선택...",
+                    options=options,
+                )
+                unequip_select.callback = self._unequip_callback
+                self.add_item(unequip_select)
+
+            # 무기 교환 버튼
+            swap_btn = discord.ui.Button(label="🔄 무기 교환", style=discord.ButtonStyle.secondary)
+            swap_btn.callback = self._swap_callback
+            self.add_item(swap_btn)
+
+        async def _equip_callback(self, interaction: discord.Interaction):
+            item_id = interaction.data["values"][0]
+            msg = shared_player.equip_item(item_id)
+            save_manager.save(shared_player)
+            new_buf = create_equipment_image(shared_player)
+            new_file = discord.File(fp=new_buf, filename='equipment.png')
+            self._build_buttons()
+            await interaction.response.edit_message(
+                content=msg, attachments=[new_file], view=self,
+            )
+
+        async def _unequip_callback(self, interaction: discord.Interaction):
+            slot = interaction.data["values"][0]
+            msg = shared_player.unequip_slot(slot)
+            save_manager.save(shared_player)
+            new_buf = create_equipment_image(shared_player)
+            new_file = discord.File(fp=new_buf, filename='equipment.png')
+            self._build_buttons()
+            await interaction.response.edit_message(
+                content=msg, attachments=[new_file], view=self,
+            )
+
+        async def _swap_callback(self, interaction: discord.Interaction):
+            shared_player.swap_weapons()
+            save_manager.save(shared_player)
+            new_buf = create_equipment_image(shared_player)
+            new_file = discord.File(fp=new_buf, filename='equipment.png')
+            self._build_buttons()
+            await interaction.response.edit_message(
+                content="주·보조 무기를 교환했슴미댜!", attachments=[new_file], view=self,
+            )
+
+    await ctx.send(file=file, view=_EquipView())
 
 
 @bot.command(name="스왑")
@@ -1334,7 +1422,11 @@ async def gather_cmd(ctx):
         departure = encounter_manager.clear_encounter()
         if departure:
             await ctx.send(departure)
-        await gathering_engine.gather(ctx)
+        # D-4: 플레이어 현재 위치 기반 자동 채집
+        current_zone = getattr(shared_player, 'current_zone', None)
+        from gathering import GATHER_ZONE_ITEMS
+        zone_arg = current_zone if current_zone and current_zone in GATHER_ZONE_ITEMS else None
+        await gathering_engine.gather(ctx, zone_name=zone_arg)
         save_manager.save(shared_player)
         enc_msg = encounter_manager.trigger_encounter()
         if enc_msg:
@@ -2116,6 +2208,63 @@ async def move_cmd(ctx, *, destination: str = None):
 # ═══════════════════════════════════════════════════════════════════════════
 
 # /수련 명령어 삭제됨 — 카엘릭 NPC 대화에서 수련 버튼으로 접근
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# E-6: 설정 명령어 (오토 전투 포션 사용 토글 등)
+# ═══════════════════════════════════════════════════════════════════════════
+
+@bot.command(name="설정")
+async def settings_cmd(ctx):
+    """게임 설정을 변경합니다."""
+    if not await _check_channel(ctx):
+        return
+    potion_status = "ON ✅" if shared_player.auto_use_potion else "OFF ❌"
+    from bg3_renderer import get_renderer, render_async
+    buf = await render_async(
+        get_renderer().render_card,
+        "⚙️ 설정",
+        [
+            {"label": "오토 포션 사용", "value": potion_status},
+            {"label": "설명", "value": "오토 전투 시 HP 40% 이하에서 포션 자동 사용"},
+        ],
+        system_key="status",
+        footer="아래 버튼으로 설정을 변경하세요",
+    )
+    file = discord.File(fp=buf, filename="settings.png")
+
+    class _SettingsView(discord.ui.View):
+        def __init__(self):
+            super().__init__(timeout=60.0)
+            # 현재 상태가 ON이면 끄기 버튼, OFF이면 켜기 버튼 표시
+            label = "오토 포션 끄기" if shared_player.auto_use_potion else "오토 포션 켜기"
+            self.toggle_btn = discord.ui.Button(
+                label=label,
+                style=discord.ButtonStyle.primary,
+                emoji="💊",
+            )
+            self.toggle_btn.callback = self._toggle
+            self.add_item(self.toggle_btn)
+
+        async def _toggle(self, interaction: discord.Interaction):
+            shared_player.auto_use_potion = not shared_player.auto_use_potion
+            save_manager.save(shared_player)
+            new_status = "ON ✅" if shared_player.auto_use_potion else "OFF ❌"
+            new_buf = get_renderer().render_card(
+                "⚙️ 설정",
+                [
+                    {"label": "오토 포션 사용", "value": new_status},
+                    {"label": "설명", "value": "오토 전투 시 HP 40% 이하에서 포션 자동 사용"},
+                ],
+                system_key="status",
+                footer="아래 버튼으로 설정을 변경하세요",
+            )
+            new_label = "오토 포션 끄기" if shared_player.auto_use_potion else "오토 포션 켜기"
+            self.toggle_btn.label = new_label
+            new_file = discord.File(fp=new_buf, filename="settings.png")
+            await interaction.response.edit_message(attachments=[new_file], view=self)
+
+    await ctx.send(file=file, view=_SettingsView())
 
 
 # ═══════════════════════════════════════════════════════════════════════════

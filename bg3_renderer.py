@@ -204,19 +204,21 @@ def _load_portrait(portrait_type: str, portrait_id: str,
     초상화 로드 및 크롭.
     portrait_type: 'npc' | 'animal' | 'monster'
     portrait_id:   파일명 (확장자 제외)
-    없으면 None 반환 → 호출부에서 플레이스홀더 처리
+    없으면 _default 폴백 → 그래도 없으면 None → 호출부에서 플레이스홀더 처리
     """
     if not _safe_id(portrait_id) or not _safe_id(portrait_type):
         return None
     folder = os.path.join(_PORT_D, portrait_type)
-    for ext in (".png", ".webp", ".jpg", ".jpeg"):
-        p = os.path.join(folder, portrait_id + ext)
-        if os.path.isfile(p):
-            try:
-                img = Image.open(p).convert("RGBA")
-                return _smart_crop(img, w, h, face_center=0.30)
-            except (OSError, IOError, ValueError) as e:
-                _log.warning("Portrait load failed: %s (%s)", p, e)
+    # E-1 fix: portrait_id 우선, 없으면 _default 폴백
+    for name in (portrait_id, "_default"):
+        for ext in (".png", ".webp", ".jpg", ".jpeg"):
+            p = os.path.join(folder, name + ext)
+            if os.path.isfile(p):
+                try:
+                    img = Image.open(p).convert("RGBA")
+                    return _smart_crop(img, w, h, face_center=0.30)
+                except (OSError, IOError, ValueError) as e:
+                    _log.warning("Portrait load failed: %s (%s)", p, e)
     return None
 
 
@@ -551,13 +553,14 @@ class BG3Renderer:
         PAD = 24; HH = 66 if not subtitle else 88; FH = 46
 
         # 아이템 수에 따라 글씨 크기 유동 조절
+        # D-2: 인벤토리 가독성 개선을 위해 폰트 크기 증가
         n_rows = len(rows)
         if n_rows > 26:
-            _lh_val = 18; _font_val = 16; _font_lbl = 14; _row_min = 28
+            _lh_val = 22; _font_val = 20; _font_lbl = 18; _row_min = 32
         elif n_rows > 14:
-            _lh_val = 22; _font_val = 20; _font_lbl = 18; _row_min = 35
+            _lh_val = 26; _font_val = 24; _font_lbl = 22; _row_min = 40
         else:
-            _lh_val = 26; _font_val = 23; _font_lbl = 20; _row_min = 42
+            _lh_val = 30; _font_val = 27; _font_lbl = 24; _row_min = 48
 
         fV = _f(_font_val, True)
         fL = _f(_font_lbl)

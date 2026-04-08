@@ -94,10 +94,15 @@ class _ItemSelect(Select):
 
     async def callback(self, interaction: discord.Interaction):
         item_id = self.values[0]
-        if self.mode == "deposit":
-            result = self.engine.deposit(item_id, 1)
-        else:
-            result = self.engine.withdraw(item_id, 1)
-        from main import save_manager, shared_player
-        save_manager.save(shared_player)
-        await interaction.response.send_message(result)
+        try:
+            if self.mode == "deposit":
+                result = self.engine.deposit(item_id, 1)
+            else:
+                result = self.engine.withdraw(item_id, 1)
+            from main import save_manager, shared_player
+            save_manager.save(shared_player)
+            await interaction.response.send_message(result)
+        except Exception:
+            await interaction.response.send_message(
+                "보관함 작업 중 오류가 발생했슴미댜. 다시 시도해 주세요!", ephemeral=True
+            )

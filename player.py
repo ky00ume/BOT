@@ -164,6 +164,7 @@ class Player:
         self._story_quest_manager = None  # StoryQuestManager (main.py에서 주입)
         self._quest_manager = None  # QuestManager (main.py에서 주입)
         self._flags: dict = {}  # 1회성 이벤트 플래그 (예: levelup_potion_granted)
+        self.auto_use_potion = True  # E-6: 오토 전투 시 포션 자동 사용 설정
 
     def get_max_slots(self) -> int:
         """최대 인벤토리 슬롯 수 계산.
@@ -490,6 +491,7 @@ class Player:
             "last_special_encounter": getattr(self, "last_special_encounter", None),
             "rafael_contract": getattr(self, "rafael_contract", None),
             "_flags": getattr(self, "_flags", {}),
+            "auto_use_potion": getattr(self, "auto_use_potion", True),
         }
         # 스토리 퀘스트 데이터 포함
         sq_mgr = getattr(self, "_story_quest_manager", None)
@@ -513,10 +515,11 @@ class Player:
         self.name          = data.get("name",          self.name)
         self.level         = data.get("level",         self.level)
         self.exp           = data.get("exp",           self.exp)
-        self.hp            = data.get("hp",            self.hp)
+        # A-1: max 값을 먼저 로드해야 hp/mp 유효성 검증에 올바른 참조값 사용 가능
         self.max_hp        = data.get("max_hp",        self.max_hp)
-        self.mp            = data.get("mp",            self.mp)
+        self.hp            = data.get("hp",            self.hp)
         self.max_mp        = data.get("max_mp",        self.max_mp)
+        self.mp            = data.get("mp",            self.mp)
         self.energy        = data.get("energy",        self.energy)
         self.max_energy    = data.get("max_energy",    self.max_energy)
         self.gold          = data.get("gold",          self.gold)
@@ -524,6 +527,16 @@ class Player:
         self.condition     = data.get("condition",     getattr(self, "condition", 50))
         self.stability     = data.get("stability",     getattr(self, "stability", 50))
         self.current_title = data.get("current_title", self.current_title)
+
+        # A-1 fix: HP/MP 값 유효성 보정 (0 이하이면 최대값으로 복원, max 초과 방지)
+        if self.hp <= 0:
+            self.hp = self.max_hp
+        elif self.hp > self.max_hp:
+            self.hp = self.max_hp
+        if self.mp < 0:
+            self.mp = self.max_mp
+        elif self.mp > self.max_mp:
+            self.mp = self.max_mp
 
         if "titles" in data and isinstance(data["titles"], list):
             self.titles = data["titles"]
@@ -584,6 +597,9 @@ class Player:
         # 1회성 플래그 복원
         if "_flags" in data and isinstance(data["_flags"], dict):
             self._flags = data["_flags"]
+
+        # E-6: 오토 전투 포션 자동 사용 설정 복원
+        self.auto_use_potion = data.get("auto_use_potion", True)
 
     def get_attack(self) -> int:
         base = 5 + self.base_stats.get("str", 10) // 2

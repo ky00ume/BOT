@@ -173,9 +173,16 @@ class BattleView(discord.ui.View):
                 else:
                     await interaction.followup.send(str(result))
 
+                # A-3 fix: on_battle_end를 finally로 이동하지 않고, 메시지 전송 실패와 무관하게 호출
                 if self.on_battle_end and was_in_battle:
                     await self.on_battle_end(engine.player.hp > 0)
         except Exception as e:
+            # A-3 fix: 메시지 전송 실패해도 on_battle_end 호출 보장 (킬 카운트 누락 방지)
+            if self.on_battle_end and was_in_battle and not engine.in_battle:
+                try:
+                    await self.on_battle_end(engine.player.hp > 0)
+                except Exception:
+                    logger.warning('battle_view: on_battle_end 실패 (예외 복구)', exc_info=True)
             try:
                 await interaction.followup.send(f"오류 발생: {e}", ephemeral=True)
             except Exception:
@@ -188,7 +195,17 @@ class BattleView(discord.ui.View):
         msg = self.battle_engine.use_cheer()
         await interaction.response.defer()
         self._rebuild_buttons()
-        await interaction.followup.send(msg, view=self)
+        # B-4 fix: 응원 시 몬스터 카드 이미지 유지
+        battle_img = self.battle_engine.build_battle_image()
+        if battle_img:
+            battle_img.seek(0)
+            await interaction.followup.send(
+                content=msg,
+                file=discord.File(fp=battle_img, filename="battle.png"),
+                view=self,
+            )
+        else:
+            await interaction.followup.send(msg, view=self)
 
     async def _auto_callback(self, interaction: discord.Interaction):
         if not self.battle_engine.in_battle:

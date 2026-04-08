@@ -229,11 +229,26 @@ class QuestWindowView(View):
         )
 
     async def _story_callback(self, interaction: discord.Interaction):
-        from story_quest_ui import make_story_journal_embed
-        from main import story_quest_manager
-        embed = make_story_journal_embed(story_quest_manager)
-        back_view = StoryBackView(self.quest_manager, self.player)
-        await interaction.response.edit_message(embed=embed, view=back_view, attachments=[])
+        # B-1 fix: try-except 추가 + 이미지 기반 저널 사용
+        try:
+            from story_quest_ui import make_story_journal_image
+            from main import story_quest_manager
+            file = make_story_journal_image(story_quest_manager)
+            back_view = StoryBackView(self.quest_manager, self.player)
+            await interaction.response.edit_message(
+                attachments=[file], embed=None, view=back_view, content=None,
+            )
+        except Exception:
+            try:
+                from story_quest_ui import make_story_journal_embed
+                from main import story_quest_manager
+                embed = make_story_journal_embed(story_quest_manager)
+                back_view = StoryBackView(self.quest_manager, self.player)
+                await interaction.response.edit_message(embed=embed, view=back_view, attachments=[])
+            except Exception:
+                await interaction.response.send_message(
+                    "메인 스토리 로드 중 오류가 발생했슴미댜. `/스토리퀘스트`로 접근해주세요!", ephemeral=True
+                )
 
 
 class QuestDetailView(View):

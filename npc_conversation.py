@@ -170,10 +170,12 @@ class NPCConversationView(View):
         available = get_available_keywords(self.npc_name, player_kws)
 
         # 기능 버튼 수에 따라 키워드 버튼 최대 수 동적 계산 (Discord 한계: 25)
+        # D-3: "마을로 돌아가기" 버튼 1개 추가 계산
         extra_count = (
             (1 if npc.get("job") else 0) +
             (1 if self.npc_name in __import__("shop").NPC_CATALOGS else 0) +
-            (1 if npc.get("train") else 0)
+            (1 if npc.get("train") else 0) +
+            1  # D-3: 마을로 돌아가기 버튼
         )
         max_kw_buttons = max(0, 25 - extra_count)
 
@@ -247,6 +249,28 @@ class NPCConversationView(View):
             )
             smelt_btn.callback = self._learn_metallurgy_callback
             self.add_item(smelt_btn)
+
+        # D-3: 마을로 돌아가기 버튼
+        back_btn = Button(
+            label="마을로 돌아가기",
+            style=discord.ButtonStyle.secondary,
+            emoji="🏠",
+        )
+        back_btn.callback = self._back_to_town_callback
+        self.add_item(back_btn)
+
+    async def _back_to_town_callback(self, interaction: discord.Interaction):
+        """D-3: 마을 메인 UI로 전환합니다."""
+        try:
+            from town_ui import VisionTownView
+            from main import shared_player, affinity_manager, npc_manager
+            view = VisionTownView(shared_player, affinity_manager, npc_manager)
+            await view.send(interaction, edit=True)
+        except Exception:
+            logger.warning('npc_conversation: _back_to_town_callback 실패 — 안내 메시지 전송', exc_info=True)
+            await interaction.response.send_message(
+                "🏠 `/비전타운` 명령어로 마을로 돌아가세요!", ephemeral=True
+            )
 
     def _make_keyword_callback(self, keyword: str):
         async def callback(interaction: discord.Interaction):

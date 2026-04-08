@@ -13,6 +13,9 @@ if TYPE_CHECKING:
 
 logger = setup_logger('battle')
 
+# E-6: 오토 전투 포션 자동 사용 HP 비율 임계값
+AUTO_POTION_HP_THRESHOLD = 0.4
+
 
 def _bar_text(current: int, max_val: int, width: int = 10) -> str:
     current = max(0, current)
@@ -135,6 +138,11 @@ class BattleEngine:
                 f"현재 기력: {self.player.energy}/{self.player.max_energy}\n"
                 f"필요 기력: {energy_cost}"
             )
+
+        # A-1 fix: HP가 0 이하면 max_hp로 복원 (상태 창과 전투 HP 불일치 방지)
+        if self.player.hp <= 0:
+            self.player.hp = self.player.max_hp
+            logger.info('battle: HP가 0 이하로 감지됨 — max_hp로 복원: %d', self.player.max_hp)
 
         monster_base = random.choice(zone["monsters"])
         size         = roll_monster_size()
@@ -538,6 +546,23 @@ class BattleEngine:
 
         while self.in_battle and max_turns > 0:
             max_turns -= 1
+
+            # E-6: 오토 포션 사용 — HP가 임계값 이하일 때 포션 자동 사용
+            if getattr(self.player, 'auto_use_potion', True):
+                hp_ratio = self.player.hp / max(self.player.max_hp, 1)
+                if hp_ratio <= AUTO_POTION_HP_THRESHOLD:
+                    potion_ids = ["con_hp_potion", "con_hp_potion_small"]
+                    for pid in potion_ids:
+                        if self.player.inventory.get(pid, 0) > 0:
+                            from items import CONSUMABLES
+                            pot = CONSUMABLES.get(pid, {})
+                            heal = pot.get("hp_restore", 50)
+                            self.player.hp = min(self.player.max_hp, self.player.hp + heal)
+                            self.player.remove_item(pid, 1)
+                            pot_name = pot.get("name", pid)
+                            log_lines.append(f"💊 포션 사용: {pot_name} (HP +{heal})")
+                            break
+
             # 이벤트 처리 (자동: 첫 번째 선택지)
             from battle_event_data import BATTLE_EVENTS
             if random.random() < 0.20:

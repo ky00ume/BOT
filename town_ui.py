@@ -552,6 +552,8 @@ class FishingZoneView(View):
         departure = encounter_manager.clear_encounter()
         if departure:
             await interaction.channel.send(departure)
+        # C-1 fix: 현재 낚시터 이름을 fishing_engine에 전달
+        fishing_engine.set_spot(self.zone_name)
         await fishing_engine.fish(interaction.channel)
         save_manager.save(shared_player)
         enc_msg = encounter_manager.trigger_encounter()

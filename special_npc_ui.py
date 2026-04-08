@@ -108,9 +108,11 @@ class SpecialNPCView(View):
             file = discord.File(fp=buf, filename="npc_response.png")
             await interaction.response.send_message(file=file, view=self, ephemeral=False)
         except Exception:
-            logger.warning('special_npc_ui: _greet_callback 렌더링 실패 — 텍스트 폴백 사용', exc_info=True)
-            await interaction.response.send_message(greeting, ephemeral=False)
-        """키워드 Select 드롭다운을 에페메랄 메시지로 표시합니다."""
+            logger.warning('special_npc_ui: _render_and_send 렌더링 실패 — 텍스트 폴백 사용', exc_info=True)
+            await interaction.response.send_message(greeting, view=self, ephemeral=False)
+
+    async def _talk_callback(self, interaction: discord.Interaction):
+        """B-3 fix: 키워드 Select 드롭다운을 에페메랄 메시지로 표시합니다."""
         keywords = SPECIAL_NPC_KEYWORDS.get(self.npc_name, [])
         if not keywords:
             await interaction.response.send_message("대화할 키워드가 없슴미댜.", ephemeral=True)
@@ -121,32 +123,40 @@ class SpecialNPCView(View):
             options=options,
             custom_id=f"special_kw_{self.npc_name}",
         )
+        npc_name = self.npc_name
+        aff_manager = self.aff_manager
+        parent_view = self
+
         async def kw_callback(sel_interaction: discord.Interaction):
             keyword = kw_select.values[0]
-            responses = SPECIAL_NPC_RESPONSES.get(self.npc_name, {})
+            responses = SPECIAL_NPC_RESPONSES.get(npc_name, {})
             response_text = responses.get(keyword, f"\"{keyword}\"... 흠.")
             # 호감도 증가 (약간)
-            if self.aff_manager and hasattr(self.aff_manager, "add_affinity"):
-                self.aff_manager.add_affinity(self.npc_name, 2)
+            if aff_manager and hasattr(aff_manager, "add_affinity"):
+                aff_manager.add_affinity(npc_name, 2)
             try:
                 from bg3_renderer import get_renderer, render_async
-                pts, lv = _get_aff_info(self.aff_manager, self.npc_name)
+                pts, lv = _get_aff_info(aff_manager, npc_name)
                 buf = await render_async(
                     get_renderer().render_npc_dialogue,
-                    npc_name=self.npc_name,
-                    npc_role=ENCOUNTER_NPC_ROLES.get(self.npc_name, "특수 NPC"),
+                    npc_name=npc_name,
+                    npc_role=ENCOUNTER_NPC_ROLES.get(npc_name, "특수 NPC"),
                     greeting=f"[{keyword}] {response_text}",
                     affinity_pts=pts,
                     affinity_level=lv,
                     portrait_type="npc",
-                    portrait_id=self.npc_name,
+                    portrait_id=npc_name,
                 )
                 buf.seek(0)
                 file = discord.File(fp=buf, filename="npc_response.png")
-                await sel_interaction.response.send_message(file=file, ephemeral=False)
+                await sel_interaction.response.send_message(
+                    file=file, view=parent_view, ephemeral=False
+                )
             except Exception:
                 logger.warning('special_npc_ui: kw_callback 렌더링 실패 — 텍스트 폴백 사용', exc_info=True)
-                await sel_interaction.response.send_message(response_text, ephemeral=False)
+                await sel_interaction.response.send_message(
+                    response_text, view=parent_view, ephemeral=False
+                )
         kw_select.callback = kw_callback
         kw_view = View(timeout=60.0)
         kw_view.add_item(kw_select)

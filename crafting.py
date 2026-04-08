@@ -193,6 +193,47 @@ CRAFTING_RECIPES = {
         "exp":      1400.0,
         "desc":     "드래곤나이트 주괴 6개 + 용의 비늘 2개 → 드래곤클로",
     },
+    # ── E-2: 상점 판매 재료 활용 레시피 ────────────────────────────────────────
+    "con_hp_potion": {
+        "name":     "HP 포션 제작",
+        "rank_req": "연습",
+        "ingredients": {"herb": 2, "water": 1},
+        "result":   "con_hp_potion",
+        "exp":      15.0,
+        "desc":     "약초 2개 + 물 1개 → HP 포션",
+    },
+    "con_mp_potion": {
+        "name":     "MP 포션 제작",
+        "rank_req": "연습",
+        "ingredients": {"mana_herb": 2, "water": 1},
+        "result":   "con_mp_potion",
+        "exp":      15.0,
+        "desc":     "마나 허브 2개 + 물 1개 → MP 포션",
+    },
+    "con_hp_potion_large": {
+        "name":     "고급 HP 포션 제작",
+        "rank_req": "D",
+        "ingredients": {"healing_herb": 3, "herb": 2, "water": 2},
+        "result":   "con_hp_potion_large",
+        "exp":      60.0,
+        "desc":     "힐링허브 3개 + 약초 2개 + 물 2개 → 고급 HP 포션",
+    },
+    "con_antidote": {
+        "name":     "해독 포션 제작",
+        "rank_req": "F",
+        "ingredients": {"antidote_herb": 2, "water": 1},
+        "result":   "con_antidote",
+        "exp":      25.0,
+        "desc":     "해독초 2개 + 물 1개 → 해독 포션",
+    },
+    "con_energy_potion": {
+        "name":     "기력 포션 제작",
+        "rank_req": "F",
+        "ingredients": {"energy_leaf": 2, "honey": 1},
+        "result":   "con_energy_potion",
+        "exp":      30.0,
+        "desc":     "원기잎 2개 + 꿀 1개 → 기력 포션",
+    },
 }
 
 class CraftingEngine:

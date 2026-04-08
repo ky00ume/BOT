@@ -79,6 +79,12 @@ except _EnvConfigError as _env_err:
     print("  .env.example 을 참고해 .env 파일을 채워 주세요.")
     sys.exit(1)
 
+# ─── Cog 모드 토글 ────────────────────────────────────────────────────────
+# USE_COGS=true 로 설정하면 cogs/ 패키지의 Cog들이 로드되고
+# main.py 인라인 커맨드는 비활성화됩니다.
+# USE_COGS=false (기본값) 이면 기존 동작을 그대로 유지합니다.
+USE_COGS = os.getenv("USE_COGS", "false").lower() == "true"
+
 # 먹을 수 있는 아이템 합산
 EDIBLE_ITEMS = {**CONSUMABLES, **COOKED_DISHES}
 # 채집 아이템 중 hp, mp, en이 있는 것도 포함
@@ -143,6 +149,41 @@ from skills_db import COMBAT_SKILLS as _CS, MAGIC_SKILLS as _MS, RECOVERY_SKILLS
 _ALL_BATTLE_SKILLS     = {**_CS, **_MS, **_RS}
 _SKILL_NAME_TO_ID: dict = {v["name"]: k for k, v in _ALL_BATTLE_SKILLS.items()}
 
+
+# ─── BotContext 구성 (USE_COGS=true 시 Cog들이 공유 상태에 접근하는 컨테이너) ──
+if USE_COGS:
+    from utils.bot_context import BotContext
+    _bot_ctx = BotContext()
+    _bot_ctx.hyness_id          = HYNESS_ID
+    _bot_ctx.majesty_id         = MAJESTY_ID
+    _bot_ctx.drider_id          = DRIDER_ID
+    _bot_ctx.allowed_channel_id = ALLOWED_CHANNEL_ID
+    _bot_ctx.player             = shared_player
+    _bot_ctx.npc_manager        = npc_manager
+    _bot_ctx.shop_manager       = shop_manager
+    _bot_ctx.restaurant_engine  = restaurant_engine
+    _bot_ctx.battle_engine      = battle_engine
+    _bot_ctx.fishing_engine     = fishing_engine
+    _bot_ctx.cooking_engine     = cooking_engine
+    _bot_ctx.metallurgy_engine  = metallurgy_engine
+    _bot_ctx.gathering_engine   = gathering_engine
+    _bot_ctx.potion_engine      = potion_engine
+    _bot_ctx.quest_manager      = quest_manager
+    _bot_ctx.affinity_manager   = affinity_manager
+    _bot_ctx.gacha_engine       = gacha_engine
+    _bot_ctx.music_engine       = music_engine
+    _bot_ctx.crafting_engine    = crafting_engine
+    _bot_ctx.care_manager       = care_manager
+    _bot_ctx.encounter_manager  = encounter_manager
+    _bot_ctx.story_quest_manager = story_quest_manager
+    _bot_ctx.storage_engine     = storage_engine
+    _bot_ctx.movement_system    = movement_system
+    _bot_ctx.training_system    = training_system
+    _bot_ctx.adventure_engine   = adventure_engine
+    _bot_ctx.all_battle_skills  = _ALL_BATTLE_SKILLS
+    _bot_ctx.skill_name_to_id   = _SKILL_NAME_TO_ID
+    _bot_ctx.edible_items       = EDIBLE_ITEMS
+    bot.ctx = _bot_ctx
 
 
 # ─── BG3 UI 이미지 전송 헬퍼 ────────────────────────────────────────────
@@ -268,6 +309,22 @@ async def on_ready():
     # 자동 저장 루프 시작
     if not auto_save_loop.is_running():
         auto_save_loop.start()
+
+    # ─── USE_COGS 토글: 인라인 커맨드 교체 ──────────────────────────────────
+    if USE_COGS:
+        # 인라인 커맨드를 모두 제거하고 Cog로 대체합니다.
+        # (동일한 이름의 커맨드가 중복 등록되지 않도록 먼저 제거)
+        for _cmd_name in list(bot.all_commands.keys()):
+            bot.remove_command(_cmd_name)
+        # Cog 로드
+        from cogs import COGS as _COGS
+        for _cog_path in _COGS:
+            try:
+                await bot.load_extension(_cog_path)
+                logger.info("Cog 로드 완료: %s", _cog_path)
+            except Exception as _e:
+                logger.error("Cog 로드 실패: %s — %s", _cog_path, _e, exc_info=True)
+        logger.info("[Cog 모드] 모든 Cog 로드 완료 (인라인 커맨드 비활성화)")
 
     print("[봇 준비] 모든 시스템 초기화 완료!")
 

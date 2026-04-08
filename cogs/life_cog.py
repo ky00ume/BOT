@@ -60,7 +60,6 @@ class LifeCog(commands.Cog, name="생활"):
             grade = item["grade"]
             mark  = GRADE_ICON_PLAIN.get(grade, "⚬")
             lines.append(f"  {mark} {C.WHITE}{item['name']}{C.R}  {C.DARK}등급: {grade}  힘 {item['str_req']} 필요{C.R}")
-        from ui_theme import divider
         lines.append(divider())
         lines.append(f"  {C.GREEN}/채집{C.R} 으로 수집하셰요!")
         await ctx.send(ansi("\n".join(lines)))

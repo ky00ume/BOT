@@ -13,6 +13,9 @@ if TYPE_CHECKING:
 
 logger = setup_logger('battle')
 
+# E-6: 오토 전투 포션 자동 사용 HP 비율 임계값
+AUTO_POTION_HP_THRESHOLD = 0.4
+
 
 def _bar_text(current: int, max_val: int, width: int = 10) -> str:
     current = max(0, current)
@@ -544,10 +547,10 @@ class BattleEngine:
         while self.in_battle and max_turns > 0:
             max_turns -= 1
 
-            # E-6: 오토 포션 사용 — HP가 40% 이하일 때 포션 자동 사용
+            # E-6: 오토 포션 사용 — HP가 임계값 이하일 때 포션 자동 사용
             if getattr(self.player, 'auto_use_potion', True):
                 hp_ratio = self.player.hp / max(self.player.max_hp, 1)
-                if hp_ratio <= 0.4:
+                if hp_ratio <= AUTO_POTION_HP_THRESHOLD:
                     potion_ids = ["con_hp_potion", "con_hp_potion_small"]
                     for pid in potion_ids:
                         if self.player.inventory.get(pid, 0) > 0:

@@ -2236,7 +2236,8 @@ async def settings_cmd(ctx):
     class _SettingsView(discord.ui.View):
         def __init__(self):
             super().__init__(timeout=60.0)
-            label = "오토 포션: OFF" if shared_player.auto_use_potion else "오토 포션: ON"
+            # 현재 상태가 ON이면 끄기 버튼, OFF이면 켜기 버튼 표시
+            label = "오토 포션 끄기" if shared_player.auto_use_potion else "오토 포션 켜기"
             self.toggle_btn = discord.ui.Button(
                 label=label,
                 style=discord.ButtonStyle.primary,
@@ -2258,7 +2259,7 @@ async def settings_cmd(ctx):
                 system_key="status",
                 footer="아래 버튼으로 설정을 변경하세요",
             )
-            new_label = "오토 포션: OFF" if shared_player.auto_use_potion else "오토 포션: ON"
+            new_label = "오토 포션 끄기" if shared_player.auto_use_potion else "오토 포션 켜기"
             self.toggle_btn.label = new_label
             new_file = discord.File(fp=new_buf, filename="settings.png")
             await interaction.response.edit_message(attachments=[new_file], view=self)

@@ -515,6 +515,7 @@ class Player:
         self.name          = data.get("name",          self.name)
         self.level         = data.get("level",         self.level)
         self.exp           = data.get("exp",           self.exp)
+        # A-1: max 값을 먼저 로드해야 hp/mp 유효성 검증에 올바른 참조값 사용 가능
         self.max_hp        = data.get("max_hp",        self.max_hp)
         self.hp            = data.get("hp",            self.hp)
         self.max_mp        = data.get("max_mp",        self.max_mp)

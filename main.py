@@ -83,7 +83,7 @@ except _EnvConfigError as _env_err:
 # USE_COGS=true 로 설정하면 cogs/ 패키지의 Cog들이 로드되고
 # main.py 인라인 커맨드는 비활성화됩니다.
 # USE_COGS=false (기본값) 이면 기존 동작을 그대로 유지합니다.
-USE_COGS = os.getenv("USE_COGS", "false").lower() == "true"
+USE_COGS = os.getenv("USE_COGS", "true").lower() == "true"
 
 # 먹을 수 있는 아이템 합산
 EDIBLE_ITEMS = {**CONSUMABLES, **COOKED_DISHES}

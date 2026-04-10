@@ -246,5 +246,58 @@ class MiscCog(commands.Cog, name="기타"):
         await ctx.send(embed=embed, view=view)
 
 
+    @commands.command(name="설정")
+    async def settings_cmd(self, ctx):
+        """게임 설정을 변경합니다."""
+        if not await check_channel(ctx, self.ctx.allowed_channel_id):
+            return
+        from bg3_renderer import render_async
+        player = self.ctx.player
+        potion_status = "ON ✅" if player.auto_use_potion else "OFF ❌"
+        buf = await render_async(
+            get_renderer().render_card,
+            "⚙️ 설정",
+            [
+                {"label": "오토 포션 사용", "value": potion_status},
+                {"label": "설명", "value": "오토 전투 시 HP 40% 이하에서 포션 자동 사용"},
+            ],
+            system_key="status",
+            footer="아래 버튼으로 설정을 변경하세요",
+        )
+        file = discord.File(fp=buf, filename="settings.png")
+
+        class _SettingsView(discord.ui.View):
+            def __init__(self, p):
+                super().__init__(timeout=60.0)
+                self.player = p
+                label = "오토 포션 끄기" if p.auto_use_potion else "오토 포션 켜기"
+                self.toggle_btn = discord.ui.Button(
+                    label=label,
+                    style=discord.ButtonStyle.primary,
+                    emoji="💊",
+                )
+                self.toggle_btn.callback = self._toggle
+                self.add_item(self.toggle_btn)
+
+            async def _toggle(self, interaction: discord.Interaction):
+                self.player.auto_use_potion = not self.player.auto_use_potion
+                save_manager.save(self.player)
+                new_status = "ON ✅" if self.player.auto_use_potion else "OFF ❌"
+                new_buf = get_renderer().render_card(
+                    "⚙️ 설정",
+                    [
+                        {"label": "오토 포션 사용", "value": new_status},
+                        {"label": "설명", "value": "오토 전투 시 HP 40% 이하에서 포션 자동 사용"},
+                    ],
+                    system_key="status",
+                    footer="아래 버튼으로 설정을 변경하세요",
+                )
+                self.toggle_btn.label = "오토 포션 끄기" if self.player.auto_use_potion else "오토 포션 켜기"
+                new_file = discord.File(fp=new_buf, filename="settings.png")
+                await interaction.response.edit_message(attachments=[new_file], view=self)
+
+        await ctx.send(file=file, view=_SettingsView(player))
+
+
 async def setup(bot):
     await bot.add_cog(MiscCog(bot))

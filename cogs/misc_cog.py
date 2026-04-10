@@ -3,7 +3,7 @@ import random
 import discord
 from discord.ext import commands
 from ui_theme import C, ansi, EMBED_COLOR
-from bg3_renderer import get_renderer
+from bg3_renderer import get_renderer, render_async
 from save_manager import save_manager
 from bulletin import bulletin_board, weekly_fishing
 from diary import diary_manager
@@ -216,11 +216,15 @@ class MiscCog(commands.Cog, name="기타"):
         if not await check_channel(ctx, self.ctx.allowed_channel_id):
             return
         from collection import CATEGORY_ICONS
+        from collection_ui import CollectionView, make_collection_embed, make_collection_overview_embed
+        view = CollectionView(ctx.author.id)
         if category and category in CATEGORY_ICONS:
-            msg = collection_manager.show_collection(category)
+            view._active = category
+            view._build_buttons()
+            embed = make_collection_embed(category)
         else:
-            msg = collection_manager.show_all_categories()
-        await ctx.send(msg)
+            embed = make_collection_overview_embed()
+        await ctx.send(embed=embed, view=view)
 
     @commands.command(name="업적")
     async def achievements_cmd(self, ctx):
@@ -244,6 +248,63 @@ class MiscCog(commands.Cog, name="기타"):
             metallurgy_engine=self.ctx.metallurgy_engine,
         )
         await ctx.send(embed=embed, view=view)
+
+
+    @commands.command(name="설정")
+    async def settings_cmd(self, ctx):
+        """게임 설정을 변경합니다."""
+        if not await check_channel(ctx, self.ctx.allowed_channel_id):
+            return
+        player = self.ctx.player
+        potion_status = "ON ✅" if player.auto_use_potion else "OFF ❌"
+        buf = await render_async(
+            get_renderer().render_card,
+            "⚙️ 설정",
+            [
+                {"label": "오토 포션 사용", "value": potion_status},
+                {"label": "설명", "value": "오토 전투 시 HP 40% 이하에서 포션 자동 사용"},
+            ],
+            system_key="status",
+            footer="아래 버튼으로 설정을 변경하세요",
+        )
+        file = discord.File(fp=buf, filename="settings.png")
+
+        class _SettingsView(discord.ui.View):
+            def __init__(self, p, author_id: int):
+                super().__init__(timeout=60.0)
+                self.player = p
+                self.author_id = author_id
+                label = "오토 포션 끄기" if p.auto_use_potion else "오토 포션 켜기"
+                self.toggle_btn = discord.ui.Button(
+                    label=label,
+                    style=discord.ButtonStyle.primary,
+                    emoji="💊",
+                )
+                self.toggle_btn.callback = self._toggle
+                self.add_item(self.toggle_btn)
+
+            async def _toggle(self, interaction: discord.Interaction):
+                if interaction.user.id != self.author_id:
+                    await interaction.response.send_message("이 설정 창은 다른 사용자의 것입니다.", ephemeral=True)
+                    return
+                self.player.auto_use_potion = not self.player.auto_use_potion
+                await save_manager.save_async(self.player)
+                new_status = "ON ✅" if self.player.auto_use_potion else "OFF ❌"
+                new_buf = await render_async(
+                    get_renderer().render_card,
+                    "⚙️ 설정",
+                    [
+                        {"label": "오토 포션 사용", "value": new_status},
+                        {"label": "설명", "value": "오토 전투 시 HP 40% 이하에서 포션 자동 사용"},
+                    ],
+                    system_key="status",
+                    footer="아래 버튼으로 설정을 변경하세요",
+                )
+                self.toggle_btn.label = "오토 포션 끄기" if self.player.auto_use_potion else "오토 포션 켜기"
+                new_file = discord.File(fp=new_buf, filename="settings.png")
+                await interaction.response.edit_message(attachments=[new_file], view=self)
+
+        await ctx.send(file=file, view=_SettingsView(player, ctx.author.id))
 
 
 async def setup(bot):

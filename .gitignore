@@ -38,3 +38,6 @@ logs/
 .coverage.*
 htmlcov/
 .pytest_cache/
+
+# 코드 분석 산출물 (코드베이스와 무관한 생성 파일)
+graphify-out/

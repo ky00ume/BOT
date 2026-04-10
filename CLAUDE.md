@@ -32,3 +32,13 @@
 - Keep responses concise and direct
 - Focus on answering questions, not over-explaining
 - Reference specific file locations using `file_path:line_number` format
+
+## Graphify
+
+이 프로젝트에서 코드베이스 분석, 아키텍처 파악, 관계 시각화 작업이 필요할 때는
+반드시 `docs/graphify-usage.md`를 먼저 참조하여 적절한 명령어와 옵션을 선택한다.
+
+- 구조 파악 필요 시: `/graphify .` 또는 `graphify query`
+- 변경사항 반영: `--update` 옵션
+- 두 개념 연결 추적: `graphify path`
+- 출력 결과물 위치: `GRAPH_REPORT.md`, `graph.json`, `graph.html`

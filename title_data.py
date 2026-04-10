@@ -187,13 +187,13 @@ TITLE_EFFECTS = {
 def get_title_effects(title_name: str) -> dict:
     """타이틀 이름으로 효과 딕셔너리 반환. 미등록 타이틀은 빈 딕셔너리."""
     entry = TITLE_EFFECTS.get(title_name, {})
-    return entry.get("effects", {})
+    return entry.get("effects", {})  # type: ignore[return-value]
 
 
 def get_title_desc(title_name: str) -> str:
     """타이틀 설명 반환."""
     entry = TITLE_EFFECTS.get(title_name, {})
-    return entry.get("desc", "")
+    return entry.get("desc", "")  # type: ignore[return-value]
 
 
 def format_title_effects(title_name: str) -> str:

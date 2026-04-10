@@ -35,9 +35,9 @@ _FONT_D  = os.path.join(_STATIC, "fonts")
 # ── 폰트 탐색 (프로젝트 번들 → 시스템 경로 자동 탐색) ──────────
 def _find_fonts():
     """크로스 플랫폼 폰트 경로 탐색. 프로젝트 번들 우선."""
-    candidates_regular = []
-    candidates_bold = []
-    candidates_serif = []
+    candidates_regular: list = []
+    candidates_bold: list = []
+    candidates_serif: list = []
 
     # 1순위: 프로젝트 번들 폰트 (static/fonts/)
     if os.path.isdir(_FONT_D):
@@ -156,16 +156,16 @@ def _f(size: int, bold: bool = False):
 def _tw(d, t, f) -> int:
     try:
         bb = d.textbbox((0, 0), t, font=f)
-        return bb[2] - bb[0]
+        return bb[2] - bb[0]  # type: ignore[no-any-return]
     except (AttributeError, TypeError):
         return len(t) * max(7, getattr(f, "size", 12) // 2)
 
 def _th(d, t, f) -> int:
     try:
         bb = d.textbbox((0, 0), t, font=f)
-        return bb[3] - bb[1]
+        return bb[3] - bb[1]  # type: ignore[no-any-return]
     except (AttributeError, TypeError):
-        return getattr(f, "size", 12)
+        return getattr(f, "size", 12)  # type: ignore[no-any-return]
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -176,7 +176,7 @@ _SAFE_ID = re.compile(r'^[가-힣a-zA-Z0-9_\-. ]+$')
 
 def _safe_id(value: str) -> bool:
     """에셋 ID 유효성 검사 — path traversal 방지"""
-    return bool(value) and _SAFE_ID.match(value) and ".." not in value
+    return bool(value) and bool(_SAFE_ID.match(value)) and ".." not in value
 
 def _smart_crop(img: "Image.Image", w: int, h: int,
                 face_center: float = 0.33) -> "Image.Image":
@@ -370,9 +370,9 @@ def _notxt(d, pos, text, font, fill):
             clean += ch
     d.text(pos, clean, font=font, fill=fill)
 
-def _wrap(d, text, font, x,y, maxw, fill, lh=21) -> int:
+def _wrap(d, text, font, x: int, y: int, maxw, fill, lh=21) -> int:
     """자동 줄바꿈, 마지막 y 반환"""
-    line = ""; cy = y
+    line = ""; cy: int = y
     for ch in text:
         test = line+ch
         if _tw(d,test,font) > maxw and line:
@@ -482,7 +482,7 @@ def _bar_A(img, d, x,y, w,h, cur,mx, colors, label="", show_val=True):
 # 등급 배지 — 자간 균일 고정폭
 # ══════════════════════════════════════════════════════════════════
 
-def _grade_badge(img, d, x,y, grade) -> int:
+def _grade_badge(img, d, x: int, y: int, grade) -> int:
     labels = {
         "Normal":"NORMAL","Rare":"RARE","Epic":"EPIC",
         "Legendary":"LEGENDARY","Fail":"FAIL"
@@ -492,7 +492,7 @@ def _grade_badge(img, d, x,y, grade) -> int:
     gl  = C.RARITY_GL.get(grade,(50,50,50,35))
     f   = _f(15, bold=True)
     CW=12; PAD=10
-    bx0=x; by0=y; bx1=x+len(txt)*CW+PAD*2; by1=y+26
+    bx0=x; by0=y; bx1: int =x+len(txt)*CW+PAD*2; by1=y+26
     _glow(img,bx0-3,by0-3,bx1+3,by1+3, (*gl[:3],gl[3]), rad=6, blur=5)
     _rr(img,bx0,by0,bx1,by1, 4, fill=(*C.BG2,210), outline=col, lw=1)
     d  = ImageDraw.Draw(img)
@@ -929,7 +929,7 @@ class BG3Renderer:
                                 location_name: str,
                                 description: str,
                                 zone_type: str = "town",
-                                zone_id: str = None) -> io.BytesIO:
+                                zone_id: Optional[str] = None) -> io.BytesIO:
         """
         zone_type: 'town' | 'hunting' | 'gathering' | 'fishing'
         zone_id:   파일명 (확장자 제외, 예: '비전타운', '고블린동굴')

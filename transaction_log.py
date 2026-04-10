@@ -5,6 +5,7 @@
 """
 import logging
 import os
+from typing import Optional
 
 LOG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs")
 
@@ -36,7 +37,7 @@ class TransactionLog:
         tag: str,
         source: str,
         detail: str = "",
-        changes: dict = None,
+        changes: Optional[dict] = None,
     ):
         """변동 내역을 시간/소스/상세 정보와 함께 기록합니다.
 
@@ -66,7 +67,7 @@ class TransactionLog:
         self._logger.info(msg)
 
     def query(
-        self, user_name: str, time_range=None, tag: str = None
+        self, user_name: str, time_range=None, tag: Optional[str] = None
     ) -> list:
         """저장된 로그에서 특정 유저/태그의 항목을 조회합니다.
 
@@ -79,7 +80,7 @@ class TransactionLog:
             매칭된 로그 라인 목록
         """
         log_path = os.path.join(LOG_DIR, "transactions.log")
-        results = []
+        results: list = []
         if not os.path.exists(log_path):
             return results
         with open(log_path, encoding="utf-8") as f:

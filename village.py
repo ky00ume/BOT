@@ -2,6 +2,7 @@
 import asyncio
 import random
 import json
+from typing import Optional
 import discord
 import database
 from ui_theme import C, ansi, header_box, divider, EMBED_COLOR
@@ -37,7 +38,7 @@ class VillageManager:
         self.active_event  = None
         self.channel_id    = channel_id
 
-    def add_contribution(self, amount: int, activity_type: str = None) -> tuple:
+    def add_contribution(self, amount: int, activity_type: Optional[str] = None) -> tuple:
         """기여도 추가. (new_total, leveled_up, new_level) 반환."""
         if activity_type:
             amount = CONTRIBUTION_AMOUNTS.get(activity_type, amount)
@@ -73,11 +74,11 @@ class VillageManager:
         self.channel_id   = data.get("channel_id",   self.channel_id)
         return self
 
-    async def trigger_random_event(self, bot, channel_id: int = None):
+    async def trigger_random_event(self, bot, channel_id: Optional[int] = None):
         event = random.choice(RANDOM_EVENTS)
 
-        if event.get("type") == "penalty":
-            delta = event.get("contrib_delta", 0)
+        if event.get("type") == "penalty":  # type: ignore[union-attr]
+            delta = event.get("contrib_delta", 0)  # type: ignore[union-attr]
             self.contribution = max(0, self.contribution + delta)
             self.level = self.get_level()
             database.save_village_data(self.contribution, self.level)
@@ -89,11 +90,11 @@ class VillageManager:
             ch = bot.get_channel(target_ch)
             if ch:
                 color = {"bonus": 0x00cc66, "penalty": 0xcc2200, "mixed": 0xccaa00}.get(
-                    event.get("type"), 0x7777aa
+                    event.get("type"), 0x7777aa  # type: ignore[union-attr]
                 )
                 embed = discord.Embed(
-                    title=f"{event['emoji']} 마을 이벤트: {event['name']}",
-                    description=event["effect"],
+                    title=f"{event['emoji']} 마을 이벤트: {event['name']}",  # type: ignore[index]
+                    description=event["effect"],  # type: ignore[index]
                     color=color,
                 )
                 embed.set_footer(text="비전 타운 이벤트 시스템")

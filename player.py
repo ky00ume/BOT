@@ -142,7 +142,7 @@ class Player:
             "accessory": None,  # 악세사리
         }
 
-        self.inventory = {}
+        self.inventory: dict = {}
         self.bags = ["bag_large"]  # 기본 가방
 
         # 기본 전투 스킬은 처음부터 연습 랭크로 습득
@@ -177,7 +177,7 @@ class Player:
         for bag_id in self.bags:
             bag = BAGS.get(bag_id)
             if bag:
-                extra += bag["slots"]
+                extra += bag["slots"]  # type: ignore[operator]
         return BASE_INVENTORY_SLOTS + extra
 
     def add_item(self, item_id: str, count: int = 1) -> bool:
@@ -258,7 +258,7 @@ class Player:
         """하이네스 방 전용 인벤토리 반환."""
         if not hasattr(self, "_flags") or self._flags is None:
             return {}
-        return self._flags.get("hyness_inventory", {})
+        return self._flags.get("hyness_inventory", {})  # type: ignore[return-value]
 
     def consume_energy(self, amount: int) -> bool:
         """에너지 소비. 부족 시 False 반환."""
@@ -323,7 +323,7 @@ class Player:
         if item_id in self.inventory:
             self.remove_item(item_id)
 
-        self.equipment[slot] = item_id
+        self.equipment[slot] = item_id  # type: ignore[assignment]
         return f"[{item.get('name', item_id)}]을(를) 장착했슴미댜!"
 
     def unequip_item(self, slot: str) -> str:
@@ -394,7 +394,7 @@ class Player:
         if item_id in h_inv:
             self.remove_hyness_item(item_id)
 
-        self.costume[costume_slot] = item_id
+        self.costume[costume_slot] = item_id  # type: ignore[assignment]
         slot_name = self._COSTUME_SLOT_NAMES.get(costume_slot, costume_slot)
         return f"[{item.get('name', item_id)}]을(를) {slot_name} 슬롯에 장착했슴미댜!"
 

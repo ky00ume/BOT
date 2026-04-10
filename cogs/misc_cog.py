@@ -216,11 +216,15 @@ class MiscCog(commands.Cog, name="기타"):
         if not await check_channel(ctx, self.ctx.allowed_channel_id):
             return
         from collection import CATEGORY_ICONS
+        from collection_ui import CollectionView, make_collection_embed, make_collection_overview_embed
+        view = CollectionView()
         if category and category in CATEGORY_ICONS:
-            msg = collection_manager.show_collection(category)
+            view._active = category
+            view._build_buttons()
+            embed = make_collection_embed(category)
         else:
-            msg = collection_manager.show_all_categories()
-        await ctx.send(msg)
+            embed = make_collection_overview_embed()
+        await ctx.send(embed=embed, view=view)
 
     @commands.command(name="업적")
     async def achievements_cmd(self, ctx):

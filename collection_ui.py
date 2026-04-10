@@ -5,12 +5,11 @@ JS Risulike RPG v9 의 도감 UI 구조를 Discord 봇에 맞게 이식:
   - 활성 탭: 강조 스타일, 비활성: 회색
   - 전체 수집률 progress bar
   - 등급별 그룹(Legendary → Epic → Rare → Normal) + 색상
-  - 항목 선택 드롭다운 → 상세 임베드
 """
 import discord
-from discord.ui import View, Button, Select, SelectOption
+from discord.ui import View, Button
 from collection import collection_manager, CATEGORY_ICONS
-from ui_theme import GRADE_EMBED_COLOR, bar_plain
+from ui_theme import GRADE_EMBED_COLOR
 
 GRADE_ORDER = ["Legendary", "Epic", "Rare", "Normal"]
 GRADE_LABEL = {
@@ -133,8 +132,9 @@ class CollectionView(View):
 
     CATEGORIES = list(CATEGORY_ICONS.keys())  # ["낚시", "요리", "채집", "채광"]
 
-    def __init__(self):
+    def __init__(self, author_id: int):
         super().__init__(timeout=120.0)
+        self.author_id = author_id
         self._active: str | None = None  # 현재 선택된 카테고리
         self._build_buttons()
 
@@ -154,6 +154,9 @@ class CollectionView(View):
 
     def _make_callback(self, category: str):
         async def callback(interaction: discord.Interaction):
+            if interaction.user.id != self.author_id:
+                await interaction.response.send_message("이 도감은 다른 사용자의 것입니다.", ephemeral=True)
+                return
             self._active = category
             self._build_buttons()
             embed = make_collection_embed(category)

@@ -3,7 +3,7 @@ import random
 import discord
 from discord.ext import commands
 from ui_theme import C, ansi, EMBED_COLOR
-from bg3_renderer import get_renderer
+from bg3_renderer import get_renderer, render_async
 from save_manager import save_manager
 from bulletin import bulletin_board, weekly_fishing
 from diary import diary_manager
@@ -217,7 +217,7 @@ class MiscCog(commands.Cog, name="기타"):
             return
         from collection import CATEGORY_ICONS
         from collection_ui import CollectionView, make_collection_embed, make_collection_overview_embed
-        view = CollectionView()
+        view = CollectionView(ctx.author.id)
         if category and category in CATEGORY_ICONS:
             view._active = category
             view._build_buttons()
@@ -255,7 +255,6 @@ class MiscCog(commands.Cog, name="기타"):
         """게임 설정을 변경합니다."""
         if not await check_channel(ctx, self.ctx.allowed_channel_id):
             return
-        from bg3_renderer import render_async
         player = self.ctx.player
         potion_status = "ON ✅" if player.auto_use_potion else "OFF ❌"
         buf = await render_async(
@@ -271,9 +270,10 @@ class MiscCog(commands.Cog, name="기타"):
         file = discord.File(fp=buf, filename="settings.png")
 
         class _SettingsView(discord.ui.View):
-            def __init__(self, p):
+            def __init__(self, p, author_id: int):
                 super().__init__(timeout=60.0)
                 self.player = p
+                self.author_id = author_id
                 label = "오토 포션 끄기" if p.auto_use_potion else "오토 포션 켜기"
                 self.toggle_btn = discord.ui.Button(
                     label=label,
@@ -284,10 +284,14 @@ class MiscCog(commands.Cog, name="기타"):
                 self.add_item(self.toggle_btn)
 
             async def _toggle(self, interaction: discord.Interaction):
+                if interaction.user.id != self.author_id:
+                    await interaction.response.send_message("이 설정 창은 다른 사용자의 것입니다.", ephemeral=True)
+                    return
                 self.player.auto_use_potion = not self.player.auto_use_potion
-                save_manager.save(self.player)
+                await save_manager.save_async(self.player)
                 new_status = "ON ✅" if self.player.auto_use_potion else "OFF ❌"
-                new_buf = get_renderer().render_card(
+                new_buf = await render_async(
+                    get_renderer().render_card,
                     "⚙️ 설정",
                     [
                         {"label": "오토 포션 사용", "value": new_status},
@@ -300,7 +304,7 @@ class MiscCog(commands.Cog, name="기타"):
                 new_file = discord.File(fp=new_buf, filename="settings.png")
                 await interaction.response.edit_message(attachments=[new_file], view=self)
 
-        await ctx.send(file=file, view=_SettingsView(player))
+        await ctx.send(file=file, view=_SettingsView(player, ctx.author.id))
 
 
 async def setup(bot):

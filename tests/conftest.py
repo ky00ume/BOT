@@ -90,6 +90,61 @@ def temp_db() -> Generator[str, None, None]:
         os.unlink(path)
 
 
+@pytest.fixture
+def quest_manager(fresh_player):
+    """QuestManager 인스턴스.
+
+    Returns:
+        fresh_player와 연결된 QuestManager 객체
+    """
+    from quest import QuestManager
+    return QuestManager(fresh_player)
+
+
+@pytest.fixture
+def shop_manager(fresh_player):
+    """ShopManager 인스턴스.
+
+    Returns:
+        fresh_player와 연결된 ShopManager 객체
+    """
+    from shop import ShopManager
+    return ShopManager(fresh_player)
+
+
+@pytest.fixture
+def crafting_engine(fresh_player):
+    """CraftingEngine 인스턴스.
+
+    Returns:
+        fresh_player와 연결된 CraftingEngine 객체
+    """
+    from crafting import CraftingEngine
+    return CraftingEngine(fresh_player)
+
+
+@pytest.fixture
+def adventure_engine(fresh_player):
+    """AdventureEngine 인스턴스.
+
+    Returns:
+        fresh_player와 연결된 AdventureEngine 객체
+    """
+    from adventure import AdventureEngine
+    return AdventureEngine(fresh_player)
+
+
+@pytest.fixture
+def story_quest_manager(fresh_player):
+    """StoryQuestManager 인스턴스.
+
+    Returns:
+        fresh_player와 연결된 StoryQuestManager 객체
+    """
+    from story_quest import StoryQuestManager
+    return StoryQuestManager(fresh_player)
+
+
 @pytest.fixture(autouse=True)
 def reset_singletons():
     """각 테스트마다 싱글톤 인스턴스 리셋.

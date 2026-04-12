@@ -1,7 +1,7 @@
 """tests/test_story_quest.py — StoryQuestManager 단위 테스트"""
 import datetime
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 
 # ── get_shadow_hint ───────────────────────────────────────────────────────────

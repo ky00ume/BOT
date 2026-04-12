@@ -1,27 +1,6 @@
 """tests/test_adventure.py — AdventureEngine 단위 테스트 (discord.ui.View 제외)"""
-import sys
-import types
-import random
 import pytest
 from unittest.mock import patch
-
-# discord 모듈이 없는 환경에서도 AdventureEngine 로직을 테스트하기 위해
-# 가짜 discord 모듈을 sys.modules에 미리 등록합니다.
-# 모듈 임포트 시점(픽스처 호출 전)에 등록해야 adventure.py가 정상 임포트되므로
-# 모듈 레벨에서 조건부로 설정합니다. discord가 실제로 설치되어 있으면 그대로 사용합니다.
-if "discord" not in sys.modules:
-    _discord_stub = types.ModuleType("discord")
-    _discord_ui_stub = types.ModuleType("discord.ui")
-    _discord_ui_stub.View = object
-    _discord_ui_stub.Button = object
-    _discord_stub.ui = _discord_ui_stub
-    _discord_stub.ButtonStyle = types.SimpleNamespace(
-        primary=1, secondary=2, success=3, danger=4
-    )
-    _discord_stub.Interaction = object
-    _discord_stub.Embed = object
-    sys.modules["discord"] = _discord_stub
-    sys.modules["discord.ui"] = _discord_ui_stub
 
 
 # ── _find_step_idx ────────────────────────────────────────────────────────────

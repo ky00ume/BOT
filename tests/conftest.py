@@ -124,12 +124,34 @@ def crafting_engine(fresh_player):
 
 
 @pytest.fixture
-def adventure_engine(fresh_player):
+def adventure_engine(fresh_player, monkeypatch):
     """AdventureEngine 인스턴스.
+
+    discord가 설치되지 않은 환경에서는 monkeypatch로 sys.modules에 stub을
+    일시 등록하고 테스트 후 자동 복원합니다.
 
     Returns:
         fresh_player와 연결된 AdventureEngine 객체
     """
+    import sys
+    import types
+
+    try:
+        import discord  # noqa: F401
+    except ImportError:
+        _discord_stub = types.ModuleType("discord")
+        _discord_ui_stub = types.ModuleType("discord.ui")
+        _discord_ui_stub.View = object
+        _discord_ui_stub.Button = object
+        _discord_stub.ui = _discord_ui_stub
+        _discord_stub.ButtonStyle = types.SimpleNamespace(
+            primary=1, secondary=2, success=3, danger=4
+        )
+        _discord_stub.Interaction = object
+        _discord_stub.Embed = object
+        monkeypatch.setitem(sys.modules, "discord", _discord_stub)
+        monkeypatch.setitem(sys.modules, "discord.ui", _discord_ui_stub)
+
     from adventure import AdventureEngine
     return AdventureEngine(fresh_player)
 

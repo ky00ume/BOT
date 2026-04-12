@@ -1,6 +1,5 @@
 """tests/test_shop.py — ShopManager 단위 테스트"""
 import pytest
-from unittest.mock import patch
 
 
 # ── show_sell_list ───────────────────────────────────────────────────────────

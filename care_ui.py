@@ -718,6 +718,8 @@ class CareRoomView(discord.ui.View):
             {"label": "💙 안정감", "value": f"+{stab_gain} → {self.player.stability}"},
         ]
 
+        file = _result_card("🚶 산책", rows)
+
         try:
             save_player_to_db(self.player)
         except Exception as e:

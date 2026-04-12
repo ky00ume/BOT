@@ -271,11 +271,9 @@ async def on_ready():
     if loaded:
         shared_player.load_from_dict(loaded)
         # 호감도 데이터 복원 (affinity_full에 to_dict() 전체 포함)
-        aff_full = loaded.get("affinity_full", {})
-        if not aff_full:
-            # 구 버전 호환: affinity_data에 affinities만 있는 경우
-            aff_full = {"affinities": loaded.get("affinity_data", {})}
-        affinity_manager.from_dict(aff_full)
+        aff_full = loaded.get("affinity_full") or {}
+        if aff_full and aff_full.get("affinities"):
+            affinity_manager.from_dict(aff_full)
         # 스토리 퀘스트 데이터 복원
         sq_data = loaded.get("story_quest", {})
         if sq_data:

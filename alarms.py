@@ -11,7 +11,7 @@ DIARY_HOUR     = 22
 
 _RANDOM_EVENTS = [
     ("🕷️ 츄라이더가 마을을 산책하다가 **10골드**를 주웠슴미댜!", "gold", 10),
-    ("🕷️ 츄라이더가 지금 **목공을 연습**하고 있슴미댜...", "skill", "woodwork"),
+    ("🕷️ 츄라이더가 지금 **공예를 연습**하고 있슴미댜...", "skill", "crafting"),
     ("🕷️ 츄라이더가 강가에서 **돌멩이를 던지며** 놀고 있슴미댜~", None, None),
     ("🕷️ 츄라이더가 **거미줄을 새로 짰슴미댜**! 반짝반짝임미댜~", None, None),
     ("🕷️ 츄라이더가 마을 게시판 앞에서 **공지를 읽고** 있슴미댜.", None, None),
@@ -182,7 +182,7 @@ def setup_alarms(bot, channel_id: int, drider_id: int, hyness_id: int = None, ma
                         if rank_msg:
                             reward_msg = f"\n{rank_msg}"
                     if reward_type:
-                        save_manager.save(shared_player)
+                        await save_manager.save_async(shared_player)
                 except Exception:
                     pass  # 보상 지급 실패해도 메시지는 전송
                 await channel.send(msg_text + reward_msg)

@@ -8,6 +8,95 @@ import tempfile
 from typing import Generator
 
 
+# ── Discord Mock Classes ─────────────────────────────────────────────────────
+
+class MockUser:
+    """Discord User mock"""
+    def __init__(self, id=12345, name="TestUser", bot=False):
+        self.id = id
+        self.name = name
+        self.display_name = name
+        self.bot = bot
+        self.mention = f"<@{id}>"
+
+
+class MockChannel:
+    """Discord TextChannel mock"""
+    def __init__(self, id=99999, name="test-channel"):
+        self.id = id
+        self.name = name
+        self.mention = f"<#{id}>"
+        self._sent_messages = []
+
+    async def send(self, content=None, *, embed=None, view=None, file=None):
+        msg = MockMessage(content=content, embed=embed)
+        self._sent_messages.append(msg)
+        return msg
+
+
+class MockMessage:
+    """Discord Message mock"""
+    def __init__(self, content=None, embed=None, author=None, channel=None):
+        self.content = content
+        self.embed = embed
+        self.author = author or MockUser()
+        self.channel = channel or MockChannel()
+        self._edited = False
+
+    async def edit(self, content=None, embed=None, view=None):
+        if content:
+            self.content = content
+        if embed:
+            self.embed = embed
+        self._edited = True
+
+
+class MockInteractionResponse:
+    async def defer(self, ephemeral=False):
+        pass
+
+    async def send_message(self, content=None, embed=None, view=None, ephemeral=False):
+        pass
+
+
+class MockFollowup:
+    def __init__(self, channel=None):
+        self.channel = channel or MockChannel()
+        self._messages = []
+
+    async def send(self, content=None, embed=None, view=None, ephemeral=False):
+        msg = MockMessage(content=content, embed=embed)
+        self._messages.append(msg)
+        return msg
+
+
+class MockInteraction:
+    """Discord Interaction mock"""
+    def __init__(self, user=None, channel=None):
+        self.user = user or MockUser()
+        self.channel = channel or MockChannel()
+        self.response = MockInteractionResponse()
+        self.followup = MockFollowup(channel=self.channel)
+        self._responded = False
+
+
+class MockContext:
+    """commands.Context mock"""
+    def __init__(self, author=None, channel=None, bot=None):
+        self.author = author or MockUser()
+        self.channel = channel or MockChannel()
+        self.bot = bot
+        self._sent = []
+
+    async def send(self, content=None, *, embed=None, view=None, file=None):
+        msg = MockMessage(content=content, embed=embed)
+        self._sent.append(msg)
+        return msg
+
+    async def reply(self, content=None, *, embed=None, mention_author=False):
+        return await self.send(content, embed=embed)
+
+
 @pytest.fixture
 def fresh_player():
     """테스트용 새 플레이어 인스턴스.
@@ -165,6 +254,94 @@ def story_quest_manager(fresh_player):
     """
     from story_quest import StoryQuestManager
     return StoryQuestManager(fresh_player)
+
+
+@pytest.fixture
+def mock_user():
+    return MockUser()
+
+
+@pytest.fixture
+def mock_channel():
+    return MockChannel()
+
+
+@pytest.fixture
+def mock_ctx():
+    return MockContext()
+
+
+@pytest.fixture
+def mock_interaction():
+    return MockInteraction()
+
+
+@pytest.fixture
+def fishing_engine(fresh_player, monkeypatch):
+    """FishingEngine 인스턴스.
+
+    discord가 설치되지 않은 환경에서는 monkeypatch로 sys.modules에 stub을
+    일시 등록하고 테스트 후 자동 복원합니다.
+
+    Returns:
+        fresh_player와 연결된 FishingEngine 객체
+    """
+    import sys
+    import types
+
+    try:
+        import discord  # noqa: F401
+    except ImportError:
+        _discord_stub = types.ModuleType("discord")
+        _discord_ui_stub = types.ModuleType("discord.ui")
+        _discord_ui_stub.View = object
+        _discord_ui_stub.Button = object
+        _discord_stub.ui = _discord_ui_stub
+        _discord_stub.ButtonStyle = types.SimpleNamespace(
+            primary=1, secondary=2, success=3, danger=4
+        )
+        _discord_stub.Interaction = object
+        _discord_stub.Embed = object
+        _discord_stub.File = object
+        monkeypatch.setitem(sys.modules, "discord", _discord_stub)
+        monkeypatch.setitem(sys.modules, "discord.ui", _discord_ui_stub)
+
+    from fishing import FishingEngine
+    return FishingEngine(fresh_player)
+
+
+@pytest.fixture
+def gathering_engine(fresh_player, monkeypatch):
+    """GatheringEngine 인스턴스.
+
+    discord가 설치되지 않은 환경에서는 monkeypatch로 sys.modules에 stub을
+    일시 등록하고 테스트 후 자동 복원합니다.
+
+    Returns:
+        fresh_player와 연결된 GatheringEngine 객체
+    """
+    import sys
+    import types
+
+    try:
+        import discord  # noqa: F401
+    except ImportError:
+        _discord_stub = types.ModuleType("discord")
+        _discord_ui_stub = types.ModuleType("discord.ui")
+        _discord_ui_stub.View = object
+        _discord_ui_stub.Button = object
+        _discord_stub.ui = _discord_ui_stub
+        _discord_stub.ButtonStyle = types.SimpleNamespace(
+            primary=1, secondary=2, success=3, danger=4
+        )
+        _discord_stub.Interaction = object
+        _discord_stub.Embed = object
+        _discord_stub.File = object
+        monkeypatch.setitem(sys.modules, "discord", _discord_stub)
+        monkeypatch.setitem(sys.modules, "discord.ui", _discord_ui_stub)
+
+    from gathering import GatheringEngine
+    return GatheringEngine(fresh_player)
 
 
 @pytest.fixture(autouse=True)

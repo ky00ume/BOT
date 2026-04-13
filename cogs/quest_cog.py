@@ -1,7 +1,7 @@
 # cogs/quest_cog.py
 import discord
 from discord.ext import commands
-from ui_theme import C, ansi, header_box, divider
+from ui.ui_theme import C, ansi, header_box, divider
 from save_manager import save_manager
 from utils.discord_helpers import check_channel
 
@@ -18,7 +18,7 @@ class QuestCog(commands.Cog, name="퀘스트"):
     async def quest_cmd(self, ctx):
         if not await check_channel(ctx, self.ctx.allowed_channel_id):
             return
-        from quest_ui import QuestWindowView, _make_quest_list_image
+        from ui.quest_ui import QuestWindowView, _make_quest_list_image
         file = _make_quest_list_image(self.ctx.quest_manager)
         view = QuestWindowView(self.ctx.quest_manager, self.ctx.player)
         await ctx.send(file=file, view=view)
@@ -50,7 +50,7 @@ class QuestCog(commands.Cog, name="퀘스트"):
         """현재 스토리 퀘스트 저널 표시 (챕터/퀘스트 진행도)."""
         if not await check_channel(ctx, self.ctx.allowed_channel_id):
             return
-        from story_quest_ui import make_story_journal_image
+        from ui.story_quest_ui import make_story_journal_image
         file = make_story_journal_image(self.ctx.story_quest_manager)
         await ctx.send(file=file)
 
@@ -60,7 +60,7 @@ class QuestCog(commands.Cog, name="퀘스트"):
         if not await check_channel(ctx, self.ctx.allowed_channel_id):
             return
         from story_quest_data import STORY_CHAPTERS, CH1_QUESTS, CH2_QUESTS, CH3_QUESTS, CH4_QUESTS
-        from story_quest_ui import ShadowChoiceView, ForcedBattleView, play_cutscene
+        from ui.story_quest_ui import ShadowChoiceView, ForcedBattleView, play_cutscene
 
         ch  = self.ctx.story_quest_manager.chapter
         q   = self.ctx.story_quest_manager.quest
@@ -485,7 +485,7 @@ class QuestCog(commands.Cog, name="퀘스트"):
                     f"  {C.DARK}선택하세요.{C.R}",
                 ]
 
-                from story_quest_ui import ShadowChoiceWithFlagView
+                from ui.story_quest_ui import ShadowChoiceWithFlagView
                 view = ShadowChoiceWithFlagView(
                     qdata["choices"], self.ctx.story_quest_manager, self.ctx.player,
                     choice_results=qdata["choice_results"],
@@ -550,7 +550,7 @@ class QuestCog(commands.Cog, name="퀘스트"):
         if not await check_channel(ctx, self.ctx.allowed_channel_id):
             return
         from story_quest_data import CH3_QUESTS
-        from story_quest_ui import ExploreView
+        from ui.story_quest_ui import ExploreView
 
         ch = self.ctx.story_quest_manager.chapter
         q  = self.ctx.story_quest_manager.quest
@@ -597,7 +597,7 @@ class QuestCog(commands.Cog, name="퀘스트"):
         if not await check_channel(ctx, self.ctx.allowed_channel_id):
             return
         from story_quest_data import CH4_QUESTS
-        from story_quest_ui import ExploreView
+        from ui.story_quest_ui import ExploreView
 
         ch = self.ctx.story_quest_manager.chapter
         q  = self.ctx.story_quest_manager.quest
@@ -704,7 +704,7 @@ class QuestCog(commands.Cog, name="퀘스트"):
         """수집한 힌트 목록을 표시합니다."""
         if not await check_channel(ctx, self.ctx.allowed_channel_id):
             return
-        from story_quest_ui import make_hints_image
+        from ui.story_quest_ui import make_hints_image
         file = make_hints_image(self.ctx.story_quest_manager)
         await ctx.send(file=file)
 

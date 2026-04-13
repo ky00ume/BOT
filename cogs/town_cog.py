@@ -1,7 +1,7 @@
 # cogs/town_cog.py
 import discord
 from discord.ext import commands
-from ui_theme import C, ansi
+from ui.ui_theme import C, ansi
 from town_notice import send_town_notice
 from village import village_manager
 from utils.discord_helpers import send_msg_card, send_encounter, check_channel
@@ -26,7 +26,7 @@ class TownCog(commands.Cog, name="마을"):
     async def vision_town_cmd(self, ctx):
         if not await check_channel(ctx, self.ctx.allowed_channel_id):
             return
-        from town_ui import VisionTownView
+        from ui.town_ui import VisionTownView
         view = VisionTownView(self.ctx.player, self.ctx.affinity_manager, self.ctx.npc_manager, village_manager)
         await view.send(ctx)
 

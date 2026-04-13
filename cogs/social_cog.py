@@ -4,7 +4,7 @@ from discord.ext import commands
 import random
 import time as _time
 from items import ALL_ITEMS
-from ui_theme import C, ansi
+from ui.ui_theme import C, ansi
 from bg3_renderer import get_renderer
 from save_manager import save_manager
 from shop import find_item_by_name
@@ -15,7 +15,7 @@ from responses import (
     HYNESS_PET_RESPONSES, MAJESTY_PET_RESPONSES, DRIDER_PET_RESPONSES,
     HYNESS_SCOLD_RESPONSES, MAJESTY_SCOLD_RESPONSES, DRIDER_SCOLD_RESPONSES,
 )
-from care_ui import CareRoomView, _make_room_card
+from ui.care_ui import CareRoomView, _make_room_card
 from utils.discord_helpers import send_image, check_channel
 from utils.player_lock import get_player_lock
 

@@ -227,9 +227,9 @@ class TestMineWithEnergy:
 
         # 인벤토리에 추가된 아이템이 str_req <= 5인지 확인
         available_ids = {i["id"] for i in MINE_ITEMS if i["str_req"] <= 5}
-        for item_id, count in gathering_engine.player.inventory.items():
-            if count > 0 and item_id in {i["id"] for i in MINE_ITEMS}:
-                assert item_id in available_ids or True  # fallback 허용
+        for item_id in gathering_engine.player.inventory:
+            if item_id in {i["id"] for i in MINE_ITEMS}:
+                assert item_id in available_ids
 
 
 # ── GatheringEngine.woodcut — 기력 충분 ────────────────────────────────────────

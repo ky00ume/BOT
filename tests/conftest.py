@@ -256,6 +256,32 @@ def story_quest_manager(fresh_player):
     return StoryQuestManager(fresh_player)
 
 
+def _ensure_discord_stub(monkeypatch):
+    """discord가 설치되지 않은 환경에서 sys.modules에 stub을 등록합니다.
+
+    이미 discord가 설치되어 있으면 아무것도 하지 않습니다.
+    """
+    import sys
+    import types
+
+    try:
+        import discord  # noqa: F401
+    except ImportError:
+        _discord_stub = types.ModuleType("discord")
+        _discord_ui_stub = types.ModuleType("discord.ui")
+        _discord_ui_stub.View = object
+        _discord_ui_stub.Button = object
+        _discord_stub.ui = _discord_ui_stub
+        _discord_stub.ButtonStyle = types.SimpleNamespace(
+            primary=1, secondary=2, success=3, danger=4
+        )
+        _discord_stub.Interaction = object
+        _discord_stub.Embed = object
+        _discord_stub.File = object
+        monkeypatch.setitem(sys.modules, "discord", _discord_stub)
+        monkeypatch.setitem(sys.modules, "discord.ui", _discord_ui_stub)
+
+
 @pytest.fixture
 def mock_user():
     return MockUser()
@@ -286,26 +312,7 @@ def fishing_engine(fresh_player, monkeypatch):
     Returns:
         fresh_player와 연결된 FishingEngine 객체
     """
-    import sys
-    import types
-
-    try:
-        import discord  # noqa: F401
-    except ImportError:
-        _discord_stub = types.ModuleType("discord")
-        _discord_ui_stub = types.ModuleType("discord.ui")
-        _discord_ui_stub.View = object
-        _discord_ui_stub.Button = object
-        _discord_stub.ui = _discord_ui_stub
-        _discord_stub.ButtonStyle = types.SimpleNamespace(
-            primary=1, secondary=2, success=3, danger=4
-        )
-        _discord_stub.Interaction = object
-        _discord_stub.Embed = object
-        _discord_stub.File = object
-        monkeypatch.setitem(sys.modules, "discord", _discord_stub)
-        monkeypatch.setitem(sys.modules, "discord.ui", _discord_ui_stub)
-
+    _ensure_discord_stub(monkeypatch)
     from fishing import FishingEngine
     return FishingEngine(fresh_player)
 
@@ -320,26 +327,7 @@ def gathering_engine(fresh_player, monkeypatch):
     Returns:
         fresh_player와 연결된 GatheringEngine 객체
     """
-    import sys
-    import types
-
-    try:
-        import discord  # noqa: F401
-    except ImportError:
-        _discord_stub = types.ModuleType("discord")
-        _discord_ui_stub = types.ModuleType("discord.ui")
-        _discord_ui_stub.View = object
-        _discord_ui_stub.Button = object
-        _discord_stub.ui = _discord_ui_stub
-        _discord_stub.ButtonStyle = types.SimpleNamespace(
-            primary=1, secondary=2, success=3, danger=4
-        )
-        _discord_stub.Interaction = object
-        _discord_stub.Embed = object
-        _discord_stub.File = object
-        monkeypatch.setitem(sys.modules, "discord", _discord_stub)
-        monkeypatch.setitem(sys.modules, "discord.ui", _discord_ui_stub)
-
+    _ensure_discord_stub(monkeypatch)
     from gathering import GatheringEngine
     return GatheringEngine(fresh_player)
 

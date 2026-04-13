@@ -90,6 +90,83 @@ def temp_db() -> Generator[str, None, None]:
         os.unlink(path)
 
 
+@pytest.fixture
+def quest_manager(fresh_player):
+    """QuestManager 인스턴스.
+
+    Returns:
+        fresh_player와 연결된 QuestManager 객체
+    """
+    from quest import QuestManager
+    return QuestManager(fresh_player)
+
+
+@pytest.fixture
+def shop_manager(fresh_player):
+    """ShopManager 인스턴스.
+
+    Returns:
+        fresh_player와 연결된 ShopManager 객체
+    """
+    from shop import ShopManager
+    return ShopManager(fresh_player)
+
+
+@pytest.fixture
+def crafting_engine(fresh_player):
+    """CraftingEngine 인스턴스.
+
+    Returns:
+        fresh_player와 연결된 CraftingEngine 객체
+    """
+    from crafting import CraftingEngine
+    return CraftingEngine(fresh_player)
+
+
+@pytest.fixture
+def adventure_engine(fresh_player, monkeypatch):
+    """AdventureEngine 인스턴스.
+
+    discord가 설치되지 않은 환경에서는 monkeypatch로 sys.modules에 stub을
+    일시 등록하고 테스트 후 자동 복원합니다.
+
+    Returns:
+        fresh_player와 연결된 AdventureEngine 객체
+    """
+    import sys
+    import types
+
+    try:
+        import discord  # noqa: F401
+    except ImportError:
+        _discord_stub = types.ModuleType("discord")
+        _discord_ui_stub = types.ModuleType("discord.ui")
+        _discord_ui_stub.View = object
+        _discord_ui_stub.Button = object
+        _discord_stub.ui = _discord_ui_stub
+        _discord_stub.ButtonStyle = types.SimpleNamespace(
+            primary=1, secondary=2, success=3, danger=4
+        )
+        _discord_stub.Interaction = object
+        _discord_stub.Embed = object
+        monkeypatch.setitem(sys.modules, "discord", _discord_stub)
+        monkeypatch.setitem(sys.modules, "discord.ui", _discord_ui_stub)
+
+    from adventure import AdventureEngine
+    return AdventureEngine(fresh_player)
+
+
+@pytest.fixture
+def story_quest_manager(fresh_player):
+    """StoryQuestManager 인스턴스.
+
+    Returns:
+        fresh_player와 연결된 StoryQuestManager 객체
+    """
+    from story_quest import StoryQuestManager
+    return StoryQuestManager(fresh_player)
+
+
 @pytest.fixture(autouse=True)
 def reset_singletons():
     """각 테스트마다 싱글톤 인스턴스 리셋.

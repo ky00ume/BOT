@@ -41,3 +41,6 @@ htmlcov/
 
 # 코드 분석 산출물 (코드베이스와 무관한 생성 파일)
 graphify-out/
+
+# 보고서/기획 문서 (docs/ 또는 reference/ 폴더에서 관리)
+/*.html

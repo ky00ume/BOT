@@ -2,7 +2,7 @@
 import discord
 from discord.ext import commands
 import time as _time
-from ui_theme import C, ansi, EMBED_COLOR
+from ui.ui_theme import C, ansi, EMBED_COLOR
 from save_manager import save_manager
 from utils.discord_helpers import send_encounter, check_channel
 from utils.player_lock import get_player_lock
@@ -45,7 +45,7 @@ class LifeCog(commands.Cog, name="생활"):
         if not await check_channel(ctx, self.ctx.allowed_channel_id):
             return
         from gathering import GATHER_ITEMS_BY_SEASON, MINE_ITEMS, get_current_season
-        from ui_theme import header_box, divider, section, GRADE_ICON_PLAIN
+        from ui.ui_theme import header_box, divider, section, GRADE_ICON_PLAIN
         season = get_current_season()
         season_kr = {"spring": "봄", "summer": "여름", "autumn": "가을", "winter": "겨울"}.get(season, season)
         pool = GATHER_ITEMS_BY_SEASON.get(season, [])

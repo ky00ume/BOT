@@ -27,7 +27,7 @@ async def send_msg_card(ctx, title, message, system_key="system", grade="Normal"
 
 async def send_encounter(ctx, enc_msg: str, bot_ctx):
     from special_npc import render_encounter_image
-    from special_npc_ui import SpecialNPCView
+    from ui.special_npc_ui import SpecialNPCView
     npc_name = bot_ctx.encounter_manager.get_active_encounter()
     buf = render_encounter_image(npc_name, enc_msg)
     if buf:

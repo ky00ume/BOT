@@ -2,7 +2,7 @@
 import random
 import discord
 from discord.ext import commands
-from ui_theme import C, ansi, EMBED_COLOR
+from ui.ui_theme import C, ansi, EMBED_COLOR
 from bg3_renderer import get_renderer, render_async
 from save_manager import save_manager
 from bulletin import bulletin_board, weekly_fishing
@@ -216,7 +216,7 @@ class MiscCog(commands.Cog, name="기타"):
         if not await check_channel(ctx, self.ctx.allowed_channel_id):
             return
         from collection import CATEGORY_ICONS
-        from collection_ui import CollectionView, make_collection_embed, make_collection_overview_embed
+        from ui.collection_ui import CollectionView, make_collection_embed, make_collection_overview_embed
         view = CollectionView(ctx.author.id)
         if category and category in CATEGORY_ICONS:
             view._active = category
@@ -238,7 +238,7 @@ class MiscCog(commands.Cog, name="기타"):
         """스킬 창 UI — 임베드+드롭다운으로 전투/마법/생활 스킬 관리."""
         if not await check_channel(ctx, self.ctx.allowed_channel_id):
             return
-        from skill_ui import SkillMainView, make_skill_main_embed
+        from ui.skill_ui import SkillMainView, make_skill_main_embed
         embed = make_skill_main_embed(self.ctx.player)
         view = SkillMainView(
             self.ctx.player,

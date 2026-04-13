@@ -2,7 +2,7 @@
 import discord
 from discord.ext import commands
 from items import ALL_ITEMS
-from ui_theme import C, ansi
+from ui.ui_theme import C, ansi
 from save_manager import save_manager
 from shop import find_item_by_name
 from utils.discord_helpers import check_channel
@@ -32,7 +32,7 @@ class InventoryCog(commands.Cog, name="인벤토리"):
     async def storage_cmd(self, ctx):
         if not await check_channel(ctx, self.ctx.allowed_channel_id):
             return
-        from storage_ui import StorageView
+        from ui.storage_ui import StorageView
         view = StorageView(self.ctx.player, self.ctx.storage_engine)
         await view.send(ctx)
 
@@ -60,7 +60,7 @@ class InventoryCog(commands.Cog, name="인벤토리"):
             return
         from items import ALL_ITEMS, SKILL_BOOKS
         from shop import ShopManager
-        from shop_ui import SellView
+        from ui.shop_ui import SellView
         from bg3_renderer import get_renderer, C as RC, render_async
         inventory = self.ctx.player.inventory
         used, max_slots = self.ctx.player.inventory_check()

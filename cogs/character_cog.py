@@ -2,7 +2,7 @@
 import discord
 from discord.ext import commands
 from items import ALL_ITEMS
-from ui_theme import C, ansi, EMBED_COLOR
+from ui.ui_theme import C, ansi, EMBED_COLOR
 from bg3_renderer import get_renderer
 from save_manager import save_manager
 from shop import find_item_by_name

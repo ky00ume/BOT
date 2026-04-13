@@ -2,7 +2,7 @@
 import io
 import discord
 from discord.ext import commands
-from ui_theme import C, ansi
+from ui.ui_theme import C, ansi
 from bg3_renderer import get_renderer
 from save_manager import save_manager
 from achievements import achievement_manager
@@ -78,7 +78,7 @@ class BattleCog(commands.Cog, name="전투"):
                             )
                     save_manager.save(self.ctx.player)
 
-                from battle_view import BattleView
+                from ui.battle_view import BattleView
                 view = BattleView(self.ctx.battle_engine, ctx, on_battle_end=_on_battle_end)
                 if _bimg:
                     _bimg.seek(0)

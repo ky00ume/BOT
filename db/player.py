@@ -1,4 +1,4 @@
-"""플레이어 CRUD 操作."""
+"""플레이어 CRUD 작업."""
 from __future__ import annotations
 
 import json

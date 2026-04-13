@@ -124,10 +124,11 @@ def _migrate_players_table(cursor: sqlite3.Cursor) -> None:
                 "ALTER TABLE players ADD COLUMN exp REAL DEFAULT 0.0"
             )
         if "skill_ranks" not in columns:
+            _default_skill_ranks = json.dumps(
+                {"smash": "연습", "defense": "연습", "counter": "연습"}, ensure_ascii=False
+            )
             cursor.execute(
-                "ALTER TABLE players ADD COLUMN skill_ranks TEXT DEFAULT '"
-                + json.dumps({"smash": "연습", "defense": "연습", "counter": "연습"}, ensure_ascii=False)
-                + "'"
+                "ALTER TABLE players ADD COLUMN skill_ranks TEXT DEFAULT '" + _default_skill_ranks + "'"
             )
         if "skill_exp" not in columns:
             cursor.execute(

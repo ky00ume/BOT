@@ -702,10 +702,11 @@ class ConversationManager:
                 d_name  = job_info.get("deliver_item_name", d_item)
                 # 결과 카드 전송 (실패 시 텍스트 폴백)
                 card_sent = False
+                completion_label = "완료! [배달]"
                 try:
                     import fishing_card
                     buf = fishing_card.generate_job_card(
-                        job_nm, "완료! [배달]", gold, f"EXP +{exp}"
+                        job_nm, completion_label, gold, f"EXP +{exp}"
                     )
                     file = discord.File(buf, filename="job_result.png")
                     embed = discord.Embed(

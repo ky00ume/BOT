@@ -273,5 +273,5 @@ class TestStartJobDeprecated:
             npc.start_job("다몬")  # NPC가 없어도 Warning은 발생해야 함
 
         dep_warnings = [w for w in caught if issubclass(w.category, DeprecationWarning)]
-        assert len(dep_warnings) >= 1, "DeprecationWarning이 발생해야 함"
+        assert len(dep_warnings) == 1, "DeprecationWarning이 정확히 1번 발생해야 함"
         assert "start_job_async" in str(dep_warnings[0].message)

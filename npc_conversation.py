@@ -263,8 +263,8 @@ class NPCConversationView(View):
         """D-3: 마을 메인 UI로 전환합니다."""
         try:
             from town_ui import VisionTownView
-            from main import shared_player, affinity_manager, npc_manager
-            view = VisionTownView(shared_player, affinity_manager, npc_manager)
+            import app_context
+            view = VisionTownView(app_context.get_player(), app_context.get_affinity_manager(), app_context.get_npc_manager())
             await view.send(interaction, edit=True)
         except Exception:
             logger.warning('npc_conversation: _back_to_town_callback 실패 — 안내 메시지 전송', exc_info=True)
@@ -656,8 +656,8 @@ class ConversationManager:
 
         # deliver 타입 퀘스트: 목표 NPC 방문 시 자동 전달 처리
         try:
-            from main import quest_manager
-            deliver_msg = quest_manager.deliver_to_npc(npc_name)
+            import app_context
+            deliver_msg = app_context.get_quest_manager().deliver_to_npc(npc_name)
             if deliver_msg:
                 await ctx.send(deliver_msg)
         except Exception as e:

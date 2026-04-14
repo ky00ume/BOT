@@ -65,8 +65,8 @@ class StorageView(View):
     @discord.ui.button(label="업그레이드", style=discord.ButtonStyle.secondary, emoji="⬆️")
     async def upgrade_btn(self, interaction: discord.Interaction, button: Button):
         result = self.engine.upgrade()
-        from main import save_manager, shared_player
-        save_manager.save(shared_player)
+        import app_context
+        app_context.get_save_manager().save(app_context.get_player())
         await interaction.response.send_message(result)
 
     async def send(self, ctx):
@@ -99,8 +99,8 @@ class _ItemSelect(Select):
                 result = self.engine.deposit(item_id, 1)
             else:
                 result = self.engine.withdraw(item_id, 1)
-            from main import save_manager, shared_player
-            save_manager.save(shared_player)
+            import app_context
+            app_context.get_save_manager().save(app_context.get_player())
             await interaction.response.send_message(result)
         except Exception:
             await interaction.response.send_message(

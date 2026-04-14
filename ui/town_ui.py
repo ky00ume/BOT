@@ -354,7 +354,12 @@ class HuntingZoneView(View):
 
     async def _hunt_callback(self, interaction: discord.Interaction):
         await interaction.response.defer()
-        from main import battle_engine, encounter_manager, quest_manager, achievement_manager, diary_manager
+        import app_context
+        battle_engine = app_context.get_battle_engine()
+        encounter_manager = app_context.get_encounter_manager()
+        quest_manager = app_context.get_quest_manager()
+        achievement_manager = app_context.get_achievement_manager()
+        diary_manager = app_context.get_diary_manager()
         departure = encounter_manager.clear_encounter()
         if departure:
             await interaction.channel.send(departure)
@@ -370,12 +375,11 @@ class HuntingZoneView(View):
                     _killed_monster = battle_engine.current_monster.get("id", "") if battle_engine.current_monster else ""
                     quest_manager.update_kill_count(1, zone=_killed_zone, monster_id=_killed_monster)
                     # 알바 hunt 킬 카운트 추적
-                    from main import npc_manager as _npc_mgr
-                    _hunt_completed = _npc_mgr.update_hunt_kill(monster_id=_killed_monster, count=1)
+                    npc_manager = app_context.get_npc_manager()
+                    _hunt_completed = npc_manager.update_hunt_kill(monster_id=_killed_monster, count=1)
                     if _hunt_completed:
-                        await _npc_mgr.complete_pending_hunts(interaction.channel, _hunt_completed)
-                from main import save_manager, shared_player
-                save_manager.save(shared_player)
+                        await npc_manager.complete_pending_hunts(interaction.channel, _hunt_completed)
+                app_context.get_save_manager().save(app_context.get_player())
 
             from ui.battle_view import BattleView
             view = BattleView(battle_engine, interaction.channel, on_battle_end=_on_battle_end)
@@ -466,9 +470,9 @@ class GatheringZoneView(View):
 
     async def _gather_callback(self, interaction: discord.Interaction):
         await interaction.response.defer()
-        from main import gathering_engine, save_manager, shared_player
-        await gathering_engine.gather(interaction.channel, zone_name=self.zone_name)
-        save_manager.save(shared_player)
+        import app_context
+        await app_context.get_gathering_engine().gather(interaction.channel, zone_name=self.zone_name)
+        app_context.get_save_manager().save(app_context.get_player())
         # 채집 후 같은 채집터 뷰를 다시 전송하여 재접근 편의 제공
         new_view = GatheringZoneView(self.zone_name, self.player, self.aff_manager, self.npc_manager_ref)
         await new_view.send(interaction.channel)
@@ -479,9 +483,9 @@ class GatheringZoneView(View):
 
     async def _mine_callback(self, interaction: discord.Interaction):
         await interaction.response.defer()
-        from main import gathering_engine, save_manager, shared_player
-        await gathering_engine.mine(interaction.channel)
-        save_manager.save(shared_player)
+        import app_context
+        await app_context.get_gathering_engine().mine(interaction.channel)
+        app_context.get_save_manager().save(app_context.get_player())
         new_view = GatheringZoneView(self.zone_name, self.player, self.aff_manager, self.npc_manager_ref)
         await new_view.send(interaction.channel)
         try:
@@ -548,17 +552,18 @@ class FishingZoneView(View):
 
     async def _fish_callback(self, interaction: discord.Interaction):
         await interaction.response.defer()
-        from main import fishing_engine, encounter_manager, save_manager, shared_player
-        departure = encounter_manager.clear_encounter()
+        import app_context
+        departure = app_context.get_encounter_manager().clear_encounter()
         if departure:
             await interaction.channel.send(departure)
         # C-1 fix: 현재 낚시터 이름을 fishing_engine에 전달
-        fishing_engine.set_spot(self.zone_name)
-        await fishing_engine.fish(interaction.channel)
-        save_manager.save(shared_player)
-        enc_msg = encounter_manager.trigger_encounter()
+        app_context.get_fishing_engine().set_spot(self.zone_name)
+        await app_context.get_fishing_engine().fish(interaction.channel)
+        app_context.get_save_manager().save(app_context.get_player())
+        enc_msg = app_context.get_encounter_manager().trigger_encounter()
         if enc_msg:
             from special_npc import render_encounter_image
+            encounter_manager = app_context.get_encounter_manager()
             npc_name = encounter_manager.get_active_encounter()
             buf = render_encounter_image(npc_name, enc_msg)
             if buf:
@@ -585,7 +590,7 @@ class FishingZoneView(View):
 
     async def _water_callback(self, interaction: discord.Interaction):
         """물뜨기 — 빈 병 1개를 물 1개로 전환 (기력 5 소모)."""
-        from main import save_manager, shared_player
+        import app_context
         from ui.ui_theme import C, ansi
         p = self.player
         if p.inventory.get("empty_bottle", 0) < 1:
@@ -601,7 +606,7 @@ class FishingZoneView(View):
             return
         p.remove_item("empty_bottle", 1)
         p.add_item("water", 1)
-        save_manager.save(shared_player)
+        app_context.get_save_manager().save(app_context.get_player())
         await interaction.response.send_message(
             ansi(
                 f"  {C.GREEN}✔ 물을 떴슴미댜!{C.R}\n"

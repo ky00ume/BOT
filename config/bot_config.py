@@ -32,6 +32,10 @@ from adventure    import AdventureEngine
 from story_quest  import StoryQuestManager
 from skills_db    import COMBAT_SKILLS as _CS, MAGIC_SKILLS as _MS, RECOVERY_SKILLS as _RS
 from utils.bot_context import BotContext
+import app_context as _app_context
+from achievements import achievement_manager as _achievement_manager
+from diary import diary_manager as _diary_manager
+from save_manager import save_manager as _save_manager
 
 
 def _build_edible_items() -> dict:
@@ -117,5 +121,19 @@ def create_bot_context(
     ctx.all_battle_skills   = all_battle_skills
     ctx.skill_name_to_id    = skill_name_to_id
     ctx.edible_items        = _build_edible_items()
+
+    # ─── app_context 에 공유 객체 등록 (순환 import 방지) ────────────────────
+    _app_context.register("shared_player",       shared_player)
+    _app_context.register("save_manager",        _save_manager)
+    _app_context.register("battle_engine",       battle_engine)
+    _app_context.register("encounter_manager",   encounter_manager)
+    _app_context.register("quest_manager",       quest_manager)
+    _app_context.register("story_quest_manager", story_quest_manager)
+    _app_context.register("achievement_manager", _achievement_manager)
+    _app_context.register("diary_manager",       _diary_manager)
+    _app_context.register("npc_manager",         npc_manager)
+    _app_context.register("affinity_manager",    affinity_manager)
+    _app_context.register("gathering_engine",    gathering_engine)
+    _app_context.register("fishing_engine",      fishing_engine)
 
     return ctx

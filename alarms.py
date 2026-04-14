@@ -160,8 +160,9 @@ def setup_alarms(bot, channel_id: int, drider_id: int, hyness_id: int = None, ma
                 # E-3: 랜덤 메시지에 실제 보상 지급
                 reward_msg = ""
                 try:
-                    from main import shared_player
+                    import app_context
                     from save_manager import save_manager
+                    shared_player = app_context.get_player()
                     if reward_type == "gold" and reward_val:
                         shared_player.gold += reward_val
                         reward_msg = f"\n💰 +{reward_val}G"

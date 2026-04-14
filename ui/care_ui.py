@@ -650,8 +650,8 @@ class CareRoomView(discord.ui.View):
             except Exception as e:
                 logger.error("쓰담쓰담 후 저장 실패: %s", e, exc_info=True)
             try:
-                import main as _main
-                _main.diary_manager.increment("pet_count", 1)
+                import app_context
+                app_context.get_diary_manager().increment("pet_count", 1)
             except Exception as e:
                 logger.warning("일기 기록 실패: %s", e)
         file = _result_card("🐾 쓰담쓰담", rows, grade=grade)

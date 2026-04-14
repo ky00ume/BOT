@@ -1,4 +1,5 @@
 import random
+import warnings
 from database import NPC_DATA
 from economy import Economy
 from ui_theme import C, section, divider, header_box, ansi, EMBED_COLOR, FOOTERS
@@ -59,7 +60,12 @@ class VillageNPC:
         await conv.send_conversation(ctx, npc_name)
 
     def start_job(self, npc_name: str) -> str:
-        """동기 알바 처리 (deprecated — start_job_async 사용 권장)."""
+        """동기 알바 처리 (deprecated — Use `start_job_async()` instead.)."""
+        warnings.warn(
+            "start_job() is deprecated; use start_job_async() instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         npc = NPC_DATA.get(npc_name)
         if not npc:
             return ansi(f"  {C.RED}✖ [{npc_name}]을(를) 찾을 수 없슴미댜.{C.R}")

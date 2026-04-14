@@ -673,8 +673,13 @@ class ConversationManager:
                 d_item = job_info.get("deliver_item", "")
                 if not d_item or self.player.inventory.get(d_item, 0) < 1:
                     continue
-                # 아이템 제거 및 보상 지급
-                self.player.remove_item(d_item, 1)
+                # 아이템 제거 — 실패 시 보상 지급 없이 오류 메시지만 전송
+                if not self.player.remove_item(d_item, 1):
+                    d_name_err = job_info.get("deliver_item_name", d_item)
+                    await ctx.send(
+                        f"⚠️ **{d_name_err}** 아이템 제거에 실패했슴미댜. 배달을 완료할 수 없어요."
+                    )
+                    continue
                 gold = job_info.get("reward_gold", 0)
                 exp  = job_info.get("reward_exp", 0.0)
                 self.player.gold += gold
@@ -686,14 +691,40 @@ class ConversationManager:
                     self.player.add_item(r_item, 1)
                 del _flags[key]
                 self.player._flags = _flags
-                src_npc   = job_info.get("npc_name", "")
-                job_nm    = job_info.get("job_name", "배달 알바")
-                d_name    = job_info.get("deliver_item_name", d_item)
-                await ctx.send(
-                    f"📦 **{src_npc} 알바 [{job_nm}]** 완료!\n"
-                    f"**{npc_name}**에게 {d_name}을(를) 전달했슴미댜!\n"
-                    f"+**{gold:,}G**  /  EXP +**{exp}**"
-                )
+                # 마을 기여도 추가
+                try:
+                    from village import village_manager
+                    village_manager.add_contribution(5, "job")
+                except Exception as _ve:
+                    logger.warning("배달 완료 village contribution 실패: %s", _ve)
+                src_npc = job_info.get("npc_name", "")
+                job_nm  = job_info.get("job_name", "배달 알바")
+                d_name  = job_info.get("deliver_item_name", d_item)
+                # 결과 카드 전송 (실패 시 텍스트 폴백)
+                card_sent = False
+                completion_label = "완료! [배달]"
+                try:
+                    import fishing_card
+                    buf = fishing_card.generate_job_card(
+                        job_nm, completion_label, gold, f"EXP +{exp}"
+                    )
+                    file = discord.File(buf, filename="job_result.png")
+                    embed = discord.Embed(
+                        title=f"📦 {src_npc} 알바 [{job_nm}] 완료!",
+                        description=f"**{npc_name}**에게 **{d_name}**을(를) 전달했슴미댜!",
+                        color=0x4A7856,
+                    )
+                    embed.set_image(url="attachment://job_result.png")
+                    await ctx.send(embed=embed, file=file)
+                    card_sent = True
+                except Exception as _ce:
+                    logger.warning("배달 완료 카드 렌더링 실패 — 텍스트 폴백: %s", _ce)
+                if not card_sent:
+                    await ctx.send(
+                        f"📦 **{src_npc} 알바 [{job_nm}]** 완료!\n"
+                        f"**{npc_name}**에게 {d_name}을(를) 전달했슴미댜!\n"
+                        f"+**{gold:,}G**  /  EXP +**{exp}**"
+                    )
                 try:
                     from save_manager import save_manager
                     save_manager.save(self.player)

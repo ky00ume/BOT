@@ -10,6 +10,8 @@ from costume_data import (
     GRADE_EMOJI, GRADE_LABELS,
 )
 from database import save_player_to_db
+from core.events import GameEvent, event_store
+from core.pet_state import observe_pet
 
 
 # ── 헬퍼: stat bar ──────────────────────────────────────────────────────────
@@ -19,23 +21,16 @@ def _bar(value: int, max_val: int = 100, length: int = 10) -> str:
 
 
 def _make_room_card(player):
-    """하이네스의 방 현황 카드 이미지 생성."""
-    cond = player.condition
-    stab = player.stability
-    fati = player.fatigue
-
+    """하이네스의 방을 숫자판이 아니라 츄라이더 관찰로 보여준다."""
+    obs = observe_pet(player)
     rows = [
-        {"label": "💛 컨디션", "value": f"{_bar(cond)}  {cond}"},
-        {"label": "💙 안정감", "value": f"{_bar(stab)}  {stab}"},
-        {"label": "🔥 피로도", "value": f"{_bar(fati)}  {fati}"},
+        {"label": "🕷️ 지금", "value": obs.headline},
+        {"label": "👀 모습", "value": obs.body},
+        {"label": "💗 기분", "value": obs.mood},
+        {"label": "💤 기운", "value": obs.energy},
+        {"label": "🫶 기억", "value": obs.care_memory},
     ]
-    buf = get_renderer().render_card(
-        title="🏠 하이네스의 방",
-        rows=rows,
-        system_key="system",
-        grade="Normal",
-        footer="돌봄 시스템",
-    )
+    buf = get_renderer().render_card(title="🏠 하이네스의 방", rows=rows, system_key="system", grade="Normal", footer="츄라이더 관찰하기")
     return discord.File(buf, filename="care_room.png")
 
 
@@ -281,6 +276,7 @@ class SnackFeedView(discord.ui.View):
                 rows.append({"label": labels.get(k, k), "value": f"{sign}{v}"})
         grade = "Normal" if result["success"] else "Fail"
         if result["success"]:
+            event_store.append(GameEvent(event_type="care.feed", actor_id=interaction.user.id, subject="츄라이더", location="하이네스의 방", payload={"snack": SNACK_ITEMS.get(snack_id, {}).get("name", snack_id)}))
             try:
                 save_player_to_db(self.player)
             except Exception as e:
@@ -341,6 +337,7 @@ class RockPaperScissorsView(discord.ui.View):
                     child.disabled = True
 
             if result.get("success"):
+                event_store.append(GameEvent(event_type="care.play", actor_id=interaction.user.id, subject="츄라이더", location="하이네스의 방", payload={"game": "rock_paper_scissors", "result": result.get("result")}))
                 try:
                     save_player_to_db(self.player)
                 except Exception as e:
@@ -433,6 +430,7 @@ class SnackCraftView(discord.ui.View):
             rows.append({"label": "획득", "value": f"{snack.get('name', '')} x{result.get('count',1)}"})
         grade = "Normal" if result["success"] else "Fail"
         if result["success"]:
+            event_store.append(GameEvent(event_type="care.pet", actor_id=interaction.user.id, subject="츄라이더", location="하이네스의 방", payload={"source": "care_room"}))
             try:
                 save_player_to_db(self.player)
             except Exception as e:

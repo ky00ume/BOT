@@ -22,6 +22,11 @@ def _event_sentence(event: GameEvent) -> str | None:
     payload = dict(event.payload)
     if event.event_type == "care.pet":
         return "누군가 방에 찾아와 쓰다듬어 주셨슴미댜. 가만히 받고 있으니까 마음이 몽글몽글해졌슴미댜. 🕷️💕"
+    if event.event_type == "care.feed":
+        snack = payload.get("snack") or "간식"
+        return f"{snack}을(를) 얻어먹었슴미댜. 맛있는 걸 받으면 괜히 가까이 있고 싶어짐미댜. 🍪"
+    if event.event_type == "care.play":
+        return "같이 놀아주셔서 한참 신나게 움직였슴미댜. 다음에도 또 놀아주셨으면 좋겠슴미댜. 🎮"
     if event.event_type == "battle.won":
         monster = payload.get("monster") or "몬스터"
         location = event.location or "사냥터"

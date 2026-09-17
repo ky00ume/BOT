@@ -5,6 +5,7 @@ import discord
 from ui_theme import C, ansi, header_box, divider, rank_badge, FOOTERS, GRADE_EMBED_COLOR
 from utils.ranks import rank_gte as _rank_gte
 from core.activities import activity_service
+from core.bond import bond_service
 from utils.logger import setup_logger
 
 logger = setup_logger('fishing')
@@ -304,6 +305,7 @@ class FishingView(discord.ui.View):
             await interaction.response.edit_message(embed=embed, view=self)
         if self.activity_id:
             activity_service.finish(self.activity_id, outcome="caught", payload={"fish": caught_name, "grade": grade, "size_cm": size_cm, "added": added})
+            bond_service.award("activity.fishing", actor_id=getattr(interaction.user, "id", None))
 
     # ① 항상 보이는 "당기기" 버튼
     @discord.ui.button(label="🎣 낚싯줄 당기기!", style=discord.ButtonStyle.primary, row=0)

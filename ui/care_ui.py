@@ -11,6 +11,7 @@ from costume_data import (
 )
 from database import save_player_to_db
 from core.events import GameEvent, event_store
+from core.bond import bond_service
 from core.pet_state import observe_pet
 
 
@@ -29,6 +30,8 @@ def _make_room_card(player):
         {"label": "💗 기분", "value": obs.mood},
         {"label": "💤 기운", "value": obs.energy},
         {"label": "🫶 기억", "value": obs.care_memory},
+        {"label": "🧵 인연", "value": obs.relationship},
+        {"label": "🌱 버릇", "value": obs.habit},
     ]
     buf = get_renderer().render_card(title="🏠 하이네스의 방", rows=rows, system_key="system", grade="Normal", footer="츄라이더 관찰하기")
     return discord.File(buf, filename="care_room.png")
@@ -338,6 +341,7 @@ class RockPaperScissorsView(discord.ui.View):
 
             if result.get("success"):
                 event_store.append(GameEvent(event_type="care.play", actor_id=interaction.user.id, subject="츄라이더", location="하이네스의 방", payload={"game": "rock_paper_scissors", "result": result.get("result")}))
+                bond_service.award("care.play", actor_id=interaction.user.id)
                 try:
                     save_player_to_db(self.player)
                 except Exception as e:
@@ -643,6 +647,7 @@ class CareRoomView(discord.ui.View):
         grade = "Normal" if result["success"] else "Fail"
         if result["success"]:
             event_store.append(GameEvent(event_type="care.pet", actor_id=interaction.user.id, subject="츄라이더", location="하이네스의 방", payload={"source": "care_room"}))
+            bond_service.award("care.pet", actor_id=interaction.user.id)
             try:
                 save_player_to_db(self.player)
             except Exception as e:

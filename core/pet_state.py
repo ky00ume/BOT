@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 
 from core.activities import ActivityService, activity_service
 from core.events import EventStore, event_store
+from core.bond import BondService, bond_service, bond_title, habit_profile
 
 
 @dataclass(frozen=True)
@@ -18,6 +19,8 @@ class PetObservation:
     mood: str
     energy: str
     care_memory: str
+    relationship: str
+    habit: str
 
 
 def _band(value: float, low: str, mid: str, high: str) -> str:
@@ -66,4 +69,7 @@ def observe_pet(player, *, activities: ActivityService = activity_service, store
     else:
         care_memory = "최근 누군가 돌봐준 기억이 남아 있는 모양입니다."
 
-    return PetObservation(headline, body, mood, energy, care_memory)
+    bond = bond_service.get() if store is event_store else BondService(store=store).get()
+    relationship = f"{bond_title(bond.level)} · 인연 {bond.level}단계"
+    habit = habit_profile(store).description
+    return PetObservation(headline, body, mood, energy, care_memory, relationship, habit)

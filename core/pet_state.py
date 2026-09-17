@@ -11,6 +11,7 @@ from core.activities import ActivityService, activity_service
 from core.events import EventStore, event_store
 from core.bond import BondService, bond_service, bond_title, habit_profile
 from core.personality import behaviour_cue
+from core.traits import trait_summary
 
 
 @dataclass(frozen=True)
@@ -77,5 +78,5 @@ def observe_pet(player, *, activities: ActivityService = activity_service, store
 
     bond = bond_service.get() if store is event_store else BondService(store=store).get()
     relationship = f"{bond_title(bond.level)} · 인연 {bond.level}단계"
-    habit = habit_profile(store).description
+    habit = trait_summary(store)
     return PetObservation(headline, body, mood, energy, care_memory, relationship, habit)

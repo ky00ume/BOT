@@ -13,6 +13,7 @@ import random
 from typing import Callable
 
 from core.events import GameEvent, EventStore, event_store
+from core.agency import world_may_start
 from db.connection import get_db_connection
 
 KST = timezone(timedelta(hours=9))
@@ -53,6 +54,8 @@ class WorldClock:
             return WorldTickResult(None, None, False)
 
         activity = dict(self.rng.choice(_AUTONOMOUS_ACTIVITIES))
+        if not world_may_start(activity["kind"]):
+            return WorldTickResult(None, None, False)
         changed = self._apply_effect(player, activity)
         event = GameEvent(
             event_type="world.autonomous",

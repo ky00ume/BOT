@@ -558,7 +558,7 @@ class FishingZoneView(View):
             await interaction.channel.send(departure)
         # C-1 fix: 현재 낚시터 이름을 fishing_engine에 전달
         app_context.get_fishing_engine().set_spot(self.zone_name)
-        await app_context.get_fishing_engine().fish(interaction.channel)
+        await app_context.get_fishing_engine().fish(interaction.channel, actor_id=interaction.user.id)
         app_context.get_save_manager().save(app_context.get_player())
         enc_msg = app_context.get_encounter_manager().trigger_encounter()
         if enc_msg:

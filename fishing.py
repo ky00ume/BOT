@@ -4,6 +4,7 @@ import random
 import discord
 from ui_theme import C, ansi, header_box, divider, rank_badge, FOOTERS, GRADE_EMBED_COLOR
 from utils.ranks import rank_gte as _rank_gte
+from core.activities import activity_service
 from utils.logger import setup_logger
 
 logger = setup_logger('fishing')
@@ -83,7 +84,7 @@ FISH_GUIDE = {
 }
 
 class FishingView(discord.ui.View):
-    def __init__(self, player, spot_name: str, spot_data: dict, fish_db_filtered: dict):
+    def __init__(self, player, spot_name: str, spot_data: dict, fish_db_filtered: dict, activity_id: str | None = None):
         super().__init__(timeout=70)
         self.player           = player
         self.spot_name        = spot_name
@@ -91,6 +92,7 @@ class FishingView(discord.ui.View):
         self.fish_db_filtered = fish_db_filtered
         self.state            = "waiting"   # "waiting" | "bite" | "done"
         self.result           = None
+        self.activity_id      = activity_id
         self._bite_task       = None
         self._message         = None
 
@@ -200,6 +202,8 @@ class FishingView(discord.ui.View):
                     color=0x884444,
                 )
                 await self._message.edit(embed=embed, view=self)
+            if self.activity_id:
+                activity_service.finish(self.activity_id, outcome="missed")
             self.stop()
 
     async def _handle_catch(self, interaction: discord.Interaction):
@@ -298,6 +302,8 @@ class FishingView(discord.ui.View):
                     color=GRADE_EMBED_COLOR.get(grade, 0xaa6600),
                 )
             await interaction.response.edit_message(embed=embed, view=self)
+        if self.activity_id:
+            activity_service.finish(self.activity_id, outcome="caught", payload={"fish": caught_name, "grade": grade, "size_cm": size_cm, "added": added})
 
     # ① 항상 보이는 "당기기" 버튼
     @discord.ui.button(label="🎣 낚싯줄 당기기!", style=discord.ButtonStyle.primary, row=0)
@@ -309,6 +315,8 @@ class FishingView(discord.ui.View):
                 content="🕷️💦 앗! 너무 일찍 당겼슴미댜... 물고기가 놀라서 도망갔슴미댜!",
                 view=self,
             )
+            if self.activity_id:
+                activity_service.finish(self.activity_id, outcome="pulled_early")
             self.stop()
         elif self.state == "bite":
             self.state = "done"
@@ -354,6 +362,8 @@ class FishingView(discord.ui.View):
             color=0x888888,
         )
         await interaction.response.edit_message(embed=embed, view=self)
+        if self.activity_id:
+            activity_service.finish(self.activity_id, outcome="cancelled")
         self.stop()
 
     async def on_timeout(self):
@@ -381,7 +391,7 @@ class FishingEngine:
         if spot_name in FISH_GUIDE:
             self.current_spot = spot_name
 
-    async def fish(self, ctx):
+    async def fish(self, ctx, actor_id: int | None = None):
         spot_name   = self.current_spot
         spot        = FISH_GUIDE.get(spot_name, list(FISH_GUIDE.values())[0])
         energy_cost = spot.get("energy_cost", 10)
@@ -402,7 +412,18 @@ class FishingEngine:
         if not fish_db_filtered:
             fish_db_filtered = {name: FISH_DB[name] for name in fish_names if name in FISH_DB}
 
-        view = FishingView(self.player, spot_name, spot, fish_db_filtered)
+        actor_id = actor_id or getattr(getattr(ctx, "author", None), "id", None)
+        if actor_id is None:
+            # Button-driven town UI sends a channel; its interaction owner is recorded
+            # by the UI seam when available. Keep legacy direct-engine tests compatible.
+            actor_id = 0
+        try:
+            activity = activity_service.start_directed("fishing", actor_id=actor_id, location=spot_name, context={"energy_cost": energy_cost})
+        except RuntimeError:
+            await ctx.send(ansi(f"  {C.YELLOW}츄라이더는 지금 다른 일을 하고 있슴미댜. 끝나고 다시 불러주셰요!{C.R}"))
+            self.player.restore_energy(energy_cost)
+            return
+        view = FishingView(self.player, spot_name, spot, fish_db_filtered, activity.activity_id)
         await view.start(ctx)
 
     def show_fish_guide(self) -> str:

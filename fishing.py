@@ -5,6 +5,7 @@ import discord
 from ui_theme import C, ansi, header_box, divider, rank_badge, FOOTERS, GRADE_EMBED_COLOR
 from utils.ranks import rank_gte as _rank_gte
 from core.activities import activity_service
+from core.personality import behaviour_cue
 from core.bond import bond_service
 from utils.logger import setup_logger
 
@@ -425,6 +426,9 @@ class FishingEngine:
             await ctx.send(ansi(f"  {C.YELLOW}츄라이더는 지금 다른 일을 하고 있슴미댜. 끝나고 다시 불러주셰요!{C.R}"))
             self.player.restore_energy(energy_cost)
             return
+        cue = behaviour_cue().fishing_start
+        if cue:
+            await ctx.send(ansi(f"  {C.CYAN}{cue}{C.R}"))
         view = FishingView(self.player, spot_name, spot, fish_db_filtered, activity.activity_id)
         await view.start(ctx)
 

@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 from core.activities import ActivityService, activity_service
 from core.events import EventStore, event_store
 from core.bond import BondService, bond_service, bond_title, habit_profile
+from core.personality import behaviour_cue
 
 
 @dataclass(frozen=True)
@@ -49,6 +50,11 @@ def observe_pet(player, *, activities: ActivityService = activity_service, store
             body = "창가에 붙어서 바깥을 느긋하게 구경하고 있습니다. 꽤 편안해 보입니다."
         else:
             body = "방 안을 꼼지락거리며 돌아다니다가 누가 왔나 하고 이쪽을 봅니다."
+
+    if not current:
+        arrival = behaviour_cue(store).care_arrival
+        if arrival:
+            body = f"{body} {arrival}"
 
     mood = _band(player.stability, "조금 예민해 보입니다.", "평소처럼 차분해 보입니다.", "마음이 꽤 편안해 보입니다.")
     effective_energy = max(0, min(100, (player.energy / max(1, player.max_energy)) * 100 - player.fatigue * 0.35))

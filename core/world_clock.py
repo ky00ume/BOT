@@ -14,6 +14,8 @@ from typing import Callable
 
 from core.events import GameEvent, EventStore, event_store
 from core.agency import world_may_start
+from core.activities import activity_service
+from core.personality import behaviour_cue
 from db.connection import get_db_connection
 
 KST = timezone(timedelta(hours=9))
@@ -31,7 +33,6 @@ _AUTONOMOUS_ACTIVITIES = (
     {"kind": "walk", "message": "🕷️ 츄라이더가 마을을 한 바퀴 천천히 산책하고 돌아왔슴미댜.", "diary": "마을을 천천히 한 바퀴 걸었슴미댜. 바람이 괜히 좋아서 조금 더 걷고 싶었슴미댜. 🍃"},
     {"kind": "web", "message": "🕷️ 츄라이더가 느슨해진 거미줄을 다시 팽팽하게 손봤슴미댜.", "diary": "느슨해진 거미줄을 다시 손봤슴미댜. 반듯해진 걸 보니까 괜히 뿌듯했슴미댜. 🕸️"},
     {"kind": "rest", "message": "🕷️ 츄라이더가 거미줄 해먹에서 잠깐 낮잠을 잤슴미댜.", "diary": "거미줄 해먹에서 잠깐 졸았슴미댜. 눈을 뜨니까 몸이 조금 가벼워졌슴미댜. 💤", "energy": 5},
-    {"kind": "gather", "message": "🕷️ 츄라이더가 산책길에서 약초 한 포기를 발견해 챙겨왔슴미댜. 🌿", "diary": "산책하다가 약초 한 포기를 발견했슴미댜. 그냥 지나칠까 하다가 잘 챙겨왔슴미댜. 🌿", "item": "herb"},
     {"kind": "read", "message": "🕷️ 츄라이더가 마을 게시판 앞에 한참 서서 새 글들을 읽었슴미댜.", "diary": "마을 게시판에 새 글이 붙어 있어서 한참 읽었슴미댜. 모르는 소식이 생기는 건 조금 신기함미댜. 📜", "exp": 3},
 )
 
@@ -50,10 +51,18 @@ class WorldClock:
         # Advance the cursor even when the world is quiet. Reconnects therefore do
         # not replay the same interval or manufacture a backlog of fake history.
         self._save_cursor(now_utc)
+        # A player-directed activity owns Churider's attention. The world may keep
+        # time, but it must not make Churider nap/read/walk at the same time.
+        if activity_service.current():
+            return WorldTickResult(None, None, False)
         if self.rng.random() >= 0.60:
             return WorldTickResult(None, None, False)
 
         activity = dict(self.rng.choice(_AUTONOMOUS_ACTIVITIES))
+        cue = behaviour_cue(self.store)
+        if cue.idle_message and self.rng.random() < 0.25:
+            activity["message"] = cue.idle_message
+            activity["diary"] = cue.idle_message.replace("🕷️ ", "")
         if not world_may_start(activity["kind"]):
             return WorldTickResult(None, None, False)
         changed = self._apply_effect(player, activity)

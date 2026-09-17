@@ -430,7 +430,6 @@ class SnackCraftView(discord.ui.View):
             rows.append({"label": "획득", "value": f"{snack.get('name', '')} x{result.get('count',1)}"})
         grade = "Normal" if result["success"] else "Fail"
         if result["success"]:
-            event_store.append(GameEvent(event_type="care.pet", actor_id=interaction.user.id, subject="츄라이더", location="하이네스의 방", payload={"source": "care_room"}))
             try:
                 save_player_to_db(self.player)
             except Exception as e:
@@ -643,6 +642,7 @@ class CareRoomView(discord.ui.View):
             rows.append({"label": "💙 안정감", "value": f"+{result['stability_gain']}"})
         grade = "Normal" if result["success"] else "Fail"
         if result["success"]:
+            event_store.append(GameEvent(event_type="care.pet", actor_id=interaction.user.id, subject="츄라이더", location="하이네스의 방", payload={"source": "care_room"}))
             try:
                 save_player_to_db(self.player)
             except Exception as e:

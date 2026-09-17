@@ -82,6 +82,25 @@ def init_db() -> None:
             )
         """)
         cursor.execute("""
+            CREATE TABLE IF NOT EXISTS game_events (
+                event_id     TEXT PRIMARY KEY,
+                occurred_at  TEXT NOT NULL,
+                event_type   TEXT NOT NULL,
+                actor_id     INTEGER,
+                subject      TEXT,
+                location     TEXT,
+                payload      TEXT NOT NULL DEFAULT '{}'
+            )
+        """)
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_game_events_time
+            ON game_events(occurred_at DESC)
+        """)
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_game_events_type_time
+            ON game_events(event_type, occurred_at DESC)
+        """)
+        cursor.execute("""
             CREATE TABLE IF NOT EXISTS players_backup (
                 backup_id  INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id    INTEGER NOT NULL,

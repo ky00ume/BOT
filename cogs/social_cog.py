@@ -10,6 +10,7 @@ from save_manager import save_manager
 from shop import find_item_by_name
 from achievements import achievement_manager
 from diary import diary_manager
+from core.events import GameEvent, event_store
 from responses import (
     get_pet_response, get_scold_response,
     HYNESS_PET_RESPONSES, MAJESTY_PET_RESPONSES, DRIDER_PET_RESPONSES,
@@ -200,6 +201,13 @@ class SocialCog(commands.Cog, name="소셜"):
 
         newly_unlocked = achievement_manager.increment("pet_count", 1)
         diary_manager.increment("pet_count", 1)
+        event_store.append(GameEvent(
+            event_type="care.pet",
+            actor_id=uid,
+            subject="츄라이더",
+            location="하이네스의 방",
+            payload={"source": "discord", "command": "쓰담"},
+        ))
 
         embed = discord.Embed(
             title="🐱 쓰담쓰담...",

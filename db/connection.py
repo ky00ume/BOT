@@ -82,6 +82,13 @@ def init_db() -> None:
             )
         """)
         cursor.execute("""
+            CREATE TABLE IF NOT EXISTS world_state (
+                key         TEXT PRIMARY KEY,
+                value       TEXT NOT NULL,
+                updated_at  TEXT NOT NULL
+            )
+        """)
+        cursor.execute("""
             CREATE TABLE IF NOT EXISTS game_events (
                 event_id     TEXT PRIMARY KEY,
                 occurred_at  TEXT NOT NULL,

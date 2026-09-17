@@ -7,6 +7,7 @@ from bg3_renderer import get_renderer
 from save_manager import save_manager
 from achievements import achievement_manager
 from diary import diary_manager
+from core.events import GameEvent, event_store
 from utils.discord_helpers import send_image, send_msg_card, send_encounter, check_channel
 from utils.player_lock import get_player_lock
 
@@ -62,6 +63,7 @@ class BattleCog(commands.Cog, name="전투"):
                     if won:
                         newly_unlocked = achievement_manager.increment("battles_won", 1)
                         diary_manager.increment("battles_won", 1)
+                        event_store.append(GameEvent(event_type="battle.won", actor_id=ctx.author.id, subject="츄라이더", location=self.ctx.battle_engine.current_zone, payload={"monster": self.ctx.battle_engine.current_monster.get("name", "몬스터") if self.ctx.battle_engine.current_monster else "몬스터"}))
                         _killed_zone    = self.ctx.battle_engine.current_zone
                         _killed_monster = self.ctx.battle_engine.current_monster.get("id", "") if self.ctx.battle_engine.current_monster else ""
                         self.ctx.quest_manager.update_kill_count(1, zone=_killed_zone, monster_id=_killed_monster)
@@ -121,6 +123,7 @@ class BattleCog(commands.Cog, name="전투"):
             if was_in_battle and not self.ctx.battle_engine.in_battle and self.ctx.player.hp > 0:
                 newly_unlocked = achievement_manager.increment("battles_won", 1)
                 diary_manager.increment("battles_won", 1)
+                event_store.append(GameEvent(event_type="battle.won", actor_id=ctx.author.id, subject="츄라이더", location=self.ctx.battle_engine.current_zone, payload={"monster": self.ctx.battle_engine.current_monster.get("name", "몬스터") if self.ctx.battle_engine.current_monster else "몬스터"}))
                 _killed_zone = self.ctx.battle_engine.current_zone
                 _killed_monster = self.ctx.battle_engine.current_monster.get("id", "") if self.ctx.battle_engine.current_monster else ""
                 self.ctx.quest_manager.update_kill_count(1, zone=_killed_zone, monster_id=_killed_monster)

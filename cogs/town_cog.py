@@ -4,6 +4,7 @@ from discord.ext import commands
 from ui.ui_theme import C, ansi
 from town_notice import send_town_notice
 from village import village_manager
+from core.events import GameEvent, event_store
 from utils.discord_helpers import send_msg_card, send_encounter, check_channel
 from utils.player_lock import get_player_lock
 
@@ -142,7 +143,13 @@ class TownCog(commands.Cog, name="마을"):
         if not await check_channel(ctx, self.ctx.allowed_channel_id):
             return
         if destination:
+            origin = self.ctx.movement_system._get_location()
             result = self.ctx.movement_system.move_to(ctx.author.id, destination)
+            if self.ctx.movement_system._get_location() == destination and origin != destination:
+                event_store.append(GameEvent(
+                    event_type="world.moved", actor_id=ctx.author.id, subject="츄라이더",
+                    location=destination, payload={"from": origin, "to": destination},
+                ))
         else:
             result = self.ctx.movement_system.show_map(ctx.author.id)
         await send_msg_card(ctx, "이동", str(result), system_key="system")

@@ -182,6 +182,15 @@ class DiaryManager:
             logger.error('diary: _save_diaries 실패', exc_info=True)
 
     def _generate_entry_text(self) -> str:
+        # Prefer memories of actual world events. Legacy counters stay as a migration fallback.
+        try:
+            from core.memory import render_today_diary
+            event_diary = render_today_diary()
+            if event_diary:
+                return event_diary
+        except Exception:
+            logger.warning("diary: event-backed memory projection failed", exc_info=True)
+
         stats = self._daily_stats
         triggered = []
         for key, threshold, fn in _DIARY_TEMPLATES:

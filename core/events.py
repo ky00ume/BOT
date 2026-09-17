@@ -62,6 +62,19 @@ class EventStore:
             rows = conn.execute(sql, params).fetchall()
         return [self._from_row(row) for row in rows]
 
+    def between(self, start: datetime, end: datetime) -> list[GameEvent]:
+        """Return events in a UTC-normalized half-open time window."""
+        start_utc = start.astimezone(timezone.utc).isoformat()
+        end_utc = end.astimezone(timezone.utc).isoformat()
+        with get_db_connection() as conn:
+            rows = conn.execute(
+                """SELECT * FROM game_events
+                   WHERE occurred_at >= ? AND occurred_at < ?
+                   ORDER BY occurred_at ASC, rowid ASC""",
+                (start_utc, end_utc),
+            ).fetchall()
+        return [self._from_row(row) for row in rows]
+
     @staticmethod
     def _from_row(row: sqlite3.Row) -> GameEvent:
         return GameEvent(

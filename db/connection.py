@@ -52,7 +52,7 @@ def init_db() -> None:
                 base_stats  TEXT DEFAULT '{}',
                 inventory   TEXT DEFAULT '{}',
                 equipment   TEXT DEFAULT '{}',
-                keywords    TEXT DEFAULT '["마을","날씨","소문"]',
+                keywords    TEXT DEFAULT '["군락","날씨","소문"]',
                 affinity_data  TEXT DEFAULT '{}',
                 daily_limits   TEXT DEFAULT '{}'
             )
@@ -207,6 +207,10 @@ def _migrate_players_table(cursor: sqlite3.Cursor) -> None:
         if "collection_data" not in columns:
             cursor.execute(
                 "ALTER TABLE players ADD COLUMN collection_data TEXT DEFAULT '{}'"
+            )
+        if "current_location" not in columns:
+            cursor.execute(
+                "ALTER TABLE players ADD COLUMN current_location TEXT DEFAULT '비전의 탑'"
             )
     except Exception as e:
         logger.error("players 테이블 마이그레이션 실패: %s", e, exc_info=True)

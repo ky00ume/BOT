@@ -48,8 +48,8 @@ def save_player_to_db(player: Player) -> None:
          gold, base_stats, inventory, equipment, keywords, affinity_data, daily_limits,
          story_quest, skill_ranks, skill_exp, titles, current_title, bags,
          last_special_encounter, rafael_contract,
-         fatigue, condition, stability, costume, care_flags, quest_data, collection_data)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         fatigue, condition, stability, costume, care_flags, quest_data, collection_data, current_location)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         data.get("user_id", 0),
         data.get("name", "모험가"),
@@ -65,7 +65,7 @@ def save_player_to_db(player: Player) -> None:
         json.dumps(data.get("base_stats", {}), ensure_ascii=False),
         json.dumps(data.get("inventory", {}), ensure_ascii=False),
         json.dumps(data.get("equipment", {}), ensure_ascii=False),
-        json.dumps(data.get("keywords", ["마을", "날씨", "소문"]), ensure_ascii=False),
+        json.dumps(data.get("keywords", ["군락", "날씨", "소문"]), ensure_ascii=False),
         json.dumps(aff_full, ensure_ascii=False),
         json.dumps(aff_full.get("daily_limits", {}), ensure_ascii=False),
         story_quest_json,
@@ -83,6 +83,7 @@ def save_player_to_db(player: Player) -> None:
         json.dumps(data.get("_flags", {}), ensure_ascii=False),
         quest_data_json,
         collection_data_json,
+        data.get("current_location", "비전의 탑"),
     ))
     conn.commit()
     conn.close()
@@ -133,9 +134,9 @@ def load_player_from_db(user_id: int) -> Optional[Dict[str, Any]]:
 
     # 신규 컬럼은 없을 수도 있으므로 안전하게 접근
     try:
-        result["keywords"] = _safe_json(row["keywords"], ["마을", "날씨", "소문"])
+        result["keywords"] = _safe_json(row["keywords"], ["군락", "날씨", "소문"])
     except (IndexError, KeyError):
-        result["keywords"] = ["마을", "날씨", "소문"]
+        result["keywords"] = ["군락", "날씨", "소문"]
 
     try:
         result["affinity_full"] = _safe_json(row["affinity_data"], {})

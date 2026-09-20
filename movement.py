@@ -82,7 +82,7 @@ class MovementSystem:
         self._cooldowns: dict[int, float] = {}
 
     def _get_location(self) -> str:
-        return getattr(self.player, "current_location", "마을")
+        return getattr(self.player, "current_location", "비전의 탑")
 
     def _set_location(self, loc: str):
         self.player.current_location = loc

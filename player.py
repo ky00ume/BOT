@@ -159,7 +159,8 @@ class Player:
 
         self._affinity_manager = None
 
-        self.keywords = ["마을", "날씨", "소문"]  # 기본 키워드 3개로 시작
+        self.keywords = ["군락", "날씨", "소문"]  # 기본 키워드 3개로 시작
+        self.current_location = "비전의 탑"
 
         self._story_quest_manager = None  # StoryQuestManager (main.py에서 주입)
         self._quest_manager = None  # QuestManager (main.py에서 주입)
@@ -486,6 +487,7 @@ class Player:
             "titles":        self.titles,
             "current_title": self.current_title,
             "keywords":      self.keywords,
+            "current_location": self.current_location,
             "skill_ranks":   self.skill_ranks,
             "skill_exp":     self.skill_exp,
             "last_special_encounter": getattr(self, "last_special_encounter", None),
@@ -527,6 +529,7 @@ class Player:
         self.condition     = data.get("condition",     getattr(self, "condition", 50))
         self.stability     = data.get("stability",     getattr(self, "stability", 50))
         self.current_title = data.get("current_title", self.current_title)
+        self.current_location = data.get("current_location", getattr(self, "current_location", "비전의 탑"))
 
         # A-1 fix: HP/MP 값 유효성 보정 (0 이하이면 최대값으로 복원, max 초과 방지)
         if self.hp <= 0:
@@ -567,7 +570,7 @@ class Player:
         if "keywords" in data and isinstance(data["keywords"], list):
             self.keywords = data["keywords"]
         elif not hasattr(self, "keywords") or self.keywords is None:
-            self.keywords = ["마을", "날씨", "소문"]
+            self.keywords = ["군락", "날씨", "소문"]
 
         if "skill_ranks" in data and isinstance(data["skill_ranks"], dict):
             # 기본 스킬은 항상 최소 연습 랭크 보장

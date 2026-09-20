@@ -533,7 +533,7 @@ class RecipeSelect(Select):
             ok = have >= need
             if not ok:
                 can_craft = False
-            rows.append({"label": f"[{'O' if ok else 'X'}] {ing_name}", "value": f"{have}/{need}개"})
+            rows.append({"name": ing_name, "have": have, "need": need, "ok": ok, "item_id": ing_id})
         tool_req = recipe.get("tool_req")
         if tool_req:
             tool_name = ALL_ITEMS.get(tool_req, {}).get("name", tool_req)
@@ -560,17 +560,15 @@ class RecipeSelect(Select):
         try:
             from bg3_renderer import get_renderer, render_async
             r = get_renderer()
-            grade    = "Normal" if can_craft else "Fail"
-            subtitle = "✅ 제작 가능!" if can_craft else "❌ 재료 부족"
-            footer   = "[제작 실행] 버튼으로 제작하세요." if can_craft else "재료를 먼저 모아주세요."
+            result_item = ALL_ITEMS.get(recipe.get("result", recipe_id), {})
+            grade = result_item.get("grade", "Normal")
             buf = await render_async(
-                r.render_card,
-                recipe.get("name", recipe_id),
+                r.render_recipe_detail,
+                recipe.get("name", recipe_id).removesuffix(" 제작"),
                 rows,
-                grade=grade,
-                subtitle=subtitle,
+                can_craft=can_craft,
+                result_grade=grade,
                 system_key="craft",
-                footer=footer,
             )
             await interaction.response.edit_message(
                 attachments=[discord.File(buf, filename="recipe_detail.png")],
@@ -658,7 +656,7 @@ class RecipeSelect(Select):
                 ok = have >= need
                 if not ok:
                     can_craft = False
-                detail_rows.append({"label": f"[{'O' if ok else 'X'}] {ing_name}", "value": f"{have}/{need}개"})
+                detail_rows.append({"name": ing_name, "have": have, "need": need, "ok": ok, "item_id": ing_id})
             for child in self.children:
                 if hasattr(child, "custom_id") and child.custom_id and child.custom_id.startswith("craft_exec_"):
                     child.disabled = not can_craft
@@ -667,17 +665,15 @@ class RecipeSelect(Select):
             try:
                 from bg3_renderer import get_renderer, render_async
                 _r = get_renderer()
-                _grade  = "Normal" if can_craft else "Fail"
-                _sub    = "✅ 제작 가능!" if can_craft else "❌ 재료 부족"
-                _footer = "[제작 실행] 버튼으로 제작하세요." if can_craft else "재료를 먼저 모아주세요."
+                _result_item = _AI.get(recipe.get("result", recipe_id), {})
+                _grade = _result_item.get("grade", "Normal")
                 _buf = await render_async(
-                    _r.render_card,
-                    recipe.get("name", recipe_id),
+                    _r.render_recipe_detail,
+                    recipe.get("name", recipe_id).removesuffix(" 제작"),
                     detail_rows,
-                    grade=_grade,
-                    subtitle=_sub,
+                    can_craft=can_craft,
+                    result_grade=_grade,
                     system_key="craft",
-                    footer=_footer,
                 )
                 await interaction.response.edit_message(
                     attachments=[discord.File(_buf, filename="recipe_detail.png")],

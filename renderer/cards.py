@@ -556,6 +556,28 @@ class BG3Renderer:
         return self.render_card(shop_name, rows, grade="Normal",
                                 system_key="shop", footer="상점")
 
+    # ─── 제작 상세 카드 ──────────────────────────────────────────
+    def render_recipe_detail(self, recipe_name, ingredients, *, can_craft=False,
+                             result_grade="Normal", system_key="craft") -> io.BytesIO:
+        """BG3풍 제작 상세. ingredients: [{name, have, need, ok}, ...]."""
+        rows = [{
+            "label": "지금 만들려는 물건",
+            "value": recipe_name,
+            "color": C.GOLD_HI,
+        }]
+        for ingredient in ingredients:
+            ok = bool(ingredient.get("ok"))
+            rows.append({
+                "label": ingredient.get("name", "재료"),
+                "value": f"{ingredient.get('have', 0)} / {ingredient.get('need', 0)}",
+                "color": C.TXT_HI if ok else C.RARITY["Fail"],
+            })
+        footer = "재료가 준비되었습니다 · 제작 여부를 선택하세요" if can_craft else "부족한 재료를 선택해 모을 수 있습니다"
+        return self.render_card(
+            "제작", rows, grade=result_grade if can_craft else "Normal",
+            subtitle=None, system_key=system_key, footer=footer,
+        )
+
     # ─── 제작 결과 카드 ──────────────────────────────────────────
     def render_craft_result(self, recipe_name, result_item_name,
                             result_grade="Normal", ingredients=None,

@@ -16,6 +16,7 @@ from core.events import GameEvent, EventStore, event_store
 from core.agency import world_may_start
 from core.activities import activity_service
 from core.personality import behaviour_cue
+from items import ALL_ITEMS
 from db.connection import get_db_connection
 
 KST = timezone(timedelta(hours=9))
@@ -35,6 +36,24 @@ _AUTONOMOUS_ACTIVITIES = (
     {"kind": "rest", "message": "🕷️ 츄라이더가 거미줄 해먹에서 잠깐 낮잠을 잤슴미댜.", "diary": "거미줄 해먹에서 잠깐 졸았슴미댜. 눈을 뜨니까 몸이 조금 가벼워졌슴미댜. 💤", "energy": 5},
     {"kind": "read", "message": "🕷️ 츄라이더가 마을 게시판 앞에 한참 서서 새 글들을 읽었슴미댜.", "diary": "마을 게시판에 새 글이 붙어 있어서 한참 읽었슴미댜. 모르는 소식이 생기는 건 조금 신기함미댜. 📜", "exp": 3},
 )
+
+
+# Things Churider can plausibly come across while living an ordinary life near town.
+# Rare finds are deliberately tiny probabilities; quest/story/Legendary items never appear here.
+_IDLE_FINDS = (
+    {"item": "mat_shiny_button", "weight": 18, "scene": "길가에서 햇빛을 반사하는 반짝이 단추 하나를 발견했슴미댜."},
+    {"item": "mat_ribbon_scrap", "weight": 16, "scene": "바람에 굴러다니던 리본 조각을 주워 곱게 접어 왔슴미댜."},
+    {"item": "mat_feather", "weight": 15, "scene": "마을 담장 아래 떨어진 깃털 하나를 주워 왔슴미댜."},
+    {"item": "gt_flower_01", "weight": 14, "scene": "마을 앞 풀밭에서 들꽃 한 송이를 발견해 가져왔슴미댜."},
+    {"item": "gt_herb_01", "weight": 14, "scene": "마을 앞 길가에서 쓸 만한 들풀을 조금 뜯어 왔슴미댜."},
+    {"item": "wild_berry", "weight": 12, "scene": "산책길 덤불에서 먹음직한 야생 열매를 발견했슴미댜."},
+    {"item": "scrap_branch", "weight": 9, "scene": "마을 앞에 떨어진 반듯한 잡목 가지를 하나 주워 왔슴미댜."},
+    {"item": "mat_magic_thread", "weight": 1.6, "scene": "평범한 실인 줄 알고 주웠는데 희미하게 빛나는 마법실이었슴미댜."},
+    {"item": "gem_ruby", "weight": 0.20, "scene": "배수로 옆에서 유난히 붉게 반짝이는 조각을 건졌는데, 닦아 보니 루비였슴미댜."},
+    {"item": "gem_sapphire", "weight": 0.16, "scene": "개울가 돌틈에서 파란 빛이 보여 꺼내 왔는데 사파이어였슴미댜."},
+    {"item": "gem_emerald", "weight": 0.12, "scene": "풀숲 사이에서 초록빛 돌 하나를 발견했는데 에메랄드였슴미댜."},
+)
+_IDLE_FIND_CHANCE = 0.22
 
 
 class WorldClock:
@@ -66,6 +85,11 @@ class WorldClock:
         if not world_may_start(activity["kind"]):
             return WorldTickResult(None, None, False)
         changed = self._apply_effect(player, activity)
+        found = self._maybe_find_item(player, activity)
+        if found:
+            changed = True
+            activity["message"] = f"{activity['message']}\n🎒 {found['scene']}"
+            activity["diary"] = f"{activity['diary']} {found['scene']}"
         event = GameEvent(
             event_type="world.autonomous",
             subject="츄라이더",
@@ -75,10 +99,26 @@ class WorldClock:
                 "activity": activity["kind"],
                 "message": activity["message"],
                 "diary_text": activity["diary"],
+                "find": found,
             },
         )
         self.store.append(event)
         return WorldTickResult(event, activity["message"], changed)
+
+    def _maybe_find_item(self, player, activity: dict) -> dict | None:
+        # Only ordinary outside life can produce finds. Napping, reading and
+        # personality flavour do not magically create loot.
+        if activity.get("kind") != "walk" or self.rng.random() >= _IDLE_FIND_CHANCE:
+            return None
+        entry = self.rng.choices(_IDLE_FINDS, weights=[row["weight"] for row in _IDLE_FINDS], k=1)[0]
+        item = ALL_ITEMS.get(entry["item"], {})
+        # Defence in depth: autonomous life must never mint quest/story or
+        # Legendary resources even if the table is edited later.
+        if entry["item"].startswith(("quest_", "story_")) or item.get("grade") == "Legendary":
+            return None
+        if not player.add_item(entry["item"], 1):
+            return None
+        return {"item_id": entry["item"], "name": item.get("name", entry["item"]), "count": 1, "scene": entry["scene"]}
 
     @staticmethod
     def _apply_effect(player, activity: dict) -> bool:

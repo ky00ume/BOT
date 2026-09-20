@@ -303,7 +303,7 @@ def mock_interaction():
 
 
 @pytest.fixture
-def fishing_engine(fresh_player, monkeypatch):
+def fishing_engine(fresh_player, monkeypatch, temp_db):
     """FishingEngine 인스턴스.
 
     discord가 설치되지 않은 환경에서는 monkeypatch로 sys.modules에 stub을

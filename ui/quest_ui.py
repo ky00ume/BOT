@@ -125,7 +125,7 @@ def _make_quest_detail_image(quest_id, quest_manager, player) -> discord.File:
         grade="Normal",
         subtitle=f"퀘스트 상세",
         system_key="quest",
-        footer="✦ 비전 타운 ✦",
+        footer="✦ 마이코니드 군락 ✦",
         w=600,
         h=h,
     )
@@ -145,7 +145,7 @@ def _make_result_image(title, quest_name, result_text) -> discord.File:
         grade="Normal",
         subtitle=quest_name,
         system_key="quest",
-        footer="✦ 비전 타운 ✦",
+        footer="✦ 마이코니드 군락 ✦",
         w=560,
         h=260,
     )

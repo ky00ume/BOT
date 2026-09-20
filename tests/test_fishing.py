@@ -172,16 +172,16 @@ class TestFishPoolFiltering:
     def test_beginner_rank_gets_rank_req_practiced_fish(self, fishing_engine):
         from fishing import FISH_GUIDE, FISH_DB
         fishing_engine.player.skill_ranks["fishing"] = "연습"
-        # '고요한 연못'에는 연습 랭크 물고기만 있음 (붕어, 잉어 등)
-        pool = self._get_filtered_pool(fishing_engine, "고요한 연못")
+        # '에본레이크 얕은 물가'에는 연습 랭크 물고기만 있음 (붕어, 잉어 등)
+        pool = self._get_filtered_pool(fishing_engine, "에본레이크 얕은 물가")
         assert len(pool) > 0
 
     def test_high_rank_spot_filtered_for_beginner(self, fishing_engine):
         from fishing import FISH_GUIDE, FISH_DB
         from utils.ranks import rank_gte as _rank_gte
         fishing_engine.player.skill_ranks["fishing"] = "연습"
-        # '요정의 샘'은 B랭 이상 물고기만 있음 - 연습 랭크면 일부 또는 전부 필터됨
-        pool = self._get_filtered_pool(fishing_engine, "요정의 샘")
+        # '곪아가는 만'은 B랭 이상 물고기만 있음 - 연습 랭크면 일부 또는 전부 필터됨
+        pool = self._get_filtered_pool(fishing_engine, "곪아가는 만")
         # 필터링 결과는 랭크 조건을 만족하는 것만 포함
         for fish_name, fish_data in pool.items():
             assert _rank_gte("연습", fish_data.get("rank_req", "연습"))
@@ -191,13 +191,13 @@ class TestFishPoolFiltering:
         from fishing import FISH_GUIDE, FISH_DB
         # 매우 높은 랭크 설정 (실제로 필터가 다 통과시키도록)
         fishing_engine.player.skill_ranks["fishing"] = "1"
-        pool = self._get_filtered_pool(fishing_engine, "방울숲 강")
+        pool = self._get_filtered_pool(fishing_engine, "에본레이크 북안")
         assert len(pool) > 0
 
     def test_pool_contains_only_fish_in_spot(self, fishing_engine):
         from fishing import FISH_GUIDE
         fishing_engine.player.skill_ranks["fishing"] = "1"
-        spot_name = "방울숲 강"
+        spot_name = "에본레이크 북안"
         spot_fish = set(FISH_GUIDE[spot_name]["fish"])
         pool = self._get_filtered_pool(fishing_engine, spot_name)
         for name in pool:

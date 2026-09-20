@@ -5,71 +5,17 @@ from ui_theme import C, ansi, header_box, divider
 # ─── 맵 구조 ───────────────────────────────────────────────────────────────
 # 각 노드: 이름, 설명, 레벨 요구, 아이콘, 인접 노드 목록
 MAP_NODES = {
-    "마을": {
-        "name":              "마이코니드 군락",
-        "icon":              "🏘️",
-        "desc":              "에본레이크 곁의 버섯 숲에 자리한 마이코니드들의 군락.",
-        "level":             1,
-        "hunting_available": False,
-        "adjacent":          ["방울숲", "늪지대"],
-    },
-    "방울숲": {
-        "name":              "방울숲",
-        "icon":              "🌲",
-        "desc":              "초보 모험가들이 처음 발을 내딛는 아담한 숲.",
-        "level":             1,
-        "hunting_available": True,
-        "adjacent":          ["마을", "고블린동굴"],
-    },
-    "고블린동굴": {
-        "name":              "고블린 동굴",
-        "icon":              "🪨",
-        "desc":              "고블린들이 소굴을 이룬 지하 동굴.",
-        "level":             5,
-        "hunting_available": True,
-        "adjacent":          ["방울숲", "소금광산"],
-    },
-    "소금광산": {
-        "name":              "소금 광산",
-        "icon":              "⛏️",
-        "desc":              "소금 결정이 빛나는 어둠의 광산.",
-        "level":             10,
-        "hunting_available": True,
-        "adjacent":          ["고블린동굴", "요정의 숲"],
-    },
-    "요정의 숲": {
-        "name":              "요정의 숲",
-        "icon":              "🧚",
-        "desc":              "요정들이 살아가는 신비로운 마법의 숲.",
-        "level":             15,
-        "hunting_available": True,
-        "adjacent":          ["소금광산", "용암 동굴"],
-    },
-    "용암 동굴": {
-        "name":              "용암 동굴",
-        "icon":              "🌋",
-        "desc":              "불꽃과 용암이 흐르는 위험한 동굴.",
-        "level":             25,
-        "hunting_available": True,
-        "adjacent":          ["요정의 숲", "심해 던전"],
-    },
-    "심해 던전": {
-        "name":              "심해 던전",
-        "icon":              "🌊",
-        "desc":              "바다 깊은 곳에 잠긴 고대의 던전.",
-        "level":             35,
-        "hunting_available": True,
-        "adjacent":          ["용암 동굴"],
-    },
-    "늪지대": {
-        "name":              "늪지대",
-        "icon":              "🌫️",
-        "desc":              "안개와 진흙으로 뒤덮인 음습한 늪지대. 불쾌할 정도로 밝은 빛이 가끔 깜빡인다.",
-        "level":             1,
-        "hunting_available": False,  # 스토리 전용
-        "adjacent":          ["마을"],  # 성문 이벤트 후 접근
-        "story_locked":      True,   # 챕터 3 Q1 완료 전 잠김
-    },
+    "비전의 탑": {"name":"비전의 탑", "icon":"🏰", "desc":"에본레이크 남서쪽 절벽에 선 츄라이더의 집이자 생활 거점.", "level":1, "hunting_available":False, "adjacent":["드레드 할로우", "에본레이크"]},
+    "마이코니드 군락": {"name":"마이코니드 군락", "icon":"🍄", "desc":"발광버섯과 포자 속에 자리한 언더다크의 안전한 생활 거점.", "level":1, "hunting_available":False, "adjacent":["드레드 할로우", "에본레이크", "비버뱅 군락"]},
+    "드레드 할로우": {"name":"드레드 할로우 · 수서 나무", "icon":"🌳", "desc":"거대한 수서 나무와 푸른 발광 식물이 자라는 위험한 숲.", "level":1, "hunting_available":True, "adjacent":["비전의 탑", "마이코니드 군락", "폐허가 된 마을"]},
+    "에본레이크": {"name":"에본레이크", "icon":"🌊", "desc":"언더다크 깊은 곳의 검은 호수. 낚시와 선착장 이동의 중심.", "level":1, "hunting_available":False, "adjacent":["비전의 탑", "마이코니드 군락", "폐허가 된 마을", "곪아가는 만"]},
+    "폐허가 된 마을": {"name":"폐허가 된 마을", "icon":"🏚️", "desc":"에본레이크 가장자리의 버려진 듀에르가 정착지와 선착장.", "level":5, "hunting_available":True, "adjacent":["드레드 할로우", "에본레이크", "그림포지"]},
+    "그림포지": {"name":"그림포지", "icon":"⛏️", "desc":"에본레이크 건너편의 듀에르가 유적. 광맥과 제련 시설이 남아 있다.", "level":10, "hunting_available":True, "adjacent":["폐허가 된 마을", "아다만틴 대장간"]},
+    "아다만틴 대장간": {"name":"아다만틴 대장간", "icon":"🔥", "desc":"그림포지 깊은 곳, 용암과 고대 제련 장치가 남은 위험 지역.", "level":25, "hunting_available":True, "adjacent":["그림포지", "샤의 고대 사원"]},
+    "샤의 고대 사원": {"name":"샤의 고대 사원", "icon":"🌑", "desc":"그림포지 너머로 보이는 오래된 샤의 유적. 고난도 탐험 지역.", "level":35, "hunting_available":True, "adjacent":["아다만틴 대장간"]},
+    "셀루네 전초기지": {"name":"셀루네 전초기지", "icon":"🌙", "desc":"언더다크 남동쪽의 셀루네 요새 유적. 방어 시설과 위험한 길목이 남아 있다.", "level":15, "hunting_available":True, "adjacent":["드레드 할로우"]},
+    "곪아가는 만": {"name":"곪아가는 만", "icon":"🐟", "desc":"비전의 탑 인근 절벽 아래 숨은 쿠오토아의 만. 낚시와 비밀 탐험에 적합하다.", "level":8, "hunting_available":False, "adjacent":["에본레이크"]},
+    "비버뱅 군락": {"name":"비버뱅 군락", "icon":"💥", "desc":"마이코니드 군락 바깥의 위험한 버섯 지대. 작은 실수도 연쇄 폭발로 이어진다.", "level":5, "hunting_available":False, "adjacent":["마이코니드 군락"], "story_locked":True},
 }
 
 # 이동 쿨다운 (초)
@@ -90,7 +36,7 @@ class MovementSystem:
     def show_map(self, user_id: int) -> str:
         """현재 위치와 이동 가능한 곳을 보여줍니다."""
         current = self._get_location()
-        node    = MAP_NODES.get(current, MAP_NODES["마을"])
+        node    = MAP_NODES.get(current, MAP_NODES["비전의 탑"])
         lines   = [
             header_box(f"🗺️  현재 위치: {node['icon']} {node['name']}"),
             f"  {C.DARK}{node['desc']}{C.R}",
@@ -126,7 +72,7 @@ class MovementSystem:
         if destination == current:
             return ansi(f"  {C.YELLOW}⚠ 이미 {MAP_NODES[current]['icon']} {MAP_NODES[current]['name']}에 있슴미댜!{C.R}")
 
-        node = MAP_NODES.get(current, MAP_NODES["마을"])
+        node = MAP_NODES.get(current, MAP_NODES["비전의 탑"])
         if destination not in node["adjacent"]:
             return ansi(
                 f"  {C.RED}✖ {MAP_NODES[current]['icon']} {MAP_NODES[current]['name']}에서는"
@@ -145,7 +91,7 @@ class MovementSystem:
             sq_mgr = getattr(self.player, "_story_quest_manager", None)
             unlocked = False
             if sq_mgr is not None:
-                unlocked = sq_mgr.flags.get("늪지대_해금", False)
+                unlocked = sq_mgr.flags.get("비버뱅 군락_해금", False)
             if not unlocked:
                 return ansi(
                     f"  {C.RED}🔒 {dest_node['icon']} {dest_node['name']}은(는) 스토리 진행 후 입장 가능합미댜!{C.R}\n"

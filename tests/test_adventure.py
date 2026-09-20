@@ -104,19 +104,19 @@ class TestCheckStat:
 class TestStartAdventure:
     def test_insufficient_energy(self, adventure_engine):
         adventure_engine.player.energy = 0
-        result = adventure_engine.start_adventure("방울숲")
+        result = adventure_engine.start_adventure("드레드 할로우")
         assert result["ok"] is False
         assert "기력" in result["error"]
 
     def test_start_sets_in_adventure(self, adventure_engine):
         with patch("adventure.random.random", return_value=0.5):  # NPC 인카운터 방지
-            result = adventure_engine.start_adventure("방울숲")
+            result = adventure_engine.start_adventure("드레드 할로우")
         assert result["ok"] is True
         assert adventure_engine.in_adventure is True
 
     def test_result_has_required_keys(self, adventure_engine):
         with patch("adventure.random.random", return_value=0.5):
-            result = adventure_engine.start_adventure("방울숲")
+            result = adventure_engine.start_adventure("드레드 할로우")
         assert "ok" in result
 
     def test_unknown_zone_falls_back_to_random_event(self, adventure_engine):
@@ -191,7 +191,7 @@ class TestProcessNpcInteraction:
     def test_refuse_action_clears_adventure(self, adventure_engine):
         npc = {"name": "테스트NPC", "interaction": "help", "refuse_text": "알겠어"}
         adventure_engine.in_adventure = True
-        adventure_engine.active_adventure = {"type": "npc", "npc": npc, "zone": "방울숲"}
+        adventure_engine.active_adventure = {"type": "npc", "npc": npc, "zone": "드레드 할로우"}
         result = adventure_engine.process_npc_interaction("refuse")
         assert adventure_engine.in_adventure is False
         assert result["ok"] is True
@@ -199,7 +199,7 @@ class TestProcessNpcInteraction:
     def test_ignore_action_clears_adventure(self, adventure_engine):
         npc = {"name": "무명NPC", "interaction": "info"}
         adventure_engine.in_adventure = True
-        adventure_engine.active_adventure = {"type": "npc", "npc": npc, "zone": "방울숲"}
+        adventure_engine.active_adventure = {"type": "npc", "npc": npc, "zone": "드레드 할로우"}
         result = adventure_engine.process_npc_interaction("ignore")
         assert adventure_engine.in_adventure is False
 
@@ -209,12 +209,12 @@ class TestProcessNpcInteraction:
 class TestPostAdventureEvent:
     def test_returns_none_most_of_the_time(self, adventure_engine):
         with patch("adventure.random.random", return_value=0.5):
-            result = adventure_engine.post_adventure_event("방울숲")
+            result = adventure_engine.post_adventure_event("드레드 할로우")
         assert result is None
 
     def test_returns_dict_when_triggered(self, adventure_engine):
         with patch("adventure.random.random", return_value=0.05):
-            result = adventure_engine.post_adventure_event("방울숲")
+            result = adventure_engine.post_adventure_event("드레드 할로우")
         # 10% 이하의 random 값이면 이벤트 발생
         assert result is None or isinstance(result, dict)
 

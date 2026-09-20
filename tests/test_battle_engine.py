@@ -56,25 +56,25 @@ class TestEnterZone:
     def test_valid_zone_low_level_player_blocked(self, engine, player):
         """레벨 0 플레이어는 Lv.1 이상 요구 구역에 입장 불가."""
         player.level = 0
-        result = engine.enter_zone("방울숲")
+        result = engine.enter_zone("드레드 할로우")
         assert "입장에는" in result
         assert "필요" in result
 
     def test_valid_zone_sufficient_level_enters(self, engine, player):
         """충분한 레벨이면 입장 메시지 반환."""
         player.level = 1
-        result = engine.enter_zone("방울숲")
+        result = engine.enter_zone("드레드 할로우")
         assert "입장했슴미댜" in result
 
     def test_enter_zone_sets_current_zone(self, engine, player):
         player.level = 10
-        engine.enter_zone("방울숲")
-        assert engine.current_zone == "방울숲"
+        engine.enter_zone("드레드 할로우")
+        assert engine.current_zone == "드레드 할로우"
 
     def test_enter_zone_message_contains_zone_name(self, engine, player):
         player.level = 10
-        result = engine.enter_zone("방울숲")
-        assert "방울숲" in result
+        result = engine.enter_zone("드레드 할로우")
+        assert "드레드 할로우" in result
 
 
 # ────────────────────────────────────────────────────────────────────────────

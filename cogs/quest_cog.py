@@ -195,7 +195,7 @@ class QuestCog(commands.Cog, name="퀘스트"):
                     f"  {C.WHITE}\"{qdata['dialogue_arabella']}\"{C.R}",
                     divider(),
                     f"  {C.CYAN}📋 수집 미션: [{qdata['collect_item'].replace('sq_', '')}] × {qdata['collect_count']}{C.R}",
-                    f"  {C.DARK}→ 방울숲에서 그림자 몬스터를 사냥해 획득 (드롭률 {int(qdata['drop_rate']*100)}%){C.R}",
+                    f"  {C.DARK}→ 드레드 할로우에서 그림자 몬스터를 사냥해 획득 (드롭률 {int(qdata['drop_rate']*100)}%){C.R}",
                     f"  {C.DARK}→ /스토리수집 으로 사냥 시작{C.R}",
                 ]
                 await ctx.send(ansi("\n".join(lines)))
@@ -286,11 +286,11 @@ class QuestCog(commands.Cog, name="퀘스트"):
                 if kw and kw not in self.ctx.player.keywords:
                     self.ctx.player.keywords.append(kw)
                     lines.append(f"  {C.CYAN}🔓 새 키워드: [{kw}]{C.R}")
-                self.ctx.story_quest_manager.flags["늪지대_해금"] = True
+                self.ctx.story_quest_manager.flags["비버뱅 군락_해금"] = True
                 self.ctx.story_quest_manager.complete_quest(ch, q)
                 self.ctx.story_quest_manager.quest = "gate"
                 save_manager.save(self.ctx.player)
-                lines.append(f"  {C.GREEN}🗺️ 늪지대 이동 가능! /이동 늪지대{C.R}")
+                lines.append(f"  {C.GREEN}🗺️ 비버뱅 군락 이동 가능! /이동 비버뱅 군락{C.R}")
                 await ctx.send(ansi("\n".join(lines)))
 
             elif q == "gate" or self.ctx.story_quest_manager.flags.get("at_gate"):
@@ -304,7 +304,7 @@ class QuestCog(commands.Cog, name="퀘스트"):
                     divider(),
                     f"  {C.WHITE}\"{gate_data.get('dialogue', '...')}\"{C.R}",
                     divider(),
-                    f"  {C.GREEN}늪지대 진입 허가!{C.R}",
+                    f"  {C.GREEN}비버뱅 군락 진입 허가!{C.R}",
                 ]
                 self.ctx.story_quest_manager.complete_quest(ch, "gate")
                 self.ctx.story_quest_manager.quest = 2
@@ -313,7 +313,7 @@ class QuestCog(commands.Cog, name="퀘스트"):
 
             elif q == 2:
                 await ctx.send(ansi(
-                    f"  {C.CYAN}/스토리탐색{C.R} 명령어로 늪지대 탐색을 진행하세요!"
+                    f"  {C.CYAN}/스토리탐색{C.R} 명령어로 비버뱅 군락 탐색을 진행하세요!"
                 ))
 
             elif q == 3:
@@ -435,7 +435,7 @@ class QuestCog(commands.Cog, name="퀘스트"):
             elif q == 2:
                 await ctx.send(ansi(
                     f"  {C.WHITE}📜 챕터 4 Q2: {qdata['title']}{C.R}\n"
-                    f"  {C.DARK}방울숲에서 비정상적인 소리가 들린다.{C.R}\n"
+                    f"  {C.DARK}드레드 할로우에서 비정상적인 소리가 들린다.{C.R}\n"
                     f"  {C.GREEN}/스토리탐색4 명령어로 탐색을 진행하세요.{C.R}"
                 ))
 
@@ -546,7 +546,7 @@ class QuestCog(commands.Cog, name="퀘스트"):
 
     @commands.command(name="스토리탐색")
     async def story_explore_cmd(self, ctx):
-        """늪지대 탐색 퀘스트 실행 (챕터 3 Q2 전용, 3단계)."""
+        """비버뱅 군락 탐색 퀘스트 실행 (챕터 3 Q2 전용, 3단계)."""
         if not await check_channel(ctx, self.ctx.allowed_channel_id):
             return
         from story_quest_data import CH3_QUESTS
@@ -565,8 +565,8 @@ class QuestCog(commands.Cog, name="퀘스트"):
             await ctx.send(ansi(f"  {C.GOLD}✔ 탐색을 이미 완료했슴미댜!{C.R}"))
             return
 
-        if not self.ctx.story_quest_manager.flags.get("늪지대_해금"):
-            await ctx.send(ansi(f"  {C.RED}✖ 아직 늪지대에 진입할 수 없슴미댜.{C.R}"))
+        if not self.ctx.story_quest_manager.flags.get("비버뱅 군락_해금"):
+            await ctx.send(ansi(f"  {C.RED}✖ 아직 비버뱅 군락에 진입할 수 없슴미댜.{C.R}"))
             return
 
         qdata = CH3_QUESTS[2]
@@ -581,8 +581,8 @@ class QuestCog(commands.Cog, name="퀘스트"):
             ))
 
         lines = [
-            header_box("🌫️  늪지대 탐색"),
-            f"  {C.DARK}안개와 진흙으로 뒤덮인 음습한 늪지대.{C.R}",
+            header_box("🌫️  비버뱅 군락 탐색"),
+            f"  {C.DARK}안개와 진흙으로 뒤덮인 음습한 비버뱅 군락.{C.R}",
             divider(),
         ]
         view = ExploreView(
@@ -593,7 +593,7 @@ class QuestCog(commands.Cog, name="퀘스트"):
 
     @commands.command(name="스토리탐색4")
     async def story_explore4_cmd(self, ctx):
-        """방울숲 탐색 퀘스트 실행 (챕터 4 Q2 전용, 3단계)."""
+        """드레드 할로우 탐색 퀘스트 실행 (챕터 4 Q2 전용, 3단계)."""
         if not await check_channel(ctx, self.ctx.allowed_channel_id):
             return
         from story_quest_data import CH4_QUESTS
@@ -624,7 +624,7 @@ class QuestCog(commands.Cog, name="퀘스트"):
             ))
 
         lines = [
-            header_box("🌿  방울숲 탐색"),
+            header_box("🌿  드레드 할로우 탐색"),
             f"  {C.DARK}이전과 다른 소리가 숲에서 흘러나온다.{C.R}",
             divider(),
         ]
@@ -636,7 +636,7 @@ class QuestCog(commands.Cog, name="퀘스트"):
 
     @commands.command(name="스토리수집")
     async def story_collect_cmd(self, ctx):
-        """챕터 2 Q2 — 팅커 벨의 날개 가루 수집 (방울숲 전용)."""
+        """챕터 2 Q2 — 팅커 벨의 날개 가루 수집 (드레드 할로우 전용)."""
         if not await check_channel(ctx, self.ctx.allowed_channel_id):
             return
         import random
@@ -656,10 +656,10 @@ class QuestCog(commands.Cog, name="퀘스트"):
             return
 
         current_loc = getattr(self.ctx.player, "current_location", "마을")
-        if current_loc != "방울숲":
+        if current_loc != "드레드 할로우":
             await ctx.send(ansi(
-                f"  {C.RED}✖ 방울숲에 있어야 합미댜! (현재 위치: {current_loc}){C.R}\n"
-                f"  {C.DARK}/이동 방울숲 으로 이동하세요.{C.R}"
+                f"  {C.RED}✖ 드레드 할로우에 있어야 합미댜! (현재 위치: {current_loc}){C.R}\n"
+                f"  {C.DARK}/이동 드레드 할로우 으로 이동하세요.{C.R}"
             ))
             return
 

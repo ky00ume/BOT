@@ -141,7 +141,7 @@ class WorldClock:
         event = GameEvent(
             event_type="world.autonomous",
             subject="츄라이더",
-            location="비전 타운",
+            location="마이코니드 군락",
             occurred_at=now_utc,
             payload={
                 "activity": activity["kind"],

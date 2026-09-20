@@ -60,8 +60,8 @@ def apply_size_to_monster(base: dict, size: str) -> dict:
 
 
 MONSTERS_DB = {
-    "방울숲": {
-        "name": "방울숲",
+    "드레드 할로우": {
+        "name": "드레드 할로우",
         "level_range": (1, 5),
         "monsters": [
             {
@@ -141,8 +141,8 @@ MONSTERS_DB = {
             },
         ],
     },
-    "고블린동굴": {
-        "name": "고블린 동굴",
+    "폐허가 된 마을": {
+        "name": "폐허가 된 마을",
         "level_range": (5, 12),
         "monsters": [
             {
@@ -193,8 +193,8 @@ MONSTERS_DB = {
             },
         ],
     },
-    "소금광산": {
-        "name": "소금 광산",
+    "그림포지": {
+        "name": "그림포지",
         "level_range": (10, 20),
         "monsters": [
             {
@@ -247,7 +247,7 @@ MONSTERS_DB = {
         ],
     },
     "요정의숲": {
-        "name": "요정의 숲",
+        "name": "셀루네 전초기지",
         "level_range": (18, 30),
         "monsters": [
             {

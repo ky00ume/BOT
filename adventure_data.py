@@ -2,7 +2,7 @@
 # 사냥터별 3개 이상 시나리오, 숨겨진 트리거, 범용 랜덤 이벤트
 
 ADVENTURE_SCENARIOS = {
-    "방울숲": [
+    "드레드 할로우": [
         {
             "id": "bell_forest_mystery",
             "title": "수상한 방울 소리",
@@ -60,7 +60,7 @@ ADVENTURE_SCENARIOS = {
                 },
                 {
                     "step": 3,
-                    "desc": "탐험이 끝났다. 방울숲의 바람이 부드럽게 머리카락을 스친다.",
+                    "desc": "탐험이 끝났다. 드레드 할로우의 바람이 부드럽게 머리카락을 스친다.",
                     "choices": [],
                     "end": True,
                 },
@@ -118,7 +118,7 @@ ADVENTURE_SCENARIOS = {
             "steps": [
                 {
                     "step": 0,
-                    "desc": "방울숲 한복판에 수백 년은 된 것 같은 거대한 나무가 서 있다. 나무 기둥에 문양이 새겨져 있다.",
+                    "desc": "드레드 할로우 한복판에 수백 년은 된 것 같은 거대한 나무가 서 있다. 나무 기둥에 문양이 새겨져 있다.",
                     "choices": [
                         {
                             "label": "문양을 자세히 살핀다",
@@ -166,7 +166,7 @@ ADVENTURE_SCENARIOS = {
         },
     ],
 
-    "고블린동굴": [
+    "폐허가 된 마을": [
         {
             "id": "goblin_secret_room",
             "title": "고블린의 비밀 창고",
@@ -331,7 +331,7 @@ ADVENTURE_SCENARIOS = {
         },
     ],
 
-    "소금광산": [
+    "그림포지": [
         {
             "id": "crystal_vein",
             "title": "신비한 소금 결정맥",
@@ -384,7 +384,7 @@ ADVENTURE_SCENARIOS = {
                 },
                 {
                     "step": 3,
-                    "desc": "소금광산 탐험을 마쳤다. 몸에 소금 냄새가 진하게 배었다.",
+                    "desc": "그림포지 탐험을 마쳤다. 몸에 소금 냄새가 진하게 배었다.",
                     "choices": [],
                     "end": True,
                 },
@@ -475,7 +475,7 @@ ADVENTURE_SCENARIOS = {
                 },
                 {
                     "step": 1,
-                    "desc": "숨겨진 방에서 오래된 광부의 일지가 발견됐다. 소금광산의 비밀이 적혀 있다.",
+                    "desc": "숨겨진 방에서 오래된 광부의 일지가 발견됐다. 그림포지의 비밀이 적혀 있다.",
                     "choices": [
                         {
                             "label": "일지를 읽는다",
@@ -560,16 +560,16 @@ RANDOM_ADVENTURE_EVENTS = [
 HIDDEN_TRIGGERS = [
     {
         "id": "midnight_bell",
-        "conditions": {"zone": "방울숲", "hour_range": (0, 6), "min_adventures": 3},
+        "conditions": {"zone": "드레드 할로우", "hour_range": (0, 6), "min_adventures": 3},
         "event": {
             "title": "새벽의 방울 소리",
-            "desc": "새벽의 방울숲에서... 들어본 적 없는 방울 소리가 울려퍼진다. 숲 전체가 희미하게 빛나는 것 같다.",
+            "desc": "새벽의 드레드 할로우에서... 들어본 적 없는 방울 소리가 울려퍼진다. 숲 전체가 희미하게 빛나는 것 같다.",
             "reward": {"item": "mp_crystal", "gold": 100, "exp": 50},
         },
     },
     {
         "id": "goblin_secret",
-        "conditions": {"zone": "고블린동굴", "min_level": 8, "min_adventures": 5},
+        "conditions": {"zone": "폐허가 된 마을", "min_level": 8, "min_adventures": 5},
         "event": {
             "title": "고블린의 비밀 통로",
             "desc": "동굴 깊은 곳에서 비밀 통로를 발견했다! 고블린 왕의 보물창고로 통하는 길인 것 같다.",
@@ -578,7 +578,7 @@ HIDDEN_TRIGGERS = [
     },
     {
         "id": "salt_crystal",
-        "conditions": {"zone": "소금광산", "hour_range": (12, 18), "min_level": 12},
+        "conditions": {"zone": "그림포지", "hour_range": (12, 18), "min_level": 12},
         "event": {
             "title": "소금 결정의 기적",
             "desc": "오후의 햇빛이 광산 입구로 쏟아지며 벽면의 거대한 소금 결정에 반사된다. 그 빛 속에서 무언가 반짝인다.",

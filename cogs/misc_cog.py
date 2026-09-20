@@ -43,7 +43,7 @@ class MiscCog(commands.Cog, name="기타"):
         if not await check_channel(ctx, self.ctx.allowed_channel_id):
             return
         embed = discord.Embed(
-            title="📖 비전 타운 봇 도움말 (v2.0 개편)",
+            title="📖 마이코니드 군락 봇 도움말 (v2.0 개편)",
             description="✨ 대부분의 기능이 임베드+드롭다운 UI로 전환되었습니다!",
             color=EMBED_COLOR["help"],
         )

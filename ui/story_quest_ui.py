@@ -257,11 +257,11 @@ class ForcedBattleView(View):
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# 챕터 3 Q2 — 늪지대 탐색 View (3단계)
+# 챕터 3 Q2 — 비버뱅 군락 탐색 View (3단계)
 # ═══════════════════════════════════════════════════════════════════════════
 
 class ExploreView(View):
-    """늪지대 탐색 단계 버튼 (챕터 3 Q2)."""
+    """비버뱅 군락 탐색 단계 버튼 (챕터 3 Q2)."""
 
     def __init__(self, step_descs: list, sq_manager, player, on_done_coro=None, *, timeout=180.0):
         super().__init__(timeout=timeout)

@@ -19,12 +19,12 @@ def test_local_day_window_uses_korea_time(temp_db):
 
 def test_diary_is_composed_from_actual_events():
     events = [
-        GameEvent(event_type="world.moved", location="방울숲", payload={"from": "마을", "to": "방울숲"}, occurred_at=datetime(2026, 9, 18, 1, 0, tzinfo=timezone.utc)),
+        GameEvent(event_type="world.moved", location="드레드 할로우", payload={"from": "마이코니드 군락", "to": "드레드 할로우"}, occurred_at=datetime(2026, 9, 18, 1, 0, tzinfo=timezone.utc)),
         GameEvent(event_type="care.pet", actor_id=7, subject="츄라이더", occurred_at=datetime(2026, 9, 18, 2, 0, tzinfo=timezone.utc)),
-        GameEvent(event_type="battle.won", location="방울숲", payload={"monster": "슬라임"}, occurred_at=datetime(2026, 9, 18, 3, 0, tzinfo=timezone.utc)),
+        GameEvent(event_type="battle.won", location="드레드 할로우", payload={"monster": "슬라임"}, occurred_at=datetime(2026, 9, 18, 3, 0, tzinfo=timezone.utc)),
     ]
     text = render_diary_from_events(events, now=datetime(2026, 9, 18, 22, 0, tzinfo=KST))
-    assert "마을에서 방울숲" in text
+    assert "마이코니드 군락에서 드레드 할로우" in text
     assert "쓰다듬어" in text
     assert "슬라임" in text
     assert "2026년 09월 18일" in text
@@ -46,11 +46,11 @@ def test_diary_keeps_meaningful_beats_over_routine_noise():
     ]
     events += [
         GameEvent(event_type="care.feed", payload={"snack": "거미 쿠키"}, occurred_at=datetime(2026, 9, 18, 2, 0, tzinfo=timezone.utc)),
-        GameEvent(event_type="world.moved", location="방울숲", payload={"from": "마을", "to": "방울숲"}, occurred_at=datetime(2026, 9, 18, 3, 0, tzinfo=timezone.utc)),
-        GameEvent(event_type="battle.won", location="방울숲", payload={"monster": "슬라임"}, occurred_at=datetime(2026, 9, 18, 4, 0, tzinfo=timezone.utc)),
+        GameEvent(event_type="world.moved", location="드레드 할로우", payload={"from": "마이코니드 군락", "to": "드레드 할로우"}, occurred_at=datetime(2026, 9, 18, 3, 0, tzinfo=timezone.utc)),
+        GameEvent(event_type="battle.won", location="드레드 할로우", payload={"monster": "슬라임"}, occurred_at=datetime(2026, 9, 18, 4, 0, tzinfo=timezone.utc)),
     ]
     text = render_diary_from_events(events, now=datetime(2026, 9, 18, 22, 0, tzinfo=KST))
     assert "거미 쿠키" in text
-    assert "마을에서 방울숲" in text
+    assert "마이코니드 군락에서 드레드 할로우" in text
     assert "슬라임" in text
     assert "혼자 조용히" not in text

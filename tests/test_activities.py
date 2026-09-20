@@ -5,7 +5,7 @@ from core.events import EventStore
 
 def test_directed_fishing_has_persistent_lifecycle(temp_db):
     service = ActivityService(store=EventStore())
-    activity = service.start_directed("fishing", actor_id=77, location="방울숲 강")
+    activity = service.start_directed("fishing", actor_id=77, location="에본레이크 북안")
     assert service.current().activity_id == activity.activity_id
     assert service.current().actor_id == 77
 

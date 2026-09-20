@@ -20,9 +20,9 @@ def test_observation_knows_when_player_sent_churider_fishing(temp_db):
     store = EventStore()
     activities = ActivityService(store=store)
     player = Player("츄라이더")
-    activities.start_directed("fishing", actor_id=7, location="방울숲 강")
+    activities.start_directed("fishing", actor_id=7, location="에본레이크 북안")
     obs = observe_pet(player, activities=activities, store=store)
-    assert "방울숲 강" in obs.headline
+    assert "에본레이크 북안" in obs.headline
     assert "낚시" in obs.headline
     assert "시키신 일" in obs.body
 

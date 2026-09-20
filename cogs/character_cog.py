@@ -128,7 +128,7 @@ class CharacterCog(commands.Cog, name="캐릭터"):
             ],
             subtitle="HP와 MP가 완전 회복됐슴미댜!",
             system_key="system",
-            footer="비전 타운 의료소",
+            footer="마이코니드 군락 의료소",
         )
         await send_image(ctx, buf, "heal.png")
         save_manager.save(self.ctx.player)

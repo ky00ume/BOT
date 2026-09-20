@@ -102,7 +102,7 @@ class InventoryCog(commands.Cog, name="인벤토리"):
             rows,
             grade="Normal",
             system_key="status",
-            footer="✦ 비전 타운 ✦",
+            footer="✦ 마이코니드 군락 ✦",
             h=card_h,
             w=card_w,
         )

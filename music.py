@@ -14,7 +14,7 @@ NOTE_EMOJIS = {
 }
 
 SONGS = [
-    {"id": "forest_song", "name": "방울숲의 노래", "length": 4, "reward_gold": 30,  "reward_contrib": 5},
+    {"id": "forest_song", "name": "드레드 할로우의 노래", "length": 4, "reward_gold": 30,  "reward_contrib": 5},
     {"id": "battle_hymn", "name": "전사의 찬가",   "length": 5, "reward_gold": 60,  "reward_contrib": 8},
     {"id": "love_ballad", "name": "사랑의 발라드", "length": 6, "reward_gold": 90,  "reward_contrib": 10},
     {"id": "epic_tale",   "name": "영웅의 이야기", "length": 8, "reward_gold": 150, "reward_contrib": 15},

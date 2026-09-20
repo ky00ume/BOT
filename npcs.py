@@ -261,7 +261,7 @@ class VillageNPC:
             _target = job.get("target_npc", "")
             deliver_notice = f"\n  {C.WHITE}📦 {_dname}을(를) {_target}에게 전달하셰요!{C.R}"
 
-        # deliver 타입: 대기 메시지 대신 전달 안내 + 비전타운 버튼 표시
+        # deliver 타입: 대기 메시지 대신 전달 안내 + 마이코니드 군락 버튼 표시
         if job_type == "deliver" and deliver_item:
             import discord
             from town_ui import VisionTownView
@@ -275,7 +275,7 @@ class VillageNPC:
                     self._npc = npc_mgr
                     self._target = target_npc_name
 
-                @discord.ui.button(label="비전타운", style=discord.ButtonStyle.secondary, emoji="🏘️")
+                @discord.ui.button(label="마이코니드 군락", style=discord.ButtonStyle.secondary, emoji="🏘️")
                 async def go_town(self, interaction: discord.Interaction, button):
                     view = VisionTownView(self._player, self._aff, self._npc, _vm)
                     await view.send(interaction, edit=False)
@@ -298,7 +298,7 @@ class VillageNPC:
                     f"  {C.GOLD}💼 {npc['name']} 알바 수락! [{diff_label}]{C.R}\n"
                     f"  {C.DARK}{job['name']} — {job.get('desc','')}{C.R}{deliver_notice}\n"
                     f"  {C.RED}기력 -{energy_cost}{C.R}\n"
-                    f"  {C.GREEN}▶ 비전타운에서 {_target}에게 전달하셰요!{C.R}"
+                    f"  {C.GREEN}▶ 마이코니드 군락에서 {_target}에게 전달하셰요!{C.R}"
                 ),
                 view=_guide_view,
             )

@@ -99,7 +99,7 @@ class BattleEngine:
         """사냥터 입장.
 
         Args:
-            zone_name: 입장할 사냥터 이름 (예: "방울숲", "고블린동굴")
+            zone_name: 입장할 사냥터 이름 (예: "드레드 할로우", "폐허가 된 마을")
 
         Returns:
             입장 결과 메시지

@@ -269,7 +269,7 @@ class NPCConversationView(View):
         except Exception:
             logger.warning('npc_conversation: _back_to_town_callback 실패 — 안내 메시지 전송', exc_info=True)
             await interaction.response.send_message(
-                "🏠 `/비전타운` 명령어로 마을로 돌아가세요!", ephemeral=True
+                "🏠 `/마이코니드 군락` 명령어로 마을로 돌아가세요!", ephemeral=True
             )
 
     def _make_keyword_callback(self, keyword: str):

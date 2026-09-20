@@ -1,5 +1,5 @@
 """
-ui_theme.py — 비전 타운 봇 UI 테마 (레거시 호환용)
+ui_theme.py — 마이코니드 군락 봇 UI 테마 (레거시 호환용)
 
 NOTE: 메인 UI는 bg3_renderer.py (PIL 이미지 기반)으로 전환됨.
       이 파일은 하위 모듈(fishing.py, crafting.py 등)의 내부 로직에서
@@ -149,7 +149,7 @@ FOOTERS = {
     "help":       "✦ 도움말 ✦",
     "save":       "✦ 데이터가 저장되었습니다 ✦",
     "heal":       "❋ 회복 ❋",
-    "system":     "⚙ 비전 타운 시스템 ⚙",
+    "system":     "⚙ 마이코니드 군락 시스템 ⚙",
     "fishing":    "🎣 낚시 중 🎣",
     "cooking":    "🍳 요리 중 🍳",
     "metallurgy": "⚒ 제련 중 ⚒",

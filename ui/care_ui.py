@@ -563,11 +563,12 @@ class _ItemSelectView(discord.ui.View):
 
 # ── 메인 하이네스의 방 View ──────────────────────────────────────────────────
 class CareRoomView(discord.ui.View):
-    def __init__(self, player, care_manager):
+    def __init__(self, player, care_manager, *, suspicious_actor_id=None):
         super().__init__(timeout=120)
         self.player       = player
         self.care_manager = care_manager
         self._message     = None
+        self.suspicious_actor_id = suspicious_actor_id
 
         # Row 0: 쓰담쓰담, 간식주기
         pet_btn = discord.ui.Button(
@@ -639,7 +640,9 @@ class CareRoomView(discord.ui.View):
     # ── 쓰담쓰담 ──────────────────────────────────────────────────────────
     async def _on_pet(self, interaction: discord.Interaction):
         result = self.care_manager.pet(self.player)
-        rows = [{"label": "결과", "value": result["message"]}]
+        from core.special_reactions import reaction_for
+        special = reaction_for(interaction.user.id, suspicious_actor_id=self.suspicious_actor_id)
+        rows = [{"label": "결과", "value": special.pet if special else result["message"]}]
         if result.get("condition_gain"):
             rows.append({"label": "💛 컨디션", "value": f"+{result['condition_gain']}"})
         if result.get("stability_gain"):

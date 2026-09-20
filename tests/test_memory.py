@@ -28,3 +28,12 @@ def test_diary_is_composed_from_actual_events():
     assert "쓰다듬어" in text
     assert "슬라임" in text
     assert "2026년 09월 18일" in text
+
+
+def test_diary_collapses_repeated_identical_beats():
+    events = [
+        GameEvent(event_type="world.autonomous", payload={"diary_text": "창가에서 혼자 바깥을 오래 구경했슴미댜."}, occurred_at=datetime(2026, 9, 18, 1, i, tzinfo=timezone.utc))
+        for i in range(3)
+    ]
+    text = render_diary_from_events(events, now=datetime(2026, 9, 18, 22, 0, tzinfo=KST))
+    assert text.count("창가에서 혼자 바깥을 오래 구경했슴미댜.") == 1

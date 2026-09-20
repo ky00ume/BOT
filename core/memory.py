@@ -44,6 +44,12 @@ def _event_sentence(event: GameEvent) -> str | None:
 def render_diary_from_events(events: Iterable[GameEvent], *, now: datetime | None = None) -> str | None:
     ordered = sorted(events, key=lambda event: event.occurred_at)
     sentences = [sentence for event in ordered if (sentence := _event_sentence(event))]
+    # A diary remembers distinct beats, not repeated transaction rows.
+    distinct: list[str] = []
+    for sentence in sentences:
+        if sentence not in distinct:
+            distinct.append(sentence)
+    sentences = distinct
     if not sentences:
         return None
     # A diary is a memory of a day, not an exhaustive transaction dump.

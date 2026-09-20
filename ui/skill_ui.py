@@ -664,11 +664,30 @@ class SkillMainView(View):
                 await interaction.response.send_message(str(e), ephemeral=True)
                 return
 
-            await interaction.response.defer()
             from core.target_gathering import target_gathering_runner
-            result = await target_gathering_runner.run(self.player, activity)
+            from ui.gather_progress_ui import GatherProgressView
             from renderer import BG3Renderer, render_async
             _r = BG3Renderer()
+            progress_view = GatherProgressView(actor_id=interaction.user.id)
+
+            async def _progress_card(result, current_count, target_count):
+                _buf = await render_async(
+                    _r.render_gather_progress, target.name, current_count, target_count,
+                    energy=self.player.energy, max_energy=self.player.max_energy, attempts=result.attempts,
+                )
+                _file = discord.File(_buf, filename="gather_progress.png")
+                await interaction.edit_original_response(embed=None, attachments=[_file], view=progress_view)
+
+            initial_buf = await render_async(
+                _r.render_gather_progress, target.name, target.have_at_start, target.target_count,
+                energy=self.player.energy, max_energy=self.player.max_energy, attempts=0,
+            )
+            await interaction.response.edit_message(
+                embed=None, attachments=[discord.File(initial_buf, filename="gather_progress.png")], view=progress_view
+            )
+            result = await target_gathering_runner.run(
+                self.player, activity, tick_seconds=1.5, on_progress=_progress_card, should_stop=progress_view.should_stop
+            )
             _buf = await render_async(
                 _r.render_gather_goal_result, target.name, result.gained_target, result.final_count, result.target_count,
                 attempts=result.attempts, energy_spent=result.energy_spent, stop_reason=result.stop_reason,

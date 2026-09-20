@@ -63,7 +63,7 @@ class TargetGatheringRunner:
                 return item
         return pool[-1]
 
-    async def run(self, player, activity, *, max_attempts: int = 40) -> TargetGatherResult:
+    async def run(self, player, activity, *, max_attempts: int = 40, tick_seconds: float = 1.5, on_progress=None, should_stop=None) -> TargetGatherResult:
         item_id = activity.context["item_id"]
         item_name = activity.context["item_name"]
         mode = activity.context["mode"]
@@ -79,6 +79,9 @@ class TargetGatheringRunner:
             return result
 
         while player.inventory.get(item_id, 0) < target and result.attempts < max_attempts:
+            if should_stop and should_stop():
+                result.stop_reason = "cancelled"
+                break
             if not player.consume_energy(cost):
                 result.stop_reason = "energy_empty"
                 break
@@ -110,7 +113,13 @@ class TargetGatheringRunner:
                 player.train_skill("gathering", 10.0)
             else:
                 player.train_skill("woodcutting", 11.0)
-            await self.sleep(0)
+            save_manager.save(player)
+            if on_progress:
+                maybe_awaitable = on_progress(result, current_target, target)
+                if maybe_awaitable is not None:
+                    await maybe_awaitable
+            if tick_seconds > 0:
+                await self.sleep(tick_seconds)
 
         result.final_count = int(player.inventory.get(item_id, 0))
         if result.final_count >= target:

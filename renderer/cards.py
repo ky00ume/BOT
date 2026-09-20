@@ -502,6 +502,19 @@ class BG3Renderer:
         return self.render_card(title, rows, grade=grade, subtitle=subtitle,
                                 system_key=system_key, footer=footer)
 
+    def render_gather_progress(self, item_name, current_count, target_count, *, energy, max_energy, attempts=0) -> io.BytesIO:
+        width = 12
+        ratio = max(0.0, min(1.0, current_count / max(1, target_count)))
+        filled = int(round(width * ratio))
+        bar = "■" * filled + "□" * (width - filled)
+        rows = [
+            {"label": item_name, "value": f"{current_count} / {target_count}", "color": C.GOLD_HI},
+            {"label": "진행", "value": bar, "color": C.TXT_HI},
+            {"label": "기력", "value": f"{energy} / {max_energy}", "color": C.TXT_MID},
+        ]
+        return self.render_card("채집 중…", rows, system_key="gather", grade="Normal",
+                                footer="필요한 만큼 모으는 중 · 아래 버튼으로 그만둘 수 있습니다")
+
     def render_gather_goal_result(self, item_name, gained, final_count, target_count, *,
                                   attempts=0, energy_spent=0, stop_reason="target_reached") -> io.BytesIO:
         done = stop_reason == "target_reached"
@@ -513,7 +526,7 @@ class BG3Renderer:
             {"label": "기력", "value": f"-{energy_spent}", "color": C.TXT_MID},
         ]
         reason = {"energy_empty": "기력이 부족해 돌아왔습니다", "inventory_full": "가방이 가득 차 돌아왔습니다",
-                  "attempt_limit": "한참 찾아봤지만 목표를 채우지 못했습니다", "unavailable_here": "지금은 이곳에서 구할 수 없습니다"}.get(stop_reason)
+                  "attempt_limit": "한참 찾아봤지만 목표를 채우지 못했습니다", "unavailable_here": "지금은 이곳에서 구할 수 없습니다", "cancelled": "채집을 그만두고 돌아왔습니다"}.get(stop_reason)
         footer = "원래 만들던 물건으로 돌아갈 수 있습니다" if done else (reason or "채집을 마쳤습니다")
         return self.render_result_card(title, rows=rows, system_key="gather", grade="Normal" if done else "Fail", footer=footer)
 

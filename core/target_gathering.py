@@ -96,6 +96,14 @@ class TargetGatheringRunner:
                 result.stop_reason = "inventory_full"
                 break
             result.finds[found["id"]] = result.finds.get(found["id"], 0) + count
+            current_target = int(player.inventory.get(item_id, 0))
+            directed_gathering.activities.update_context(
+                activity.activity_id,
+                progress_count=current_target,
+                target_count=target,
+                energy=int(player.energy),
+                attempts=result.attempts,
+            )
             if mode == "mine":
                 player.train_skill("mining", 12.0)
             elif mode == "gather":

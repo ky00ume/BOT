@@ -45,6 +45,17 @@ class ActivityService:
         self.store.append(GameEvent(event_type="activity.started", actor_id=actor_id, subject="츄라이더", location=location, occurred_at=activity.started_at, payload={"activity_id": activity.activity_id, "kind": kind, "agency": rule.level.value, **activity.context}))
         return activity
 
+    def update_context(self, activity_id: str, **changes) -> Activity | None:
+        """Persist live progress for the current activity so every UI reads one state."""
+        activity = self.current()
+        if activity is None or activity.activity_id != activity_id:
+            return None
+        context = {**activity.context, **changes}
+        updated = Activity(activity.activity_id, activity.kind, activity.agency, activity.status,
+                           activity.started_at, activity.actor_id, activity.location, context)
+        self._save(updated)
+        return updated
+
     def reconcile(self, *, now: datetime | None = None, stale_after: timedelta = timedelta(minutes=15)) -> Activity | None:
         """Close an interaction activity whose Discord UI could not survive a restart.
 

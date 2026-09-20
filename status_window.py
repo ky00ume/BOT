@@ -30,6 +30,22 @@ def create_status_image(player) -> io.BytesIO:
     if is_resting:
         title = f"{title}  💤"
 
+    # Persistent Activity is the source of truth for what Churider is doing.
+    try:
+        from core.activities import activity_service
+        current = activity_service.current()
+    except Exception:
+        current = None
+    if current is not None:
+        labels = {"fishing": "낚시 중", "gathering": "채집 중", "crafting": "제작 중"}
+        activity_text = labels.get(current.kind, f"{current.kind} 중")
+        if current.kind == "gathering":
+            item = current.context.get("item_name", "재료")
+            progress = current.context.get("progress_count", player.inventory.get(current.context.get("item_id", ""), 0))
+            target = current.context.get("target_count")
+            activity_text = f"{item} 모으는 중" + (f" {progress}/{target}" if target is not None else "")
+        title = f"{title}  ·  {activity_text}"
+
     return get_renderer().render_status_card(
         name=name, level=level, title_str=title,
         hp=hp, max_hp=max_hp, mp=mp, max_mp=max_mp,

@@ -39,6 +39,11 @@ def observe_pet(player, *, activities: ActivityService = activity_service, store
         labels = {"fishing": "낚시", "gathering": "채집", "crafting": "무언가 만들기"}
         activity_label = labels.get(current.kind, current.kind)
         place = current.location or "어딘가"
+        progress = current.context.get("progress_count")
+        target = current.context.get("target_count")
+        item_name = current.context.get("item_name")
+        if current.kind == "gathering" and progress is not None and target is not None:
+            activity_label = f"{item_name or '재료'} 모으기 · {progress}/{target}"
         headline = f"츄라이더는 지금 {place}에서 {activity_label} 중입니다."
         body = "시키신 일을 제법 진지하게 하고 있슴미댜. 끝날 때까지 종종 이쪽을 힐끔거립니다."
     else:

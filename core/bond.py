@@ -109,7 +109,7 @@ class BondService:
         state = self.get()
         # Repeating one interaction is still useful, but variety grows the bond faster.
         repeats = sum(1 for e in self.store.recent(limit=12) if e.event_type == "bond.gained" and e.payload.get("reason") == reason)
-        multiplier = 1.0 if repeats < 2 else 0.65 if repeats < 5 else 0.35
+        multiplier = 1.0 if amount is not None else (1.0 if repeats < 2 else 0.65 if repeats < 5 else 0.35)
         gained = max(1, round(base * multiplier))
         level, xp = state.level, state.xp + gained
         while level < MAX_BOND_LEVEL and xp >= xp_for_next(level):

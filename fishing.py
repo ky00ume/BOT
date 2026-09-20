@@ -383,6 +383,9 @@ class FishingView(discord.ui.View):
                     await self._message.edit(embed=embed, view=self)
                 except Exception:
                     logger.warning('fishing: on_timeout 메시지 편집 실패', exc_info=True)
+            if self.activity_id:
+                activity_service.finish(self.activity_id, outcome="timeout")
+            self.stop()
 
 
 class FishingEngine:
@@ -423,7 +426,7 @@ class FishingEngine:
         try:
             activity = activity_service.start_directed("fishing", actor_id=actor_id, location=spot_name, context={"energy_cost": energy_cost})
         except RuntimeError:
-            await ctx.send(ansi(f"  {C.YELLOW}츄라이더는 지금 다른 일을 하고 있슴미댜. 끝나고 다시 불러주셰요!{C.R}"))
+            await ctx.send(ansi(f"  {C.GOLD}츄라이더는 지금 다른 일을 하고 있슴미댜. 끝나고 다시 불러주셰요!{C.R}"))
             self.player.restore_energy(energy_cost)
             return
         cue = behaviour_cue().fishing_start

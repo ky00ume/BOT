@@ -314,7 +314,15 @@ def fishing_engine(fresh_player, monkeypatch):
     """
     _ensure_discord_stub(monkeypatch)
     from fishing import FishingEngine
-    return FishingEngine(fresh_player)
+    from core.activities import activity_service
+    current = activity_service.current()
+    if current is not None:
+        activity_service.finish(current.activity_id, outcome="test_setup_cleanup")
+    engine = FishingEngine(fresh_player)
+    yield engine
+    current = activity_service.current()
+    if current is not None:
+        activity_service.finish(current.activity_id, outcome="test_teardown_cleanup")
 
 
 @pytest.fixture

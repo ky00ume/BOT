@@ -8,6 +8,7 @@ import random
 from core.directed_gathering import directed_gathering
 from gathering import GATHER_ITEMS_BY_SEASON, MINE_ITEMS, get_current_season
 from save_manager import save_manager
+from core.sound_director import sound_director
 
 
 @dataclass
@@ -78,6 +79,7 @@ class TargetGatheringRunner:
             directed_gathering.activities.finish(activity.activity_id, outcome=result.stop_reason)
             return result
 
+        sound_director.cue({"mine": "life/mining/start", "woodcut": "life/woodcut/start", "gather": "life/gather/start"}.get(mode, "life/gather/start"))
         while player.inventory.get(item_id, 0) < target and result.attempts < max_attempts:
             if should_stop and should_stop():
                 result.stop_reason = "cancelled"
@@ -87,6 +89,7 @@ class TargetGatheringRunner:
                 break
             result.energy_spent += cost
             result.attempts += 1
+            sound_director.cue({"mine": "life/mining/hit", "woodcut": "life/woodcut/hit", "gather": "life/gather/pick"}.get(mode, "life/gather/pick"))
             # Keep the legacy random-field feel. If the requested material is not
             # rolled this attempt, the by-product is still real loot.
             if mode == "woodcut":
@@ -132,6 +135,7 @@ class TargetGatheringRunner:
             payload={"item_id": item_id, "target_count": target, "final_count": result.final_count, "attempts": result.attempts},
         )
         save_manager.save(player)
+        sound_director.cue("life/gather/complete" if result.stop_reason == "target_reached" else "life/gather/stop", interrupt=True)
         return result
 
 

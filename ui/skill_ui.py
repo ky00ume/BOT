@@ -724,6 +724,16 @@ class SkillMainView(View):
                 await interaction.response.send_message("제작 엔진을 찾을 수 없습니다.", ephemeral=True)
                 return
 
+            # Sound is a projection of the completed craft, never part of crafting authority.
+            try:
+                from core.sound_director import sound_director
+                cue = {"alchemy": "craft/alchemy/complete", "cooking": "craft/cooking/complete",
+                       "metallurgy": "craft/smithing/complete", "crafting": "craft/general/complete"}.get(skill_id)
+                if cue:
+                    sound_director.cue(cue, interrupt=True)
+            except Exception:
+                pass
+
             # 제작 후 재료 현황 갱신
             recipes = _get_recipes_for_skill(skill_id)
             recipe = recipes.get(recipe_id, {})

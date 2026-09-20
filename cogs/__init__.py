@@ -7,6 +7,7 @@ COGS = [
     "cogs.battle_cog",
     "cogs.inventory_cog",
     "cogs.life_cog",
+    "cogs.sound_cog",
     "cogs.quest_cog",
     "cogs.social_cog",
     "cogs.misc_cog",

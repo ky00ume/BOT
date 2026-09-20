@@ -664,17 +664,29 @@ class SkillMainView(View):
                 await interaction.response.send_message(str(e), ephemeral=True)
                 return
 
-            mode_label = {"gather": "채집", "mine": "채광", "woodcut": "벌목"}.get(target.mode, "채집")
-            embed = discord.Embed(
-                title=f"{mode_label} 목표를 정했슴미댜",
-                description=(
-                    f"**{target.name}**을(를) 필요한 만큼 모읍니다.\n"
-                    f"현재 `{target.have_at_start} / {target.target_count}` · 앞으로 **{target.missing}개**"
-                ),
-                color=EMBED_COLOR,
+            await interaction.response.defer()
+            from core.target_gathering import target_gathering_runner
+            result = await target_gathering_runner.run(self.player, activity)
+            from renderer import BG3Renderer, render_async
+            _r = BG3Renderer()
+            _buf = await render_async(
+                _r.render_gather_goal_result, target.name, result.gained_target, result.final_count, result.target_count,
+                attempts=result.attempts, energy_spent=result.energy_spent, stop_reason=result.stop_reason,
             )
-            embed.set_footer(text="목표 수량을 채우면 원래 제작으로 돌아옵니다")
-            await interaction.response.edit_message(embed=embed, attachments=[], view=None)
+            _file = discord.File(_buf, filename="gather_goal.png")
+            back = SkillMainView(
+                self.player, potion_engine=self.potion_engine, crafting_engine=self.crafting_engine,
+                cooking_engine=self.cooking_engine, metallurgy_engine=self.metallurgy_engine,
+                gathering_engine=self.gathering_engine, training_engine=self.training_engine,
+            )
+            back.current_skill = skill_id
+            back.recipe_id = recipe_id
+            recipe = self.crafting_engine.recipes.get(recipe_id) if self.crafting_engine else None
+            if recipe and result.stop_reason == "target_reached":
+                craft_btn = Button(label="원래 물건 제작하기", style=discord.ButtonStyle.success)
+                craft_btn.callback = back._make_craft_callback(skill_id, recipe_id)
+                back.add_item(craft_btn)
+            await interaction.edit_original_response(embed=None, attachments=[_file], view=back)
         return callback
 
     def _make_craft_callback(self, skill_id: str, recipe_id: str):

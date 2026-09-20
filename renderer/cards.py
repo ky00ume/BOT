@@ -502,6 +502,21 @@ class BG3Renderer:
         return self.render_card(title, rows, grade=grade, subtitle=subtitle,
                                 system_key=system_key, footer=footer)
 
+    def render_gather_goal_result(self, item_name, gained, final_count, target_count, *,
+                                  attempts=0, energy_spent=0, stop_reason="target_reached") -> io.BytesIO:
+        done = stop_reason == "target_reached"
+        title = "채집 완료" if done else "채집 중단"
+        rows = [
+            {"label": item_name, "value": f"+{gained} · {final_count} / {target_count}",
+             "color": C.TXT_HI if done else C.RARITY["Fail"]},
+            {"label": "작업", "value": f"{attempts}회", "color": C.TXT_MID},
+            {"label": "기력", "value": f"-{energy_spent}", "color": C.TXT_MID},
+        ]
+        reason = {"energy_empty": "기력이 부족해 돌아왔습니다", "inventory_full": "가방이 가득 차 돌아왔습니다",
+                  "attempt_limit": "한참 찾아봤지만 목표를 채우지 못했습니다", "unavailable_here": "지금은 이곳에서 구할 수 없습니다"}.get(stop_reason)
+        footer = "원래 만들던 물건으로 돌아갈 수 있습니다" if done else (reason or "채집을 마쳤습니다")
+        return self.render_result_card(title, rows=rows, system_key="gather", grade="Normal" if done else "Fail", footer=footer)
+
     # ─── 전투 결과 카드 ────────────────────────────────────────────
     def render_battle_result(self, title, is_victory=True,
                              rewards_rows=None, level_up_info=None) -> io.BytesIO:

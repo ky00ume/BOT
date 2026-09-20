@@ -53,7 +53,7 @@ class BulletinBoard:
                 val_s = f"  `{val}`" if val is not None else ""
                 lines.append(f"[{ts}] **{cat}** — {pname}: {cont}{val_s}")
             embed.description = "\n".join(lines)
-        embed.set_footer(text="✦ 비전 타운 게시판 ✦")
+        embed.set_footer(text="✦ 마이코니드 군락 게시판 ✦")
         return embed
 
     def make_hall_of_fame_embed(self) -> discord.Embed:

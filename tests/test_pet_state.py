@@ -10,7 +10,7 @@ def test_observation_describes_pet_without_exposing_raw_numbers(temp_db):
     player.energy = 90
     obs = observe_pet(player, activities=ActivityService(store=EventStore()), store=EventStore())
     text = " ".join((obs.headline, obs.body, obs.mood, obs.energy, obs.care_memory))
-    assert "하이네스의 방" in text
+    assert "비전의 탑" in text
     assert "82" not in text
     assert "90" not in text
     assert "편안" in text

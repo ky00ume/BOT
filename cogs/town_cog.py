@@ -23,7 +23,7 @@ class TownCog(commands.Cog, name="마을"):
             return
         await send_town_notice(ctx.channel)
 
-    @commands.command(name="비전타운")
+    @commands.command(name="군락", aliases=["마이코니드", "마이코니드군락", "비전타운"])
     async def vision_town_cmd(self, ctx):
         if not await check_channel(ctx, self.ctx.allowed_channel_id):
             return
@@ -38,7 +38,7 @@ class TownCog(commands.Cog, name="마을"):
         if name:
             await ctx.send(ansi(
                 f"  {C.RED}✖ /대화 [NPC이름] 형식은 더 이상 지원하지 않슴미댜!\n"
-                f"  {C.GREEN}/비전타운{C.R} 또는 {C.GREEN}/마을상태{C.R} 로 NPC에게 접근해주셰요."
+                f"  {C.GREEN}/군락{C.R} 또는 {C.GREEN}/마을상태{C.R} 로 NPC에게 접근해주셰요."
             ))
             return
         msg = self.ctx.npc_manager.list_npcs()

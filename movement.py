@@ -6,9 +6,9 @@ from ui_theme import C, ansi, header_box, divider
 # 각 노드: 이름, 설명, 레벨 요구, 아이콘, 인접 노드 목록
 MAP_NODES = {
     "마을": {
-        "name":              "비전의 마을",
+        "name":              "마이코니드 군락",
         "icon":              "🏘️",
-        "desc":              "모험가들이 모이는 평화로운 마을.",
+        "desc":              "에본레이크 곁의 버섯 숲에 자리한 마이코니드들의 군락.",
         "level":             1,
         "hunting_available": False,
         "adjacent":          ["방울숲", "늪지대"],

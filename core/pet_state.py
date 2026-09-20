@@ -47,7 +47,7 @@ def observe_pet(player, *, activities: ActivityService = activity_service, store
         headline = f"츄라이더는 지금 {place}에서 {activity_label} 중입니다."
         body = "시키신 일을 제법 진지하게 하고 있슴미댜. 끝날 때까지 종종 이쪽을 힐끔거립니다."
     else:
-        headline = "츄라이더는 지금 하이네스의 방에서 쉬고 있습니다."
+        headline = "츄라이더는 지금 비전의 탑에 있는 자기 방에서 쉬고 있습니다."
         if player.fatigue >= 70:
             body = "거미줄 해먹에 몸을 푹 묻고 있습니다. 눈꺼풀이 자꾸 내려오는 모양입니다."
         elif player.condition < 35:
@@ -55,7 +55,7 @@ def observe_pet(player, *, activities: ActivityService = activity_service, store
         elif player.stability >= 75:
             body = "창가에 붙어서 바깥을 느긋하게 구경하고 있습니다. 꽤 편안해 보입니다."
         else:
-            body = "방 안을 꼼지락거리며 돌아다니다가 누가 왔나 하고 이쪽을 봅니다."
+            body = "탑 안 자기 방을 꼼지락거리며 돌아다니다가 누가 왔나 하고 이쪽을 봅니다."
 
     if not current:
         arrival = behaviour_cue(store).care_arrival

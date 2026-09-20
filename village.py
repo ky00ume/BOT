@@ -97,7 +97,7 @@ class VillageManager:
                     description=event["effect"],  # type: ignore[index]
                     color=color,
                 )
-                embed.set_footer(text="비전 타운 이벤트 시스템")
+                embed.set_footer(text="마이코니드 군락 이벤트 시스템")
                 await ch.send(embed=embed)
 
         return event
@@ -108,11 +108,11 @@ class VillageManager:
         next_thresh = VILLAGE_LEVEL_THRESHOLDS[self.level] if self.level < max_lv else None
 
         embed = discord.Embed(
-            title="🏘 비전 타운 마을 상태",
+            title="🍄 마이코니드 군락 상태",
             color=EMBED_COLOR.get("npc", 0x4A7856),
         )
         embed.add_field(
-            name="마을 레벨",
+            name="군락 레벨",
             value=f"**Lv.{self.level}** — {buffs['label']}",
             inline=True,
         )
@@ -125,7 +125,7 @@ class VillageManager:
             inline=True,
         )
         embed.add_field(
-            name="마을 버프",
+            name="군락 버프",
             value=(
                 f"알바 보너스: +{buffs['job_bonus_pct']}%\n"
                 f"드랍 보너스: +{buffs['drop_bonus_pct']}%\n"
@@ -140,7 +140,7 @@ class VillageManager:
                 value=f"**{ev['name']}**\n{ev['effect']}",
                 inline=False,
             )
-        embed.set_footer(text="✦ 마을에 기여하면 모두에게 버프가! ✦")
+        embed.set_footer(text="✦ 군락에 기여하면 모두에게 버프가! ✦")
         return embed
 
 

@@ -1,4 +1,4 @@
-"""town_ui.py — 비전타운 / 비전의 땅 이미지+버튼 UI 시스템 (임베드 제거, PIL 이미지 전용)"""
+"""town_ui.py — 마이코니드 군락 / 언더다크 이미지+버튼 UI 시스템 (임베드 제거, PIL 이미지 전용)"""
 import discord
 import io
 from discord.ui import View, Button
@@ -8,14 +8,14 @@ from utils.logger import setup_logger
 logger = setup_logger('town_ui')
 
 
-# ── 비전타운 묘사 ────────────────────────────────────────────────────────────
+# ── 마이코니드 군락 묘사 ────────────────────────────────────────────────────────────
 VISION_TOWN_DESC = (
-    "언더다크의 깊은 곳에 자리한 작은 마을. 천장 낮은 석굴을 따라 불빛이 흔들리며, "
-    "버섯 포자와 광석 가루가 뒤섞인 공기 속에서 사람들이 분주히 오간다. "
-    "지상에서 보면 존재조차 모를 이곳은, 그럼에도 제 나름의 온기를 품고 있다."
+    "에본레이크 곁 거대한 버섯 숲에 자리한 마이코니드들의 군락. "
+    "발광버섯과 포자가 어둠을 은은하게 밝히고, 상인과 여행자들이 잠시 숨을 고른다. "
+    "비전의 탑에서 길을 따라 건너오면 닿는 츄라이더의 가장 가까운 생활 거점이다."
 )
 
-# ── 비전의 땅 묘사 ────────────────────────────────────────────────────────────
+# ── 언더다크 묘사 ────────────────────────────────────────────────────────────
 UNDERDARK_DESC = (
     "돌과 어둠의 세계. 거대한 석순이 천장에서 내려오고, "
     "발광버섯이 길을 희미하게 밝힌다. 먼 곳에서 지하 강물 소리가 울려 퍼지며, "
@@ -57,13 +57,13 @@ GATHERING_ZONE_DATA = {
     },
     "지하 광맥": {
         "name": "지하 광맥",
-        "desc": "비전타운 근처의 광맥. 다양한 광석을 채굴할 수 있다.",
+        "desc": "마이코니드 군락과 비전의 탑 사이 바위지대의 광맥. 다양한 광석을 채굴할 수 있다.",
         "items": ["구리 광석", "철광석", "석탄", "은 광석"],
         "emoji": "🪨",
     },
-    "버섯 군락지": {
-        "name": "버섯 군락지",
-        "desc": "언더다크 깊숙이 자리한 거대 버섯 군락. 다양한 버섯이 자생한다.",
+    "마이코니드 군락 외곽": {
+        "name": "마이코니드 군락 외곽",
+        "desc": "군락 바깥의 거대한 버섯 숲. 다양한 버섯이 자생한다.",
         "items": ["버섯", "표고버섯", "발광버섯", "독버섯", "나이트라이트 버섯", "팀마스크", "블루캡", "비버뱅", "토치스톡", "서서 꽃"],
         "emoji": "🍄",
     },
@@ -91,10 +91,10 @@ FISHING_ZONE_DATA = {
 # ── 헬퍼 함수 ─────────────────────────────────────────────────────────────────
 
 def _strip_town_prefix(label: str) -> str:
-    """버튼 라벨에서 '비전 타운 ' 접두사를 제거한다. DB 값은 변경하지 않는다."""
-    prefix = "비전 타운 "
-    if label.startswith(prefix):
-        return label[len(prefix):]
+    """군락 내부 버튼에서는 정착지 접두사를 생략한다."""
+    for prefix in ("마이코니드 군락 ", "비전 타운 "):
+        if label.startswith(prefix):
+            return label[len(prefix):]
     return label
 
 
@@ -141,7 +141,7 @@ class _NPCSelectView(View):
 
 
 class VisionTownView(View):
-    """비전타운 메인 뷰 (이미지 + 버튼)"""
+    """마이코니드 군락 메인 뷰. 클래스명은 저장/호출 호환을 위해 유지한다."""
 
     def __init__(self, player, aff_manager, npc_manager_ref, village_manager=None):
         super().__init__(timeout=300.0)
@@ -168,17 +168,17 @@ class VisionTownView(View):
                 btn.callback = self._make_location_callback(loc)
                 self.add_item(btn)
 
-        leave_btn = Button(label="마을을 나간다", style=discord.ButtonStyle.danger, emoji="🗺️")
+        leave_btn = Button(label="군락을 나간다", style=discord.ButtonStyle.danger, emoji="🗺️")
         leave_btn.callback = self._leave_callback
         self.add_item(leave_btn)
 
     def _make_banner_file(self) -> discord.File:
-        """비전타운 배너 이미지를 생성한다."""
+        """마이코니드 군락 배너 이미지를 생성한다."""
         return _render_banner(
-            location_name="비전 타운",
+            location_name="마이코니드 군락",
             description=VISION_TOWN_DESC,
             zone_type="town",
-            zone_id="비전타운",
+            zone_id="마이코니드군락",
         )
 
     async def send(self, channel_or_interaction, edit=False):
@@ -229,7 +229,7 @@ class VisionTownView(View):
 
 
 class WorldMapView(View):
-    """비전의 땅 세계지도 뷰 (이미지 + 버튼)"""
+    """언더다크 세계지도 뷰 (이미지 + 버튼)"""
 
     def __init__(self, player, aff_manager, npc_manager_ref):
         super().__init__(timeout=300.0)
@@ -240,7 +240,7 @@ class WorldMapView(View):
 
     def _build_buttons(self):
         self.clear_items()
-        town_btn = Button(label="비전타운", style=discord.ButtonStyle.secondary, emoji="🏘️")
+        town_btn = Button(label="마이코니드 군락", style=discord.ButtonStyle.secondary, emoji="🏘️")
         town_btn.callback = self._back_to_town
         self.add_item(town_btn)
 
@@ -260,12 +260,12 @@ class WorldMapView(View):
             self.add_item(btn)
 
     def _make_banner_file(self) -> discord.File:
-        """비전의 땅 배너 이미지를 생성한다."""
+        """언더다크 배너 이미지를 생성한다."""
         return _render_banner(
-            location_name="비전의 땅",
+            location_name="언더다크",
             description=UNDERDARK_DESC,
             zone_type="town",
-            zone_id="비전의땅",
+            zone_id="언더다크",
         )
 
     async def send(self, channel_or_interaction, edit=False):
@@ -647,7 +647,7 @@ def create_location_banner(location_name: str, description: str,
 def create_town_banner(zone_id: str = "비전타운") -> io.BytesIO:
     """비전타운 배너 단축 함수 (하위 호환용)"""
     return get_renderer().render_location_banner(
-        location_name="비전 타운",
+        location_name="마이코니드 군락",
         description=(
             "언더다크의 깊은 곳에 자리한 작은 마을. "
             "버섯 포자와 광석 가루가 뒤섞인 공기 속에서 사람들이 분주히 오간다."

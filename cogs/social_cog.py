@@ -207,7 +207,7 @@ class SocialCog(commands.Cog, name="소셜"):
             event_type="care.pet",
             actor_id=uid,
             subject="츄라이더",
-            location="하이네스의 방",
+            location="비전의 탑",
             payload={"source": "discord", "command": "쓰담"},
         ))
 

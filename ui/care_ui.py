@@ -1,4 +1,4 @@
-"""care_ui.py — "하이네스의 방" discord.ui.View 기반 돌봄 UI"""
+"""care_ui.py — "비전의 탑 · 츄라이더의 방" discord.ui.View 기반 돌봄 UI"""
 import discord
 import random
 import time as _time
@@ -22,7 +22,7 @@ def _bar(value: int, max_val: int = 100, length: int = 10) -> str:
 
 
 def _make_room_card(player):
-    """하이네스의 방을 숫자판이 아니라 츄라이더 관찰로 보여준다."""
+    """비전의 탑에 자리 잡은 츄라이더의 방을 관찰로 보여준다."""
     obs = observe_pet(player)
     rows = [
         {"label": "🕷️ 지금", "value": obs.headline},
@@ -33,7 +33,7 @@ def _make_room_card(player):
         {"label": "🧵 인연", "value": obs.relationship},
         {"label": "🌱 버릇", "value": obs.habit},
     ]
-    buf = get_renderer().render_card(title="🏠 하이네스의 방", rows=rows, system_key="system", grade="Normal", footer="츄라이더 관찰하기")
+    buf = get_renderer().render_card(title="🏰 비전의 탑 · 츄라이더의 방", rows=rows, system_key="system", grade="Normal", footer="츄라이더 관찰하기")
     return discord.File(buf, filename="care_room.png")
 
 
@@ -279,7 +279,7 @@ class SnackFeedView(discord.ui.View):
                 rows.append({"label": labels.get(k, k), "value": f"{sign}{v}"})
         grade = "Normal" if result["success"] else "Fail"
         if result["success"]:
-            event_store.append(GameEvent(event_type="care.feed", actor_id=interaction.user.id, subject="츄라이더", location="하이네스의 방", payload={"snack": SNACK_ITEMS.get(snack_id, {}).get("name", snack_id)}))
+            event_store.append(GameEvent(event_type="care.feed", actor_id=interaction.user.id, subject="츄라이더", location="비전의 탑", payload={"snack": SNACK_ITEMS.get(snack_id, {}).get("name", snack_id)}))
             try:
                 save_player_to_db(self.player)
             except Exception as e:
@@ -340,7 +340,7 @@ class RockPaperScissorsView(discord.ui.View):
                     child.disabled = True
 
             if result.get("success"):
-                event_store.append(GameEvent(event_type="care.play", actor_id=interaction.user.id, subject="츄라이더", location="하이네스의 방", payload={"game": "rock_paper_scissors", "result": result.get("result")}))
+                event_store.append(GameEvent(event_type="care.play", actor_id=interaction.user.id, subject="츄라이더", location="비전의 탑", payload={"game": "rock_paper_scissors", "result": result.get("result")}))
                 bond_service.award("care.play", actor_id=interaction.user.id)
                 try:
                     save_player_to_db(self.player)
@@ -561,7 +561,7 @@ class _ItemSelectView(discord.ui.View):
         await self._confirm_cb(interaction, chosen)
 
 
-# ── 메인 하이네스의 방 View ──────────────────────────────────────────────────
+# ── 메인 비전의 탑 돌봄 View ──────────────────────────────────────────────────
 class CareRoomView(discord.ui.View):
     def __init__(self, player, care_manager, *, suspicious_actor_id=None):
         super().__init__(timeout=120)
@@ -649,7 +649,7 @@ class CareRoomView(discord.ui.View):
             rows.append({"label": "💙 안정감", "value": f"+{result['stability_gain']}"})
         grade = "Normal" if result["success"] else "Fail"
         if result["success"]:
-            event_store.append(GameEvent(event_type="care.pet", actor_id=interaction.user.id, subject="츄라이더", location="하이네스의 방", payload={"source": "care_room"}))
+            event_store.append(GameEvent(event_type="care.pet", actor_id=interaction.user.id, subject="츄라이더", location="비전의 탑", payload={"source": "care_room"}))
             bond_service.award("care.pet", actor_id=interaction.user.id)
             try:
                 save_player_to_db(self.player)

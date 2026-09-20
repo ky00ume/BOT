@@ -39,6 +39,8 @@ class RestEngine:
             return
         self.resting = True
         _rest_mod.is_resting = True
+        self.player.is_resting = True
+        self.player._flags["is_resting"] = True
         self._start_time = time.time()
         self._start_energy = self.player.energy
         self._task = asyncio.create_task(self._rest_loop())
@@ -57,12 +59,16 @@ class RestEngine:
                 if self.player.energy >= self.player.max_energy:
                     self.resting = False
                     _rest_mod.is_resting = False
+                    self.player.is_resting = False
+                    self.player._flags["is_resting"] = False
                     await self._send_complete_card()
                     break
         except asyncio.CancelledError:
             import rest as _rest_mod
             self.resting = False
             _rest_mod.is_resting = False
+            self.player.is_resting = False
+            self.player._flags["is_resting"] = False
 
     async def _send_complete_card(self):
         """휴식 완료 시 PIL 카드를 채널에 전송합니다."""
@@ -116,3 +122,17 @@ class RestEngine:
         if self._task and not self._task.done():
             self._task.cancel()
         self.resting = False
+
+
+REST_COMPATIBLE_ACTIONS = frozenset({"town", "shop", "craft", "gather_near_town", "fishing_near_town", "talk", "bulletin"})
+
+def rest_allows(action: str) -> bool:
+    return action in REST_COMPATIBLE_ACTIONS
+
+def interrupt_rest(player, action: str) -> bool:
+    """Clear rest status when a strenuous action begins. Returns whether it was resting."""
+    if rest_allows(action) or not getattr(player, "is_resting", False):
+        return False
+    player.is_resting = False
+    player._flags["is_resting"] = False
+    return True

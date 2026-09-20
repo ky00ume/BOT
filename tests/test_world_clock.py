@@ -99,3 +99,13 @@ def test_weather_can_change_plausible_life_scene():
     assert "처마" in WorldClock._context_line("walk", "rain", "day")
     assert "밖으로 나가지 않고" in WorldClock._context_line("walk", "storm", "day")
     assert WorldClock._context_line("web", "rain", "day") is None
+
+
+def test_habits_can_bend_ordinary_life_without_starting_adventure():
+    fishing = WorldClock._habit_life({"kind": "walk", "message": "x", "diary": "x", "effects": {}}, "fishing")
+    assert fishing["kind"] == "walk"
+    assert "물가" in fishing["message"]
+    feeding = WorldClock._habit_life({"kind": "web", "message": "x", "diary": "x", "effects": {}}, "feed")
+    assert "시장" in feeding["message"]
+    untouched = WorldClock._habit_life({"kind": "rest", "message": "x", "diary": "x", "effects": {}}, "adventure")
+    assert untouched["kind"] == "rest"

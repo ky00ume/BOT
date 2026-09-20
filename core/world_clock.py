@@ -94,11 +94,12 @@ class WorldClock:
         activity = dict(self.rng.choice(_AUTONOMOUS_ACTIVITIES))
         weather = weather_system.get_current()
         period = self._period(now_utc.astimezone(KST).hour)
+        cue = behaviour_cue(self.store)
+        activity = self._habit_life(activity, cue.habit)
         context_line = self._context_line(activity["kind"], weather.get("id", "clear"), period)
         if context_line:
             activity["message"] = f"🕷️ {context_line}"
             activity["diary"] = context_line
-        cue = behaviour_cue(self.store)
         if cue.idle_message and self.rng.random() < 0.25:
             activity["message"] = cue.idle_message
             activity["diary"] = cue.idle_message.replace("🕷️ ", "")
@@ -126,6 +127,18 @@ class WorldClock:
         )
         self.store.append(event)
         return WorldTickResult(event, activity["message"], changed)
+
+    @staticmethod
+    def _habit_life(activity: dict, habit: str | None) -> dict:
+        # Habits bend ordinary life; they never start player-owned adventures.
+        scenes = {
+            "fishing": {"kind": "walk", "message": "🕷️ 츄라이더가 마을 앞 물가를 기웃거리며 물결과 낚싯자리를 한참 살펴봤슴미댜.", "diary": "마을 앞 물가를 기웃거리며 낚싯자리를 살펴봤슴미댜.", "effects": {}},
+            "feed": {"kind": "walk", "message": "🕷️ 츄라이더가 시장 근처를 한 바퀴 돌며 맛있는 냄새가 나는 가게들을 유심히 살펴봤슴미댜.", "diary": "시장 근처를 돌며 맛있는 냄새를 따라다녔슴미댜.", "effects": {}},
+            "play": {"kind": "play", "message": "🕷️ 츄라이더가 혼자 장난감을 굴리고 쫓아다니며 한참 놀았슴미댜.", "diary": "혼자서도 장난감을 굴리며 제법 신나게 놀았슴미댜.", "effects": {"mood": 1}},
+            "independent": {"kind": "web", "message": "🕷️ 츄라이더가 느슨해진 거미줄과 방 한구석을 제 나름대로 정리해 두었슴미댜.", "diary": "혼자 거미줄과 방을 조금 정리해 두었슴미댜.", "effects": {"mood": 1}},
+        }
+        # Only occasionally let personality override the random ordinary beat.
+        return dict(scenes[habit]) if habit in scenes and activity.get("kind") in {"walk", "web"} else activity
 
     @staticmethod
     def _period(hour: int) -> str:

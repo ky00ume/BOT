@@ -55,6 +55,10 @@ class BattleCog(commands.Cog, name="전투"):
             departure = self.ctx.encounter_manager.clear_encounter()
             if departure:
                 await ctx.send(departure)
+            from rest import interrupt_rest
+            interrupted_rest = interrupt_rest(self.ctx.player, "battle")
+            if interrupted_rest:
+                await ctx.send("💤 사냥을 나서면서 휴식을 마쳤슴미댜.")
             success, result = self.ctx.battle_engine.start_encounter(zone)
             if success:
                 _bimg = self.ctx.battle_engine.build_battle_image()

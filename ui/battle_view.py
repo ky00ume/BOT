@@ -108,6 +108,14 @@ class BattleView(discord.ui.View):
         auto_btn.callback = self._auto_callback
         self.add_item(auto_btn)
 
+        potion_btn = discord.ui.Button(
+            label=f"💊 자동포션 {'ON' if player.auto_use_potion else 'OFF'}",
+            style=discord.ButtonStyle.success if player.auto_use_potion else discord.ButtonStyle.secondary,
+            custom_id="battle_auto_potion",
+        )
+        potion_btn.callback = self._potion_toggle_callback
+        self.add_item(potion_btn)
+
         # 도주 버튼
         flee_btn = discord.ui.Button(
             label="🏃 도주",
@@ -206,6 +214,17 @@ class BattleView(discord.ui.View):
             )
         else:
             await interaction.followup.send(msg, view=self)
+
+    async def _potion_toggle_callback(self, interaction: discord.Interaction):
+        player = self.battle_engine.player
+        player.auto_use_potion = not player.auto_use_potion
+        from save_manager import save_manager
+        save_manager.save(player)
+        self._rebuild_buttons()
+        await interaction.response.send_message(
+            f"💊 자동 포션을 **{'ON' if player.auto_use_potion else 'OFF'}**으로 바꿨슴미댜.",
+            ephemeral=True,
+        )
 
     async def _auto_callback(self, interaction: discord.Interaction):
         if not self.battle_engine.in_battle:

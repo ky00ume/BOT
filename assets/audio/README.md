@@ -11,3 +11,8 @@ Initial cues:
 - `craft/cooking/complete`, `craft/general/complete`
 
 For downloaded assets, record the source page in `SOURCES.md` so each file remains traceable.
+
+Battle cues:
+- `battle/start`, `battle/player_hit`, `battle/crit`
+- `battle/magic_hit`, `battle/magic_crit`, `battle/enemy_hit`
+- `battle/victory`, `battle/defeat`

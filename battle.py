@@ -7,6 +7,7 @@ import discord
 from bg3_renderer import get_renderer
 from monsters_db import MONSTERS_DB, MONSTER_SIZES, roll_monster_size, apply_size_to_monster
 from utils.logger import setup_logger
+from core.sound_director import sound_director
 
 if TYPE_CHECKING:
     from player import Player
@@ -156,6 +157,7 @@ class BattleEngine:
         self.cheer_count     = 0
         self._cheer_active   = False
         self._last_grade     = None
+        sound_director.cue("battle/start", interrupt=True)
 
         size_info  = MONSTER_SIZES[size]
         size_label = f"{size_info['icon']} [{size}]"
@@ -265,9 +267,11 @@ class BattleEngine:
             player.hp  = max(0, player.hp)
             self.turn += 1
 
+            sound_director.cue("battle/enemy_hit")
             if player.hp <= 0:
                 self.in_battle  = False
                 self._last_grade = "실패"
+                sound_director.cue("battle/defeat", interrupt=True)
                 return get_renderer().render_card(
                     title="💀 전투 패배...",
                     rows=[
@@ -349,6 +353,10 @@ class BattleEngine:
             atk_log = random.choice(PLAYER_CRIT_LOGS) + " " + atk_log
 
         self.monster_hp -= dmg
+        if skill_id in MAGIC_SKILLS:
+            sound_director.cue("battle/magic_crit" if crit else "battle/magic_hit", interrupt=crit)
+        else:
+            sound_director.cue("battle/crit" if crit else "battle/player_hit", interrupt=crit)
 
         # 스킬 훈련 경험치
         rank_msg = player.train_skill(skill_id, 10.0)
@@ -358,6 +366,7 @@ class BattleEngine:
             self.in_battle  = False
             grade = _calc_battle_grade(player.hp, player.max_hp)
             self._last_grade = grade
+            sound_director.cue("battle/victory", interrupt=True)
             reward = self._calc_reward(monster, grade)
             self._add_village_contribution_battle()
 
@@ -437,10 +446,12 @@ class BattleEngine:
 
         player.hp -= mon_dmg
         player.hp  = max(0, player.hp)
+        sound_director.cue("battle/enemy_hit")
 
         if player.hp <= 0:
             self.in_battle  = False
             self._last_grade = "실패"
+            sound_director.cue("battle/defeat", interrupt=True)
             defeat_log = random.choice(DEFEAT_LOGS)
             rows = [
                 {"label": "행동", "value": atk_log},

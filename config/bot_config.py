@@ -50,7 +50,7 @@ def _build_edible_items() -> dict:
 def create_bot_context(
     hyness_id: int,
     majesty_id: int,
-    drider_id: int,
+    drider_id: int | None,
     allowed_channel_id: int,
 ) -> BotContext:
     """모든 엔진/매니저를 생성하고 BotContext 에 조립하여 반환한다."""

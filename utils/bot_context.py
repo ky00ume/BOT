@@ -9,7 +9,7 @@ class BotContext:
         # 환경변수 ID
         self.hyness_id: int = 0
         self.majesty_id: int = 0
-        self.drider_id: int = 0
+        self.drider_id: int | None = None
         self.allowed_channel_id: int = 0
 
         # 핵심 객체

@@ -15,7 +15,7 @@ DIARY_HOUR = 22
 _last_daily_hour: dict[int, str] = {}
 
 
-def setup_alarms(bot, channel_id: int, drider_id: int, hyness_id: int = None, majesty_id: int = None):
+def setup_alarms(bot, channel_id: int, drider_id: int | None, hyness_id: int = None, majesty_id: int = None):
     """Present world changes and fixed daily rituals to Discord.
 
     Random activity is no longer invented by this module. WorldClock owns time,
@@ -43,7 +43,7 @@ def setup_alarms(bot, channel_id: int, drider_id: int, hyness_id: int = None, ma
         if minute != 0 or _last_daily_hour.get(hour) == today:
             return
 
-        drider = f"<@{drider_id}>"
+        drider = f"<@{drider_id}>" if drider_id else ""
         hyness = f"<@{hyness_id}>" if hyness_id else ""
         majesty = f"<@{majesty_id}>" if majesty_id else ""
         everyone = " ".join(x for x in (drider, hyness, majesty) if x)

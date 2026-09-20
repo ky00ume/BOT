@@ -37,3 +37,20 @@ def test_diary_collapses_repeated_identical_beats():
     ]
     text = render_diary_from_events(events, now=datetime(2026, 9, 18, 22, 0, tzinfo=KST))
     assert text.count("창가에서 혼자 바깥을 오래 구경했슴미댜.") == 1
+
+
+def test_diary_keeps_meaningful_beats_over_routine_noise():
+    events = [
+        GameEvent(event_type="world.autonomous", payload={"diary_text": f"혼자 조용히 시간을 보냈슴미댜 {i}."}, occurred_at=datetime(2026, 9, 18, 1, i, tzinfo=timezone.utc))
+        for i in range(5)
+    ]
+    events += [
+        GameEvent(event_type="care.feed", payload={"snack": "거미 쿠키"}, occurred_at=datetime(2026, 9, 18, 2, 0, tzinfo=timezone.utc)),
+        GameEvent(event_type="world.moved", location="방울숲", payload={"from": "마을", "to": "방울숲"}, occurred_at=datetime(2026, 9, 18, 3, 0, tzinfo=timezone.utc)),
+        GameEvent(event_type="battle.won", location="방울숲", payload={"monster": "슬라임"}, occurred_at=datetime(2026, 9, 18, 4, 0, tzinfo=timezone.utc)),
+    ]
+    text = render_diary_from_events(events, now=datetime(2026, 9, 18, 22, 0, tzinfo=KST))
+    assert "거미 쿠키" in text
+    assert "마을에서 방울숲" in text
+    assert "슬라임" in text
+    assert "혼자 조용히" not in text

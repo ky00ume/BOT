@@ -41,19 +41,44 @@ def _event_sentence(event: GameEvent) -> str | None:
     return None
 
 
+def _memory_priority(event: GameEvent) -> int:
+    """Importance of a fact as a remembered beat, not as a transaction."""
+    if event.event_type in {"battle.won"}:
+        return 90
+    if event.event_type in {"world.moved"}:
+        return 75
+    if event.event_type in {"care.play", "care.feed", "care.pet"}:
+        return 60
+    if event.event_type == "world.autonomous":
+        return 25
+    return 0
+
+
+def _select_memory_beats(events: list[GameEvent], *, limit: int = 3) -> list[GameEvent]:
+    """Choose a small truthful shape of the day.
+
+    Repeated routine facts collapse into one beat. Higher-salience facts survive
+    over ordinary autonomous life, while final rendering remains chronological.
+    """
+    candidates: list[tuple[int, int, GameEvent, str]] = []
+    seen: set[str] = set()
+    for index, event in enumerate(events):
+        sentence = _event_sentence(event)
+        if not sentence or sentence in seen:
+            continue
+        seen.add(sentence)
+        candidates.append((_memory_priority(event), index, event, sentence))
+    chosen = sorted(candidates, key=lambda row: (row[0], row[1]), reverse=True)[:limit]
+    return [row[2] for row in sorted(chosen, key=lambda row: row[1])]
+
+
 def render_diary_from_events(events: Iterable[GameEvent], *, now: datetime | None = None) -> str | None:
     ordered = sorted(events, key=lambda event: event.occurred_at)
-    sentences = [sentence for event in ordered if (sentence := _event_sentence(event))]
-    # A diary remembers distinct beats, not repeated transaction rows.
-    distinct: list[str] = []
-    for sentence in sentences:
-        if sentence not in distinct:
-            distinct.append(sentence)
-    sentences = distinct
+    beats = _select_memory_beats(ordered)
+    sentences = [_event_sentence(event) for event in beats]
     if not sentences:
         return None
-    # A diary is a memory of a day, not an exhaustive transaction dump.
-    body = "  ".join(sentences[-3:])
+    body = "  ".join(sentence for sentence in sentences if sentence)
     local_now = (now or datetime.now(KST)).astimezone(KST)
     return f"{local_now.strftime('%Y년 %m월 %d일')} 일기\n\n{body}"
 

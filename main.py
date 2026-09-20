@@ -16,13 +16,14 @@ from utils.env import (
     ConfigError as _EnvConfigError,
     load_discord_token,
     load_required_int,
+    load_optional_int,
 )
 
 try:
     TOKEN              = load_discord_token("DISCORD_TOKEN")
     HYNESS_ID          = load_required_int("HYNESS_ID")
     MAJESTY_ID         = load_required_int("MAJESTY_ID")
-    DRIDER_ID          = load_required_int("DRIDER_ID")
+    DRIDER_ID          = load_optional_int("DRIDER_ID")
     ALLOWED_CHANNEL_ID = load_required_int("ALLOWED_CHANNEL_ID")
 except _EnvConfigError as _env_err:
     print(f"[오류] 환경변수 구성 실패: {_env_err}")

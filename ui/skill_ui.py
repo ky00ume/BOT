@@ -557,6 +557,18 @@ class RecipeSelect(Select):
         craft_btn.callback = view._make_craft_callback(self.skill_id, recipe_id)
         view.add_item(craft_btn)
 
+        from core.directed_gathering import missing_recipe_ingredients
+        for missing in missing_recipe_ingredients(self.player, recipe)[:3]:
+            gather_btn = Button(
+                label=f"{missing['name']} {missing['missing']}개 모으기",
+                style=discord.ButtonStyle.primary,
+                custom_id=f"gather_for_{recipe_id}_{missing['item_id']}",
+            )
+            gather_btn.callback = view._make_recipe_gather_callback(
+                self.skill_id, recipe_id, missing["item_id"], missing["need"]
+            )
+            view.add_item(gather_btn)
+
         try:
             from bg3_renderer import get_renderer, render_async
             r = get_renderer()
@@ -578,6 +590,10 @@ class RecipeSelect(Select):
         except Exception as e:
             logger.warning("레시피 상세 렌더링 실패, 임베드 폴백 사용: %s", e, exc_info=True)
             embed, _ = make_recipe_detail_embed(self.player, recipe_id, recipe)
+            await interaction.response.edit_message(embed=embed, attachments=[], view=view)
+
+
+class SkillMainView(View):
     def __init__(self, player, potion_engine=None, crafting_engine=None,
                  cooking_engine=None, metallurgy_engine=None):
         super().__init__(timeout=180.0)
@@ -626,6 +642,39 @@ class RecipeSelect(Select):
                 save_manager.save(self.player)
             except Exception as e:
                 logger.error("힐링 후 저장 실패: %s", e, exc_info=True)
+        return callback
+
+    def _make_recipe_gather_callback(self, skill_id: str, recipe_id: str, item_id: str, required_count: int):
+        async def callback(interaction: discord.Interaction):
+            from core.activities import ActivityBusyError
+            from core.directed_gathering import directed_gathering
+            from items import ALL_ITEMS
+            try:
+                activity, target = directed_gathering.start_for_recipe(
+                    self.player, item_id=item_id, required_count=required_count, actor_id=interaction.user.id
+                )
+            except ActivityBusyError:
+                current = directed_gathering.activities.current()
+                name = current.kind if current else "다른 일"
+                await interaction.response.send_message(
+                    f"지금 `{name}`을(를) 하는 중이라 새 채집을 시작할 수 없슴미댜.", ephemeral=True
+                )
+                return
+            except ValueError as e:
+                await interaction.response.send_message(str(e), ephemeral=True)
+                return
+
+            mode_label = {"gather": "채집", "mine": "채광", "woodcut": "벌목"}.get(target.mode, "채집")
+            embed = discord.Embed(
+                title=f"{mode_label} 목표를 정했슴미댜",
+                description=(
+                    f"**{target.name}**을(를) 필요한 만큼 모읍니다.\n"
+                    f"현재 `{target.have_at_start} / {target.target_count}` · 앞으로 **{target.missing}개**"
+                ),
+                color=EMBED_COLOR,
+            )
+            embed.set_footer(text="목표 수량을 채우면 원래 제작으로 돌아옵니다")
+            await interaction.response.edit_message(embed=embed, attachments=[], view=None)
         return callback
 
     def _make_craft_callback(self, skill_id: str, recipe_id: str):

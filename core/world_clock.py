@@ -17,6 +17,7 @@ from core.agency import world_may_start
 from core.activities import activity_service
 from core.personality import behaviour_cue
 from items import ALL_ITEMS
+from weather import weather_system
 from db.connection import get_db_connection
 
 KST = timezone(timedelta(hours=9))
@@ -55,6 +56,19 @@ _IDLE_FINDS = (
 )
 _IDLE_FIND_CHANCE = 0.22
 
+_WEATHER_LIFE = {
+    "rain": {"walk": "비가 잠깐 잦아든 틈에 처마 밑과 젖은 골목을 조심조심 돌아봤슴미댜.", "read": "빗소리를 들으며 게시판 처마 아래에서 새 글을 오래 읽었슴미댜."},
+    "snow": {"walk": "눈이 쌓인 마을길에 작은 발자국을 남기며 한 바퀴 돌아봤슴미댜."},
+    "fog": {"walk": "안개가 짙어서 익숙한 마을길만 천천히 돌다가 돌아왔슴미댜."},
+    "storm": {"walk": "폭풍 소리가 커서 밖으로 나가지 않고 문틈으로 마을을 한참 살폈슴미댜."},
+    "clear": {"rest": "볕이 드는 자리를 골라 거미줄 해먹에서 한참 늘어져 있었슴미댜."},
+}
+
+_TIME_LIFE = {
+    "dawn": "아직 조용한 새벽 마을에서 남들보다 먼저 움직였슴미댜.",
+    "night": "불이 하나둘 꺼진 마을을 조용히 구경하다 돌아왔슴미댜.",
+}
+
 
 class WorldClock:
     def __init__(self, *, store: EventStore = event_store, rng: random.Random | None = None):
@@ -78,6 +92,12 @@ class WorldClock:
             return WorldTickResult(None, None, False)
 
         activity = dict(self.rng.choice(_AUTONOMOUS_ACTIVITIES))
+        weather = weather_system.get_current()
+        period = self._period(now_utc.astimezone(KST).hour)
+        context_line = self._context_line(activity["kind"], weather.get("id", "clear"), period)
+        if context_line:
+            activity["message"] = f"🕷️ {context_line}"
+            activity["diary"] = context_line
         cue = behaviour_cue(self.store)
         if cue.idle_message and self.rng.random() < 0.25:
             activity["message"] = cue.idle_message
@@ -100,10 +120,32 @@ class WorldClock:
                 "message": activity["message"],
                 "diary_text": activity["diary"],
                 "find": found,
+                "weather": weather.get("id", "clear"),
+                "period": period,
             },
         )
         self.store.append(event)
         return WorldTickResult(event, activity["message"], changed)
+
+    @staticmethod
+    def _period(hour: int) -> str:
+        if 5 <= hour < 8:
+            return "dawn"
+        if 8 <= hour < 18:
+            return "day"
+        if 18 <= hour < 22:
+            return "evening"
+        return "night"
+
+    @staticmethod
+    def _context_line(kind: str, weather_id: str, period: str) -> str | None:
+        # Weather is the strongest immediate cause; time supplies quieter variation.
+        line = _WEATHER_LIFE.get(weather_id, {}).get(kind)
+        if line:
+            return line
+        if kind in {"walk", "read"}:
+            return _TIME_LIFE.get(period)
+        return None
 
     def _maybe_find_item(self, player, activity: dict) -> dict | None:
         # Only ordinary outside life can produce finds. Napping, reading and

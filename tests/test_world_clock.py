@@ -86,3 +86,16 @@ def test_autonomous_find_table_contains_no_legendary_or_story_items():
         item = ALL_ITEMS[row["item"]]
         assert item.get("grade") != "Legendary"
         assert not row["item"].startswith(("quest_", "story_"))
+
+
+def test_world_life_has_time_context_without_changing_rewards():
+    assert WorldClock._period(6) == "dawn"
+    assert WorldClock._period(23) == "night"
+    assert "새벽" in WorldClock._context_line("walk", "cloudy", "dawn")
+    assert "불이 하나둘" in WorldClock._context_line("read", "cloudy", "night")
+
+
+def test_weather_can_change_plausible_life_scene():
+    assert "처마" in WorldClock._context_line("walk", "rain", "day")
+    assert "밖으로 나가지 않고" in WorldClock._context_line("walk", "storm", "day")
+    assert WorldClock._context_line("web", "rain", "day") is None

@@ -109,3 +109,22 @@ def test_habits_can_bend_ordinary_life_without_starting_adventure():
     assert "시장" in feeding["message"]
     untouched = WorldClock._habit_life({"kind": "rest", "message": "x", "diary": "x", "effects": {}}, "adventure")
     assert untouched["kind"] == "rest"
+
+
+def test_offline_settlement_is_bounded_and_moves_cursor_to_now(temp_db):
+    player = Player(name="츄라이더")
+    clock = WorldClock(store=EventStore(), rng=FixedRng(activity_index=2))
+    start = datetime(2026, 9, 18, 0, 0, tzinfo=timezone.utc)
+    clock._save_cursor(start)
+    results = clock.settle_offline(player, now=start + timedelta(days=3), max_ticks=4)
+    assert len(results) <= 4
+    assert clock._load_cursor() == start + timedelta(days=3)
+    assert len(EventStore().recent(event_type="world.autonomous")) <= 4
+
+
+def test_offline_settlement_does_not_replay_when_no_time_was_missed(temp_db):
+    player = Player(name="츄라이더")
+    clock = WorldClock(store=EventStore(), rng=FixedRng())
+    now = datetime(2026, 9, 18, 0, 0, tzinfo=timezone.utc)
+    clock._save_cursor(now)
+    assert clock.settle_offline(player, now=now + timedelta(minutes=10)) == []

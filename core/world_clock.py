@@ -22,6 +22,7 @@ from db.connection import get_db_connection
 
 KST = timezone(timedelta(hours=9))
 TICK_MINUTES = 30
+MAX_OFFLINE_TICKS = 8
 
 
 @dataclass(frozen=True)
@@ -74,6 +75,32 @@ class WorldClock:
     def __init__(self, *, store: EventStore = event_store, rng: random.Random | None = None):
         self.store = store
         self.rng = rng or random.Random()
+
+    def settle_offline(self, player, *, now: datetime | None = None, max_ticks: int = MAX_OFFLINE_TICKS) -> list[WorldTickResult]:
+        """Settle a bounded sample of missed ordinary life after downtime.
+
+        Long downtime must feel lived-in, not become an exploitable loot faucet.
+        We therefore replay at most a few spaced world ticks and never manufacture
+        player-directed activity outcomes.
+        """
+        now_utc = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
+        last_tick = self._load_cursor()
+        if last_tick is None or now_utc <= last_tick:
+            return []
+        missed = int((now_utc - last_tick).total_seconds() // (TICK_MINUTES * 60))
+        count = min(max(0, missed), max_ticks)
+        if count == 0:
+            return []
+        # Sample the elapsed period evenly; the final cursor is always 'now'.
+        span = now_utc - last_tick
+        results: list[WorldTickResult] = []
+        for i in range(1, count + 1):
+            tick_at = last_tick + span * (i / count)
+            result = self.advance(player, now=tick_at)
+            if result.event is not None:
+                results.append(result)
+        self._save_cursor(now_utc)
+        return results
 
     def advance(self, player, *, now: datetime | None = None) -> WorldTickResult:
         now_utc = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)

@@ -11,6 +11,8 @@ from database     import init_db, load_village_data
 from save_manager import save_manager
 from village      import village_manager
 from alarms       import setup_alarms
+from core.activities import activity_service
+from core.world_clock import world_clock
 import status as status_mod
 from cogs import COGS
 from utils.logger import setup_logger
@@ -76,6 +78,17 @@ class EventsCog(commands.Cog, name="이벤트"):
             print(f"[DB 로드] {ctx.player.name} 데이터 복원 완료")
         else:
             print("[DB 로드] 저장 데이터 없음 — 기본 캐릭터로 시작")
+
+        # Restart recovery: Discord interaction views do not survive this legacy
+        # runtime, so stale directed work is closed truthfully before world time settles.
+        recovered = activity_service.reconcile()
+        if recovered:
+            print(f"[복구] 중단된 활동 정리: {recovered.kind}")
+
+        offline_results = world_clock.settle_offline(ctx.player)
+        if offline_results:
+            save_manager.save(ctx.player)
+            print(f"[복구] 오프라인 생활 {len(offline_results)}건 정산 완료")
 
         # 마을 기여도/레벨 DB에서 복원
         village_data = load_village_data()

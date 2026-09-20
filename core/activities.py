@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import json
 import uuid
 
@@ -44,6 +44,25 @@ class ActivityService:
         self._save(activity)
         self.store.append(GameEvent(event_type="activity.started", actor_id=actor_id, subject="츄라이더", location=location, occurred_at=activity.started_at, payload={"activity_id": activity.activity_id, "kind": kind, "agency": rule.level.value, **activity.context}))
         return activity
+
+    def reconcile(self, *, now: datetime | None = None, stale_after: timedelta = timedelta(minutes=15)) -> Activity | None:
+        """Close an interaction activity whose Discord UI could not survive a restart.
+
+        We do not invent a catch/reward. The durable fact is only that the old
+        interaction was interrupted and Churider is available again.
+        """
+        activity = self.current()
+        if activity is None:
+            return None
+        now_utc = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
+        if now_utc - activity.started_at < stale_after:
+            return None
+        return self.finish(
+            activity.activity_id,
+            outcome="interrupted",
+            payload={"reason": "restart_or_stale_interaction"},
+            now=now_utc,
+        )
 
     def finish(self, activity_id: str, *, outcome: str, payload: dict | None = None, now: datetime | None = None) -> Activity | None:
         activity = self.current()

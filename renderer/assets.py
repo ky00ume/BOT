@@ -34,13 +34,13 @@ def _safe_id(value: str) -> bool:
 
 
 def _smart_crop(img: "Image.Image", w: int, h: int,
-                face_center: float = 0.33, zoom: float = 1.0) -> "Image.Image":
+                face_center: float = 0.33, zoom: float = 1.0, x_shift: float = 0.0) -> "Image.Image":
     """적응형 크롭. face_center: 세로 기준 얼굴 위치 비율 (0=상단, 1=하단)"""
     if zoom > 1.0:
         # Portrait framing: zoom the source before the final crop so dialogue cards
         # read as head-and-shoulders / waist-up portraits instead of full-body art.
         zw = max(1, int(img.width / zoom)); zh = max(1, int(img.height / zoom))
-        left = max(0, (img.width - zw) // 2)
+        left = max(0, min(img.width - zw, (img.width - zw) // 2 - int(zw * x_shift)))
         top = max(0, int((img.height - zh) * max(0.0, min(1.0, face_center))))
         img = img.crop((left, top, left + zw, top + zh))
 
@@ -80,8 +80,9 @@ def _load_portrait(portrait_type: str, portrait_id: str,
                 try:
                     img = Image.open(p).convert("RGBA")
                     # Per-character vertical framing keeps unusually tall/short model art centered.
-                    face_center = {"데리스 본클록": 0.04}.get(portrait_id, 0.18)
-                    return _smart_crop(img, w, h, face_center=face_center, zoom=1.45)
+                    face_center = {"데리스 본클록": 0.07}.get(portrait_id, 0.18)
+                    x_shift = {"데리스 본클록": 0.035}.get(portrait_id, 0.0)
+                    return _smart_crop(img, w, h, face_center=face_center, zoom=1.45, x_shift=x_shift)
                 except (OSError, IOError, ValueError) as e:
                     _log.warning("Portrait load failed: %s (%s)", p, e)
     return None

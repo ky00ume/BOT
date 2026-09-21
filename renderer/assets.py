@@ -79,16 +79,25 @@ def _load_portrait(portrait_type: str, portrait_id: str,
             if os.path.isfile(p):
                 try:
                     img = Image.open(p).convert("RGBA")
-                    if portrait_id == "데리스 본클록":
-                        # Derryth needs real headroom: frame the model first, then place it
-                        # lower/right on a transparent portrait canvas instead of cropping tighter.
-                        framed = _smart_crop(img, w, h, face_center=0.04, zoom=1.45, x_shift=0.035)
-                        scale = 0.90
+                    # Character models are already transparent. Frame them as portraits,
+                    # then place them on a transparent canvas so heads have real breathing room.
+                    settings = {
+                        "데리스 본클록": (0.04, 1.45, 0.90, 0.035, 0.17),
+                        "블러그": (0.04, 1.45, 0.92, 0.0, 0.07),
+                        "오멜룸": (0.03, 1.40, 0.92, 0.0, 0.07),
+                        "군주 스포": (0.10, 1.32, 0.96, 0.0, 0.025),
+                        "글럿": (0.10, 1.32, 0.96, 0.0, 0.025),
+                        "버나드": (0.04, 1.42, 0.92, 0.0, 0.07),
+                        "바엘렌 본클록": (0.04, 1.45, 0.92, 0.0, 0.07),
+                    }
+                    if portrait_id in settings:
+                        face_center, zoom, scale, x_shift, y_shift = settings[portrait_id]
+                        framed = _smart_crop(img, w, h, face_center=face_center, zoom=zoom, x_shift=x_shift)
                         fw, fh = max(1, int(w * scale)), max(1, int(h * scale))
                         framed = framed.resize((fw, fh), Image.LANCZOS)
                         canvas = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-                        x = min(w - fw, max(0, (w - fw) // 2 + int(w * 0.035)))
-                        y = min(h - fh, max(0, int(h * 0.085)))
+                        x = min(w - fw, max(0, (w - fw) // 2 + int(w * x_shift)))
+                        y = min(h - fh, max(0, int(h * y_shift)))
                         canvas.alpha_composite(framed, (x, y))
                         return canvas
                     return _smart_crop(img, w, h, face_center=0.18, zoom=1.45)

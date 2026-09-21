@@ -112,32 +112,59 @@ def _render_banner(location_name: str, description: str,
 
 # ── Views ─────────────────────────────────────────────────────────────────────
 
-class _NPCSelectView(View):
-    """같은 위치에 여러 NPC가 있을 때 대화 상대를 버튼으로 선택하는 뷰."""
+class ColonyPlaceView(View):
+    """군락 내부 장소 자체를 보여주는 뷰. NPC는 장소 안 상호작용 중 하나다."""
+    PLACE_INFO = {
+        "마이코니드 군락 서쪽 입구": ("서쪽 입구", "외부에서 들어온 상인과 여행자가 먼저 닿는 군락의 가장자리."),
+        "마이코니드 군락 광명회 야영지": ("광명회 야영지", "연구 도구와 표본이 놓인 광명회의 작은 야영지."),
+        "마이코니드 군락 군주의 터": ("군주의 터", "포자와 감각이 이어지는 군락의 중심. 군주의 의지가 가장 선명하게 닿는다."),
+        "마이코니드 군락 서쪽 통로": ("서쪽 통로", "군락 바깥으로 이어지는 그늘진 통로."),
+    }
 
-    def __init__(self, npcs: list[str], player, aff_manager, npc_manager_ref, *, author_id: int = 0):
-        super().__init__(timeout=60)
-        self.player = player
-        self.aff_manager = aff_manager
-        self.npc_manager_ref = npc_manager_ref
-        self.author_id = author_id
-        for npc_name in npcs:
+    def __init__(self, location, player, aff_manager, npc_manager_ref, village_manager=None):
+        super().__init__(timeout=300.0)
+        self.location, self.player = location, player
+        self.aff_manager, self.npc_manager_ref = aff_manager, npc_manager_ref
+        self.village_manager = village_manager
+        self._build_buttons()
+
+    def _npcs_here(self):
+        from database import NPC_DATA
+        return [name for name, data in NPC_DATA.items() if data.get("location") == self.location]
+
+    def _build_buttons(self):
+        self.clear_items()
+        for npc_name in self._npcs_here():
             btn = Button(label=npc_name, style=discord.ButtonStyle.primary)
             btn.callback = self._make_npc_callback(npc_name)
             self.add_item(btn)
+        back = Button(label="군락을 둘러본다", style=discord.ButtonStyle.secondary, emoji="◀️")
+        back.callback = self._back_callback
+        self.add_item(back)
 
-    def _make_npc_callback(self, npc_name: str):
-        async def callback(interaction: discord.Interaction):
-            if self.author_id and interaction.user.id != self.author_id:
-                await interaction.response.send_message(
-                    "다른 플레이어의 NPC 선택입니다!", ephemeral=True
-                )
-                return
+    def _make_npc_callback(self, npc_name):
+        async def callback(interaction):
             from npc_conversation import ConversationManager
-            conv = ConversationManager(self.player, self.aff_manager, self.npc_manager_ref)
             await interaction.response.defer()
+            conv = ConversationManager(self.player, self.aff_manager, self.npc_manager_ref)
             await conv.send_conversation(interaction.channel, npc_name)
+            try:
+                await interaction.delete_original_response()
+            except Exception:
+                pass
         return callback
+
+    async def _back_callback(self, interaction):
+        view = VisionTownView(self.player, self.aff_manager, self.npc_manager_ref, self.village_manager)
+        await view.send(interaction, edit=True)
+
+    async def send(self, interaction, edit=True):
+        title, desc = self.PLACE_INFO.get(self.location, (_strip_town_prefix(self.location), "주변을 천천히 둘러본다."))
+        embed = discord.Embed(title=title, description=desc, color=0x6E6246)
+        if edit:
+            await interaction.response.edit_message(attachments=[], embed=embed, view=self)
+        else:
+            await interaction.response.send_message(embed=embed, view=self)
 
 
 class VisionTownView(View):
@@ -205,26 +232,8 @@ class VisionTownView(View):
 
     def _make_location_callback(self, location: str):
         async def callback(interaction: discord.Interaction):
-            from database import NPC_DATA
-            npcs_here = [n for n, d in NPC_DATA.items() if d.get("location") == location]
-            if not npcs_here:
-                await interaction.response.send_message("이 장소에는 아무도 없슴미댜.", ephemeral=True)
-                return
-            if len(npcs_here) == 1:
-                npc_name = npcs_here[0]
-                from npc_conversation import ConversationManager
-                conv = ConversationManager(self.player, self.aff_manager, self.npc_manager_ref)
-                await interaction.response.defer()
-                await conv.send_conversation(interaction.channel, npc_name)
-                await interaction.delete_original_response()
-            else:
-                view = _NPCSelectView(npcs_here, self.player, self.aff_manager, self.npc_manager_ref, author_id=interaction.user.id)
-                npc_list = "\n".join(f"• {n}" for n in npcs_here)
-                await interaction.response.send_message(
-                    f"**{location}**에 있는 NPC:\n{npc_list}\n누구와 대화하시겠슴미댜?",
-                    view=view,
-                    ephemeral=True,
-                )
+            view = ColonyPlaceView(location, self.player, self.aff_manager, self.npc_manager_ref, self.village_manager)
+            await view.send(interaction, edit=True)
         return callback
 
     async def _quest_callback(self, interaction: discord.Interaction):

@@ -34,8 +34,16 @@ def _safe_id(value: str) -> bool:
 
 
 def _smart_crop(img: "Image.Image", w: int, h: int,
-                face_center: float = 0.33) -> "Image.Image":
+                face_center: float = 0.33, zoom: float = 1.0) -> "Image.Image":
     """적응형 크롭. face_center: 세로 기준 얼굴 위치 비율 (0=상단, 1=하단)"""
+    if zoom > 1.0:
+        # Portrait framing: zoom the source before the final crop so dialogue cards
+        # read as head-and-shoulders / waist-up portraits instead of full-body art.
+        zw = max(1, int(img.width / zoom)); zh = max(1, int(img.height / zoom))
+        left = max(0, (img.width - zw) // 2)
+        top = max(0, int((img.height - zh) * max(0.0, min(1.0, face_center))))
+        img = img.crop((left, top, left + zw, top + zh))
+
     ir, br = img.width / img.height, w / h
     if ir > br:
         nh = h; nw = int(h * ir)
@@ -71,7 +79,7 @@ def _load_portrait(portrait_type: str, portrait_id: str,
             if os.path.isfile(p):
                 try:
                     img = Image.open(p).convert("RGBA")
-                    return _smart_crop(img, w, h, face_center=0.30)
+                    return _smart_crop(img, w, h, face_center=0.18, zoom=1.45)
                 except (OSError, IOError, ValueError) as e:
                     _log.warning("Portrait load failed: %s (%s)", p, e)
     return None

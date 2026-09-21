@@ -12,7 +12,7 @@ logger = setup_logger('npc_conversation')
 
 # ── NPC 초상화 파일 ID 매핑 ─────────────────────────────────────────────────
 # BG3 위키 매칭 NPC: 파일명은 static/portraits/npc/{portrait_id}.png
-# 창작 캐릭터(글럿, 데리스 본클록, 툴라, 루바토)는 placeholder 유지
+# 현재 언더다크 NPC는 static/portraits/npc의 한국어 이름 에셋을 사용
 NPC_PORTRAIT_MAP: dict[str, str] = {
     "데리스 본클록": "데리스 본클록",
     "블러그": "블러그",

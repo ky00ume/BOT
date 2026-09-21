@@ -153,20 +153,24 @@ class VisionTownView(View):
 
     def _build_buttons(self):
         self.clear_items()
-        from database import NPC_DATA
-        locations_seen = set()
-        for npc_name, npc in NPC_DATA.items():
-            loc = npc.get("location", "")
-            # "랜덤" 키워드가 포함된 location은 버튼 생성에서 제외 (특수 NPC 랜덤 인카운터)
-            if loc and loc not in locations_seen and "랜덤" not in loc:
-                locations_seen.add(loc)
-                btn = Button(
-                    label=_strip_town_prefix(loc)[:20],
-                    style=discord.ButtonStyle.secondary,
-                    emoji="🏠",
-                )
-                btn.callback = self._make_location_callback(loc)
-                self.add_item(btn)
+        places = [
+            ("서쪽 입구 · 데리스", "마이코니드 군락 서쪽 입구", "🛒"),
+            ("광명회 야영지", "마이코니드 군락 광명회 야영지", "🔬"),
+            ("군주의 터", "마이코니드 군락 군주의 터", "🍄"),
+            ("서쪽 통로 · 글럿", "마이코니드 군락 서쪽 통로", "⚔️"),
+        ]
+        for label, location, emoji in places:
+            btn = Button(label=label, style=discord.ButtonStyle.secondary, emoji=emoji)
+            btn.callback = self._make_location_callback(location)
+            self.add_item(btn)
+
+        notice_btn = Button(label="군락 의뢰", style=discord.ButtonStyle.primary, emoji="📜")
+        notice_btn.callback = self._quest_callback
+        self.add_item(notice_btn)
+
+        cook_btn = Button(label="공동 취사 공간", style=discord.ButtonStyle.success, emoji="🍲")
+        cook_btn.callback = self._cooking_callback
+        self.add_item(cook_btn)
 
         leave_btn = Button(label="군락을 나간다", style=discord.ButtonStyle.danger, emoji="🗺️")
         leave_btn.callback = self._leave_callback
@@ -222,6 +226,20 @@ class VisionTownView(View):
                     ephemeral=True,
                 )
         return callback
+
+    async def _quest_callback(self, interaction: discord.Interaction):
+        import app_context
+        from ui.quest_ui import QuestWindowView, _make_quest_list_image
+        qm = app_context.get_quest_manager()
+        file = _make_quest_list_image(qm)
+        view = QuestWindowView(qm, self.player)
+        await interaction.response.send_message(file=file, view=view)
+
+    async def _cooking_callback(self, interaction: discord.Interaction):
+        await interaction.response.send_message(
+            "🍲 **공동 취사 공간**\n군락 사람들이 함께 쓰는 불과 조리 자리입니다. 기존 요리 기능은 `/스킬` → **생활 스킬** → **요리**에서 그대로 이용할 수 있고, 완성한 음식은 `/납품`으로 공동 식량에 보탤 수 있슴미댜.",
+            ephemeral=True,
+        )
 
     async def _leave_callback(self, interaction: discord.Interaction):
         view = WorldMapView(self.player, self.aff_manager, self.npc_manager_ref)

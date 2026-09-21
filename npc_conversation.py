@@ -236,19 +236,9 @@ class NPCConversationView(View):
             music_btn.callback = self._music_callback
             self.add_item(music_btn)
 
-        # 제련 배우기 버튼 (데리스 본클록 + 제련 스킬 미보유 시)
-        if self.npc_name == "데리스 본클록" and "metallurgy" not in getattr(self.player, "skill_ranks", {}):
-            smelt_btn = Button(
-                label="제련 배우기",
-                style=discord.ButtonStyle.success,
-                emoji="🔥",
-            )
-            smelt_btn.callback = self._learn_metallurgy_callback
-            self.add_item(smelt_btn)
-
         # D-3: 마을로 돌아가기 버튼
         back_btn = Button(
-            label="마을로 돌아가기",
+            label="군락으로 돌아가기",
             style=discord.ButtonStyle.secondary,
             emoji="🏠",
         )

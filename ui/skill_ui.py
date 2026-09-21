@@ -595,7 +595,7 @@ class RecipeSelect(Select):
 
 class SkillMainView(View):
     def __init__(self, player, potion_engine=None, crafting_engine=None,
-                 cooking_engine=None, metallurgy_engine=None):
+                 cooking_engine=None, metallurgy_engine=None, back_factory=None):
         super().__init__(timeout=180.0)
         self.player = player
         self.potion_engine = potion_engine
@@ -603,7 +603,16 @@ class SkillMainView(View):
         self.cooking_engine = cooking_engine
         self.metallurgy_engine = metallurgy_engine
         self.current_category = None
+        self.back_factory = back_factory
         self.add_item(SkillCategorySelect(player))
+        if back_factory is not None:
+            back_btn = Button(label="군락으로 돌아가기", style=discord.ButtonStyle.secondary, emoji="◀️")
+            back_btn.callback = self._back_callback
+            self.add_item(back_btn)
+
+    async def _back_callback(self, interaction: discord.Interaction):
+        view = self.back_factory()
+        await view.send(interaction, edit=True)
 
     def _make_skill_detail_callback(self, skill_id: str):
         async def callback(interaction: discord.Interaction):

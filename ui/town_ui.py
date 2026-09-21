@@ -236,10 +236,24 @@ class VisionTownView(View):
         await interaction.response.send_message(file=file, view=view)
 
     async def _cooking_callback(self, interaction: discord.Interaction):
-        await interaction.response.send_message(
-            "🍲 **공동 취사 공간**\n군락 사람들이 함께 쓰는 불과 조리 자리입니다. 기존 요리 기능은 `/스킬` → **생활 스킬** → **요리**에서 그대로 이용할 수 있고, 완성한 음식은 `/납품`으로 공동 식량에 보탤 수 있슴미댜.",
-            ephemeral=True,
+        import app_context
+        from ui.skill_ui import SkillMainView, make_category_embed
+        def _back():
+            return VisionTownView(self.player, self.aff_manager, self.npc_manager_ref, self.village_manager)
+        view = SkillMainView(
+            self.player, potion_engine=app_context.get_potion_engine(), crafting_engine=app_context.get_crafting_engine(),
+            cooking_engine=app_context.get_cooking_engine(), metallurgy_engine=app_context.get_metallurgy_engine(), back_factory=_back,
         )
+        # 공동 취사 공간에서는 곧바로 생활 스킬 화면으로 들어간다.
+        view.current_category = "life"
+        view.clear_items()
+        from ui.skill_ui import SkillCategorySelect, LifeSkillSelect
+        view.add_item(SkillCategorySelect(self.player))
+        view.add_item(LifeSkillSelect(self.player))
+        back_btn = Button(label="군락으로 돌아가기", style=discord.ButtonStyle.secondary, emoji="◀️")
+        back_btn.callback = view._back_callback
+        view.add_item(back_btn)
+        await interaction.response.edit_message(attachments=[], embed=make_category_embed(self.player, "life"), view=view)
 
     async def _leave_callback(self, interaction: discord.Interaction):
         view = WorldMapView(self.player, self.aff_manager, self.npc_manager_ref)

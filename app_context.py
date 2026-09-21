@@ -64,3 +64,16 @@ def get_gathering_engine():
 
 def get_fishing_engine():
     return _store.get("fishing_engine")
+
+
+def get_potion_engine():
+    return _store.get("potion_engine")
+
+def get_crafting_engine():
+    return _store.get("crafting_engine")
+
+def get_cooking_engine():
+    return _store.get("cooking_engine")
+
+def get_metallurgy_engine():
+    return _store.get("metallurgy_engine")

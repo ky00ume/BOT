@@ -135,5 +135,9 @@ def create_bot_context(
     _app_context.register("affinity_manager",    affinity_manager)
     _app_context.register("gathering_engine",    gathering_engine)
     _app_context.register("fishing_engine",      fishing_engine)
+    _app_context.register("potion_engine",       potion_engine)
+    _app_context.register("crafting_engine",     crafting_engine)
+    _app_context.register("cooking_engine",      cooking_engine)
+    _app_context.register("metallurgy_engine",   metallurgy_engine)
 
     return ctx

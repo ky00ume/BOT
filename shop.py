@@ -9,52 +9,40 @@ try:
 except ImportError:
     SKILL_BOOKS = {}
 
-# ── 포션/연금술 재료 전용 카탈로그 (오멜룸) ─────────────────────────────────
-# C-4 fix: 빵/우유는 데리스 본클록로 이전됨 — 오멜룸 카탈로그에서 제외
-_OMELUM_EXCLUDE = {"con_bread", "con_milk"}
-_OMELUM_POTIONS = {k: v for k, v in CONSUMABLES.items() if k not in _OMELUM_EXCLUDE}
-_OMELUM_POTIONS.update({
+# ── 마이코니드 군락 상점 역할 ───────────────────────────────────────────────
+# 데리스: 버섯/연금술 재료와 생활 물자. 오멜룸: 포션/연금술.
+# 블러그: 연구 도구와 탐험 장비. NPC 역할과 무관한 옛 마을 카탈로그는 제거한다.
+_DERRyth_MATERIAL_IDS = {
+    "herb", "mana_herb", "healing_root", "mana_flower", "energy_leaf",
+    "antidote_herb", "moonlight_dew", "mushroom", "pine_mushroom",
+}
+_DERRyth_CATALOG = {
     k: v for k, v in ALL_ITEMS.items()
-    if v.get("type") == "gathering" and k in (
+    if k in _DERRyth_MATERIAL_IDS or (v.get("type") == "gathering" and "버섯" in v.get("name", ""))
+}
+_DERRyth_CATALOG.update({k: v for k, v in GROCERIES.items() if k not in {"empty_bottle"}})
+
+_OMELUM_EXCLUDE = {"con_bread", "con_milk"}
+_OMELUM_CATALOG = {k: v for k, v in CONSUMABLES.items() if k not in _OMELUM_EXCLUDE}
+_OMELUM_CATALOG.update({
+    k: v for k, v in ALL_ITEMS.items()
+    if v.get("type") == "gathering" and k in {
         "herb", "mana_herb", "water", "healing_root", "mana_flower",
         "energy_leaf", "antidote_herb", "moonlight_dew",
-    )
+    }
 })
-_OMELUM_TOOLS = {}
 
-# ── 데리스 본클록 카탈로그: 식재료(조미료) + 요리 완성품 ────────────────────────────
-# 빈 병은 데리스 본클록에서 제거, 블러그로 이전
-_BROOKSHA_GROCERIES = {k: v for k, v in GROCERIES.items() if k != "empty_bottle"}
-_BROOKSHA_DISHES = {
-    k: v for k, v in COOKED_DISHES.items()
-    if k in ("simple_soup", "potato_pancake", "mushroom_soup", "tofu",
-             "mushroom_soup", "honey_milk", "ck_soup_01", "ck_steak_01")
-}
-# 꿀, 절구, 빵, 우유 추가 (오멜룸에서 이전)
-_BROOKSHA_EXTRA = {}
-if "honey" in ALL_ITEMS:
-    _BROOKSHA_EXTRA["honey"] = ALL_ITEMS["honey"]
-if "tool_mortar" in TOOLS:
-    _BROOKSHA_EXTRA["tool_mortar"] = TOOLS["tool_mortar"]
-for _k in ("bread", "milk"):
-    if _k in ALL_ITEMS:
-        _BROOKSHA_EXTRA[_k] = ALL_ITEMS[_k]
-
-# ── 블러그 카탈로그: 도구 + 빈 병 + 가방 ──────────────────────────────────────
-_MOL_CATALOG = {**TOOLS}
-_MOL_CATALOG["empty_bottle"] = GROCERIES["empty_bottle"]
-_MOL_CATALOG.update(BAGS)
+_BLURG_CATALOG = {**TOOLS}
+_BLURG_CATALOG["empty_bottle"] = GROCERIES["empty_bottle"]
+_BLURG_CATALOG.update(BAGS)
+_BLURG_CATALOG.update({k: v for k, v in SKILL_BOOKS.items() if v.get("npc") == "블러그"})
 
 NPC_CATALOGS = {
-    "데리스 본클록":   {**WEAPONS, **ARMORS},
-    "오멜룸": {**_OMELUM_POTIONS, **_OMELUM_TOOLS},
-    "데리스 본클록": {**_BROOKSHA_GROCERIES, **_BROOKSHA_DISHES, **_BROOKSHA_EXTRA,
-                **{k: v for k, v in SKILL_BOOKS.items() if v.get("npc") == "데리스 본클록"}},
-    "블러그":     _MOL_CATALOG,
-    "글럿": {k: v for k, v in SKILL_BOOKS.items() if v.get("npc") == "글럿"},
-    "블러그": {k: v for k, v in SKILL_BOOKS.items() if v.get("npc") == "블러그"},
-    "버나드": {k: v for k, v in SKILL_BOOKS.items() if v.get("npc") == "버나드"},
+    "데리스 본클록": _DERRyth_CATALOG,
+    "오멜룸": _OMELUM_CATALOG,
+    "블러그": _BLURG_CATALOG,
 }
+
 
 
 def find_item_by_name(name_or_id: str) -> str | None:

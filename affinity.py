@@ -11,7 +11,7 @@ AFFINITY_LEVELS = [
 ]
 
 NPC_GIFT_PREFS = {
-    "다몬": {
+    "데리스 본클록": {
         "loves":    ["iron_bar", "mithril_bar", "coal"],
         "likes":    ["copper_bar", "tin_bar"],
         "dislikes": ["gt_flower_01", "fragrant_flower"],
@@ -23,55 +23,55 @@ NPC_GIFT_PREFS = {
         "dislikes": ["poison_herb", "toxic_mushroom", "slag"],
         "default":  3,
     },
-    "몰": {
+    "블러그": {
         "loves":    ["gold_bar", "diamond"],
         "likes":    ["silver_bar", "gold_ore"],
         "dislikes": ["gt_herb_01", "gt_wood_01"],
         "default":  3,
     },
-    "아라벨라": {
+    "오멜룸": {
         "loves":    ["mana_herb", "mana_pool", "moonlight_dew"],
         "likes":    ["mana_flower", "healing_herb"],
         "dislikes": ["coal", "slag"],
         "default":  3,
     },
-    "제블로어": {
+    "군주 스포": {
         "loves":    ["wp_sword_02", "ar_shield_02"],
         "likes":    ["iron_bar", "copper_bar"],
         "dislikes": ["poison_herb", "toxic_mushroom"],
         "default":  3,
     },
-    "브룩샤": {
+    "데리스 본클록": {
         "loves":    ["ck_special_01", "honey", "butter"],
         "likes":    ["herb", "mushroom", "egg"],
         "dislikes": ["slag", "coal"],
         "default":  3,
     },
-    "실렌": {
+    "툴라": {
         "loves":    ["fs_dragon_01", "fs_gold_eel_01"],
         "likes":    ["fs_salmon_01", "fs_tuna_01"],
         "dislikes": ["poison_herb"],
         "default":  3,
     },
-    "알피라": {
+    "버나드": {
         "loves":    ["wine", "honey"],
         "likes":    ["gt_flower_01", "fragrant_flower"],
         "dislikes": ["slag", "coal"],
         "default":  3,
     },
-    "엘레라신": {
+    "군주 스포": {
         "loves":    ["diamond", "eye_of_truth"],
         "likes":    ["gold_bar", "mithril_bar"],
         "dislikes": ["gt_herb_01"],
         "default":  3,
     },
-    "게일의 환영": {
+    "블러그": {
         "loves":    ["mana_herb", "mp_crystal", "moonlight_dew"],
         "likes":    ["mana_flower", "mana_pool"],
         "dislikes": ["coal", "slag"],
         "default":  3,
     },
-    "카엘릭": {
+    "글럿": {
         "loves":    ["wp_sword_02", "iron_bar"],
         "likes":    ["copper_bar", "ar_shield_02"],
         "dislikes": ["gt_flower_01", "fragrant_flower"],

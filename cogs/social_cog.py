@@ -34,7 +34,7 @@ class SocialCog(commands.Cog, name="소셜"):
 
     @commands.command(name="납품")
     async def deliver_cmd(self, ctx, *, item_name: str = None):
-        """브룩샤 식당에 요리를 납품합니다."""
+        """데리스 본클록 식당에 요리를 납품합니다."""
         if not await check_channel(ctx, self.ctx.allowed_channel_id):
             return
         await self.ctx.restaurant_engine.deliver_food(ctx, item_name)
@@ -48,7 +48,7 @@ class SocialCog(commands.Cog, name="소셜"):
         if not npc_name:
             await ctx.send(ansi(
                 f"  {C.RED}✖ /선물 [NPC이름] 또는 /선물 [NPC이름] [아이템이름] 형식으로 입력하셰요!{C.R}\n"
-                f"  예시: /선물 다몬   또는   /선물 다몬 철 주괴"
+                f"  예시: /선물 데리스 본클록   또는   /선물 데리스 본클록 철 주괴"
             ))
             return
 

@@ -10,7 +10,7 @@ except ImportError:
     SKILL_BOOKS = {}
 
 # ── 포션/연금술 재료 전용 카탈로그 (오멜룸) ─────────────────────────────────
-# C-4 fix: 빵/우유는 브룩샤로 이전됨 — 오멜룸 카탈로그에서 제외
+# C-4 fix: 빵/우유는 데리스 본클록로 이전됨 — 오멜룸 카탈로그에서 제외
 _OMELUM_EXCLUDE = {"con_bread", "con_milk"}
 _OMELUM_POTIONS = {k: v for k, v in CONSUMABLES.items() if k not in _OMELUM_EXCLUDE}
 _OMELUM_POTIONS.update({
@@ -22,8 +22,8 @@ _OMELUM_POTIONS.update({
 })
 _OMELUM_TOOLS = {}
 
-# ── 브룩샤 카탈로그: 식재료(조미료) + 요리 완성품 ────────────────────────────
-# 빈 병은 브룩샤에서 제거, 몰로 이전
+# ── 데리스 본클록 카탈로그: 식재료(조미료) + 요리 완성품 ────────────────────────────
+# 빈 병은 데리스 본클록에서 제거, 블러그로 이전
 _BROOKSHA_GROCERIES = {k: v for k, v in GROCERIES.items() if k != "empty_bottle"}
 _BROOKSHA_DISHES = {
     k: v for k, v in COOKED_DISHES.items()
@@ -40,20 +40,20 @@ for _k in ("bread", "milk"):
     if _k in ALL_ITEMS:
         _BROOKSHA_EXTRA[_k] = ALL_ITEMS[_k]
 
-# ── 몰 카탈로그: 도구 + 빈 병 + 가방 ──────────────────────────────────────
+# ── 블러그 카탈로그: 도구 + 빈 병 + 가방 ──────────────────────────────────────
 _MOL_CATALOG = {**TOOLS}
 _MOL_CATALOG["empty_bottle"] = GROCERIES["empty_bottle"]
 _MOL_CATALOG.update(BAGS)
 
 NPC_CATALOGS = {
-    "다몬":   {**WEAPONS, **ARMORS},
+    "데리스 본클록":   {**WEAPONS, **ARMORS},
     "오멜룸": {**_OMELUM_POTIONS, **_OMELUM_TOOLS},
-    "브룩샤": {**_BROOKSHA_GROCERIES, **_BROOKSHA_DISHES, **_BROOKSHA_EXTRA,
-                **{k: v for k, v in SKILL_BOOKS.items() if v.get("npc") == "브룩샤"}},
-    "몰":     _MOL_CATALOG,
-    "카엘릭": {k: v for k, v in SKILL_BOOKS.items() if v.get("npc") == "카엘릭"},
-    "게일의 환영": {k: v for k, v in SKILL_BOOKS.items() if v.get("npc") == "게일의 환영"},
-    "알피라": {k: v for k, v in SKILL_BOOKS.items() if v.get("npc") == "알피라"},
+    "데리스 본클록": {**_BROOKSHA_GROCERIES, **_BROOKSHA_DISHES, **_BROOKSHA_EXTRA,
+                **{k: v for k, v in SKILL_BOOKS.items() if v.get("npc") == "데리스 본클록"}},
+    "블러그":     _MOL_CATALOG,
+    "글럿": {k: v for k, v in SKILL_BOOKS.items() if v.get("npc") == "글럿"},
+    "블러그": {k: v for k, v in SKILL_BOOKS.items() if v.get("npc") == "블러그"},
+    "버나드": {k: v for k, v in SKILL_BOOKS.items() if v.get("npc") == "버나드"},
 }
 
 

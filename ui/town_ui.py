@@ -78,9 +78,9 @@ FISHING_ZONE_DATA = {
         "has_silen": False,
         "emoji": "🎣",
     },
-    "실렌의 낚시터": {
-        "name": "실렌의 낚시터",
-        "desc": "드로우 낚시꾼 실렌이 자주 앉아있는 조용한 강가. 황금 잉어가 나온다는 소문이 있다.",
+    "툴라의 낚시터": {
+        "name": "툴라의 낚시터",
+        "desc": "드로우 낚시꾼 툴라이 자주 앉아있는 조용한 강가. 황금 잉어가 나온다는 소문이 있다.",
         "fish": ["황금잉어", "잉어", "붕어"],
         "has_silen": True,
         "emoji": "🌊",
@@ -520,7 +520,7 @@ class FishingZoneView(View):
         self.add_item(water_btn)
 
         if self.has_silen:
-            silen_btn = Button(label="실렌", style=discord.ButtonStyle.secondary, emoji="🌊")
+            silen_btn = Button(label="툴라", style=discord.ButtonStyle.secondary, emoji="🌊")
             silen_btn.callback = self._silen_callback
             self.add_item(silen_btn)
 
@@ -618,7 +618,7 @@ class FishingZoneView(View):
         from npc_conversation import ConversationManager
         conv = ConversationManager(self.player, self.aff_manager, self.npc_manager_ref)
         await interaction.response.defer()
-        await conv.send_conversation(interaction.channel, "실렌")
+        await conv.send_conversation(interaction.channel, "툴라")
         await interaction.delete_original_response()
 
     async def _back_callback(self, interaction: discord.Interaction):

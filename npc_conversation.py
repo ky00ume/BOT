@@ -12,24 +12,20 @@ logger = setup_logger('npc_conversation')
 
 # ── NPC 초상화 파일 ID 매핑 ─────────────────────────────────────────────────
 # BG3 위키 매칭 NPC: 파일명은 static/portraits/npc/{portrait_id}.png
-# 창작 캐릭터(카엘릭, 브룩샤, 실렌, 루바토)는 placeholder 유지
+# 창작 캐릭터(글럿, 데리스 본클록, 툴라, 루바토)는 placeholder 유지
 NPC_PORTRAIT_MAP: dict[str, str] = {
-    "라파엘":    "라파엘",    # BG3 Raphael
-    "카르니스":  "카르니스",  # BG3 Kar'niss (드라이더)
-    "다몬":      "다몬",      # BG3 Dammon
-    "오멜룸":    "오멜룸",    # BG3 Omeluum
-    "몰":        "몰",        # BG3 Mol
-    "아라벨라":  "아라벨라",  # BG3 Arabella
-    "알피라":    "알피라",    # BG3 Alfira
-    "엘레라신":  "엘레라신",  # BG3 Jaheira
-    "게일의 환영": "게일의 환영",  # BG3 Gale
-    # 창작 캐릭터 (placeholder)
-    "카엘릭":    "카엘릭",    # 창작 캐릭터
-    "브룩샤":    "브룩샤",    # 창작 캐릭터
-    "실렌":      "실렌",      # 창작 캐릭터
-    "루바토":    "루바토",    # 창작 캐릭터
-    "파울":      "파울",      # 창작 캐릭터 (여관 주인)
+    "데리스 본클록": "데리스 본클록",
+    "블러그": "블러그",
+    "오멜룸": "오멜룸",
+    "군주 스포": "군주 스포",
+    "글럿": "글럿",
+    "툴라": "툴라",
+    "버나드": "버나드",
+    "바엘렌 본클록": "바엘렌 본클록",
+    "라파엘": "라파엘",
+    "카르니스": "카르니스",
 }
+
 
 
 def _get_affinity_level_name(aff_manager, npc_name: str) -> str:
@@ -230,8 +226,8 @@ class NPCConversationView(View):
             inn_btn.callback = self._inn_callback
             self.add_item(inn_btn)
 
-        # 연주 버튼 (알피라 + 연주 스킬 보유 시)
-        if self.npc_name == "알피라" and "music" in getattr(self.player, "skill_ranks", {}):
+        # 연주 버튼 (버나드 + 연주 스킬 보유 시)
+        if self.npc_name == "버나드" and "music" in getattr(self.player, "skill_ranks", {}):
             music_btn = Button(
                 label="연주",
                 style=discord.ButtonStyle.success,
@@ -240,8 +236,8 @@ class NPCConversationView(View):
             music_btn.callback = self._music_callback
             self.add_item(music_btn)
 
-        # 제련 배우기 버튼 (다몬 + 제련 스킬 미보유 시)
-        if self.npc_name == "다몬" and "metallurgy" not in getattr(self.player, "skill_ranks", {}):
+        # 제련 배우기 버튼 (데리스 본클록 + 제련 스킬 미보유 시)
+        if self.npc_name == "데리스 본클록" and "metallurgy" not in getattr(self.player, "skill_ranks", {}):
             smelt_btn = Button(
                 label="제련 배우기",
                 style=discord.ButtonStyle.success,
@@ -405,7 +401,7 @@ class NPCConversationView(View):
         await interaction.response.send_message(file=file, view=view)
 
     async def _learn_metallurgy_callback(self, interaction: discord.Interaction):
-        """다몬에게 제련 스킬을 배운다."""
+        """데리스 본클록에게 제련 스킬을 배운다."""
         if "metallurgy" in getattr(self.player, "skill_ranks", {}):
             await interaction.response.send_message("이미 제련 스킬을 보유하고 있슴미댜!", ephemeral=True)
             return
@@ -425,13 +421,13 @@ class NPCConversationView(View):
             "/제련 명령어로 광석을 제련할 수 있습니다."
         )
         buf = get_renderer().render_npc_dialogue(
-            npc_name="다몬",
+            npc_name="데리스 본클록",
             npc_role="대장장이",
             greeting=dialogue_text,
-            affinity_pts=_get_affinity_points(self.aff_manager, "다몬"),
-            affinity_level=_get_affinity_level_name(self.aff_manager, "다몬"),
+            affinity_pts=_get_affinity_points(self.aff_manager, "데리스 본클록"),
+            affinity_level=_get_affinity_level_name(self.aff_manager, "데리스 본클록"),
             portrait_type="npc",
-            portrait_id="다몬",
+            portrait_id="데리스 본클록",
         )
         file = discord.File(buf, filename="npc_dialogue.png")
         await interaction.response.edit_message(attachments=[file], view=self)

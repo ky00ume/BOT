@@ -165,7 +165,7 @@ class QuestCog(commands.Cog, name="퀘스트"):
                 dialogue = qdata["dialogue"]
                 lines = [
                     header_box(f"📜 챕터 2 Q{q}: {qdata['title']}"),
-                    f"  {C.GOLD}💬 게일의 환영{C.R}",
+                    f"  {C.GOLD}💬 블러그{C.R}",
                     divider(),
                     f"  {C.WHITE}\"{dialogue}\"{C.R}",
                     divider(),
@@ -187,11 +187,11 @@ class QuestCog(commands.Cog, name="퀘스트"):
                     return
                 lines = [
                     header_box(f"📜 챕터 2 Q{q}: {qdata['title']}"),
-                    f"  {C.GOLD}💬 알피라{C.R}",
+                    f"  {C.GOLD}💬 버나드{C.R}",
                     divider(),
                     f"  {C.WHITE}\"{qdata['dialogue_alpira']}\"{C.R}",
                     divider(),
-                    f"  {C.GOLD}💬 아라벨라{C.R}",
+                    f"  {C.GOLD}💬 오멜룸{C.R}",
                     f"  {C.WHITE}\"{qdata['dialogue_arabella']}\"{C.R}",
                     divider(),
                     f"  {C.CYAN}📋 수집 미션: [{qdata['collect_item'].replace('sq_', '')}] × {qdata['collect_count']}{C.R}",
@@ -207,7 +207,7 @@ class QuestCog(commands.Cog, name="퀘스트"):
                 hint = qdata["hint"]
                 lines = [
                     header_box(f"📜 챕터 2 Q{q}: {qdata['title']}"),
-                    f"  {C.GOLD}💬 엘레라신{C.R}",
+                    f"  {C.GOLD}💬 군주 스포{C.R}",
                     divider(),
                     f"  {C.WHITE}\"{qdata['dialogue']}\"{C.R}",
                     divider(),
@@ -235,7 +235,7 @@ class QuestCog(commands.Cog, name="퀘스트"):
                     return
                 lines = [
                     header_box(f"📜 챕터 2 Q{q}: {qdata['title']}"),
-                    f"  {C.GOLD}💬 다몬{C.R}",
+                    f"  {C.GOLD}💬 데리스 본클록{C.R}",
                     divider(),
                     f"  {C.WHITE}\"{qdata['dialogue_damon']}\"{C.R}",
                     divider(),
@@ -273,7 +273,7 @@ class QuestCog(commands.Cog, name="퀘스트"):
                     return
                 lines = [
                     header_box(f"📜 챕터 3 Q{q}: {qdata['title']}"),
-                    f"  {C.GOLD}💬 몰{C.R}",
+                    f"  {C.GOLD}💬 블러그{C.R}",
                     divider(),
                     f"  {C.WHITE}\"{qdata['dialogue']}\"{C.R}",
                     divider(),
@@ -281,7 +281,7 @@ class QuestCog(commands.Cog, name="퀘스트"):
                 item_id = qdata.get("item_reward")
                 if item_id:
                     self.ctx.player.add_item(item_id)
-                    lines.append(f"  {C.CYAN}📦 아이템 획득: [몰의 지도 조각]{C.R}")
+                    lines.append(f"  {C.CYAN}📦 아이템 획득: [블러그의 지도 조각]{C.R}")
                 kw = qdata.get("keyword")
                 if kw and kw not in self.ctx.player.keywords:
                     self.ctx.player.keywords.append(kw)
@@ -300,7 +300,7 @@ class QuestCog(commands.Cog, name="퀘스트"):
                     return
                 lines = [
                     header_box("📜 챕터 3 — 성문 통과"),
-                    f"  {C.GOLD}💬 제블로어{C.R}",
+                    f"  {C.GOLD}💬 군주 스포{C.R}",
                     divider(),
                     f"  {C.WHITE}\"{gate_data.get('dialogue', '...')}\"{C.R}",
                     divider(),

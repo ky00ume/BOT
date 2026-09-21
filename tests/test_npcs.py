@@ -65,7 +65,7 @@ def _ensure_discord_stub(monkeypatch):
 
 
 def _make_pending_deliver_flag(
-    target_npc: str = "다몬",
+    target_npc: str = "데리스 본클록",
     deliver_item: str = "test_parcel",
     *,
     reward_gold: int = 100,
@@ -74,7 +74,7 @@ def _make_pending_deliver_flag(
     reward_item: str | None = None,
 ):
     return {
-        "npc_name": "아라벨라",
+        "npc_name": "오멜룸",
         "job_name": "배달 테스트",
         "target_npc": target_npc,
         "deliver_item": deliver_item,
@@ -167,7 +167,7 @@ class TestDeliverJobCompletion:
         gold_before = player.gold
         exp_before = getattr(player, "exp", 0.0)
 
-        await conv_manager.send_conversation(mock_ctx, "다몬")
+        await conv_manager.send_conversation(mock_ctx, "데리스 본클록")
 
         assert player.inventory.get("test_parcel", 0) == 0, "아이템이 제거되어야 함"
         assert player.gold == gold_before + 100, "골드 보상이 지급되어야 함"
@@ -182,12 +182,12 @@ class TestDeliverJobCompletion:
         """다른 NPC에게 대화 시 pending_deliver 플래그 유지."""
         player = player_with_parcel
         flag_key = "pending_deliver:test_parcel"
-        player._flags = {flag_key: _make_pending_deliver_flag(target_npc="다몬")}
+        player._flags = {flag_key: _make_pending_deliver_flag(target_npc="데리스 본클록")}
 
         gold_before = player.gold
 
-        # target_npc가 아닌 "몰"에게 대화
-        await conv_manager.send_conversation(mock_ctx, "몰")
+        # target_npc가 아닌 "블러그"에게 대화
+        await conv_manager.send_conversation(mock_ctx, "블러그")
 
         assert flag_key in player._flags, "틀린 NPC에게는 플래그가 유지되어야 함"
         assert player.gold == gold_before, "보상이 지급되면 안 됨"
@@ -204,7 +204,7 @@ class TestDeliverJobCompletion:
         player._flags = {flag_key: _make_pending_deliver_flag(reward_gold=200)}
 
         gold_before = player.gold
-        await conv_manager.send_conversation(mock_ctx, "다몬")
+        await conv_manager.send_conversation(mock_ctx, "데리스 본클록")
 
         assert player.gold == gold_before, "아이템 없으면 보상 미지급"
 
@@ -228,7 +228,7 @@ class TestDeliverJobCompletion:
 
         monkeypatch.setattr(player, "train_skill", _mock_train)
 
-        await conv_manager.send_conversation(mock_ctx, "다몬")
+        await conv_manager.send_conversation(mock_ctx, "데리스 본클록")
 
         assert "fishing" in called, "train_skill('fishing', ...) 이 호출되어야 함"
         assert called["fishing"] == 5.0
@@ -251,7 +251,7 @@ class TestDeliverJobCompletion:
         )
         monkeypatch.setitem(sys.modules, "village", _village_stub)
 
-        await conv_manager.send_conversation(mock_ctx, "다몬")
+        await conv_manager.send_conversation(mock_ctx, "데리스 본클록")
 
         assert any(
             amt == 5 and src == "job" for amt, src in contrib_calls

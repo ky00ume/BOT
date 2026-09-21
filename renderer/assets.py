@@ -144,7 +144,14 @@ def _load_banner(zone_type: str, zone_id: str,
             if os.path.isfile(p):
                 try:
                     img = Image.open(p).convert("RGBA")
-                    return _smart_crop(img, w, h, face_center=0.5)
+                    # Location art should remain spatially readable. Fit the whole scene
+                    # inside the slot instead of center-cropping wide BG3 screenshots.
+                    scale = min(w / img.width, h / img.height)
+                    nw, nh = max(1, int(img.width * scale)), max(1, int(img.height * scale))
+                    fitted = img.resize((nw, nh), Image.LANCZOS)
+                    canvas = Image.new("RGBA", (w, h), (12, 12, 14, 255))
+                    canvas.alpha_composite(fitted, ((w - nw) // 2, (h - nh) // 2))
+                    return canvas
                 except (OSError, IOError, ValueError) as e:
                     _log.warning("Banner load failed: %s (%s)", p, e)
     return None

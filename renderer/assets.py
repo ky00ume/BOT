@@ -89,6 +89,7 @@ def _load_portrait(portrait_type: str, portrait_id: str,
                         "글럿": (0.10, 1.32, 0.96, 0.0, 0.025),
                         "버나드": (0.04, 1.42, 0.92, 0.0, 0.07),
                         "바엘렌 본클록": (0.04, 1.45, 0.92, 0.0, 0.07),
+                        "툴라": (0.04, 1.45, 0.92, 0.0, 0.07),
                     }
                     if portrait_id in settings:
                         face_center, zoom, scale, x_shift, y_shift = settings[portrait_id]

@@ -217,18 +217,18 @@ class TestNpcDialogueDbLoading:
 
     def test_known_npc_in_keywords(self):
         from npc_dialogue_db import NPC_KEYWORDS
-        assert "다몬" in NPC_KEYWORDS
+        assert "데리스 본클록" in NPC_KEYWORDS
 
     def test_default_keywords_loaded(self):
         from npc_dialogue_db import DEFAULT_KEYWORDS
         assert isinstance(DEFAULT_KEYWORDS, list)
         assert len(DEFAULT_KEYWORDS) > 0
-        assert "마을" in DEFAULT_KEYWORDS
+        assert "군락" in DEFAULT_KEYWORDS
 
     def test_npc_gift_reactions_loaded(self):
         from npc_dialogue_db import NPC_GIFT_REACTIONS
         assert len(NPC_GIFT_REACTIONS) > 0
-        assert "다몬" in NPC_GIFT_REACTIONS
+        assert "데리스 본클록" in NPC_GIFT_REACTIONS
 
     def test_affinity_unlock_keywords_loaded(self):
         from npc_dialogue_db import AFFINITY_UNLOCK_KEYWORDS

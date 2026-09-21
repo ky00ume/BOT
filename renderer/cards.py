@@ -296,7 +296,7 @@ class BG3Renderer:
         name_h   = _th(_tmp_d, npc_name, fN)
         role_h   = _th(_tmp_d, f"[ {npc_role} ]", fR)
         orn_y    = ty + name_h + role_h + 14
-        greeting_text = f'"{greeting}"'
+        greeting_text = greeting
         maxw = W - TX - 24
         text_start_y = orn_y + 12
         text_end_y   = _wrap(_tmp_d, greeting_text, fD, TX, text_start_y, maxw, (0, 0, 0, 0), lh=LH)

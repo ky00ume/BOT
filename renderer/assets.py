@@ -79,10 +79,19 @@ def _load_portrait(portrait_type: str, portrait_id: str,
             if os.path.isfile(p):
                 try:
                     img = Image.open(p).convert("RGBA")
-                    # Per-character vertical framing keeps unusually tall/short model art centered.
-                    face_center = {"데리스 본클록": 0.07}.get(portrait_id, 0.18)
-                    x_shift = {"데리스 본클록": 0.035}.get(portrait_id, 0.0)
-                    return _smart_crop(img, w, h, face_center=face_center, zoom=1.45, x_shift=x_shift)
+                    if portrait_id == "데리스 본클록":
+                        # Derryth needs real headroom: frame the model first, then place it
+                        # lower/right on a transparent portrait canvas instead of cropping tighter.
+                        framed = _smart_crop(img, w, h, face_center=0.04, zoom=1.45, x_shift=0.035)
+                        scale = 0.90
+                        fw, fh = max(1, int(w * scale)), max(1, int(h * scale))
+                        framed = framed.resize((fw, fh), Image.LANCZOS)
+                        canvas = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+                        x = min(w - fw, max(0, (w - fw) // 2 + int(w * 0.035)))
+                        y = min(h - fh, max(0, int(h * 0.085)))
+                        canvas.alpha_composite(framed, (x, y))
+                        return canvas
+                    return _smart_crop(img, w, h, face_center=0.18, zoom=1.45)
                 except (OSError, IOError, ValueError) as e:
                     _log.warning("Portrait load failed: %s (%s)", p, e)
     return None

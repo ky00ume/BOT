@@ -80,7 +80,7 @@ def _load_portrait(portrait_type: str, portrait_id: str,
                 try:
                     img = Image.open(p).convert("RGBA")
                     # Per-character vertical framing keeps unusually tall/short model art centered.
-                    face_center = {"데리스 본클록": 0.32}.get(portrait_id, 0.18)
+                    face_center = {"데리스 본클록": 0.04}.get(portrait_id, 0.18)
                     return _smart_crop(img, w, h, face_center=face_center, zoom=1.45)
                 except (OSError, IOError, ValueError) as e:
                     _log.warning("Portrait load failed: %s (%s)", p, e)

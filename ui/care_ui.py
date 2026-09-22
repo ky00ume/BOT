@@ -579,8 +579,8 @@ class TowerPlaceView(discord.ui.View):
             "title": "비전의 탑 · 연금술 작업층",
             "description": "약초 냄새와 오래된 금속 냄새가 뒤섞인 작업층. 선반과 작업대에는 누군가 쓰다 만 도구와 병들이 남아 있다.",
             "actions": [
-                ("연금술 작업대", "⚗️", "연금술 작업대", "작업대 위에는 말린 균류와 빈 약병이 가지런히 놓여 있다. 츄라이더가 건드린 듯 작은 병 하나만 비뚤어져 있다."),
-                ("먹을거리 선반", "🥣", "먹을거리 선반", "보관할 만한 먹을거리와 재료를 둘 자리다. 아직은 비어 있는 칸이 더 많다."),
+                ("연금술 작업대", "⚗️", "facility", "alchemy"),
+                ("먹을거리 선반", "🥣", "facility", "pantry"),
             ],
         },
         "storage": {
@@ -588,6 +588,8 @@ class TowerPlaceView(discord.ui.View):
             "description": "탑 아래쪽의 서늘한 창고. 오래된 상자 너머로 수서 발전기의 금속 장치가 잠들어 있다.",
             "actions": [
                 ("수서 발전기", "🌸", "generator"),
+                ("보관 설비", "🗄️", "facility", "storage"),
+                ("장비 보관 설비", "🛡️", "facility", "gear_storage"),
                 ("쌓인 상자", "📦", "쌓인 상자", "오래된 상자들 사이에 작은 틈이 여럿 있다. 츄라이더가 숨바꼭질하기에는 꽤 그럴듯해 보인다."),
                 ("바닥의 흔적", "🔎", "바닥의 흔적", "먼지 위로 작은 발자국이 몇 번 오갔다. 창고 안쪽을 구경하다 다시 승강기 쪽으로 돌아간 흔적이다."),
             ],
@@ -627,6 +629,9 @@ class TowerPlaceView(discord.ui.View):
                 button.callback = self._open_nest
             elif action[2] == "generator":
                 button.callback = self._open_generator
+            elif action[2] == "facility":
+                facility = action[3]
+                button.callback = self._make_facility_callback(facility)
             else:
                 button.callback = self._make_observation_callback(action[2], action[3])
             self.add_item(button)
@@ -658,13 +663,76 @@ class TowerPlaceView(discord.ui.View):
         view = TowerGeneratorView(self.player, self.care_manager, suspicious_actor_id=self.suspicious_actor_id)
         await interaction.response.edit_message(attachments=[], embed=discord.Embed(title="비전의 탑 · 수서 발전기", description=desc, color=0x46594F), view=view)
 
+    def _make_facility_callback(self, facility):
+        async def callback(interaction):
+            view = TowerFacilityView(self.player, self.care_manager, facility=facility, return_place=self.place, suspicious_actor_id=self.suspicious_actor_id)
+            await interaction.response.edit_message(attachments=[], embed=view.make_embed(), view=view)
+        return callback
+
     def _make_observation_callback(self, title, text):
         async def callback(interaction):
             await interaction.response.edit_message(attachments=[], embed=self.make_embed((title, text)), view=self)
         return callback
 
     async def _open_lift(self, interaction):
+        from tower_power import facility_online
+        if not facility_online(self.player, "lift"):
+            embed = self.make_embed(("멈춘 승강기", "승강기에는 동력이 들어오지 않는다. 하층의 수서 발전기를 먼저 살펴봐야 할 것 같다."))
+            await interaction.response.edit_message(attachments=[], embed=embed, view=self)
+            return
         view = TowerLiftView(self.player, self.care_manager, current_place=self.place, suspicious_actor_id=self.suspicious_actor_id)
+        await interaction.response.edit_message(attachments=[], embed=view.make_embed(), view=view)
+
+
+class TowerFacilityView(discord.ui.View):
+    def __init__(self, player, care_manager, *, facility, return_place, suspicious_actor_id=None):
+        super().__init__(timeout=180)
+        self.player = player
+        self.care_manager = care_manager
+        self.facility = facility
+        self.return_place = return_place
+        self.suspicious_actor_id = suspicious_actor_id
+        from tower_power import ensure_tower_state
+        online = bool(ensure_tower_state(player)["facilities"].get(facility))
+        if not online:
+            btn = discord.ui.Button(label="설비를 복구한다", emoji="🔧", style=discord.ButtonStyle.primary)
+            btn.callback = self._restore
+            self.add_item(btn)
+        back = discord.ui.Button(label="돌아간다", emoji="↩️", style=discord.ButtonStyle.secondary)
+        back.callback = self._back
+        self.add_item(back)
+
+    def make_embed(self, result=None):
+        from tower_power import FACILITIES, ensure_tower_state, facility_cost
+        from items import ALL_ITEMS
+        data = FACILITIES[self.facility]
+        state = ensure_tower_state(self.player)
+        if state["facilities"].get(self.facility):
+            desc = "탑의 동력을 받아 설비가 조용히 작동하고 있다."
+            if data["storage_bonus"]:
+                desc += f"\n\n비전의 탑 보관 공간 **+{data['storage_bonus']}칸**"
+        elif not state["generator_online"]:
+            desc = "설비는 멀쩡해 보이지만 동력이 없다. **수서 발전기**를 먼저 복구해야 한다."
+        else:
+            lines = []
+            inv = getattr(self.player, "inventory", {})
+            for item_id, count in facility_cost(self.facility).items():
+                name = ALL_ITEMS.get(item_id, {}).get("name", item_id)
+                lines.append(f"{name} {inv.get(item_id, 0)}/{count}")
+            desc = "먼지와 녹을 걷어내면 다시 쓸 수 있을 것 같다.\n\n필요한 재료\n" + "\n".join(lines)
+        if result:
+            desc = result + "\n\n" + desc
+        return discord.Embed(title=f"비전의 탑 · {data['name']}", description=desc, color=0x46594F)
+
+    async def _restore(self, interaction):
+        from tower_power import restore_facility
+        restored = restore_facility(self.player, self.facility)
+        result = "낡은 부품을 맞추고 재료를 덧댄다. 잠시 뒤 설비에 불이 들어온다." if restored else "아직 설비를 복구할 수 없다. 동력과 필요한 재료를 확인해야 한다."
+        view = TowerFacilityView(self.player, self.care_manager, facility=self.facility, return_place=self.return_place, suspicious_actor_id=self.suspicious_actor_id)
+        await interaction.response.edit_message(attachments=[], embed=view.make_embed(result), view=view)
+
+    async def _back(self, interaction):
+        view = TowerPlaceView(self.player, self.care_manager, place=self.return_place, suspicious_actor_id=self.suspicious_actor_id)
         await interaction.response.edit_message(attachments=[], embed=view.make_embed(), view=view)
 
 

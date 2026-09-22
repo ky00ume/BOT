@@ -151,6 +151,8 @@ class Player:
         self.home_storage: dict = {}
         self.gear_bag_slots = 8
         self.home_storage_slots = 120
+        # 수서 발전기와 비전의 탑 설비 복구 상태. 기존 세이브는 모두 꺼진 상태로 시작한다.
+        self.tower_state = {"generator_online": False, "facilities": {}}
 
         # 기본 전투 스킬은 처음부터 연습 랭크로 습득
         self.skill_ranks = {
@@ -554,6 +556,7 @@ class Player:
             "home_storage":   self.home_storage,
             "gear_bag_slots": self.gear_bag_slots,
             "home_storage_slots": self.home_storage_slots,
+            "tower_state":    self.tower_state,
             "equipment":     self.equipment,
             "costume":       self.costume,
             "titles":        self.titles,
@@ -630,6 +633,11 @@ class Player:
             self.home_storage = data["home_storage"]
         self.gear_bag_slots = int(data.get("gear_bag_slots", self.gear_bag_slots))
         self.home_storage_slots = int(data.get("home_storage_slots", self.home_storage_slots))
+        if "tower_state" in data and isinstance(data["tower_state"], dict):
+            self.tower_state = data["tower_state"]
+        from tower_power import ensure_tower_state, recalculate_storage
+        ensure_tower_state(self)
+        recalculate_storage(self)
 
         if "bags" in data and isinstance(data["bags"], list):
             self.bags = data["bags"]

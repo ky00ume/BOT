@@ -585,8 +585,9 @@ class TowerPlaceView(discord.ui.View):
         },
         "storage": {
             "title": "비전의 탑 · 하층 창고",
-            "description": "탑 아래쪽의 서늘한 창고. 오래된 상자와 천으로 덮인 물건들이 벽을 따라 쌓여 있다.",
+            "description": "탑 아래쪽의 서늘한 창고. 오래된 상자 너머로 수서 발전기의 금속 장치가 잠들어 있다.",
             "actions": [
+                ("수서 발전기", "🌸", "generator"),
                 ("쌓인 상자", "📦", "쌓인 상자", "오래된 상자들 사이에 작은 틈이 여럿 있다. 츄라이더가 숨바꼭질하기에는 꽤 그럴듯해 보인다."),
                 ("바닥의 흔적", "🔎", "바닥의 흔적", "먼지 위로 작은 발자국이 몇 번 오갔다. 창고 안쪽을 구경하다 다시 승강기 쪽으로 돌아간 흔적이다."),
             ],
@@ -624,6 +625,8 @@ class TowerPlaceView(discord.ui.View):
             button = discord.ui.Button(label=label, emoji=emoji, style=style)
             if action[2] == "nest":
                 button.callback = self._open_nest
+            elif action[2] == "generator":
+                button.callback = self._open_generator
             else:
                 button.callback = self._make_observation_callback(action[2], action[3])
             self.add_item(button)
@@ -642,6 +645,19 @@ class TowerPlaceView(discord.ui.View):
         view = CareRoomView(self.player, self.care_manager, suspicious_actor_id=self.suspicious_actor_id)
         await interaction.response.edit_message(content=None, attachments=[_make_room_card(self.player)], embed=None, view=view)
 
+    async def _open_generator(self, interaction):
+        from tower_power import ensure_tower_state
+        state = ensure_tower_state(self.player)
+        online = state["generator_online"]
+        bloom_count = getattr(self.player, "inventory", {}).get("sussur_bloom", 0)
+        desc = (
+            "수서 꽃의 반마법 성질을 받아들이는 오래된 발전 장치가 낮게 울리고 있다. 탑의 동력이 돌아왔다."
+            if online else
+            f"오래 멈춘 발전 장치다. 중앙의 빈 홈은 수서 꽃 한 송이가 들어갈 만한 크기다.\n\n휴대 중인 수서 꽃: **{bloom_count}**"
+        )
+        view = TowerGeneratorView(self.player, self.care_manager, suspicious_actor_id=self.suspicious_actor_id)
+        await interaction.response.edit_message(attachments=[], embed=discord.Embed(title="비전의 탑 · 수서 발전기", description=desc, color=0x46594F), view=view)
+
     def _make_observation_callback(self, title, text):
         async def callback(interaction):
             await interaction.response.edit_message(attachments=[], embed=self.make_embed((title, text)), view=self)
@@ -649,6 +665,37 @@ class TowerPlaceView(discord.ui.View):
 
     async def _open_lift(self, interaction):
         view = TowerLiftView(self.player, self.care_manager, current_place=self.place, suspicious_actor_id=self.suspicious_actor_id)
+        await interaction.response.edit_message(attachments=[], embed=view.make_embed(), view=view)
+
+
+class TowerGeneratorView(discord.ui.View):
+    def __init__(self, player, care_manager, *, suspicious_actor_id=None):
+        super().__init__(timeout=180)
+        self.player = player
+        self.care_manager = care_manager
+        self.suspicious_actor_id = suspicious_actor_id
+        from tower_power import ensure_tower_state
+        state = ensure_tower_state(player)
+        if not state["generator_online"]:
+            btn = discord.ui.Button(label="수서 꽃을 넣는다", emoji="🌸", style=discord.ButtonStyle.primary)
+            btn.callback = self._restore
+            self.add_item(btn)
+        back = discord.ui.Button(label="하층 창고", emoji="📦", style=discord.ButtonStyle.secondary)
+        back.callback = self._back
+        self.add_item(back)
+
+    async def _restore(self, interaction):
+        from tower_power import restore_generator
+        restored = restore_generator(self.player)
+        if restored:
+            text = "수서 꽃이 장치 안으로 가라앉는다. 잠시 뒤 탑 깊은 곳에서 둔한 진동이 올라오고, 죽어 있던 설비에 하나씩 불이 들어온다. **승강기가 다시 움직이기 시작했다.**"
+        else:
+            text = "발전기를 움직이려면 **수서 꽃 한 송이**를 휴대하고 있어야 한다."
+        view = TowerGeneratorView(self.player, self.care_manager, suspicious_actor_id=self.suspicious_actor_id)
+        await interaction.response.edit_message(attachments=[], embed=discord.Embed(title="비전의 탑 · 수서 발전기", description=text, color=0x46594F), view=view)
+
+    async def _back(self, interaction):
+        view = TowerPlaceView(self.player, self.care_manager, place="storage", suspicious_actor_id=self.suspicious_actor_id)
         await interaction.response.edit_message(attachments=[], embed=view.make_embed(), view=view)
 
 

@@ -49,8 +49,8 @@ def save_player_to_db(player: Player) -> None:
          story_quest, skill_ranks, skill_exp, titles, current_title, bags,
          last_special_encounter, rafael_contract,
          fatigue, condition, stability, costume, care_flags, quest_data, collection_data, current_location,
-         gear_inventory, loot_buffer, home_storage, gear_bag_slots, home_storage_slots)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         gear_inventory, loot_buffer, home_storage, gear_bag_slots, home_storage_slots, tower_state)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         data.get("user_id", 0),
         data.get("name", "모험가"),
@@ -90,6 +90,7 @@ def save_player_to_db(player: Player) -> None:
         json.dumps(data.get("home_storage", {}), ensure_ascii=False),
         data.get("gear_bag_slots", 8),
         data.get("home_storage_slots", 120),
+        json.dumps(data.get("tower_state", {}), ensure_ascii=False),
     ))
     conn.commit()
     conn.close()
@@ -143,6 +144,10 @@ def load_player_from_db(user_id: int) -> Optional[Dict[str, Any]]:
             result[key] = _safe_json(row[key], default)
         except (IndexError, KeyError):
             result[key] = default
+    try:
+        result["tower_state"] = _safe_json(row["tower_state"], {})
+    except (IndexError, KeyError):
+        result["tower_state"] = {}
     for key, default in (("gear_bag_slots", 8), ("home_storage_slots", 120)):
         try:
             result[key] = row[key] if row[key] is not None else default

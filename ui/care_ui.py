@@ -14,6 +14,7 @@ from database import save_player_to_db
 from core.events import GameEvent, event_store
 from core.bond import bond_service
 from core.pet_state import observe_pet
+from care import get_care_state
 
 
 # ── 헬퍼: stat bar ──────────────────────────────────────────────────────────
@@ -38,20 +39,82 @@ def _make_room_card(player):
     return discord.File(buf, filename="care_room.png")
 
 
+def _band_word(value, low, mid, high):
+    if value < 34:
+        return low
+    if value < 67:
+        return mid
+    return high
+
+
+def _status_line(player) -> str:
+    state = get_care_state(player)
+    hunger = _band_word(state["hunger"], "든든함", "보통", "배고픔")
+    clean = _band_word(state["cleanliness"], "더러움", "보통", "깨끗함")
+    fatigue = _band_word(player.fatigue, "멀쩡함", "조금 피곤", "많이 피곤")
+    mood = _band_word(player.stability, "예민함", "평온함", "좋음")
+    return f"🍖 {hunger}　🫧 {clean}　💤 {fatigue}　✨ {mood}"
+
+
+def _nest_trace(player) -> str:
+    state = get_care_state(player)
+    if state["boredom"] >= 70:
+        return "실뭉치가 여기저기 풀려 있고 작은 물건 몇 개가 자리를 옮겨 놓았습니다. 혼자 꽤 부산하게 놀았던 모양입니다."
+    if state["cleanliness"] < 35:
+        return "담요 가장자리와 바닥에 마른 흙자국이 이어집니다. 들어오기 전에 몸을 제대로 털지 않은 모양입니다."
+    return "담요 조각과 실, 주워 온 작은 물건들이 츄라이더 나름의 순서로 모여 있습니다."
+
+
+def _observation_details(player) -> list[str]:
+    state = get_care_state(player)
+    details = []
+    if state["hunger"] >= 70:
+        details.append("배 쪽을 한 번 내려다본 뒤 먹을거리 냄새가 나는 쪽으로 시선이 자꾸 갑니다.")
+    elif state["hunger"] <= 20:
+        details.append("배가 찬 모양인지 먹을거리 쪽은 힐끗 보고도 금세 관심을 거둡니다.")
+    else:
+        details.append("배가 고파 보이지도, 특별히 든든해 보이지도 않습니다. 지금은 먹을 것보다 주변에 더 관심이 많습니다.")
+    if state["cleanliness"] < 35:
+        details.append("거미 복부와 다리 관절 사이에 먼지와 마른 얼룩이 꽤 남아 있습니다.")
+    elif state["cleanliness"] >= 85:
+        details.append("흰 피부의 드로우 상체와 검은 거미 복부·여덟 다리가 막 닦아낸 듯 말끔합니다.")
+    else:
+        details.append("다리 끝 몇 군데에 생활 먼지가 조금 묻어 있지만 당장 씻길 정도는 아닙니다.")
+    if player.fatigue >= 65:
+        details.append("상체를 낮게 기대고 복부도 바닥 가까이 붙였습니다. 여덟 다리가 평소보다 넓게 퍼져 있습니다.")
+    elif player.fatigue <= 30:
+        details.append("앞다리를 가볍게 들었다 놓으며 주변 소리에 바로 반응합니다. 아직 기운이 남아 있습니다.")
+    else:
+        details.append("앞다리 하나를 접었다 폈다 하며 편한 자세를 찾고 있습니다.")
+    details.append(_nest_trace(player))
+    return details
+
+
 def _make_room_embed(player):
-    """Native Discord embed so the spider emoji is rendered by Discord itself."""
+    """Compact home surface: status is visible; details belong to interactions."""
+    try:
+        from app_context import get_care_manager
+        get_care_manager().finish_rest_if_ready(player)
+    except Exception:
+        pass
     obs = observe_pet(player)
+    rest = None
+    try:
+        # Caller normally owns the manager; this is only a visual hint from persisted state.
+        state = get_care_state(player)
+        until = float(state.get("rest_until", 0) or 0)
+        if until > _time.time():
+            remaining = int(until - _time.time())
+            rest = f"🕷️💤 쉬는 중 · {remaining // 60}분 {remaining % 60:02d}초"
+    except Exception:
+        rest = None
+    description = rest or obs.headline
     embed = discord.Embed(
-        title="🕷️ 츄라이더 · 책장 뒤 작은 틈",
-        description=f"{obs.headline}\n\n{obs.body}",
+        title="🕷️ 츄라이더",
+        description=description,
         color=0x544766,
     )
-    embed.add_field(name="💗 기분", value=obs.mood, inline=True)
-    embed.add_field(name="💤 기운", value=obs.energy, inline=True)
-    embed.add_field(name="🫶 최근 기억", value=obs.care_memory, inline=False)
-    embed.add_field(name="🧵 인연", value=obs.relationship, inline=True)
-    embed.add_field(name="🌱 버릇", value=obs.habit, inline=False)
-    embed.set_footer(text="🕷️ 비전의 탑 상층 · 숨은 보금자리")
+    embed.add_field(name="상태", value=_status_line(player), inline=False)
     return embed
 
 
@@ -309,70 +372,195 @@ class SnackFeedView(discord.ui.View):
         await interaction.response.edit_message(
             content=None, attachments=[], embed=_make_room_embed(self.player), view=self.parent_view
         )
-# ── 가위바위보 서브 View ─────────────────────────────────────────────────────
-class RockPaperScissorsView(discord.ui.View):
+class ObserveView(discord.ui.View):
+    def __init__(self, player, parent_view, *, index=0):
+        super().__init__(timeout=CARE_VIEW_TIMEOUT)
+        self.player = player
+        self.parent_view = parent_view
+        self.index = index
+        more = discord.ui.Button(label="👀 조금 더 본다", style=discord.ButtonStyle.primary)
+        more.callback = self._more
+        self.add_item(more)
+        done = discord.ui.Button(label="그만 본다", style=discord.ButtonStyle.secondary)
+        done.callback = self._done
+        self.add_item(done)
+
+    def make_embed(self):
+        details = _observation_details(self.player)
+        detail = details[self.index % len(details)]
+        embed = discord.Embed(title="🕷️👀 관찰", description=detail, color=0x5E596B)
+        embed.add_field(name="상태", value=_status_line(self.player), inline=False)
+        return embed
+
+    async def _more(self, interaction):
+        details = _observation_details(self.player)
+        self.index = (self.index + 1) % len(details)
+        view = ObserveView(self.player, self.parent_view, index=self.index)
+        await interaction.response.edit_message(attachments=[], embed=view.make_embed(), view=view)
+
+    async def _done(self, interaction):
+        await interaction.response.edit_message(attachments=[], embed=_make_room_embed(self.player), view=self.parent_view)
+
+
+class PettingView(discord.ui.View):
+    REACTIONS = [
+        "손을 내밀자 츄라이더가 시선을 올립니다. 앞다리 하나가 잠깐 들렸다가 다시 바닥에 내려옵니다.",
+        "흰 머리카락 사이를 천천히 쓰다듬자 어깨의 힘이 조금 풀립니다. 거미 다리 두 개도 몸 안쪽으로 접힙니다.",
+        "조금 더 쓰다듬자 츄라이더가 먼저 머리를 손바닥 쪽으로 기울입니다. 복부도 바닥에 편하게 내려놓습니다.",
+        "손을 떼지 않자 눈을 반쯤 감고 가만히 있습니다. 앞다리 하나가 손목 가까이에 조심스럽게 걸립니다.",
+        "이제는 손길이 멈출 때마다 고개를 아주 조금 따라옵니다. 더 쓰다듬어도 괜찮다는 뜻처럼 보입니다.",
+    ]
+
+    def __init__(self, player, care_manager, parent_view, *, step=0, opening=None):
+        super().__init__(timeout=CARE_VIEW_TIMEOUT)
+        self.player = player
+        self.care_manager = care_manager
+        self.parent_view = parent_view
+        self.step = step
+        self.opening = opening
+        if step < len(self.REACTIONS) - 1:
+            more = discord.ui.Button(label="🫳 계속 쓰다듬기", style=discord.ButtonStyle.primary)
+            more.callback = self._more
+            self.add_item(more)
+        done = discord.ui.Button(label="그만 쓰다듬기", style=discord.ButtonStyle.secondary)
+        done.callback = self._done
+        self.add_item(done)
+
+    def make_embed(self):
+        text = self.REACTIONS[min(self.step, len(self.REACTIONS) - 1)]
+        if self.opening and not self.opening.get("success"):
+            text += f"\n\n{self.opening['message']}"
+        return discord.Embed(title="🕷️🫳 쓰다듬기", description=text, color=0x8C668A)
+
+    async def _more(self, interaction):
+        view = PettingView(self.player, self.care_manager, self.parent_view, step=self.step + 1)
+        await interaction.response.edit_message(attachments=[], embed=view.make_embed(), view=view)
+
+    async def _done(self, interaction):
+        await interaction.response.edit_message(attachments=[], embed=_make_room_embed(self.player), view=self.parent_view)
+
+
+class RestingView(discord.ui.View):
     def __init__(self, player, care_manager, parent_view):
         super().__init__(timeout=CARE_VIEW_TIMEOUT)
-        self.player       = player
+        self.player = player
         self.care_manager = care_manager
-        self.parent_view  = parent_view
+        self.parent_view = parent_view
+        watch = discord.ui.Button(label="👀 지켜보기", style=discord.ButtonStyle.secondary)
+        watch.callback = self._watch
+        self.add_item(watch)
+        wake = discord.ui.Button(label="🌤️ 깨우기", style=discord.ButtonStyle.primary)
+        wake.callback = self._wake
+        self.add_item(wake)
 
+    def make_embed(self):
+        status = self.care_manager.get_rest_status(self.player)
+        if status.get("completed"):
+            result = self.care_manager.finish_rest(self.player)
+            return discord.Embed(title="🕷️💤 휴식 끝", description=result["message"], color=0x4A4AAA)
+        remaining = status.get("remaining", 0)
+        mins, secs = divmod(remaining, 60)
+        progress = status.get("progress", 0.0)
+        if progress < 0.33:
+            scene = "담요와 실 사이에 몸을 접고 눈을 감았습니다. 앞다리 끝이 가끔 느리게 움직입니다."
+        elif progress < 0.75:
+            scene = "완전히 잠든 모양입니다. 드로우 상체의 숨이 고르고, 여덟 다리는 몸 가까이 편하게 접혀 있습니다."
+        else:
+            scene = "잠이 얕아졌는지 귀와 앞다리가 작은 소리에 한 번씩 반응합니다. 곧 스스로 일어날 것 같습니다."
+        embed = discord.Embed(title="🕷️💤 쉬는 중", description=scene, color=0x4A4AAA)
+        embed.add_field(name="남은 휴식", value=f"{mins}분 {secs:02d}초", inline=True)
+        return embed
+
+    async def _watch(self, interaction):
+        view = RestingView(self.player, self.care_manager, self.parent_view)
+        embed = view.make_embed()
+        if not self.care_manager.get_rest_status(self.player).get("active"):
+            await interaction.response.edit_message(attachments=[], embed=_make_room_embed(self.player), view=self.parent_view)
+        else:
+            await interaction.response.edit_message(attachments=[], embed=embed, view=view)
+
+    async def _wake(self, interaction):
+        result = self.care_manager.finish_rest(self.player, wake_early=True)
+        try:
+            save_player_to_db(self.player)
+        except Exception as e:
+            logger.error("휴식 종료 저장 실패: %s", e, exc_info=True)
+        embed = discord.Embed(title="🕷️🌤️ 깨우기", description=result["message"], color=0x5D637B)
+        if result.get("success"):
+            embed.add_field(name="회복", value=f"피로 -{result.get('fatigue_recovery', 0)} · 기운 +{result.get('energy_recovery', 0)}", inline=False)
+        await interaction.response.edit_message(attachments=[], embed=embed, view=self.parent_view)
+
+
+# ── 가위바위보 서브 View ─────────────────────────────────────────────────────
+class RockPaperScissorsView(discord.ui.View):
+    def __init__(self, player, care_manager, parent_view, *, rounds=0):
+        super().__init__(timeout=CARE_VIEW_TIMEOUT)
+        self.player = player
+        self.care_manager = care_manager
+        self.parent_view = parent_view
+        self.rounds = rounds
+        self._build_choice_buttons()
+
+    def _build_choice_buttons(self):
+        self.clear_items()
         for label, choice in [("✊ 바위", "rock"), ("✌️ 가위", "scissors"), ("✋ 보", "paper")]:
             btn = discord.ui.Button(label=label, style=discord.ButtonStyle.primary)
             btn.callback = self._make_cb(choice)
             self.add_item(btn)
-
-        back_btn = discord.ui.Button(
-            label="◀ 돌아가기",
-            style=discord.ButtonStyle.secondary,
-            row=1,
-        )
-        back_btn.callback = self._on_back
-        self.add_item(back_btn)
+        done = discord.ui.Button(label="그만 놀기", style=discord.ButtonStyle.secondary, row=1)
+        done.callback = self._done
+        self.add_item(done)
 
     def _make_cb(self, choice: str):
         async def cb(interaction: discord.Interaction):
-            result = self.care_manager.play_result(self.player, choice)
-            rows = [
-                {"label": "내 선택", "value": result.get("player_choice", "?")},
-                {"label": "상대 선택", "value": result.get("bot_choice", "?")},
-                {"label": "결과", "value": result["message"]},
-            ]
-            if result.get("stability_gain"):
-                rows.append({"label": "💙 안정감", "value": f"+{result['stability_gain']}"})
-            if result.get("fatigue_gain"):
-                rows.append({"label": "🔥 피로도", "value": f"+{result['fatigue_gain']}"})
-
-            result_label = result.get("result", "")
-            grade = "Normal" if result.get("success") else "Fail"
-            if result_label == "win":
-                grade = "Legendary"
-            elif result_label == "lose":
-                grade = "Fail"
-
-            for child in self.children:
-                if child.label != "◀ 돌아가기":
-                    child.disabled = True
-
-            if result.get("success"):
-                event_store.append(GameEvent(event_type="care.play", actor_id=interaction.user.id, subject="츄라이더", location="비전의 탑", payload={"game": "rock_paper_scissors", "result": result.get("result")}))
-                bond_service.award("care.play", actor_id=interaction.user.id)
-                try:
-                    save_player_to_db(self.player)
-                except Exception as e:
-                    logger.error("놀아주기 후 저장 실패: %s", e, exc_info=True)
-            embed = discord.Embed(title="🕷️🧶 놀기", description=result["message"], color=0x655A8A)
-            embed.add_field(name="내 선택", value=result.get("player_choice", "?"), inline=True)
-            embed.add_field(name="츄라이더", value=result.get("bot_choice", "?"), inline=True)
-            await interaction.response.edit_message(
-                content=None, attachments=[], embed=embed, view=self
-            )
+            result = self.care_manager.play_result(self.player, choice, continue_session=self.rounds > 0)
+            if not result.get("success"):
+                embed = discord.Embed(title="🕷️🧶 놀기", description=result["message"], color=0x6B5C5C)
+                await interaction.response.edit_message(attachments=[], embed=embed, view=self.parent_view)
+                return
+            event_store.append(GameEvent(event_type="care.play", actor_id=interaction.user.id, subject="츄라이더", location="비전의 탑", payload={"game": "rock_paper_scissors", "result": result.get("result")}))
+            bond_service.award("care.play", actor_id=interaction.user.id)
+            try:
+                save_player_to_db(self.player)
+            except Exception as e:
+                logger.error("놀아주기 후 저장 실패: %s", e, exc_info=True)
+            next_view = RockPaperScissorsResultView(self.player, self.care_manager, self.parent_view, result=result, rounds=self.rounds + 1)
+            await interaction.response.edit_message(attachments=[], embed=next_view.make_embed(), view=next_view)
         return cb
 
-    async def _on_back(self, interaction: discord.Interaction):
-        await interaction.response.edit_message(
-            content=None, attachments=[], embed=_make_room_embed(self.player), view=self.parent_view
-        )
+    async def _done(self, interaction):
+        await interaction.response.edit_message(attachments=[], embed=_make_room_embed(self.player), view=self.parent_view)
+
+
+class RockPaperScissorsResultView(discord.ui.View):
+    def __init__(self, player, care_manager, parent_view, *, result, rounds):
+        super().__init__(timeout=CARE_VIEW_TIMEOUT)
+        self.player = player
+        self.care_manager = care_manager
+        self.parent_view = parent_view
+        self.result = result
+        self.rounds = rounds
+        again = discord.ui.Button(label="🔁 한 판 더", style=discord.ButtonStyle.primary)
+        again.callback = self._again
+        self.add_item(again)
+        done = discord.ui.Button(label="그만 놀기", style=discord.ButtonStyle.secondary)
+        done.callback = self._done
+        self.add_item(done)
+
+    def make_embed(self):
+        embed = discord.Embed(title="🕷️🧶 가위바위보", description=self.result["message"], color=0x655A8A)
+        embed.add_field(name="나", value=self.result.get("player_choice", "?"), inline=True)
+        embed.add_field(name="츄라이더", value=self.result.get("bot_choice", "?"), inline=True)
+        embed.set_footer(text=f"이번 놀이 {self.rounds}판째")
+        return embed
+
+    async def _again(self, interaction):
+        view = RockPaperScissorsView(self.player, self.care_manager, self.parent_view, rounds=self.rounds)
+        embed = discord.Embed(title="🕷️🧶 한 판 더", description="이번에는 뭘 낼까요?", color=0x655A8A)
+        await interaction.response.edit_message(attachments=[], embed=embed, view=view)
+
+    async def _done(self, interaction):
+        await interaction.response.edit_message(attachments=[], embed=_make_room_embed(self.player), view=self.parent_view)
 
 
 # ── 간식 제작 서브 View ──────────────────────────────────────────────────────
@@ -912,91 +1100,64 @@ class CareRoomView(discord.ui.View):
         walk_btn.callback = self._on_walk
         self.add_item(walk_btn)
 
-        nest_btn = discord.ui.Button(
-            label="🕸️ 보금자리",
-            style=discord.ButtonStyle.secondary,
-            custom_id="care_nest",
-            row=3,
-        )
-        nest_btn.callback = self._on_nest
-        self.add_item(nest_btn)
-
-    # ── 관찰 / 몸단장 / 휴식 ───────────────────────────────────────────
+    # ── 관찰 / 몸단장 / 휴식 / 접촉 ─────────────────────────────────────
     async def _on_observe(self, interaction: discord.Interaction):
-        await interaction.response.edit_message(content=None, attachments=[], embed=_make_room_embed(self.player), view=self)
+        view = ObserveView(self.player, self)
+        await interaction.response.edit_message(content=None, attachments=[], embed=view.make_embed(), view=view)
 
     async def _on_wash(self, interaction: discord.Interaction):
         result = self.care_manager.wash(self.player)
-        rows = [
-            {"label": "🕷️🛁 츄라이더", "value": result["message"]},
-            {"label": "🫧 몸 상태", "value": "복부와 여덟 다리 사이까지 말끔해졌습니다."},
-        ]
+        if not result.get("success"):
+            embed = discord.Embed(title="🕷️🛁 아직 목욕할 때가 아님", description=result["message"], color=0x596574)
+            await interaction.response.edit_message(content=None, attachments=[], embed=embed, view=self)
+            return
         event_store.append(GameEvent(event_type="care.wash", actor_id=interaction.user.id, subject="츄라이더", location="비전의 탑", payload={"source": "care_room"}))
         try:
             save_player_to_db(self.player)
         except Exception as e:
             logger.error("씻기기 후 저장 실패: %s", e, exc_info=True)
         embed = discord.Embed(title="🕷️🛁 북북박박 목욕", description=result["message"], color=0x4F7186)
-        embed.add_field(name="🫧 몸 상태", value="복부와 여덟 다리 사이까지 말끔해졌습니다.", inline=False)
+        embed.add_field(name="🫧 몸 상태", value="복부와 여덟 다리 사이까지 말끔해졌습니다. 다음 목욕까지 1시간.", inline=False)
         await interaction.response.edit_message(content=None, attachments=[], embed=embed, view=self)
 
     async def _on_rest(self, interaction: discord.Interaction):
-        result = self.care_manager.rest(self.player)
-        rows = [
-            {"label": "🕷️💤 츄라이더", "value": result["message"]},
-            {"label": "💤 휴식", "value": "보금자리에서 방해받지 않고 쉬고 있습니다."},
-        ]
-        event_store.append(GameEvent(event_type="care.rest", actor_id=interaction.user.id, subject="츄라이더", location="비전의 탑", payload={"source": "care_room"}))
-        try:
-            save_player_to_db(self.player)
-        except Exception as e:
-            logger.error("쉬게 하기 후 저장 실패: %s", e, exc_info=True)
-        embed = discord.Embed(title="🕷️💤 쉬게 하기", description=result["message"], color=0x4A4AAA)
-        embed.add_field(name="💤 휴식", value="보금자리에서 방해받지 않고 쉬고 있습니다.", inline=False)
-        await interaction.response.edit_message(content=None, attachments=[], embed=embed, view=self)
+        status = self.care_manager.get_rest_status(self.player)
+        if status.get("completed"):
+            self.care_manager.finish_rest(self.player)
+            status = self.care_manager.get_rest_status(self.player)
+        if not status.get("active"):
+            self.care_manager.start_rest(self.player)
+            event_store.append(GameEvent(event_type="care.rest", actor_id=interaction.user.id, subject="츄라이더", location="비전의 탑", payload={"source": "care_room"}))
+            try:
+                save_player_to_db(self.player)
+            except Exception as e:
+                logger.error("휴식 시작 저장 실패: %s", e, exc_info=True)
+        view = RestingView(self.player, self.care_manager, self)
+        await interaction.response.edit_message(content=None, attachments=[], embed=view.make_embed(), view=view)
 
-    async def _on_nest(self, interaction: discord.Interaction):
-        from care import get_care_state
-        state = get_care_state(self.player)
-        if state["boredom"] >= 70:
-            trace = "실뭉치가 여기저기 풀려 있고 작은 물건 몇 개가 자리를 옮겨 놓았습니다. 혼자 꽤 부산하게 놀았던 모양입니다."
-        elif state["cleanliness"] < 35:
-            trace = "담요 가장자리와 바닥에 마른 흙자국이 이어집니다. 들어오기 전에 몸을 제대로 털지 않은 모양입니다."
-        else:
-            trace = "담요 조각과 실, 주워 온 작은 물건들이 츄라이더 나름의 순서로 모여 있습니다."
-        rows = [
-            {"label": "🕸️ 보금자리", "value": "책장과 벽 사이의 좁은 틈. 드로우 상체를 기대고 거미 하체를 접어 넣기 좋은 크기입니다."},
-            {"label": "🔎 오늘의 흔적", "value": trace},
-        ]
-        embed = discord.Embed(title="🕷️🕸️ 책장 뒤 작은 틈", description=rows[0]["value"], color=0x544766)
-        embed.add_field(name="🔎 오늘의 흔적", value=trace, inline=False)
-        await interaction.response.edit_message(content=None, attachments=[], embed=embed, view=self)
-
-    # ── 쓰담쓰담 ──────────────────────────────────────────────────────────
     async def _on_pet(self, interaction: discord.Interaction):
         result = self.care_manager.pet(self.player)
         from core.special_reactions import reaction_for
         special = reaction_for(interaction.user.id, suspicious_actor_id=self.suspicious_actor_id)
-        rows = [{"label": "결과", "value": special.pet if special else result["message"]}]
-        if result.get("condition_gain"):
-            rows.append({"label": "💛 컨디션", "value": f"+{result['condition_gain']}"})
-        if result.get("stability_gain"):
-            rows.append({"label": "💙 안정감", "value": f"+{result['stability_gain']}"})
-        grade = "Normal" if result["success"] else "Fail"
-        if result["success"]:
+        if special and result.get("success"):
+            opening = dict(result)
+            opening["message"] = special.pet
+        else:
+            opening = result
+        if result.get("success"):
             event_store.append(GameEvent(event_type="care.pet", actor_id=interaction.user.id, subject="츄라이더", location="비전의 탑", payload={"source": "care_room"}))
             bond_service.award("care.pet", actor_id=interaction.user.id)
             try:
                 save_player_to_db(self.player)
             except Exception as e:
-                logger.error("쓰담쓰담 후 저장 실패: %s", e, exc_info=True)
+                logger.error("쓰다듬기 후 저장 실패: %s", e, exc_info=True)
             try:
                 import app_context
                 app_context.get_diary_manager().increment("pet_count", 1)
             except Exception as e:
                 logger.warning("일기 기록 실패: %s", e)
-        embed = discord.Embed(title="🕷️🫳 쓰다듬기", description=rows[0]["value"], color=0x8C668A if result["success"] else 0x6B5C5C)
-        await interaction.response.edit_message(content=None, attachments=[], embed=embed, view=self)
+        view = PettingView(self.player, self.care_manager, self, opening=opening)
+        await interaction.response.edit_message(content=None, attachments=[], embed=view.make_embed(), view=view)
 
     # ── 산책 ──────────────────────────────────────────────────────────────
     WALK_COOLDOWN = 180  # 3분

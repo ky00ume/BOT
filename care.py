@@ -15,6 +15,9 @@ def _care_state(player) -> dict:
     state.setdefault("comfort", 50)      # 0=불안, 100=안정/친숙
     state.setdefault("wash_count", 0)
     state.setdefault("rest_count", 0)
+    state.setdefault("rest_started_at", 0.0)
+    state.setdefault("rest_until", 0.0)
+    state.setdefault("last_rest_summary", "")
     return state
 
 
@@ -25,8 +28,10 @@ def get_care_state(player) -> dict:
 class CareManager:
     """하이네스 돌봄 시스템 매니저."""
 
-    PET_COOLDOWN  = 30 * 60   # 쓰담쓰담 쿨타임 30분
-    PLAY_COOLDOWN = 60 * 60   # 놀아주기 쿨타임 1시간
+    PET_COOLDOWN  = 30 * 60   # 쓰다듬기 보상 쿨타임 30분 (세션 안 연속 접촉은 허용)
+    PLAY_COOLDOWN = 60 * 60   # 새 놀이 세션 쿨타임 1시간
+    WASH_COOLDOWN = 60 * 60   # 목욕 1시간
+    REST_DURATION = 20 * 60   # 실제 휴식 20분
 
     # ── 쓰담쓰담 ──────────────────────────────────────────────────────────
     def pet(self, player) -> dict:
@@ -116,13 +121,13 @@ class CareManager:
         }
 
     # ── 놀아주기 ──────────────────────────────────────────────────────────
-    def play_result(self, player, choice: str) -> dict:
-        """놀아주기 결과 처리 (가위바위보). choice: rock|scissors|paper."""
+    def play_result(self, player, choice: str, *, continue_session: bool = False) -> dict:
+        """놀아주기 결과 처리. 같은 놀이 세션의 재경기는 쿨타임을 무시한다."""
         now = time.time()
         last = player._flags.get("last_play_time", 0)
         remaining = int(self.PLAY_COOLDOWN - (now - last))
 
-        if remaining > 0:
+        if remaining > 0 and not continue_session:
             mins = remaining // 60
             secs = remaining % 60
             return {
@@ -205,12 +210,26 @@ class CareManager:
             }
 
     # ── 씻기기 ───────────────────────────────────────────────────────────
+    def get_wash_cooldown_remaining(self, player) -> int:
+        last = getattr(player, "_flags", {}).get("last_wash_time", 0)
+        return max(0, int(self.WASH_COOLDOWN - (time.time() - last)))
+
     def wash(self, player) -> dict:
+        remaining = self.get_wash_cooldown_remaining(player)
+        if remaining > 0:
+            mins, secs = divmod(remaining, 60)
+            return {
+                "success": False,
+                "cooldown": True,
+                "remaining": remaining,
+                "message": f"아직 털과 다리 사이에 목욕 뒤 물기가 남아 있슴미댜. ({mins}분 {secs}초 남음)",
+            }
         state = _care_state(player)
         before = state["cleanliness"]
         state["cleanliness"] = min(100, before + random.randint(35, 55))
         state["wash_count"] += 1
         player.condition = min(100, player.condition + random.randint(1, 3))
+        player._flags["last_wash_time"] = time.time()
         lines = [
             "욕조에 넣자 여덟 다리가 욕조 가장자리를 붙잡았슴미댜. 그래도 복부부터 북북박박 씻겼더니 결국 체념한 얼굴이 됐슴미댜. 🛁",
             "거품을 잔뜩 내서 다리 사이까지 북북 씻겼슴미댜. 츄라이더가 죽을상으로 쳐다보지만 아주 깨끗해졌슴미댜. 🫧",
@@ -221,18 +240,69 @@ class CareManager:
         return {"success": True, "message": random.choice(lines), "cleanliness_gain": state["cleanliness"] - before}
 
     # ── 쉬게 하기 ─────────────────────────────────────────────────────────
-    def rest(self, player) -> dict:
+    def get_rest_status(self, player) -> dict:
         state = _care_state(player)
-        fatigue_before = player.fatigue
-        player.fatigue = max(0, player.fatigue - random.randint(12, 22))
-        player.restore_energy(random.randint(8, 15))
-        state["comfort"] = min(100, state["comfort"] + random.randint(2, 5))
+        now = time.time()
+        until = float(state.get("rest_until", 0) or 0)
+        if until <= 0:
+            return {"active": False, "remaining": 0, "progress": 0.0}
+        started = float(state.get("rest_started_at", until - self.REST_DURATION) or (until - self.REST_DURATION))
+        if now >= until:
+            return {"active": True, "remaining": 0, "progress": 1.0, "completed": True, "started": started, "until": until}
+        progress = max(0.0, min(1.0, (now - started) / max(1, until - started)))
+        return {"active": True, "remaining": int(until - now), "progress": progress, "completed": False, "started": started, "until": until}
+
+    def start_rest(self, player) -> dict:
+        status = self.get_rest_status(player)
+        if status.get("active") and not status.get("completed"):
+            return {"success": False, "already_resting": True, **status}
+        if status.get("completed"):
+            self.finish_rest(player)
+        state = _care_state(player)
+        now = time.time()
+        state["rest_started_at"] = now
+        state["rest_until"] = now + self.REST_DURATION
         state["rest_count"] += 1
+        state["last_rest_summary"] = ""
         return {
             "success": True,
-            "message": "책장 뒤 보금자리의 담요와 실 사이에 몸을 접고 쉬게 두었슴미댜. 앞다리부터 하나씩 힘이 풀리더니 곧 조용해졌슴미댜. 🕷️💤",
-            "fatigue_recovery": fatigue_before - player.fatigue,
+            "remaining": self.REST_DURATION,
+            "message": "책장 뒤 담요와 실 사이에 몸을 접었슴미댜. 앞다리부터 하나씩 힘이 풀리더니 곧 눈을 감았슴미댜. 🕷️💤",
         }
+
+    def finish_rest(self, player, *, wake_early: bool = False) -> dict:
+        state = _care_state(player)
+        status = self.get_rest_status(player)
+        if not status.get("active"):
+            return {"success": False, "message": "지금은 쉬고 있지 않슴미댜."}
+        fraction = status.get("progress", 0.0)
+        if status.get("completed"):
+            fraction = 1.0
+        fatigue_recovery = max(1, round(22 * fraction))
+        energy_recovery = max(1, round(15 * fraction))
+        before = player.fatigue
+        player.fatigue = max(0, player.fatigue - fatigue_recovery)
+        player.restore_energy(energy_recovery)
+        state["comfort"] = min(100, state["comfort"] + max(1, round(5 * fraction)))
+        state["rest_started_at"] = 0.0
+        state["rest_until"] = 0.0
+        actual = before - player.fatigue
+        if wake_early and fraction < 1.0:
+            msg = "조심히 깨우자 츄라이더가 눈을 가늘게 뜨고 앞다리를 다시 펼쳤슴미댜. 조금은 쉬었지만 아직 잠기운이 남아 있슴미댜."
+        else:
+            msg = "푹 쉬고 난 츄라이더가 몸을 길게 펴며 여덟 다리를 하나씩 바닥에 디뎠슴미댜."
+        state["last_rest_summary"] = msg
+        return {"success": True, "message": msg, "fatigue_recovery": actual, "energy_recovery": energy_recovery, "fraction": fraction}
+
+    def finish_rest_if_ready(self, player) -> dict | None:
+        status = self.get_rest_status(player)
+        if status.get("completed"):
+            return self.finish_rest(player)
+        return None
+
+    def rest(self, player) -> dict:
+        """Backward-compatible alias: rest now starts a timed rest session."""
+        return self.start_rest(player)
 
     # ── 간식 제작 ─────────────────────────────────────────────────────────
     def craft_snack(self, player, snack_id: str) -> dict:

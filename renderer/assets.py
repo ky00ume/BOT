@@ -6,7 +6,7 @@ from typing import Optional
 from utils.logger import setup_logger
 
 try:
-    from PIL import Image
+    from PIL import Image, ImageFilter
     PIL_AVAILABLE = True
 except ImportError:
     PIL_AVAILABLE = False
@@ -144,14 +144,22 @@ def _load_banner(zone_type: str, zone_id: str,
             if os.path.isfile(p):
                 try:
                     img = Image.open(p).convert("RGBA")
-                    # Location art should remain spatially readable. Fit the whole scene
-                    # inside the slot instead of center-cropping wide BG3 screenshots.
-                    scale = min(w / img.width, h / img.height)
-                    nw, nh = max(1, int(img.width * scale)), max(1, int(img.height * scale))
+                    # Keep the full spatial scene readable without leaving dead letterbox bars.
+                    # A soft cover-fit copy fills the slot; the uncropped scene sits above it.
+                    fit_scale = min(w / img.width, h / img.height)
+                    nw, nh = max(1, int(img.width * fit_scale)), max(1, int(img.height * fit_scale))
                     fitted = img.resize((nw, nh), Image.LANCZOS)
-                    canvas = Image.new("RGBA", (w, h), (12, 12, 14, 255))
-                    canvas.alpha_composite(fitted, ((w - nw) // 2, (h - nh) // 2))
-                    return canvas
+
+                    bg_scale = max(w / img.width, h / img.height)
+                    bw, bh = max(1, int(img.width * bg_scale)), max(1, int(img.height * bg_scale))
+                    background = img.resize((bw, bh), Image.LANCZOS)
+                    left, top = max(0, (bw - w) // 2), max(0, (bh - h) // 2)
+                    background = background.crop((left, top, left + w, top + h))
+                    background = background.filter(ImageFilter.GaussianBlur(radius=10))
+                    veil = Image.new("RGBA", (w, h), (8, 8, 10, 105))
+                    background = Image.alpha_composite(background, veil)
+                    background.alpha_composite(fitted, ((w - nw) // 2, (h - nh) // 2))
+                    return background
                 except (OSError, IOError, ValueError) as e:
                     _log.warning("Banner load failed: %s (%s)", p, e)
     return None

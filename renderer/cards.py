@@ -445,10 +445,8 @@ class BG3Renderer:
                  if zone_id else None)
 
         if scene:
-            # 하단 페이드 아웃
-            fd = Image.new("RGBA", (W, SH), (0, 0, 0, 0))
-            _gv(fd, 0, SH * 3 // 5, W, SH, (0, 0, 0, 0), (0, 0, 0, 210))
-            scene.alpha_composite(fd)
+            # Keep location art readable through the full scene slot.
+            # The text panel begins below the image, so no readability fade is needed here.
             img.paste(scene, (0, 0))
         else:
             # 플레이스홀더 (그라디언트 + 안내 텍스트)

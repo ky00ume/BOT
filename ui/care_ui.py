@@ -561,39 +561,79 @@ class _ItemSelectView(discord.ui.View):
         await self._confirm_cb(interaction, chosen)
 
 
-# ── 비전의 탑 상층 생활 공간 ──────────────────────────────────────────────────
-class TowerUpperFloorView(discord.ui.View):
-    """마제스티와 카르니스가 사는 상층. 츄라이더의 보금자리는 생활권 한구석에 숨어 있다."""
+# ── 비전의 탑 생활 공간 ──────────────────────────────────────────────────────
+class TowerPlaceView(discord.ui.View):
+    """비전의 탑을 같은 메시지 안에서 오가는 장소 UI."""
 
-    def __init__(self, player, care_manager, *, suspicious_actor_id=None):
+    PLACES = {
+        "upper": {
+            "title": "비전의 탑 · 상층 생활 공간",
+            "description": "마제스티와 카르니스가 생활하는 탑의 상층. 오래된 가구와 책장 사이, 눈에 잘 띄지 않는 곳에 작은 흔적들이 숨어 있다.",
+            "actions": [
+                ("책장 뒤 작은 틈", "🕸️", "nest"),
+                ("마제스티의 자리", "🕯️", "마제스티의 자리", "손이 자주 닿는 물건들이 정돈되어 있다. 책장 아래에는 누군가 일부러 밀어 넣은 듯한 작은 간식 접시가 하나 놓여 있다."),
+                ("카르니스의 기척", "🕷️", "카르니스의 기척", "복도 너머에서 단단한 발끝이 바닥을 긁는 소리가 난다. 책장 아래의 작은 발자국은 그 소리가 가까워질수록 안쪽으로 향한다."),
+            ],
+        },
+        "workshop": {
+            "title": "비전의 탑 · 연금술 작업층",
+            "description": "약초 냄새와 오래된 금속 냄새가 뒤섞인 작업층. 선반과 작업대에는 누군가 쓰다 만 도구와 병들이 남아 있다.",
+            "actions": [
+                ("연금술 작업대", "⚗️", "연금술 작업대", "작업대 위에는 말린 균류와 빈 약병이 가지런히 놓여 있다. 츄라이더가 건드린 듯 작은 병 하나만 비뚤어져 있다."),
+                ("먹을거리 선반", "🥣", "먹을거리 선반", "보관할 만한 먹을거리와 재료를 둘 자리다. 아직은 비어 있는 칸이 더 많다."),
+            ],
+        },
+        "storage": {
+            "title": "비전의 탑 · 하층 창고",
+            "description": "탑 아래쪽의 서늘한 창고. 오래된 상자와 천으로 덮인 물건들이 벽을 따라 쌓여 있다.",
+            "actions": [
+                ("쌓인 상자", "📦", "쌓인 상자", "오래된 상자들 사이에 작은 틈이 여럿 있다. 츄라이더가 숨바꼭질하기에는 꽤 그럴듯해 보인다."),
+                ("바닥의 흔적", "🔎", "바닥의 흔적", "먼지 위로 작은 발자국이 몇 번 오갔다. 창고 안쪽을 구경하다 다시 승강기 쪽으로 돌아간 흔적이다."),
+            ],
+        },
+        "roof": {
+            "title": "비전의 탑 · 옥상",
+            "description": "언더다크의 어둠과 푸른 균광이 멀리까지 내려다보이는 탑의 꼭대기. 아래층보다 공기가 차갑고 넓다.",
+            "actions": [
+                ("언더다크를 바라본다", "👁️", "언더다크", "멀리 균광과 폐허의 윤곽이 어둠 속에서 이어진다. 탑 바깥의 세계가 조용히 움직이고 있다."),
+                ("난간의 흔적", "🐾", "난간의 흔적", "난간 아래쪽에 조그만 발자국이 남아 있다. 가장자리까지 갔다가 겁이 났는지 곧장 뒤로 물러난 모양이다."),
+            ],
+        },
+    }
+
+    FLOOR_BUTTONS = [
+        ("상층", "🏠", "upper"),
+        ("작업층", "⚗️", "workshop"),
+        ("하층 창고", "📦", "storage"),
+        ("옥상", "🌌", "roof"),
+    ]
+
+    def __init__(self, player, care_manager, *, place="upper", suspicious_actor_id=None):
         super().__init__(timeout=180)
         self.player = player
         self.care_manager = care_manager
+        self.place = place
         self.suspicious_actor_id = suspicious_actor_id
+        self._rebuild_items()
 
-        nest_btn = discord.ui.Button(label="책장 뒤 작은 틈", emoji="🕸️", style=discord.ButtonStyle.primary)
-        nest_btn.callback = self._open_nest
-        self.add_item(nest_btn)
-
-        majesty_btn = discord.ui.Button(label="마제스티의 자리", emoji="🕯️", style=discord.ButtonStyle.secondary)
-        majesty_btn.callback = self._observe_majesty_space
-        self.add_item(majesty_btn)
-
-        karniss_btn = discord.ui.Button(label="카르니스의 기척", emoji="🕷️", style=discord.ButtonStyle.secondary)
-        karniss_btn.callback = self._observe_karniss
-        self.add_item(karniss_btn)
-
+    def _rebuild_items(self):
+        self.clear_items()
+        for action in self.PLACES[self.place]["actions"]:
+            label, emoji = action[:2]
+            style = discord.ButtonStyle.primary if action[2] == "nest" else discord.ButtonStyle.secondary
+            button = discord.ui.Button(label=label, emoji=emoji, style=style)
+            if action[2] == "nest":
+                button.callback = self._open_nest
+            else:
+                button.callback = self._make_observation_callback(action[2], action[3])
+            self.add_item(button)
         lift_btn = discord.ui.Button(label="승강기", emoji="↕️", style=discord.ButtonStyle.secondary)
-        lift_btn.callback = self._observe_lift
+        lift_btn.callback = self._open_lift
         self.add_item(lift_btn)
 
-    @staticmethod
-    def make_embed(observation=None):
-        embed = discord.Embed(
-            title="비전의 탑 · 상층 생활 공간",
-            description="마제스티와 카르니스가 생활하는 탑의 상층. 오래된 가구와 책장 사이, 눈에 잘 띄지 않는 곳에 작은 흔적들이 숨어 있다.",
-            color=0x544766,
-        )
+    def make_embed(self, observation=None):
+        data = self.PLACES[self.place]
+        embed = discord.Embed(title=data["title"], description=data["description"], color=0x544766)
         if observation:
             embed.add_field(name=observation[0], value=observation[1], inline=False)
         return embed
@@ -602,31 +642,44 @@ class TowerUpperFloorView(discord.ui.View):
         view = CareRoomView(self.player, self.care_manager, suspicious_actor_id=self.suspicious_actor_id)
         await interaction.response.edit_message(content=None, attachments=[_make_room_card(self.player)], embed=None, view=view)
 
-    def _observation_callback(self, title, text):
+    def _make_observation_callback(self, title, text):
         async def callback(interaction):
             await interaction.response.edit_message(attachments=[], embed=self.make_embed((title, text)), view=self)
         return callback
 
-    async def _observe_majesty_space(self, interaction):
-        callback = self._observation_callback(
-            "마제스티의 자리",
-            "손이 자주 닿는 물건들이 정돈되어 있다. 책장 아래에는 누군가 일부러 밀어 넣은 듯한 작은 간식 접시가 하나 놓여 있다.",
-        )
-        await callback(interaction)
+    async def _open_lift(self, interaction):
+        view = TowerLiftView(self.player, self.care_manager, current_place=self.place, suspicious_actor_id=self.suspicious_actor_id)
+        await interaction.response.edit_message(attachments=[], embed=view.make_embed(), view=view)
 
-    async def _observe_karniss(self, interaction):
-        callback = self._observation_callback(
-            "카르니스의 기척",
-            "복도 너머에서 단단한 발끝이 바닥을 긁는 소리가 난다. 책장 아래의 작은 발자국은 그 소리가 가까워질수록 안쪽으로 향한다.",
-        )
-        await callback(interaction)
 
-    async def _observe_lift(self, interaction):
-        callback = self._observation_callback(
-            "승강기",
-            "오래된 승강기가 탑의 아래층과 옥상을 잇고 있다. 아직은 상층에서 움직이지 않는다.",
-        )
-        await callback(interaction)
+class TowerUpperFloorView(TowerPlaceView):
+    """기존 진입점 호환용 상층 View."""
+    def __init__(self, player, care_manager, *, suspicious_actor_id=None):
+        super().__init__(player, care_manager, place="upper", suspicious_actor_id=suspicious_actor_id)
+
+
+class TowerLiftView(discord.ui.View):
+    """탑의 층을 실제로 연결하는 승강기."""
+    def __init__(self, player, care_manager, *, current_place="upper", suspicious_actor_id=None):
+        super().__init__(timeout=180)
+        self.player = player
+        self.care_manager = care_manager
+        self.current_place = current_place
+        self.suspicious_actor_id = suspicious_actor_id
+        for label, emoji, place in TowerPlaceView.FLOOR_BUTTONS:
+            button = discord.ui.Button(label=label, emoji=emoji, style=discord.ButtonStyle.primary if place == current_place else discord.ButtonStyle.secondary, disabled=place == current_place)
+            button.callback = self._make_floor_callback(place)
+            self.add_item(button)
+
+    def make_embed(self):
+        current = TowerPlaceView.PLACES[self.current_place]["title"].split(" · ", 1)[-1]
+        return discord.Embed(title="비전의 탑 · 승강기", description=f"낡은 승강기 장치가 낮게 울린다. 지금은 **{current}**에 멈춰 있다. 갈 곳을 고른다.", color=0x40374F)
+
+    def _make_floor_callback(self, place):
+        async def callback(interaction):
+            view = TowerPlaceView(self.player, self.care_manager, place=place, suspicious_actor_id=self.suspicious_actor_id)
+            await interaction.response.edit_message(attachments=[], embed=view.make_embed(), view=view)
+        return callback
 
 
 # ── 메인 비전의 탑 돌봄 View ──────────────────────────────────────────────────

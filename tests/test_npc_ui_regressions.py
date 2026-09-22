@@ -1,4 +1,4 @@
-import pytest
+﻿import pytest
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
@@ -91,3 +91,33 @@ async def test_tower_upper_floor_exposes_shared_living_space_and_hidden_nest():
     embed = view.make_embed()
     assert "마제스티와 카르니스" in embed.description
     assert "츄라이더의 방" not in embed.description
+
+@pytest.mark.asyncio
+async def test_tower_lift_connects_all_home_floors():
+    from ui.care_ui import TowerLiftView, TowerPlaceView
+
+    lift = TowerLiftView(SimpleNamespace(), SimpleNamespace(), current_place="upper")
+    labels = {item.label for item in lift.children}
+    assert {"상층", "작업층", "하층 창고", "옥상"} == labels
+
+    for place in ("upper", "workshop", "storage", "roof"):
+        view = TowerPlaceView(SimpleNamespace(), SimpleNamespace(), place=place)
+        assert any(item.label == "승강기" for item in view.children)
+        assert view.PLACES[place]["title"] in view.make_embed().title
+
+
+@pytest.mark.asyncio
+async def test_tower_lift_floor_callback_edits_same_message():
+    from ui.care_ui import TowerLiftView, TowerPlaceView
+
+    lift = TowerLiftView(SimpleNamespace(), SimpleNamespace(), current_place="upper")
+    interaction = SimpleNamespace(response=SimpleNamespace(edit_message=AsyncMock()))
+    callback = lift._make_floor_callback("workshop")
+    await callback(interaction)
+
+    interaction.response.edit_message.assert_awaited_once()
+    kwargs = interaction.response.edit_message.await_args.kwargs
+    assert kwargs["attachments"] == []
+    assert isinstance(kwargs["view"], TowerPlaceView)
+    assert kwargs["view"].place == "workshop"
+    assert "연금술 작업층" in kwargs["embed"].title

@@ -33,7 +33,7 @@ def _make_room_card(player):
         {"label": "🧵 인연", "value": obs.relationship},
         {"label": "🌱 버릇", "value": obs.habit},
     ]
-    buf = get_renderer().render_card(title="🏰 비전의 탑 상층 · 책장 뒤 작은 틈", rows=rows, system_key="system", grade="Normal", footer="츄라이더의 숨은 보금자리")
+    buf = get_renderer().render_card(title="🕷️ 츄라이더 · 책장 뒤 작은 틈", rows=rows, system_key="system", grade="Normal", footer="비전의 탑 상층 · 숨은 보금자리")
     return discord.File(buf, filename="care_room.png")
 
 
@@ -806,9 +806,18 @@ class CareRoomView(discord.ui.View):
         self._message     = None
         self.suspicious_actor_id = suspicious_actor_id
 
-        # Row 0: 쓰담쓰담, 간식주기
+        # Row 0: 관찰, 쓰다듬기, 먹이기
+        observe_btn = discord.ui.Button(
+            label="👀 관찰",
+            style=discord.ButtonStyle.secondary,
+            custom_id="care_observe",
+            row=0,
+        )
+        observe_btn.callback = self._on_observe
+        self.add_item(observe_btn)
+
         pet_btn = discord.ui.Button(
-            label="🐾 쓰담쓰담",
+            label="🫳 쓰다듬기",
             style=discord.ButtonStyle.primary,
             custom_id="care_pet",
             row=0,
@@ -817,7 +826,7 @@ class CareRoomView(discord.ui.View):
         self.add_item(pet_btn)
 
         snack_btn = discord.ui.Button(
-            label="🍪 간식주기",
+            label="🍖 먹이기",
             style=discord.ButtonStyle.primary,
             custom_id="care_snack",
             row=0,
@@ -827,13 +836,31 @@ class CareRoomView(discord.ui.View):
 
         # Row 1: 놀아주기, 의장관리
         play_btn = discord.ui.Button(
-            label="🎮 놀아주기",
+            label="🧶 놀기",
             style=discord.ButtonStyle.primary,
             custom_id="care_play",
             row=1,
         )
         play_btn.callback = self._on_play
         self.add_item(play_btn)
+
+        wash_btn = discord.ui.Button(
+            label="🛁 씻기기",
+            style=discord.ButtonStyle.primary,
+            custom_id="care_wash",
+            row=1,
+        )
+        wash_btn.callback = self._on_wash
+        self.add_item(wash_btn)
+
+        rest_btn = discord.ui.Button(
+            label="💤 쉬게 하기",
+            style=discord.ButtonStyle.primary,
+            custom_id="care_rest",
+            row=1,
+        )
+        rest_btn.callback = self._on_rest
+        self.add_item(rest_btn)
 
         costume_btn = discord.ui.Button(
             label="👗 의장관리",
@@ -873,6 +900,61 @@ class CareRoomView(discord.ui.View):
         walk_btn.callback = self._on_walk
         self.add_item(walk_btn)
 
+        nest_btn = discord.ui.Button(
+            label="🕸️ 보금자리",
+            style=discord.ButtonStyle.secondary,
+            custom_id="care_nest",
+            row=3,
+        )
+        nest_btn.callback = self._on_nest
+        self.add_item(nest_btn)
+
+    # ── 관찰 / 몸단장 / 휴식 ───────────────────────────────────────────
+    async def _on_observe(self, interaction: discord.Interaction):
+        file = _make_room_card(self.player)
+        await interaction.response.edit_message(content=None, attachments=[file], view=self)
+
+    async def _on_wash(self, interaction: discord.Interaction):
+        result = self.care_manager.wash(self.player)
+        rows = [
+            {"label": "🕷️🛁 츄라이더", "value": result["message"]},
+            {"label": "🫧 몸 상태", "value": "복부와 여덟 다리 사이까지 말끔해졌습니다."},
+        ]
+        event_store.append(GameEvent(event_type="care.wash", actor_id=interaction.user.id, subject="츄라이더", location="비전의 탑", payload={"source": "care_room"}))
+        try:
+            save_player_to_db(self.player)
+        except Exception as e:
+            logger.error("씻기기 후 저장 실패: %s", e, exc_info=True)
+        await interaction.response.edit_message(content=None, attachments=[_result_card("🕷️🛁 북북박박 목욕", rows)], view=self)
+
+    async def _on_rest(self, interaction: discord.Interaction):
+        result = self.care_manager.rest(self.player)
+        rows = [
+            {"label": "🕷️💤 츄라이더", "value": result["message"]},
+            {"label": "💤 휴식", "value": "보금자리에서 방해받지 않고 쉬고 있습니다."},
+        ]
+        event_store.append(GameEvent(event_type="care.rest", actor_id=interaction.user.id, subject="츄라이더", location="비전의 탑", payload={"source": "care_room"}))
+        try:
+            save_player_to_db(self.player)
+        except Exception as e:
+            logger.error("쉬게 하기 후 저장 실패: %s", e, exc_info=True)
+        await interaction.response.edit_message(content=None, attachments=[_result_card("🕷️💤 쉬게 하기", rows)], view=self)
+
+    async def _on_nest(self, interaction: discord.Interaction):
+        from care import get_care_state
+        state = get_care_state(self.player)
+        if state["boredom"] >= 70:
+            trace = "실뭉치가 여기저기 풀려 있고 작은 물건 몇 개가 자리를 옮겨 놓았습니다. 혼자 꽤 부산하게 놀았던 모양입니다."
+        elif state["cleanliness"] < 35:
+            trace = "담요 가장자리와 바닥에 마른 흙자국이 이어집니다. 들어오기 전에 몸을 제대로 털지 않은 모양입니다."
+        else:
+            trace = "담요 조각과 실, 주워 온 작은 물건들이 츄라이더 나름의 순서로 모여 있습니다."
+        rows = [
+            {"label": "🕸️ 보금자리", "value": "책장과 벽 사이의 좁은 틈. 드로우 상체를 기대고 거미 하체를 접어 넣기 좋은 크기입니다."},
+            {"label": "🔎 오늘의 흔적", "value": trace},
+        ]
+        await interaction.response.edit_message(content=None, attachments=[_result_card("🕷️🕸️ 책장 뒤 작은 틈", rows)], view=self)
+
     # ── 쓰담쓰담 ──────────────────────────────────────────────────────────
     async def _on_pet(self, interaction: discord.Interaction):
         result = self.care_manager.pet(self.player)
@@ -896,7 +978,7 @@ class CareRoomView(discord.ui.View):
                 app_context.get_diary_manager().increment("pet_count", 1)
             except Exception as e:
                 logger.warning("일기 기록 실패: %s", e)
-        file = _result_card("🐾 쓰담쓰담", rows, grade=grade)
+        file = _result_card("🕷️🫳 쓰다듬기", rows, grade=grade)
         await interaction.response.edit_message(content=None, attachments=[file], view=self)
 
     # ── 산책 ──────────────────────────────────────────────────────────────
@@ -972,8 +1054,8 @@ class CareRoomView(discord.ui.View):
     async def _on_snack(self, interaction: discord.Interaction):
         sub_view = SnackFeedView(self.player, self.care_manager, self)
         file = _result_card(
-            "🍪 간식주기",
-            [{"label": "안내", "value": "줄 간식을 선택하셰요!"}],
+            "🕷️🍖 먹이기",
+            [{"label": "안내", "value": "츄라이더에게 줄 먹을 것을 고릅니다."}],
         )
         await interaction.response.edit_message(
             content=None, attachments=[file], view=sub_view
@@ -987,7 +1069,7 @@ class CareRoomView(discord.ui.View):
             mins = remaining // 60
             secs = remaining % 60
             file = _result_card(
-                "🎮 놀아주기",
+                "🕷️🧶 놀기",
                 [{"label": "안내", "value": f"아직 쿨타임임미댜... ({mins}분 {secs}초 남음)"}],
                 grade="Fail",
             )
@@ -998,7 +1080,7 @@ class CareRoomView(discord.ui.View):
 
         sub_view = RockPaperScissorsView(self.player, self.care_manager, self)
         file = _result_card(
-            "🎮 놀아주기 — 가위바위보",
+            "🕷️🧶 놀기 — 가위바위보",
             [{"label": "안내", "value": "✊ 바위 / ✌️ 가위 / ✋ 보 중 선택하셰요!"}],
         )
         await interaction.response.edit_message(

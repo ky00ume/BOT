@@ -5,6 +5,23 @@ import time
 from costume_data import SNACK_ITEMS, COSTUME_ITEMS, SNACK_RECIPES, COSTUME_RECIPES
 
 
+def _care_state(player) -> dict:
+    if not hasattr(player, "_flags") or player._flags is None:
+        player._flags = {}
+    state = player._flags.setdefault("pet_care", {})
+    state.setdefault("hunger", 35)       # 0=배부름, 100=매우 배고픔
+    state.setdefault("cleanliness", 70)  # 0=매우 더러움, 100=깨끗함
+    state.setdefault("boredom", 30)      # 0=만족, 100=매우 심심함
+    state.setdefault("comfort", 50)      # 0=불안, 100=안정/친숙
+    state.setdefault("wash_count", 0)
+    state.setdefault("rest_count", 0)
+    return state
+
+
+def get_care_state(player) -> dict:
+    return dict(_care_state(player))
+
+
 class CareManager:
     """하이네스 돌봄 시스템 매니저."""
 
@@ -31,6 +48,8 @@ class CareManager:
         gain_stability = random.randint(3, 5)
         player.condition = min(100, player.condition + gain_condition)
         player.stability = min(100, player.stability + gain_stability)
+        state = _care_state(player)
+        state["comfort"] = min(100, state["comfort"] + random.randint(5, 9))
         player._flags["last_pet_time"] = now
 
         lines = [
@@ -66,8 +85,11 @@ class CareManager:
 
         effect = item.get("effect", {})
         player.remove_hyness_item(snack_id)
+        state = _care_state(player)
+        hunger_drop = max(12, abs(int(effect.get("condition", 0))) + 10)
+        state["hunger"] = max(0, state["hunger"] - hunger_drop)
 
-        changes = {}
+        changes = {"hunger": -hunger_drop}
         if "condition" in effect:
             delta = effect["condition"]
             player.condition = max(0, min(100, player.condition + delta))
@@ -111,6 +133,8 @@ class CareManager:
 
         options = ["rock", "scissors", "paper"]
         bot_choice = random.choice(options)
+        state = _care_state(player)
+        state["boredom"] = max(0, state["boredom"] - random.randint(18, 28))
 
         # 승패 판정
         win_map = {"rock": "scissors", "scissors": "paper", "paper": "rock"}
@@ -179,6 +203,36 @@ class CareManager:
                 "message":      random.choice(messages),
                 "fatigue_gain": gain_fatigue,
             }
+
+    # ── 씻기기 ───────────────────────────────────────────────────────────
+    def wash(self, player) -> dict:
+        state = _care_state(player)
+        before = state["cleanliness"]
+        state["cleanliness"] = min(100, before + random.randint(35, 55))
+        state["wash_count"] += 1
+        player.condition = min(100, player.condition + random.randint(1, 3))
+        lines = [
+            "욕조에 넣자 여덟 다리가 욕조 가장자리를 붙잡았슴미댜. 그래도 복부부터 북북박박 씻겼더니 결국 체념한 얼굴이 됐슴미댜. 🛁",
+            "거품을 잔뜩 내서 다리 사이까지 북북 씻겼슴미댜. 츄라이더가 죽을상으로 쳐다보지만 아주 깨끗해졌슴미댜. 🫧",
+            "욕조 밖으로 빠져나가려는 다리를 하나씩 다시 넣어 가며 북북박박 씻겼슴미댜. 🕷️🛁",
+        ]
+        if state["wash_count"] >= 3:
+            lines.append("욕조를 보자 도망칠지 잠깐 고민하더니 먼저 앞다리 두 개를 걸쳤슴미댜. 어차피 잡힐 걸 아는 눈치임미댜. 🕷️🫧")
+        return {"success": True, "message": random.choice(lines), "cleanliness_gain": state["cleanliness"] - before}
+
+    # ── 쉬게 하기 ─────────────────────────────────────────────────────────
+    def rest(self, player) -> dict:
+        state = _care_state(player)
+        fatigue_before = player.fatigue
+        player.fatigue = max(0, player.fatigue - random.randint(12, 22))
+        player.restore_energy(random.randint(8, 15))
+        state["comfort"] = min(100, state["comfort"] + random.randint(2, 5))
+        state["rest_count"] += 1
+        return {
+            "success": True,
+            "message": "책장 뒤 보금자리의 담요와 실 사이에 몸을 접고 쉬게 두었슴미댜. 앞다리부터 하나씩 힘이 풀리더니 곧 조용해졌슴미댜. 🕷️💤",
+            "fatigue_recovery": fatigue_before - player.fatigue,
+        }
 
     # ── 간식 제작 ─────────────────────────────────────────────────────────
     def craft_snack(self, player, snack_id: str) -> dict:

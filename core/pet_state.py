@@ -62,6 +62,28 @@ def observe_pet(player, *, activities: ActivityService = activity_service, store
         if arrival:
             body = f"{body} {arrival}"
 
+    from care import get_care_state
+    care = get_care_state(player)
+    hunger = care["hunger"]
+    clean = care["cleanliness"]
+    boredom = care["boredom"]
+    comfort = care["comfort"]
+    cues = []
+    if hunger >= 70:
+        cues.append("배 쪽을 한 번 내려다보고 먹을거리 냄새가 나는 쪽으로 시선이 자꾸 갑니다.")
+    elif hunger <= 20:
+        cues.append("배가 찬 모양인지 먹을거리 쪽에는 별 관심이 없습니다.")
+    if clean < 35:
+        cues.append("거미 복부와 다리 관절 사이에 먼지와 마른 얼룩이 꽤 남아 있습니다.")
+    elif clean >= 85:
+        cues.append("흰 피부와 검은 거미 몸이 막 닦아낸 듯 말끔합니다.")
+    if boredom >= 70:
+        cues.append("실 한 가닥을 괜히 당겼다 놓았다 하며 할 일을 찾는 눈치입니다.")
+    if comfort >= 75:
+        cues.append("사람이 가까이 있어도 다리를 접은 자세를 쉽게 풀지 않습니다.")
+    if cues and not current:
+        body = f"{body} {' '.join(cues[:2])}"
+
     mood = _band(player.stability, "조금 예민해 보입니다.", "평소처럼 차분해 보입니다.", "마음이 꽤 편안해 보입니다.")
     effective_energy = max(0, min(100, (player.energy / max(1, player.max_energy)) * 100 - player.fatigue * 0.35))
     energy = _band(effective_energy, "금방이라도 꾸벅 졸 것 같습니다.", "아직 이것저것 할 기운은 있어 보입니다.", "기운이 제법 넘쳐 보입니다.")

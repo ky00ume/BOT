@@ -214,9 +214,8 @@ class CostumeManageView(discord.ui.View):
         )
 
     async def _on_back(self, interaction: discord.Interaction):
-        file = _make_room_card(self.player)
         await interaction.response.edit_message(
-            content=None, attachments=[file], view=self.parent_view
+            content=None, attachments=[], embed=_make_room_embed(self.player), view=self.parent_view
         )
 
     def _build_status_rows(self):
@@ -306,9 +305,8 @@ class SnackFeedView(discord.ui.View):
         )
 
     async def _on_back(self, interaction: discord.Interaction):
-        file = _make_room_card(self.player)
         await interaction.response.edit_message(
-            content=None, attachments=[file], view=self.parent_view
+            content=None, attachments=[], embed=_make_room_embed(self.player), view=self.parent_view
         )
 # ── 가위바위보 서브 View ─────────────────────────────────────────────────────
 class RockPaperScissorsView(discord.ui.View):
@@ -362,16 +360,17 @@ class RockPaperScissorsView(discord.ui.View):
                     save_player_to_db(self.player)
                 except Exception as e:
                     logger.error("놀아주기 후 저장 실패: %s", e, exc_info=True)
-            file = _make_room_card(self.player)
+            embed = discord.Embed(title="🕷️🧶 놀기", description=result["message"], color=0x655A8A)
+            embed.add_field(name="내 선택", value=result.get("player_choice", "?"), inline=True)
+            embed.add_field(name="츄라이더", value=result.get("bot_choice", "?"), inline=True)
             await interaction.response.edit_message(
-                content=None, attachments=[file], view=self
+                content=None, attachments=[], embed=embed, view=self
             )
         return cb
 
     async def _on_back(self, interaction: discord.Interaction):
-        file = _make_room_card(self.player)
         await interaction.response.edit_message(
-            content=None, attachments=[file], view=self.parent_view
+            content=None, attachments=[], embed=_make_room_embed(self.player), view=self.parent_view
         )
 
 
@@ -457,9 +456,8 @@ class SnackCraftView(discord.ui.View):
         await interaction.response.edit_message(content=None, attachments=[], embed=_make_room_embed(self.player), view=self)
 
     async def _on_back(self, interaction: discord.Interaction):
-        file = _make_room_card(self.player)
         await interaction.response.edit_message(
-            content=None, attachments=[file], view=self.parent_view
+            content=None, attachments=[], embed=_make_room_embed(self.player), view=self.parent_view
         )
 
 
@@ -552,13 +550,11 @@ class CostumeCraftView(discord.ui.View):
                 save_player_to_db(self.player)
             except Exception as e:
                 logger.error("의장 제작 후 저장 실패: %s", e, exc_info=True)
-        file = _make_room_card(self.player)
-        await interaction.response.edit_message(content=None, attachments=[file], view=self)
+        await interaction.response.edit_message(content=None, attachments=[], embed=_make_room_embed(self.player), view=self)
 
     async def _on_back(self, interaction: discord.Interaction):
-        file = _make_room_card(self.player)
         await interaction.response.edit_message(
-            content=None, attachments=[file], view=self.parent_view
+            content=None, attachments=[], embed=_make_room_embed(self.player), view=self.parent_view
         )
 
 
@@ -926,8 +922,7 @@ class CareRoomView(discord.ui.View):
 
     # ── 관찰 / 몸단장 / 휴식 ───────────────────────────────────────────
     async def _on_observe(self, interaction: discord.Interaction):
-        file = _make_room_card(self.player)
-        await interaction.response.edit_message(content=None, attachments=[file], view=self)
+        await interaction.response.edit_message(content=None, attachments=[], embed=_make_room_embed(self.player), view=self)
 
     async def _on_wash(self, interaction: discord.Interaction):
         result = self.care_manager.wash(self.player)
@@ -1030,10 +1025,8 @@ class CareRoomView(discord.ui.View):
         remaining = self.WALK_COOLDOWN - (now - last_walk)
         if remaining > 0:
             mins, secs = divmod(int(remaining), 60)
-            file = _result_card("🚶 산책", [
-                {"label": "⏱ 쿨타임", "value": f"아직 산책할 수 없슴미댜! {mins}분 {secs}초 남음"},
-            ])
-            await interaction.response.edit_message(content=None, attachments=[file], view=self)
+            embed = discord.Embed(title="🕷️🚶 산책", description=f"아직 산책할 수 없슴미댜! {mins}분 {secs}초 남음", color=0x5C6574)
+            await interaction.response.edit_message(content=None, attachments=[], embed=embed, view=self)
             return
 
         # 쿨타임 갱신
@@ -1063,23 +1056,21 @@ class CareRoomView(discord.ui.View):
             {"label": "💙 안정감", "value": f"+{stab_gain} → {self.player.stability}"},
         ]
 
-        file = _result_card("🚶 산책", rows)
+        embed = discord.Embed(title="🕷️🚶 산책", description=rows[0]["value"], color=0x5C6574)
+        embed.add_field(name="🎁 획득", value=", ".join(items_found), inline=False)
 
         try:
             save_player_to_db(self.player)
         except Exception as e:
             logger.error("산책 후 저장 실패: %s", e, exc_info=True)
-        await interaction.response.edit_message(content=None, attachments=[file], view=self)
+        await interaction.response.edit_message(content=None, attachments=[], embed=embed, view=self)
 
     # ── 간식주기 ──────────────────────────────────────────────────────────
     async def _on_snack(self, interaction: discord.Interaction):
         sub_view = SnackFeedView(self.player, self.care_manager, self)
-        file = _result_card(
-            "🕷️🍖 먹이기",
-            [{"label": "안내", "value": "츄라이더에게 줄 먹을 것을 고릅니다."}],
-        )
+        embed = discord.Embed(title="🕷️🍖 먹이기", description="츄라이더에게 줄 먹을 것을 고릅니다.", color=0x7B6545)
         await interaction.response.edit_message(
-            content=None, attachments=[file], view=sub_view
+            content=None, attachments=[], embed=embed, view=sub_view
         )
 
     # ── 놀아주기 ──────────────────────────────────────────────────────────
@@ -1089,32 +1080,27 @@ class CareRoomView(discord.ui.View):
         if remaining > 0:
             mins = remaining // 60
             secs = remaining % 60
-            file = _result_card(
-                "🕷️🧶 놀기",
-                [{"label": "안내", "value": f"아직 쿨타임임미댜... ({mins}분 {secs}초 남음)"}],
-                grade="Fail",
-            )
+            embed = discord.Embed(title="🕷️🧶 놀기", description=f"아직 쿨타임임미댜... ({mins}분 {secs}초 남음)", color=0x6B5C5C)
             await interaction.response.edit_message(
-                content=None, attachments=[file], view=self
+                content=None, attachments=[], embed=embed, view=self
             )
             return
 
         sub_view = RockPaperScissorsView(self.player, self.care_manager, self)
-        file = _result_card(
-            "🕷️🧶 놀기 — 가위바위보",
-            [{"label": "안내", "value": "✊ 바위 / ✌️ 가위 / ✋ 보 중 선택하셰요!"}],
-        )
+        embed = discord.Embed(title="🕷️🧶 놀기 — 가위바위보", description="✊ 바위 / ✌️ 가위 / ✋ 보 중 선택하셰요!", color=0x655A8A)
         await interaction.response.edit_message(
-            content=None, attachments=[file], view=sub_view
+            content=None, attachments=[], embed=embed, view=sub_view
         )
 
     # ── 의장관리 ──────────────────────────────────────────────────────────
     async def _on_costume(self, interaction: discord.Interaction):
         sub_view = CostumeManageView(self.player, self)
         rows = sub_view._build_status_rows()
-        file = _result_card("👗 의장관리", rows)
+        embed = discord.Embed(title="🕷️👗 의장관리", description="츄라이더의 장난감과 의장을 정리합니다.", color=0x6D596E)
+        for row in rows[:5]:
+            embed.add_field(name=row["label"], value=row["value"], inline=True)
         await interaction.response.edit_message(
-            content=None, attachments=[file], view=sub_view
+            content=None, attachments=[], embed=embed, view=sub_view
         )
 
     # ── 간식제작 ──────────────────────────────────────────────────────────

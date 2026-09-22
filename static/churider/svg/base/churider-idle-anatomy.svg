@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc" data-character="churider" data-state="idle" data-stage="anatomy-blockout">
+  <title id="title">Churider — idle anatomy blockout</title>
+  <desc id="desc">A miniature drider anatomy study: pale drow upper body fused to a dark spider lower body with exactly eight spider legs. Hair, clothing, eye color, and other identity details are intentionally unspecified.</desc>
+  <defs>
+    <linearGradient id="chitin" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2a2231"/>
+      <stop offset="0.5" stop-color="#17131f"/>
+      <stop offset="1" stop-color="#08070d"/>
+    </linearGradient>
+    <linearGradient id="chitinHi" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#74627c" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#2d2435" stop-opacity="0.08"/>
+    </linearGradient>
+    <linearGradient id="skin" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#eeeaf2"/>
+      <stop offset="0.55" stop-color="#d6d0dc"/>
+      <stop offset="1" stop-color="#aaa3b2"/>
+    </linearGradient>
+    <filter id="softShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="4"/>
+    </filter>
+    <style>
+      .leg-back { fill:none; stroke:#17131f; stroke-width:18; stroke-linecap:round; stroke-linejoin:round; }
+      .leg-front { fill:none; stroke:#211a27; stroke-width:19; stroke-linecap:round; stroke-linejoin:round; }
+      .leg-hi { fill:none; stroke:#6a5872; stroke-opacity:.42; stroke-width:3.2; stroke-linecap:round; stroke-linejoin:round; }
+      .skin-line { fill:none; stroke:#918999; stroke-width:2.2; stroke-linecap:round; }
+    </style>
+  </defs>
+
+  <ellipse id="shadow" cx="256" cy="421" rx="180" ry="28" fill="#05040a" opacity="0.55" filter="url(#softShadow)"/>
+
+  <g id="churider">
+    <g id="spider">
+      <g id="spider_legs_back">
+        <g id="leg_l4">
+          <path class="leg-back" d="M215 344 C171 357 134 385 104 428 C91 446 76 458 58 465"/>
+          <path class="leg-hi" d="M215 344 C171 357 134 385 104 428 C91 446 76 458 58 465"/>
+        </g>
+        <g id="leg_r4">
+          <path class="leg-back" d="M297 344 C341 357 378 385 408 428 C421 446 436 458 454 465"/>
+          <path class="leg-hi" d="M297 344 C341 357 378 385 408 428 C421 446 436 458 454 465"/>
+        </g>
+        <g id="leg_l3">
+          <path class="leg-back" d="M209 326 C158 328 117 341 83 369 C64 384 47 392 28 394"/>
+          <path class="leg-hi" d="M209 326 C158 328 117 341 83 369 C64 384 47 392 28 394"/>
+        </g>
+        <g id="leg_r3">
+          <path class="leg-back" d="M303 326 C354 328 395 341 429 369 C448 384 465 392 484 394"/>
+          <path class="leg-hi" d="M303 326 C354 328 395 341 429 369 C448 384 465 392 484 394"/>
+        </g>
+      </g>
+
+      <g id="abdomen">
+        <ellipse cx="256" cy="337" rx="113" ry="87" fill="url(#chitin)" stroke="#45394c" stroke-width="3"/>
+        <ellipse cx="248" cy="315" rx="78" ry="48" fill="url(#chitinHi)" opacity="0.58"/>
+        <path d="M179 344 C209 360 303 360 333 344" fill="none" stroke="#5f5067" stroke-opacity="0.22" stroke-width="3"/>
+      </g>
+
+      <g id="thorax">
+        <ellipse cx="256" cy="309" rx="68" ry="61" fill="url(#chitin)" stroke="#514458" stroke-width="3"/>
+        <ellipse cx="247" cy="292" rx="42" ry="30" fill="url(#chitinHi)" opacity="0.7"/>
+      </g>
+
+      <g id="spider_legs_front">
+        <g id="leg_l2">
+          <path class="leg-front" d="M209 304 C164 295 124 301 92 322 C66 338 46 342 24 337"/>
+          <path class="leg-hi" d="M209 304 C164 295 124 301 92 322 C66 338 46 342 24 337"/>
+        </g>
+        <g id="leg_r2">
+          <path class="leg-front" d="M303 304 C348 295 388 301 420 322 C446 338 466 342 488 337"/>
+          <path class="leg-hi" d="M303 304 C348 295 388 301 420 322 C446 338 466 342 488 337"/>
+        </g>
+        <g id="leg_l1">
+          <path class="leg-front" d="M219 286 C185 267 153 251 119 246 C91 241 70 229 51 211"/>
+          <path class="leg-hi" d="M219 286 C185 267 153 251 119 246 C91 241 70 229 51 211"/>
+        </g>
+        <g id="leg_r1">
+          <path class="leg-front" d="M293 286 C327 267 359 251 393 246 C421 241 442 229 461 211"/>
+          <path class="leg-hi" d="M293 286 C327 267 359 251 393 246 C421 241 442 229 461 211"/>
+        </g>
+      </g>
+    </g>
+
+    <g id="upper">
+      <g id="torso">
+        <path d="M226 288 C224 258 226 224 234 197 C241 177 271 177 278 197 C286 224 288 258 286 288 C273 298 239 298 226 288 Z" fill="url(#skin)" stroke="#8f8796" stroke-width="2.4"/>
+        <path class="skin-line" d="M242 204 C250 211 262 211 270 204" opacity="0.55"/>
+      </g>
+      <g id="arm_l">
+        <path d="M232 210 C210 220 198 243 195 271 C194 283 201 291 211 288 C219 286 220 278 220 269 C221 249 229 235 241 225" fill="none" stroke="url(#skin)" stroke-width="16" stroke-linecap="round"/>
+      </g>
+      <g id="arm_r">
+        <path d="M280 210 C302 220 314 243 317 271 C318 283 311 291 301 288 C293 286 292 278 292 269 C291 249 283 235 271 225" fill="none" stroke="url(#skin)" stroke-width="16" stroke-linecap="round"/>
+      </g>
+      <g id="head">
+        <ellipse cx="256" cy="154" rx="45" ry="52" fill="url(#skin)" stroke="#8f8796" stroke-width="2.4"/>
+        <g id="ear_l"><path d="M216 150 L177 160 L216 171 Z" fill="url(#skin)" stroke="#8f8796" stroke-width="2"/></g>
+        <g id="ear_r"><path d="M296 150 L335 160 L296 171 Z" fill="url(#skin)" stroke="#8f8796" stroke-width="2"/></g>
+        <g id="face" opacity="0.75">
+          <path d="M238 154 C244 151 250 151 254 154" class="skin-line" stroke="#3a313f"/>
+          <path d="M258 154 C262 151 268 151 274 154" class="skin-line" stroke="#3a313f"/>
+          <path d="M252 178 C255 179 258 179 261 178" class="skin-line" stroke="#655a69"/>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>

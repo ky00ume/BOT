@@ -1,3 +1,4 @@
+from ui.view_timeouts import SUBMENU_TIMEOUT
 # cogs/social_cog.py
 import discord
 from discord.ext import commands
@@ -106,7 +107,7 @@ class SocialCog(commands.Cog, name="소셜"):
             await self._process_gift_by_id(ctx, npc_name, selected_item_id, item_display)
 
         select.callback = select_callback
-        view = discord.ui.View(timeout=60.0)
+        view = discord.ui.View(timeout=SUBMENU_TIMEOUT)
         view.add_item(select)
 
         await ctx.send(

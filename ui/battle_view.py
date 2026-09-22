@@ -1,5 +1,6 @@
 # battle_view.py — discord.ui.View 기반 전투 UI
 import discord
+from ui.view_timeouts import GAME_VIEW_TIMEOUT
 import random
 import io
 from utils.logger import setup_logger
@@ -13,7 +14,7 @@ class BattleEventView(discord.ui.View):
     """전투 중 이벤트 발생 시 선택지를 버튼으로 제공"""
 
     def __init__(self, battle_engine, event: dict, ctx_or_interaction, callback):
-        super().__init__(timeout=60)
+        super().__init__(timeout=GAME_VIEW_TIMEOUT)
         self.battle_engine = battle_engine
         self.event = event
         self.callback = callback
@@ -49,7 +50,7 @@ class BattleView(discord.ui.View):
     """
 
     def __init__(self, battle_engine, ctx, on_battle_end=None):
-        super().__init__(timeout=300)
+        super().__init__(timeout=GAME_VIEW_TIMEOUT)
         self.battle_engine = battle_engine
         self.ctx = ctx
         self.on_battle_end = on_battle_end  # 전투 종료 시 호출할 코루틴 (승리/패배 처리)

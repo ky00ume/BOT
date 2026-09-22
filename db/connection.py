@@ -168,6 +168,16 @@ def _migrate_players_table(cursor: sqlite3.Cursor) -> None:
             cursor.execute(
                 "ALTER TABLE players ADD COLUMN bags TEXT DEFAULT '[\"bag_large\"]'"
             )
+        if "gear_inventory" not in columns:
+            cursor.execute("ALTER TABLE players ADD COLUMN gear_inventory TEXT DEFAULT '{}'")
+        if "loot_buffer" not in columns:
+            cursor.execute("ALTER TABLE players ADD COLUMN loot_buffer TEXT DEFAULT '{}'")
+        if "home_storage" not in columns:
+            cursor.execute("ALTER TABLE players ADD COLUMN home_storage TEXT DEFAULT '{}'")
+        if "gear_bag_slots" not in columns:
+            cursor.execute("ALTER TABLE players ADD COLUMN gear_bag_slots INTEGER DEFAULT 8")
+        if "home_storage_slots" not in columns:
+            cursor.execute("ALTER TABLE players ADD COLUMN home_storage_slots INTEGER DEFAULT 120")
         if "last_special_encounter" not in columns:
             cursor.execute(
                 "ALTER TABLE players ADD COLUMN last_special_encounter REAL DEFAULT NULL"

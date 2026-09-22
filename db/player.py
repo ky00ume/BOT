@@ -48,8 +48,9 @@ def save_player_to_db(player: Player) -> None:
          gold, base_stats, inventory, equipment, keywords, affinity_data, daily_limits,
          story_quest, skill_ranks, skill_exp, titles, current_title, bags,
          last_special_encounter, rafael_contract,
-         fatigue, condition, stability, costume, care_flags, quest_data, collection_data, current_location)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         fatigue, condition, stability, costume, care_flags, quest_data, collection_data, current_location,
+         gear_inventory, loot_buffer, home_storage, gear_bag_slots, home_storage_slots)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         data.get("user_id", 0),
         data.get("name", "모험가"),
@@ -84,6 +85,11 @@ def save_player_to_db(player: Player) -> None:
         quest_data_json,
         collection_data_json,
         data.get("current_location", "비전의 탑"),
+        json.dumps(data.get("gear_inventory", {}), ensure_ascii=False),
+        json.dumps(data.get("loot_buffer", {}), ensure_ascii=False),
+        json.dumps(data.get("home_storage", {}), ensure_ascii=False),
+        data.get("gear_bag_slots", 8),
+        data.get("home_storage_slots", 120),
     ))
     conn.commit()
     conn.close()
@@ -131,6 +137,17 @@ def load_player_from_db(user_id: int) -> Optional[Dict[str, Any]]:
         "inventory":    _safe_json(row["inventory"], {}),
         "equipment":    _safe_json(row["equipment"], {}),
     }
+
+    for key, default in (("gear_inventory", {}), ("loot_buffer", {}), ("home_storage", {})):
+        try:
+            result[key] = _safe_json(row[key], default)
+        except (IndexError, KeyError):
+            result[key] = default
+    for key, default in (("gear_bag_slots", 8), ("home_storage_slots", 120)):
+        try:
+            result[key] = row[key] if row[key] is not None else default
+        except (IndexError, KeyError):
+            result[key] = default
 
     # 신규 컬럼은 없을 수도 있으므로 안전하게 접근
     try:

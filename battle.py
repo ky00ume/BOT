@@ -643,7 +643,11 @@ class BattleEngine:
             drop_rate = drop["rate"] * mult
             if random.random() < drop_rate:
                 item_id = drop["item"]
-                if self.player.add_item(item_id):
+                # 전투 드롭은 즉시 일반 인벤토리에 밀어 넣지 않고 전리품 묶음에 둔다.
+                # 구형/테스트 Player와의 호환을 위해 add_loot이 없으면 기존 경로를 사용한다.
+                add_loot = getattr(self.player, "add_loot", None)
+                added = add_loot(item_id) if callable(add_loot) else self.player.add_item(item_id)
+                if added:
                     drops[item_id] = drops.get(item_id, 0) + 1
 
         # 레벨업 체크 (공통 함수 사용 — 다중 레벨업 지원)

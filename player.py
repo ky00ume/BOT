@@ -142,8 +142,15 @@ class Player:
             "accessory": None,  # 악세사리
         }
 
+        # 휴대품 가방. 기존 저장/시스템 호환을 위해 inventory 이름은 유지한다.
         self.inventory: dict = {}
-        self.bags = ["bag_large"]  # 기본 가방
+        self.bags = ["bag_large"]  # 휴대 가방 확장
+        # 장비 가방 / 전투 전리품 임시 묶음 / 비전의 탑 보관함.
+        self.gear_inventory: dict = {}
+        self.loot_buffer: dict = {}
+        self.home_storage: dict = {}
+        self.gear_bag_slots = 8
+        self.home_storage_slots = 120
 
         # 기본 전투 스킬은 처음부터 연습 랭크로 습득
         self.skill_ranks = {
@@ -230,6 +237,60 @@ class Player:
 
         logger.debug(f"아이템 제거: player={self.name}, item={item_id}, count={count}")
         return True
+
+    def add_gear_item(self, item_id: str, count: int = 1) -> bool:
+        """여분 장비를 장비 가방에 넣는다. 착용 중 장비는 여기에 포함하지 않는다."""
+        from inventory_domains import is_equipment
+        if not is_equipment(item_id) or count <= 0:
+            return False
+        if item_id not in self.gear_inventory and len(self.gear_inventory) >= self.gear_bag_slots:
+            return False
+        self.gear_inventory[item_id] = self.gear_inventory.get(item_id, 0) + count
+        return True
+
+    def add_loot(self, item_id: str, count: int = 1) -> bool:
+        """전투 중 획득물을 임시 전리품 묶음에 보관한다."""
+        if count <= 0:
+            return False
+        self.loot_buffer[item_id] = self.loot_buffer.get(item_id, 0) + count
+        return True
+
+    def claim_loot(self, item_id: str, count: int = 1) -> bool:
+        """전리품을 종류에 맞는 휴대 가방으로 옮긴다."""
+        if count <= 0 or self.loot_buffer.get(item_id, 0) < count:
+            return False
+        from inventory_domains import is_equipment
+        added = self.add_gear_item(item_id, count) if is_equipment(item_id) else self.add_item(item_id, count)
+        if not added:
+            return False
+        self.loot_buffer[item_id] -= count
+        if self.loot_buffer[item_id] <= 0:
+            del self.loot_buffer[item_id]
+        return True
+
+    def store_at_home(self, item_id: str, count: int = 1, *, from_gear: bool = False) -> bool:
+        """휴대품/장비 가방의 물건을 비전의 탑 보관함으로 옮긴다."""
+        source = self.gear_inventory if from_gear else self.inventory
+        if count <= 0 or source.get(item_id, 0) < count:
+            return False
+        if item_id not in self.home_storage and len(self.home_storage) >= self.home_storage_slots:
+            return False
+        source[item_id] -= count
+        if source[item_id] <= 0:
+            del source[item_id]
+        self.home_storage[item_id] = self.home_storage.get(item_id, 0) + count
+        return True
+
+    def store_all_loot_at_home(self) -> dict[str, int]:
+        """안전 귀환 시 남은 전리품을 탑 보관함으로 자동 수납한다."""
+        moved = {}
+        for item_id, count in list(self.loot_buffer.items()):
+            if item_id not in self.home_storage and len(self.home_storage) >= self.home_storage_slots:
+                continue
+            self.home_storage[item_id] = self.home_storage.get(item_id, 0) + count
+            moved[item_id] = count
+            del self.loot_buffer[item_id]
+        return moved
 
     def add_hyness_item(self, item_id: str, count: int = 1) -> None:
         """하이네스 방 전용 인벤토리에 아이템 추가.
@@ -319,9 +380,14 @@ class Player:
 
         prev = self.equipment.get(slot)
         if prev:
-            self.add_item(prev)
+            self.add_gear_item(prev)
 
-        if item_id in self.inventory:
+        if item_id in self.gear_inventory:
+            self.gear_inventory[item_id] -= 1
+            if self.gear_inventory[item_id] <= 0:
+                del self.gear_inventory[item_id]
+        elif item_id in self.inventory:
+            # 기존 저장 데이터의 장비도 계속 장착 가능하게 한다.
             self.remove_item(item_id)
 
         self.equipment[slot] = item_id  # type: ignore[assignment]
@@ -335,7 +401,8 @@ class Player:
         if not eq_id:
             return f"[{_SLOT_NAMES.get(slot, slot)}] 슬롯이 비어있슴미댜."
         item = ALL_ITEMS.get(eq_id, {})
-        self.add_item(eq_id)
+        if not self.add_gear_item(eq_id):
+            return "장비 가방이 가득 차서 벗을 수 없슴미댜."
         self.equipment[slot] = None
         return f"[{item.get('name', eq_id)}]을(를) 벗었슴미댜!"
 
@@ -482,6 +549,11 @@ class Player:
             "base_stats":    self.base_stats,
             "inventory":     self.inventory,
             "bags":          self.bags,
+            "gear_inventory": self.gear_inventory,
+            "loot_buffer":    self.loot_buffer,
+            "home_storage":   self.home_storage,
+            "gear_bag_slots": self.gear_bag_slots,
+            "home_storage_slots": self.home_storage_slots,
             "equipment":     self.equipment,
             "costume":       self.costume,
             "titles":        self.titles,
@@ -549,6 +621,15 @@ class Player:
 
         if "inventory" in data and isinstance(data["inventory"], dict):
             self.inventory = data["inventory"]
+
+        if "gear_inventory" in data and isinstance(data["gear_inventory"], dict):
+            self.gear_inventory = data["gear_inventory"]
+        if "loot_buffer" in data and isinstance(data["loot_buffer"], dict):
+            self.loot_buffer = data["loot_buffer"]
+        if "home_storage" in data and isinstance(data["home_storage"], dict):
+            self.home_storage = data["home_storage"]
+        self.gear_bag_slots = int(data.get("gear_bag_slots", self.gear_bag_slots))
+        self.home_storage_slots = int(data.get("home_storage_slots", self.home_storage_slots))
 
         if "bags" in data and isinstance(data["bags"], list):
             self.bags = data["bags"]

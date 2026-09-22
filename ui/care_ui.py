@@ -37,6 +37,23 @@ def _make_room_card(player):
     return discord.File(buf, filename="care_room.png")
 
 
+def _make_room_embed(player):
+    """Native Discord embed so the spider emoji is rendered by Discord itself."""
+    obs = observe_pet(player)
+    embed = discord.Embed(
+        title="🕷️ 츄라이더 · 책장 뒤 작은 틈",
+        description=f"{obs.headline}\n\n{obs.body}",
+        color=0x544766,
+    )
+    embed.add_field(name="💗 기분", value=obs.mood, inline=True)
+    embed.add_field(name="💤 기운", value=obs.energy, inline=True)
+    embed.add_field(name="🫶 최근 기억", value=obs.care_memory, inline=False)
+    embed.add_field(name="🧵 인연", value=obs.relationship, inline=True)
+    embed.add_field(name="🌱 버릇", value=obs.habit, inline=False)
+    embed.set_footer(text="🕷️ 비전의 탑 상층 · 숨은 보금자리")
+    return embed
+
+
 def _result_card(title, rows, grade="Normal"):
     buf = get_renderer().render_card(
         title=title,
@@ -284,9 +301,8 @@ class SnackFeedView(discord.ui.View):
                 save_player_to_db(self.player)
             except Exception as e:
                 logger.error("간식 급여 후 저장 실패: %s", e, exc_info=True)
-        file = _make_room_card(self.player)
         await interaction.response.edit_message(
-            content=None, attachments=[file], view=self
+            content=None, attachments=[], embed=_make_room_embed(self.player), view=self
         )
 
     async def _on_back(self, interaction: discord.Interaction):
@@ -438,8 +454,7 @@ class SnackCraftView(discord.ui.View):
                 save_player_to_db(self.player)
             except Exception as e:
                 logger.error("간식 제작 후 저장 실패: %s", e, exc_info=True)
-        file = _make_room_card(self.player)
-        await interaction.response.edit_message(content=None, attachments=[file], view=self)
+        await interaction.response.edit_message(content=None, attachments=[], embed=_make_room_embed(self.player), view=self)
 
     async def _on_back(self, interaction: discord.Interaction):
         file = _make_room_card(self.player)
@@ -648,7 +663,7 @@ class TowerPlaceView(discord.ui.View):
 
     async def _open_nest(self, interaction):
         view = CareRoomView(self.player, self.care_manager, suspicious_actor_id=self.suspicious_actor_id)
-        await interaction.response.edit_message(content=None, attachments=[_make_room_card(self.player)], embed=None, view=view)
+        await interaction.response.edit_message(content=None, attachments=[], embed=_make_room_embed(self.player), view=view)
 
     async def _open_generator(self, interaction):
         from tower_power import ensure_tower_state
@@ -925,7 +940,9 @@ class CareRoomView(discord.ui.View):
             save_player_to_db(self.player)
         except Exception as e:
             logger.error("씻기기 후 저장 실패: %s", e, exc_info=True)
-        await interaction.response.edit_message(content=None, attachments=[_result_card("🕷️🛁 북북박박 목욕", rows)], view=self)
+        embed = discord.Embed(title="🕷️🛁 북북박박 목욕", description=result["message"], color=0x4F7186)
+        embed.add_field(name="🫧 몸 상태", value="복부와 여덟 다리 사이까지 말끔해졌습니다.", inline=False)
+        await interaction.response.edit_message(content=None, attachments=[], embed=embed, view=self)
 
     async def _on_rest(self, interaction: discord.Interaction):
         result = self.care_manager.rest(self.player)
@@ -938,7 +955,9 @@ class CareRoomView(discord.ui.View):
             save_player_to_db(self.player)
         except Exception as e:
             logger.error("쉬게 하기 후 저장 실패: %s", e, exc_info=True)
-        await interaction.response.edit_message(content=None, attachments=[_result_card("🕷️💤 쉬게 하기", rows)], view=self)
+        embed = discord.Embed(title="🕷️💤 쉬게 하기", description=result["message"], color=0x4A4AAA)
+        embed.add_field(name="💤 휴식", value="보금자리에서 방해받지 않고 쉬고 있습니다.", inline=False)
+        await interaction.response.edit_message(content=None, attachments=[], embed=embed, view=self)
 
     async def _on_nest(self, interaction: discord.Interaction):
         from care import get_care_state
@@ -953,7 +972,9 @@ class CareRoomView(discord.ui.View):
             {"label": "🕸️ 보금자리", "value": "책장과 벽 사이의 좁은 틈. 드로우 상체를 기대고 거미 하체를 접어 넣기 좋은 크기입니다."},
             {"label": "🔎 오늘의 흔적", "value": trace},
         ]
-        await interaction.response.edit_message(content=None, attachments=[_result_card("🕷️🕸️ 책장 뒤 작은 틈", rows)], view=self)
+        embed = discord.Embed(title="🕷️🕸️ 책장 뒤 작은 틈", description=rows[0]["value"], color=0x544766)
+        embed.add_field(name="🔎 오늘의 흔적", value=trace, inline=False)
+        await interaction.response.edit_message(content=None, attachments=[], embed=embed, view=self)
 
     # ── 쓰담쓰담 ──────────────────────────────────────────────────────────
     async def _on_pet(self, interaction: discord.Interaction):
@@ -978,8 +999,8 @@ class CareRoomView(discord.ui.View):
                 app_context.get_diary_manager().increment("pet_count", 1)
             except Exception as e:
                 logger.warning("일기 기록 실패: %s", e)
-        file = _result_card("🕷️🫳 쓰다듬기", rows, grade=grade)
-        await interaction.response.edit_message(content=None, attachments=[file], view=self)
+        embed = discord.Embed(title="🕷️🫳 쓰다듬기", description=rows[0]["value"], color=0x8C668A if result["success"] else 0x6B5C5C)
+        await interaction.response.edit_message(content=None, attachments=[], embed=embed, view=self)
 
     # ── 산책 ──────────────────────────────────────────────────────────────
     WALK_COOLDOWN = 180  # 3분

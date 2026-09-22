@@ -195,7 +195,7 @@ class VisionTownView(View):
         notice_btn.callback = self._quest_callback
         self.add_item(notice_btn)
 
-        cook_btn = Button(label="공동 취사 공간", style=discord.ButtonStyle.success, emoji="🍲")
+        cook_btn = Button(label="취사장", style=discord.ButtonStyle.success, emoji="🍲")
         cook_btn.callback = self._cooking_callback
         self.add_item(cook_btn)
 
@@ -253,7 +253,7 @@ class VisionTownView(View):
             self.player, potion_engine=app_context.get_potion_engine(), crafting_engine=app_context.get_crafting_engine(),
             cooking_engine=app_context.get_cooking_engine(), metallurgy_engine=app_context.get_metallurgy_engine(), back_factory=_back,
         )
-        # 공동 취사 공간에서는 곧바로 생활 스킬 화면으로 들어간다.
+        # 취사장에서는 곧바로 생활 스킬 화면으로 들어간다.
         view.current_category = "life"
         view.clear_items()
         from ui.skill_ui import SkillCategorySelect, LifeSkillSelect

@@ -77,4 +77,3 @@ async def test_colony_place_observation_edits_same_message():
     assert kwargs["embed"].title == "군주의 터"
     assert kwargs["embed"].fields[0].name == "포자 군락을 느낀다"
     assert "기억의 잔향" in kwargs["embed"].fields[0].value
-

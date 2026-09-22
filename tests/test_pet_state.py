@@ -35,3 +35,18 @@ def test_repeated_care_becomes_visible_as_a_habit_memory(temp_db):
     obs = observe_pet(player, activities=ActivityService(store=store), store=store)
     assert "쓰다듬" in obs.care_memory
     assert "피하지" in obs.care_memory
+
+def test_idle_pet_lives_in_hidden_upper_tower_nest(temp_db):
+    from player import Player
+    from core.pet_state import observe_pet
+    from core.activities import ActivityService
+    from core.events import EventStore
+
+    store = EventStore()
+    activities = ActivityService(store=store)
+    player = Player()
+    obs = observe_pet(player, activities=activities, store=store)
+
+    assert "비전의 탑 상층" in obs.headline
+    assert "책장 뒤 작은 틈" in obs.headline
+    assert "자기 방" not in obs.headline

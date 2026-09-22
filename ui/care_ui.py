@@ -1,4 +1,4 @@
-"""care_ui.py — "비전의 탑 · 츄라이더의 방" discord.ui.View 기반 돌봄 UI"""
+"""care_ui.py — 비전의 탑 상층 · 츄라이더의 숨은 보금자리 돌봄 UI"""
 import discord
 import random
 import time as _time
@@ -22,7 +22,7 @@ def _bar(value: int, max_val: int = 100, length: int = 10) -> str:
 
 
 def _make_room_card(player):
-    """비전의 탑에 자리 잡은 츄라이더의 방을 관찰로 보여준다."""
+    """마제스티와 카르니스의 생활권 한구석에 만든 츄라이더의 보금자리를 보여준다."""
     obs = observe_pet(player)
     rows = [
         {"label": "🕷️ 지금", "value": obs.headline},
@@ -33,7 +33,7 @@ def _make_room_card(player):
         {"label": "🧵 인연", "value": obs.relationship},
         {"label": "🌱 버릇", "value": obs.habit},
     ]
-    buf = get_renderer().render_card(title="🏰 비전의 탑 · 츄라이더의 방", rows=rows, system_key="system", grade="Normal", footer="츄라이더 관찰하기")
+    buf = get_renderer().render_card(title="🏰 비전의 탑 상층 · 책장 뒤 작은 틈", rows=rows, system_key="system", grade="Normal", footer="츄라이더의 숨은 보금자리")
     return discord.File(buf, filename="care_room.png")
 
 
@@ -559,6 +559,74 @@ class _ItemSelectView(discord.ui.View):
     async def _on_select(self, interaction: discord.Interaction):
         chosen = interaction.data["values"][0]
         await self._confirm_cb(interaction, chosen)
+
+
+# ── 비전의 탑 상층 생활 공간 ──────────────────────────────────────────────────
+class TowerUpperFloorView(discord.ui.View):
+    """마제스티와 카르니스가 사는 상층. 츄라이더의 보금자리는 생활권 한구석에 숨어 있다."""
+
+    def __init__(self, player, care_manager, *, suspicious_actor_id=None):
+        super().__init__(timeout=180)
+        self.player = player
+        self.care_manager = care_manager
+        self.suspicious_actor_id = suspicious_actor_id
+
+        nest_btn = discord.ui.Button(label="책장 뒤 작은 틈", emoji="🕸️", style=discord.ButtonStyle.primary)
+        nest_btn.callback = self._open_nest
+        self.add_item(nest_btn)
+
+        majesty_btn = discord.ui.Button(label="마제스티의 자리", emoji="🕯️", style=discord.ButtonStyle.secondary)
+        majesty_btn.callback = self._observe_majesty_space
+        self.add_item(majesty_btn)
+
+        karniss_btn = discord.ui.Button(label="카르니스의 기척", emoji="🕷️", style=discord.ButtonStyle.secondary)
+        karniss_btn.callback = self._observe_karniss
+        self.add_item(karniss_btn)
+
+        lift_btn = discord.ui.Button(label="승강기", emoji="↕️", style=discord.ButtonStyle.secondary)
+        lift_btn.callback = self._observe_lift
+        self.add_item(lift_btn)
+
+    @staticmethod
+    def make_embed(observation=None):
+        embed = discord.Embed(
+            title="비전의 탑 · 상층 생활 공간",
+            description="마제스티와 카르니스가 생활하는 탑의 상층. 오래된 가구와 책장 사이, 눈에 잘 띄지 않는 곳에 작은 흔적들이 숨어 있다.",
+            color=0x544766,
+        )
+        if observation:
+            embed.add_field(name=observation[0], value=observation[1], inline=False)
+        return embed
+
+    async def _open_nest(self, interaction):
+        view = CareRoomView(self.player, self.care_manager, suspicious_actor_id=self.suspicious_actor_id)
+        await interaction.response.edit_message(content=None, attachments=[_make_room_card(self.player)], embed=None, view=view)
+
+    def _observation_callback(self, title, text):
+        async def callback(interaction):
+            await interaction.response.edit_message(attachments=[], embed=self.make_embed((title, text)), view=self)
+        return callback
+
+    async def _observe_majesty_space(self, interaction):
+        callback = self._observation_callback(
+            "마제스티의 자리",
+            "손이 자주 닿는 물건들이 정돈되어 있다. 책장 아래에는 누군가 일부러 밀어 넣은 듯한 작은 간식 접시가 하나 놓여 있다.",
+        )
+        await callback(interaction)
+
+    async def _observe_karniss(self, interaction):
+        callback = self._observation_callback(
+            "카르니스의 기척",
+            "복도 너머에서 단단한 발끝이 바닥을 긁는 소리가 난다. 책장 아래의 작은 발자국은 그 소리가 가까워질수록 안쪽으로 향한다.",
+        )
+        await callback(interaction)
+
+    async def _observe_lift(self, interaction):
+        callback = self._observation_callback(
+            "승강기",
+            "오래된 승강기가 탑의 아래층과 옥상을 잇고 있다. 아직은 상층에서 움직이지 않는다.",
+        )
+        await callback(interaction)
 
 
 # ── 메인 비전의 탑 돌봄 View ──────────────────────────────────────────────────

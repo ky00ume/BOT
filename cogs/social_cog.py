@@ -16,7 +16,7 @@ from responses import (
     HYNESS_PET_RESPONSES, MAJESTY_PET_RESPONSES, DRIDER_PET_RESPONSES,
     HYNESS_SCOLD_RESPONSES, MAJESTY_SCOLD_RESPONSES, DRIDER_SCOLD_RESPONSES,
 )
-from ui.care_ui import CareRoomView, _make_room_card
+from ui.care_ui import TowerUpperFloorView
 from utils.discord_helpers import send_image, check_channel
 from utils.player_lock import get_player_lock
 
@@ -179,11 +179,10 @@ class SocialCog(commands.Cog, name="소셜"):
             await ctx.send("⏳ 이전 명령을 처리 중입니다. 잠시 기다려주세요!")
             return
         async with lock:
-            view = CareRoomView(self.ctx.player, self.ctx.care_manager, suspicious_actor_id=self.ctx.hyness_id)
-            file = _make_room_card(self.ctx.player)
+            view = TowerUpperFloorView(self.ctx.player, self.ctx.care_manager, suspicious_actor_id=self.ctx.hyness_id)
             from core.special_reactions import reaction_for
             special = reaction_for(ctx.author.id, suspicious_actor_id=self.ctx.hyness_id)
-            msg  = await ctx.send(content=special.room_arrival if special else None, file=file, view=view)
+            msg = await ctx.send(content=special.room_arrival if special else None, embed=view.make_embed(), view=view)
             view._message = msg
 
     @commands.command(name="쓰담", aliases=["복복", "북북", "쓰다듬", "북북박박", "복복복", "복복박박"])

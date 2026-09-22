@@ -1,106 +1,70 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc" data-character="churider" data-state="idle" data-stage="anatomy-blockout">
-  <title id="title">Churider — idle anatomy blockout</title>
-  <desc id="desc">A miniature drider anatomy study: pale drow upper body fused to a dark spider lower body with exactly eight spider legs. Hair, clothing, eye color, and other identity details are intentionally unspecified.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc" data-character="churider" data-state="idle" data-stage="appearance-blockout-v2">
+  <title id="title">Churider — idle appearance blockout v2</title>
+  <desc id="desc">Juvenile Kar'niss-derived miniature drider: pale drow upper body, white below-shoulder hair, black sclera with agate irises, seven eyes in a 1 + 1 (+5) layout, and a fused spider lower body with exactly eight legs.</desc>
   <defs>
-    <linearGradient id="chitin" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#2a2231"/>
-      <stop offset="0.5" stop-color="#17131f"/>
-      <stop offset="1" stop-color="#08070d"/>
-    </linearGradient>
-    <linearGradient id="chitinHi" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#74627c" stop-opacity="0.55"/>
-      <stop offset="1" stop-color="#2d2435" stop-opacity="0.08"/>
-    </linearGradient>
-    <linearGradient id="skin" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#eeeaf2"/>
-      <stop offset="0.55" stop-color="#d6d0dc"/>
-      <stop offset="1" stop-color="#aaa3b2"/>
-    </linearGradient>
-    <filter id="softShadow" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur stdDeviation="4"/>
-    </filter>
+    <linearGradient id="chitin" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#342b3b"/><stop offset="0.55" stop-color="#18131e"/><stop offset="1" stop-color="#08070c"/></linearGradient>
+    <linearGradient id="chitinHi" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7a687f" stop-opacity="0.58"/><stop offset="1" stop-color="#2a2330" stop-opacity="0.08"/></linearGradient>
+    <linearGradient id="skin" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f0edf3"/><stop offset="0.6" stop-color="#d1cbd7"/><stop offset="1" stop-color="#a59eaa"/></linearGradient>
+    <linearGradient id="hair" x1="0" y1="0" x2="0.8" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="0.55" stop-color="#e7e5ec"/><stop offset="1" stop-color="#aaa8b1"/></linearGradient>
+    <radialGradient id="agate"><stop offset="0" stop-color="#f0c86d"/><stop offset="0.42" stop-color="#b77c36"/><stop offset="1" stop-color="#6c3e20"/></radialGradient>
+    <filter id="softShadow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="4"/></filter>
     <style>
-      .leg-back { fill:none; stroke:#17131f; stroke-width:18; stroke-linecap:round; stroke-linejoin:round; }
-      .leg-front { fill:none; stroke:#211a27; stroke-width:19; stroke-linecap:round; stroke-linejoin:round; }
-      .leg-hi { fill:none; stroke:#6a5872; stroke-opacity:.42; stroke-width:3.2; stroke-linecap:round; stroke-linejoin:round; }
-      .skin-line { fill:none; stroke:#918999; stroke-width:2.2; stroke-linecap:round; }
+      .leg-back{fill:none;stroke:#17131f;stroke-width:16;stroke-linecap:round;stroke-linejoin:round}.leg-front{fill:none;stroke:#211a27;stroke-width:17;stroke-linecap:round;stroke-linejoin:round}.leg-hi{fill:none;stroke:#76627c;stroke-opacity:.42;stroke-width:2.8;stroke-linecap:round;stroke-linejoin:round}.skin-line{fill:none;stroke:#8e8794;stroke-width:2;stroke-linecap:round}.eye-black{fill:#08070a;stroke:#62586a;stroke-width:1.1}.iris{fill:url(#agate)}
     </style>
   </defs>
-
-  <ellipse id="shadow" cx="256" cy="421" rx="180" ry="28" fill="#05040a" opacity="0.55" filter="url(#softShadow)"/>
+  <rect width="512" height="512" fill="#0d0b13"/>
+  <ellipse id="shadow" cx="256" cy="427" rx="184" ry="28" fill="#05040a" opacity="0.65" filter="url(#softShadow)"/>
 
   <g id="churider">
     <g id="spider">
       <g id="spider_legs_back">
-        <g id="leg_l4">
-          <path class="leg-back" d="M215 344 C171 357 134 385 104 428 C91 446 76 458 58 465"/>
-          <path class="leg-hi" d="M215 344 C171 357 134 385 104 428 C91 446 76 458 58 465"/>
-        </g>
-        <g id="leg_r4">
-          <path class="leg-back" d="M297 344 C341 357 378 385 408 428 C421 446 436 458 454 465"/>
-          <path class="leg-hi" d="M297 344 C341 357 378 385 408 428 C421 446 436 458 454 465"/>
-        </g>
-        <g id="leg_l3">
-          <path class="leg-back" d="M209 326 C158 328 117 341 83 369 C64 384 47 392 28 394"/>
-          <path class="leg-hi" d="M209 326 C158 328 117 341 83 369 C64 384 47 392 28 394"/>
-        </g>
-        <g id="leg_r3">
-          <path class="leg-back" d="M303 326 C354 328 395 341 429 369 C448 384 465 392 484 394"/>
-          <path class="leg-hi" d="M303 326 C354 328 395 341 429 369 C448 384 465 392 484 394"/>
-        </g>
+        <g id="leg_l4"><path class="leg-back" d="M214 348 C167 362 129 391 96 433 C82 451 66 461 49 466"/><path class="leg-hi" d="M214 348 C167 362 129 391 96 433 C82 451 66 461 49 466"/></g>
+        <g id="leg_r4"><path class="leg-back" d="M298 348 C345 362 383 391 416 433 C430 451 446 461 463 466"/><path class="leg-hi" d="M298 348 C345 362 383 391 416 433 C430 451 446 461 463 466"/></g>
+        <g id="leg_l3"><path class="leg-back" d="M207 327 C156 331 115 346 80 375 C60 392 43 399 24 400"/><path class="leg-hi" d="M207 327 C156 331 115 346 80 375 C60 392 43 399 24 400"/></g>
+        <g id="leg_r3"><path class="leg-back" d="M305 327 C356 331 397 346 432 375 C452 392 469 399 488 400"/><path class="leg-hi" d="M305 327 C356 331 397 346 432 375 C452 392 469 399 488 400"/></g>
       </g>
-
-      <g id="abdomen">
-        <ellipse cx="256" cy="337" rx="113" ry="87" fill="url(#chitin)" stroke="#45394c" stroke-width="3"/>
-        <ellipse cx="248" cy="315" rx="78" ry="48" fill="url(#chitinHi)" opacity="0.58"/>
-        <path d="M179 344 C209 360 303 360 333 344" fill="none" stroke="#5f5067" stroke-opacity="0.22" stroke-width="3"/>
-      </g>
-
-      <g id="thorax">
-        <ellipse cx="256" cy="309" rx="68" ry="61" fill="url(#chitin)" stroke="#514458" stroke-width="3"/>
-        <ellipse cx="247" cy="292" rx="42" ry="30" fill="url(#chitinHi)" opacity="0.7"/>
-      </g>
-
+      <g id="abdomen"><ellipse cx="256" cy="343" rx="107" ry="82" fill="url(#chitin)" stroke="#4e4055" stroke-width="3"/><ellipse cx="248" cy="320" rx="72" ry="45" fill="url(#chitinHi)" opacity=".56"/><path d="M181 352 C211 366 301 366 331 352" fill="none" stroke="#6a596f" stroke-opacity=".22" stroke-width="3"/></g>
+      <g id="thorax"><ellipse cx="256" cy="311" rx="63" ry="58" fill="url(#chitin)" stroke="#57495d" stroke-width="3"/><ellipse cx="247" cy="293" rx="39" ry="27" fill="url(#chitinHi)" opacity=".72"/></g>
       <g id="spider_legs_front">
-        <g id="leg_l2">
-          <path class="leg-front" d="M209 304 C164 295 124 301 92 322 C66 338 46 342 24 337"/>
-          <path class="leg-hi" d="M209 304 C164 295 124 301 92 322 C66 338 46 342 24 337"/>
-        </g>
-        <g id="leg_r2">
-          <path class="leg-front" d="M303 304 C348 295 388 301 420 322 C446 338 466 342 488 337"/>
-          <path class="leg-hi" d="M303 304 C348 295 388 301 420 322 C446 338 466 342 488 337"/>
-        </g>
-        <g id="leg_l1">
-          <path class="leg-front" d="M219 286 C185 267 153 251 119 246 C91 241 70 229 51 211"/>
-          <path class="leg-hi" d="M219 286 C185 267 153 251 119 246 C91 241 70 229 51 211"/>
-        </g>
-        <g id="leg_r1">
-          <path class="leg-front" d="M293 286 C327 267 359 251 393 246 C421 241 442 229 461 211"/>
-          <path class="leg-hi" d="M293 286 C327 267 359 251 393 246 C421 241 442 229 461 211"/>
-        </g>
+        <g id="leg_l2"><path class="leg-front" d="M210 307 C165 300 126 306 92 327 C65 344 45 348 22 344"/><path class="leg-hi" d="M210 307 C165 300 126 306 92 327 C65 344 45 348 22 344"/></g>
+        <g id="leg_r2"><path class="leg-front" d="M302 307 C347 300 386 306 420 327 C447 344 467 348 490 344"/><path class="leg-hi" d="M302 307 C347 300 386 306 420 327 C447 344 467 348 490 344"/></g>
+        <g id="leg_l1"><path class="leg-front" d="M219 289 C185 272 152 258 116 254 C89 251 67 240 47 222"/><path class="leg-hi" d="M219 289 C185 272 152 258 116 254 C89 251 67 240 47 222"/></g>
+        <g id="leg_r1"><path class="leg-front" d="M293 289 C327 272 360 258 396 254 C423 251 445 240 465 222"/><path class="leg-hi" d="M293 289 C327 272 360 258 396 254 C423 251 445 240 465 222"/></g>
       </g>
     </g>
 
     <g id="upper">
-      <g id="torso">
-        <path d="M226 288 C224 258 226 224 234 197 C241 177 271 177 278 197 C286 224 288 258 286 288 C273 298 239 298 226 288 Z" fill="url(#skin)" stroke="#8f8796" stroke-width="2.4"/>
-        <path class="skin-line" d="M242 204 C250 211 262 211 270 204" opacity="0.55"/>
+      <g id="torso"><path d="M230 292 C226 265 227 228 236 198 C241 181 270 181 276 198 C285 228 286 265 282 292 C269 300 243 300 230 292 Z" fill="url(#skin)" stroke="#8c8492" stroke-width="2.3"/><path class="skin-line" d="M244 205 C250 210 262 210 268 205" opacity=".55"/></g>
+      <g id="arm_l"><path d="M236 211 C214 221 202 243 198 270 C196 282 201 291 211 290 C219 289 221 280 221 270 C222 249 229 235 241 225" fill="none" stroke="url(#skin)" stroke-width="15" stroke-linecap="round"/></g>
+      <g id="arm_r"><path d="M276 211 C298 221 310 243 314 270 C316 282 311 291 301 290 C293 289 291 280 291 270 C290 249 283 235 271 225" fill="none" stroke="url(#skin)" stroke-width="15" stroke-linecap="round"/></g>
+
+      <g id="hair_back">
+        <path d="M218 137 C210 171 213 211 224 252 C227 263 225 276 217 289 C235 286 246 272 249 251 L249 150 Z" fill="url(#hair)" stroke="#9d9aa5" stroke-width="1.6"/>
+        <path d="M294 137 C302 171 299 211 288 252 C285 263 287 276 295 289 C277 286 266 272 263 251 L263 150 Z" fill="url(#hair)" stroke="#9d9aa5" stroke-width="1.6"/>
       </g>
-      <g id="arm_l">
-        <path d="M232 210 C210 220 198 243 195 271 C194 283 201 291 211 288 C219 286 220 278 220 269 C221 249 229 235 241 225" fill="none" stroke="url(#skin)" stroke-width="16" stroke-linecap="round"/>
-      </g>
-      <g id="arm_r">
-        <path d="M280 210 C302 220 314 243 317 271 C318 283 311 291 301 288 C293 286 292 278 292 269 C291 249 283 235 271 225" fill="none" stroke="url(#skin)" stroke-width="16" stroke-linecap="round"/>
-      </g>
+
       <g id="head">
-        <ellipse cx="256" cy="154" rx="45" ry="52" fill="url(#skin)" stroke="#8f8796" stroke-width="2.4"/>
-        <g id="ear_l"><path d="M216 150 L177 160 L216 171 Z" fill="url(#skin)" stroke="#8f8796" stroke-width="2"/></g>
-        <g id="ear_r"><path d="M296 150 L335 160 L296 171 Z" fill="url(#skin)" stroke="#8f8796" stroke-width="2"/></g>
-        <g id="face" opacity="0.75">
-          <path d="M238 154 C244 151 250 151 254 154" class="skin-line" stroke="#3a313f"/>
-          <path d="M258 154 C262 151 268 151 274 154" class="skin-line" stroke="#3a313f"/>
-          <path d="M252 178 C255 179 258 179 261 178" class="skin-line" stroke="#655a69"/>
+        <ellipse cx="256" cy="154" rx="43" ry="51" fill="url(#skin)" stroke="#8c8492" stroke-width="2.4"/>
+        <g id="ear_l"><path d="M218 151 L180 160 L217 171 Z" fill="url(#skin)" stroke="#8c8492" stroke-width="2"/></g>
+        <g id="ear_r"><path d="M294 151 L332 160 L295 171 Z" fill="url(#skin)" stroke="#8c8492" stroke-width="2"/></g>
+
+        <g id="face">
+          <g id="eye_l_main"><ellipse class="eye-black" cx="241" cy="158" rx="9" ry="6"/><ellipse class="iris" cx="241" cy="158" rx="3.2" ry="3.4"/><circle cx="240.2" cy="157.1" r=".8" fill="#fff" opacity=".7"/></g>
+          <g id="eye_r_main"><ellipse class="eye-black" cx="271" cy="158" rx="9" ry="6"/><ellipse class="iris" cx="271" cy="158" rx="3.2" ry="3.4"/><circle cx="270.2" cy="157.1" r=".8" fill="#fff" opacity=".7"/></g>
+          <g id="eye_r_extra_1"><ellipse class="eye-black" cx="279" cy="136" rx="5.4" ry="4.3"/><ellipse class="iris" cx="279" cy="136" rx="1.9" ry="2.1"/></g>
+          <g id="eye_r_extra_2"><ellipse class="eye-black" cx="289" cy="143" rx="4.8" ry="4"/><ellipse class="iris" cx="289" cy="143" rx="1.7" ry="1.9"/></g>
+          <g id="eye_r_extra_3"><ellipse class="eye-black" cx="287" cy="155" rx="4.6" ry="3.8"/><ellipse class="iris" cx="287" cy="155" rx="1.6" ry="1.8"/></g>
+          <g id="eye_r_extra_4"><ellipse class="eye-black" cx="284" cy="167" rx="4.2" ry="3.5"/><ellipse class="iris" cx="284" cy="167" rx="1.5" ry="1.7"/></g>
+          <g id="eye_r_extra_5"><ellipse class="eye-black" cx="277" cy="177" rx="3.9" ry="3.2"/><ellipse class="iris" cx="277" cy="177" rx="1.4" ry="1.6"/></g>
+          <path d="M251 181 C255 183 260 183 264 181" class="skin-line" stroke="#6a606d"/>
         </g>
+      </g>
+
+      <g id="hair_front">
+        <path d="M220 145 C218 115 232 96 256 94 C281 96 296 113 294 144 C286 126 276 116 260 111 C244 115 233 126 228 148 Z" fill="url(#hair)" stroke="#9d9aa5" stroke-width="1.6"/>
+        <path d="M220 143 C214 174 219 211 230 239 C234 249 233 260 227 272 C239 269 246 257 248 240 L248 145 C238 141 229 140 220 143 Z" fill="url(#hair)" stroke="#9d9aa5" stroke-width="1.4"/>
+        <path d="M294 143 C297 171 294 203 286 230 C282 242 283 254 290 265 C281 263 274 255 270 243 L270 186 C278 185 285 181 290 176 C296 167 298 154 294 143 Z" fill="url(#hair)" stroke="#9d9aa5" stroke-width="1.4"/>
+        <path d="M227 118 C238 108 250 104 262 105" fill="none" stroke="#fff" stroke-opacity=".72" stroke-width="3" stroke-linecap="round"/>
       </g>
     </g>
   </g>

@@ -1,5 +1,6 @@
 """quest_ui.py — 마비노기식 PIL 이미지 퀘스트 창 UI"""
 import discord
+from ui.view_timeouts import GAME_VIEW_TIMEOUT
 from discord.ui import View, Button, Select
 from bg3_renderer import get_renderer
 from quest import QUEST_DB
@@ -156,7 +157,7 @@ class QuestWindowView(View):
     """마비노기식 퀘스트 창 View"""
 
     def __init__(self, quest_manager, player):
-        super().__init__(timeout=300.0)
+        super().__init__(timeout=GAME_VIEW_TIMEOUT)
         self.quest_manager = quest_manager
         self.player = player
         self._build_select()
@@ -254,7 +255,7 @@ class QuestDetailView(View):
     """퀘스트 상세 버튼 뷰"""
 
     def __init__(self, quest_id: str, quest_manager, player):
-        super().__init__(timeout=300.0)
+        super().__init__(timeout=GAME_VIEW_TIMEOUT)
         self.quest_id = quest_id
         self.quest_manager = quest_manager
         self.player = player
@@ -332,7 +333,7 @@ class QuestBackView(View):
     """퀘스트 완료/포기 후 목록으로 돌아가는 뷰"""
 
     def __init__(self, quest_manager, player):
-        super().__init__(timeout=300.0)
+        super().__init__(timeout=GAME_VIEW_TIMEOUT)
         self.quest_manager = quest_manager
         self.player = player
         back_btn = Button(label="퀘스트 목록", style=discord.ButtonStyle.secondary, emoji="📋")
@@ -351,7 +352,7 @@ class StoryBackView(View):
     """메인 스토리에서 일반 퀘스트로 돌아가는 뷰"""
 
     def __init__(self, quest_manager, player):
-        super().__init__(timeout=300.0)
+        super().__init__(timeout=GAME_VIEW_TIMEOUT)
         self.quest_manager = quest_manager
         self.player = player
         back_btn = Button(label="← 일반 퀘스트", style=discord.ButtonStyle.secondary)

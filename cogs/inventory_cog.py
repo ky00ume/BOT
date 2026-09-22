@@ -1,3 +1,4 @@
+from ui.view_timeouts import GAME_VIEW_TIMEOUT, SUBMENU_TIMEOUT
 # cogs/inventory_cog.py
 import discord
 from discord.ext import commands
@@ -108,7 +109,7 @@ class InventoryCog(commands.Cog, name="인벤토리"):
         )
         file = discord.File(fp=buf, filename="inventory.png")
 
-        view = discord.ui.View(timeout=120.0)
+        view = discord.ui.View(timeout=GAME_VIEW_TIMEOUT)
 
         # 미습득 스킬북 [읽기] 버튼들
         for item_id, count in inventory.items():
@@ -212,7 +213,7 @@ class InventoryCog(commands.Cog, name="인벤토리"):
                     await sel_interaction.response.send_message("인벤토리에 해당 아이템이 없슴미댜!", ephemeral=True)
                     return
                 item_name = item.get("name", item_id)
-                qty_view = discord.ui.View(timeout=60.0)
+                qty_view = discord.ui.View(timeout=SUBMENU_TIMEOUT)
                 for qty_label, qty_val in [("1개", 1), ("5개", 5), ("10개", 10), ("전부", have)]:
                     actual = min(qty_val, have)
                     if actual <= 0:
@@ -258,7 +259,7 @@ class InventoryCog(commands.Cog, name="인벤토리"):
                                     custom_id="discard_item_select_cont",
                                 )
                                 new_select.callback = discard_select_callback
-                                new_view = discord.ui.View(timeout=60.0)
+                                new_view = discord.ui.View(timeout=SUBMENU_TIMEOUT)
                                 new_view.add_item(new_select)
                                 await y_interaction.response.edit_message(
                                     content=f"🗑️ **{_iname}** ×{drop}을(를) 버렸슴미댜! 계속 버릴 아이템을 선택하세요:",
@@ -284,7 +285,7 @@ class InventoryCog(commands.Cog, name="인벤토리"):
                     ephemeral=True,
                 )
             discard_select.callback = discard_select_callback
-            sel_view = discord.ui.View(timeout=60.0)
+            sel_view = discord.ui.View(timeout=SUBMENU_TIMEOUT)
             sel_view.add_item(discard_select)
             await interaction.response.send_message("버릴 아이템을 선택하세요:", view=sel_view, ephemeral=True)
         discard_btn.callback = discard_btn_callback

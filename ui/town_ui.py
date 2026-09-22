@@ -1,5 +1,6 @@
 """town_ui.py — 마이코니드 군락 / 언더다크 이미지+버튼 UI 시스템 (임베드 제거, PIL 이미지 전용)"""
 import discord
+from ui.view_timeouts import GAME_VIEW_TIMEOUT
 import io
 from discord.ui import View, Button
 from bg3_renderer import get_renderer
@@ -140,7 +141,7 @@ class ColonyPlaceView(View):
     }
 
     def __init__(self, location, player, aff_manager, npc_manager_ref, village_manager=None):
-        super().__init__(timeout=300.0)
+        super().__init__(timeout=GAME_VIEW_TIMEOUT)
         self.location, self.player = location, player
         self.aff_manager, self.npc_manager_ref = aff_manager, npc_manager_ref
         self.village_manager = village_manager
@@ -201,7 +202,7 @@ class VisionTownView(View):
     """마이코니드 군락 메인 뷰. 클래스명은 저장/호출 호환을 위해 유지한다."""
 
     def __init__(self, player, aff_manager, npc_manager_ref, village_manager=None):
-        super().__init__(timeout=300.0)
+        super().__init__(timeout=GAME_VIEW_TIMEOUT)
         self.player = player
         self.aff_manager = aff_manager
         self.npc_manager_ref = npc_manager_ref
@@ -303,7 +304,7 @@ class WorldMapView(View):
     """언더다크 세계지도 뷰 (이미지 + 버튼)"""
 
     def __init__(self, player, aff_manager, npc_manager_ref):
-        super().__init__(timeout=300.0)
+        super().__init__(timeout=GAME_VIEW_TIMEOUT)
         self.player = player
         self.aff_manager = aff_manager
         self.npc_manager_ref = npc_manager_ref
@@ -385,7 +386,7 @@ class HuntingZoneView(View):
     """사냥터 상세 뷰 (이미지 + 버튼)"""
 
     def __init__(self, zone_name: str, player, aff_manager, npc_manager_ref):
-        super().__init__(timeout=300.0)
+        super().__init__(timeout=GAME_VIEW_TIMEOUT)
         self.zone_name = zone_name
         self.player = player
         self.aff_manager = aff_manager
@@ -497,7 +498,7 @@ class GatheringZoneView(View):
     """채집터 상세 뷰 (이미지 + 버튼)"""
 
     def __init__(self, zone_name: str, player, aff_manager, npc_manager_ref):
-        super().__init__(timeout=300.0)
+        super().__init__(timeout=GAME_VIEW_TIMEOUT)
         self.zone_name = zone_name
         self.player = player
         self.aff_manager = aff_manager
@@ -573,7 +574,7 @@ class FishingZoneView(View):
     """낚시터 상세 뷰 (이미지 + 버튼)"""
 
     def __init__(self, zone_name: str, has_silen: bool, player, aff_manager, npc_manager_ref):
-        super().__init__(timeout=300.0)
+        super().__init__(timeout=GAME_VIEW_TIMEOUT)
         self.zone_name = zone_name
         self.has_silen = has_silen
         self.player = player

@@ -1,6 +1,7 @@
 """story_quest_ui.py — 스토리 퀘스트 Discord UI 컴포넌트 (PIL 이미지 기반)"""
 import asyncio
 import discord
+from ui.view_timeouts import GAME_VIEW_TIMEOUT
 from discord.ui import View, Button
 from bg3_renderer import get_renderer
 from story_quest_data import (
@@ -43,7 +44,7 @@ class ShadowChoiceView(View):
         "blurple": discord.ButtonStyle.primary,
     }
 
-    def __init__(self, choices: dict, sq_manager, player, *, timeout=120.0):
+    def __init__(self, choices: dict, sq_manager, player, *, timeout=GAME_VIEW_TIMEOUT):
         super().__init__(timeout=timeout)
         self.sq_manager = sq_manager
         self.player     = player
@@ -102,7 +103,7 @@ class ShadowChoiceWithFlagView(View):
     }
 
     def __init__(self, choices: dict, sq_manager, player, *,
-                 choice_results: dict = None, author_id: int = None, timeout=120.0):
+                 choice_results: dict = None, author_id: int = None, timeout=GAME_VIEW_TIMEOUT):
         super().__init__(timeout=timeout)
         self.sq_manager     = sq_manager
         self.player         = player
@@ -187,7 +188,7 @@ BATTLE_TURN_EMOJIS = {
 class ForcedBattleView(View):
     """팅커 벨 강제 패배 전투 (챕터 3 Q4)."""
 
-    def __init__(self, turns: list, sq_manager, player, on_done_coro=None, *, timeout=180.0):
+    def __init__(self, turns: list, sq_manager, player, on_done_coro=None, *, timeout=GAME_VIEW_TIMEOUT):
         super().__init__(timeout=timeout)
         self.turns         = turns
         self.current_turn  = 0
@@ -263,7 +264,7 @@ class ForcedBattleView(View):
 class ExploreView(View):
     """비버뱅 군락 탐색 단계 버튼 (챕터 3 Q2)."""
 
-    def __init__(self, step_descs: list, sq_manager, player, on_done_coro=None, *, timeout=180.0):
+    def __init__(self, step_descs: list, sq_manager, player, on_done_coro=None, *, timeout=GAME_VIEW_TIMEOUT):
         super().__init__(timeout=timeout)
         self.step_descs   = step_descs
         self.current_step = 0

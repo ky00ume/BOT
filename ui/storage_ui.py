@@ -1,5 +1,6 @@
 """storage_ui.py — 보관함 인터랙티브 UI (넣기/꺼내기 버튼+셀렉트)"""
 import discord
+from ui.view_timeouts import GAME_VIEW_TIMEOUT
 from discord.ui import View, Button, Select
 from items import ALL_ITEMS
 from ui.ui_theme import C, ansi
@@ -9,7 +10,7 @@ class StorageView(View):
     """보관함 메인 뷰 — 넣기/꺼내기/업그레이드 버튼."""
 
     def __init__(self, player, storage_engine):
-        super().__init__(timeout=180.0)
+        super().__init__(timeout=GAME_VIEW_TIMEOUT)
         self.player = player
         self.engine = storage_engine
 

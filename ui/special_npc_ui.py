@@ -1,5 +1,6 @@
 """special_npc_ui.py — 특수 NPC 인카운터 UI (버튼/셀렉트 방식)"""
 import discord
+from ui.view_timeouts import GAME_VIEW_TIMEOUT
 from discord.ui import View, Button, Select
 from special_npc import (
     SPECIAL_NPCS, ENCOUNTER_SHORT_GREETINGS, ENCOUNTER_NPC_ROLES,
@@ -57,7 +58,7 @@ class SpecialNPCView(View):
     """특수 NPC 인카운터 버튼 UI"""
 
     def __init__(self, npc_name: str, player, aff_manager, npc_manager_ref, encounter_manager):
-        super().__init__(timeout=180.0)
+        super().__init__(timeout=GAME_VIEW_TIMEOUT)
         self.npc_name = npc_name
         self.player = player
         self.aff_manager = aff_manager

@@ -6,6 +6,7 @@
   생활 스킬 → 레시피 드롭다운 → 재료 임베드 (부족=빨강) → [제작 실행] 버튼
 """
 import discord
+from ui.view_timeouts import GAME_VIEW_TIMEOUT
 from discord.ui import View, Button, Select
 from utils.logger import setup_logger
 logger = setup_logger('skill_ui')
@@ -596,7 +597,7 @@ class RecipeSelect(Select):
 class SkillMainView(View):
     def __init__(self, player, potion_engine=None, crafting_engine=None,
                  cooking_engine=None, metallurgy_engine=None, back_factory=None):
-        super().__init__(timeout=180.0)
+        super().__init__(timeout=GAME_VIEW_TIMEOUT)
         self.player = player
         self.potion_engine = potion_engine
         self.crafting_engine = crafting_engine

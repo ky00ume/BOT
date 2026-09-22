@@ -1,5 +1,6 @@
 """shop_ui.py — discord.ui.View 기반 인터랙티브 구매/판매 UI (PIL 이미지 출력)"""
 import discord
+from ui.view_timeouts import SUBMENU_TIMEOUT
 from items import ALL_ITEMS
 from bg3_renderer import get_renderer
 from utils.logger import setup_logger
@@ -27,7 +28,7 @@ def _result_card(title, rows, grade="Normal"):
 
 class SellView(discord.ui.View):
     def __init__(self, player, shop_manager):
-        super().__init__(timeout=60)
+        super().__init__(timeout=SUBMENU_TIMEOUT)
         self.player       = player
         self.shop_manager = shop_manager
         self.selected_id  = None
@@ -168,7 +169,7 @@ class SellView(discord.ui.View):
 
 class BuyView(discord.ui.View):
     def __init__(self, player, shop_manager, npc_name: str, catalog: dict):
-        super().__init__(timeout=60)
+        super().__init__(timeout=SUBMENU_TIMEOUT)
         self.player       = player
         self.shop_manager = shop_manager
         self.npc_name     = npc_name

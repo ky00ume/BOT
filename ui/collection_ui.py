@@ -7,6 +7,7 @@ JS Risulike RPG v9 의 도감 UI 구조를 Discord 봇에 맞게 이식:
   - 등급별 그룹(Legendary → Epic → Rare → Normal) + 색상
 """
 import discord
+from ui.view_timeouts import GAME_VIEW_TIMEOUT
 from discord.ui import View, Button
 from collection import collection_manager, CATEGORY_ICONS
 from ui.ui_theme import GRADE_EMBED_COLOR
@@ -133,7 +134,7 @@ class CollectionView(View):
     CATEGORIES = list(CATEGORY_ICONS.keys())  # ["낚시", "요리", "채집", "채광"]
 
     def __init__(self, author_id: int):
-        super().__init__(timeout=120.0)
+        super().__init__(timeout=GAME_VIEW_TIMEOUT)
         self.author_id = author_id
         self._active: str | None = None  # 현재 선택된 카테고리
         self._build_buttons()

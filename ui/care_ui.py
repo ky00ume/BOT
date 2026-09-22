@@ -1,5 +1,6 @@
 """care_ui.py — 비전의 탑 상층 · 츄라이더의 숨은 보금자리 돌봄 UI"""
 import discord
+from ui.view_timeouts import CARE_VIEW_TIMEOUT
 import random
 import time as _time
 from utils.logger import setup_logger
@@ -76,7 +77,7 @@ class CostumeManageView(discord.ui.View):
     }
 
     def __init__(self, player, parent_view):
-        super().__init__(timeout=60)
+        super().__init__(timeout=CARE_VIEW_TIMEOUT)
         self.player      = player
         self.parent_view = parent_view
         self._message    = None
@@ -234,7 +235,7 @@ class CostumeManageView(discord.ui.View):
 # ── 간식 주기 서브 View ──────────────────────────────────────────────────────
 class SnackFeedView(discord.ui.View):
     def __init__(self, player, care_manager, parent_view):
-        super().__init__(timeout=60)
+        super().__init__(timeout=CARE_VIEW_TIMEOUT)
         self.player       = player
         self.care_manager = care_manager
         self.parent_view  = parent_view
@@ -311,7 +312,7 @@ class SnackFeedView(discord.ui.View):
 # ── 가위바위보 서브 View ─────────────────────────────────────────────────────
 class RockPaperScissorsView(discord.ui.View):
     def __init__(self, player, care_manager, parent_view):
-        super().__init__(timeout=30)
+        super().__init__(timeout=CARE_VIEW_TIMEOUT)
         self.player       = player
         self.care_manager = care_manager
         self.parent_view  = parent_view
@@ -377,7 +378,7 @@ class RockPaperScissorsView(discord.ui.View):
 # ── 간식 제작 서브 View ──────────────────────────────────────────────────────
 class SnackCraftView(discord.ui.View):
     def __init__(self, player, care_manager, parent_view):
-        super().__init__(timeout=60)
+        super().__init__(timeout=CARE_VIEW_TIMEOUT)
         self.player       = player
         self.care_manager = care_manager
         self.parent_view  = parent_view
@@ -472,7 +473,7 @@ class CostumeCraftView(discord.ui.View):
     }
 
     def __init__(self, player, care_manager, parent_view):
-        super().__init__(timeout=60)
+        super().__init__(timeout=CARE_VIEW_TIMEOUT)
         self.player       = player
         self.care_manager = care_manager
         self.parent_view  = parent_view
@@ -562,7 +563,7 @@ class CostumeCraftView(discord.ui.View):
 class _ItemSelectView(discord.ui.View):
     """Select 메뉴 하나만 가지는 임시 뷰 (ephemeral 사용용)."""
     def __init__(self, select: discord.ui.Select, confirm_cb):
-        super().__init__(timeout=30)
+        super().__init__(timeout=CARE_VIEW_TIMEOUT)
         self._confirm_cb = confirm_cb
         select.callback  = self._on_select
         self.add_item(select)
@@ -623,7 +624,7 @@ class TowerPlaceView(discord.ui.View):
     ]
 
     def __init__(self, player, care_manager, *, place="upper", suspicious_actor_id=None):
-        super().__init__(timeout=180)
+        super().__init__(timeout=CARE_VIEW_TIMEOUT)
         self.player = player
         self.care_manager = care_manager
         self.place = place
@@ -697,7 +698,7 @@ class TowerPlaceView(discord.ui.View):
 
 class TowerFacilityView(discord.ui.View):
     def __init__(self, player, care_manager, *, facility, return_place, suspicious_actor_id=None):
-        super().__init__(timeout=180)
+        super().__init__(timeout=CARE_VIEW_TIMEOUT)
         self.player = player
         self.care_manager = care_manager
         self.facility = facility
@@ -749,7 +750,7 @@ class TowerFacilityView(discord.ui.View):
 
 class TowerGeneratorView(discord.ui.View):
     def __init__(self, player, care_manager, *, suspicious_actor_id=None):
-        super().__init__(timeout=180)
+        super().__init__(timeout=CARE_VIEW_TIMEOUT)
         self.player = player
         self.care_manager = care_manager
         self.suspicious_actor_id = suspicious_actor_id
@@ -787,7 +788,7 @@ class TowerUpperFloorView(TowerPlaceView):
 class TowerLiftView(discord.ui.View):
     """탑의 층을 실제로 연결하는 승강기."""
     def __init__(self, player, care_manager, *, current_place="upper", suspicious_actor_id=None):
-        super().__init__(timeout=180)
+        super().__init__(timeout=CARE_VIEW_TIMEOUT)
         self.player = player
         self.care_manager = care_manager
         self.current_place = current_place
@@ -811,7 +812,7 @@ class TowerLiftView(discord.ui.View):
 # ── 메인 비전의 탑 돌봄 View ──────────────────────────────────────────────────
 class CareRoomView(discord.ui.View):
     def __init__(self, player, care_manager, *, suspicious_actor_id=None):
-        super().__init__(timeout=120)
+        super().__init__(timeout=CARE_VIEW_TIMEOUT)
         self.player       = player
         self.care_manager = care_manager
         self._message     = None

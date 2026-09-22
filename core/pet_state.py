@@ -1,4 +1,4 @@
-"""Tamagotchi-style observation layer for the shared Churider.
+﻿"""Tamagotchi-style observation layer for the shared Churider.
 
 Numbers remain useful internally; players primarily see behaviour and condition.
 """
@@ -76,7 +76,7 @@ def observe_pet(player, *, activities: ActivityService = activity_service, store
     if clean < 35:
         cues.append("거미 복부와 다리 관절 사이에 먼지와 마른 얼룩이 꽤 남아 있습니다.")
     elif clean >= 85:
-        cues.append("흰 피부와 검은 거미 몸이 막 닦아낸 듯 말끔합니다.")
+        cues.append("흰 피부의 드로우 상체와 검은 거미 복부·여덟 다리가 막 닦아낸 듯 말끔합니다.")
     if boredom >= 70:
         cues.append("실 한 가닥을 괜히 당겼다 놓았다 하며 할 일을 찾는 눈치입니다.")
     if comfort >= 75:

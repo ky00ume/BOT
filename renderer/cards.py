@@ -1,4 +1,4 @@
-"""renderer/cards.py — BG3Renderer 클래스 (모든 render_* 메서드)"""
+﻿"""renderer/cards.py — BG3Renderer 클래스 (모든 render_* 메서드)"""
 import io
 from typing import Optional
 
@@ -593,9 +593,11 @@ class BG3Renderer:
         }]
         for ingredient in ingredients:
             ok = bool(ingredient.get("ok"))
+            grade = ingredient.get("grade", "Normal")
+            from item_grade import grade_display
             rows.append({
                 "label": ingredient.get("name", "재료"),
-                "value": f"{ingredient.get('have', 0)} / {ingredient.get('need', 0)}",
+                "value": f"{grade_display(grade)}  ·  {ingredient.get('have', 0)} / {ingredient.get('need', 0)}",
                 "color": C.TXT_HI if ok else C.RARITY["Fail"],
             })
         footer = "재료가 준비되었습니다 · 제작 여부를 선택하세요" if can_craft else "부족한 재료를 선택해 모을 수 있습니다"
@@ -616,9 +618,19 @@ class BG3Renderer:
              "color": C.RARITY.get(result_grade, C.TXT_HI)},
         ]
         if ingredients:
-            for ing_name, cnt in ingredients:
-                rows.append({"label": "소모", "value": f"{ing_name} x{cnt}",
-                             "color": C.TXT_MID})
+            from item_grade import grade_display
+            for ingredient in ingredients:
+                if isinstance(ingredient, dict):
+                    ing_name = ingredient.get("name", "재료")
+                    cnt = ingredient.get("count", 1)
+                    grade = ingredient.get("grade", "Normal")
+                    value = f"{grade_display(grade)}  ·  {ing_name} x{cnt}"
+                    color = C.RARITY.get(grade, C.TXT_MID)
+                else:
+                    ing_name, cnt = ingredient
+                    value = f"{ing_name} x{cnt}"
+                    color = C.TXT_MID
+                rows.append({"label": "소모", "value": value, "color": color})
         if exp_gained:
             rows.append({"label": "숙련도", "value": f"+{exp_gained}",
                          "color": C.GOLD_HI})

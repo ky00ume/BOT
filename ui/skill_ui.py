@@ -755,7 +755,8 @@ class SkillMainView(View):
                 ok = have >= need
                 if not ok:
                     can_craft = False
-                detail_rows.append({"name": ing_name, "have": have, "need": need, "ok": ok, "item_id": ing_id})
+                from item_grade import item_grade
+                detail_rows.append({"name": ing_name, "have": have, "need": need, "ok": ok, "item_id": ing_id, "grade": item_grade(ing_id, _AI)})
             for child in self.children:
                 if hasattr(child, "custom_id") and child.custom_id and child.custom_id.startswith("craft_exec_"):
                     child.disabled = not can_craft
@@ -792,7 +793,7 @@ class SkillMainView(View):
                             recipe_name=result.get("recipe_name", "제작"),
                             result_item_name=result.get("result_name", "???"),
                             result_grade=result.get("result_grade", "Normal"),
-                            ingredients=result.get("ingredients"),
+                            ingredients=result.get("ingredient_details", result.get("ingredients")),
                             exp_gained=result.get("exp", 0),
                             rank_up_msg=result.get("rank_up_msg", ""),
                             system_key=result.get("system_key", "craft"),

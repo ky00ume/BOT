@@ -512,8 +512,11 @@ class CookingEngine:
 
             lines.append(f"  {available} {badge} {method_tag} {C.WHITE}{name}{C.R}")
             lines.append(f"    {C.DARK}ID: {dish_id}  {recipe['desc']}{C.R}")
+            from items import ALL_ITEMS
+            from item_grade import grade_display, item_grade
             ing_str = ", ".join(
-                f"{k}×{v}" for k, v in recipe["ingredients"].items()
+                f"{ALL_ITEMS.get(k, {}).get('name', k)}×{v} ({grade_display(item_grade(k, ALL_ITEMS))})"
+                for k, v in recipe["ingredients"].items()
             )
             tool = recipe.get("tool_req") or "없음"
             lines.append(f"    {C.DARK}재료: {ing_str}  도구: {tool}{C.R}")
@@ -561,12 +564,16 @@ class CookingEngine:
                         "error": f"재료 부족: {ing_name} x{cnt} 필요",
                         "recipe_name": recipe["name"], "system_key": "cooking"}
 
-        # 재료 소비
+        # 재료 소비 — 낚시/채집과 같은 공통 등급을 결과에도 보존한다.
+        from item_grade import item_grade
         ing_list = []
+        ingredient_details = []
         for ing_id, cnt in ingredients.items():
             self.player.remove_item(ing_id, cnt)
             ing_name = ALL_ITEMS.get(ing_id, {}).get("name", ing_id)
+            grade = item_grade(ing_id, ALL_ITEMS)
             ing_list.append((ing_name, cnt))
+            ingredient_details.append({"id": ing_id, "name": ing_name, "count": cnt, "grade": grade})
 
         luck     = self.player.base_stats.get("luck", 5)
         success_rate = min(0.95, 0.65 + luck * 0.01)
@@ -604,6 +611,7 @@ class CookingEngine:
                 "result_name": ", ".join(result_names),
                 "result_grade": result_grade,
                 "ingredients": ing_list,
+                "ingredient_details": ingredient_details,
                 "exp": exp,
                 "rank_up_msg": rank_msg or "",
                 "system_key": "cooking",
@@ -616,6 +624,7 @@ class CookingEngine:
                 "recipe_name": recipe["name"],
                 "error": "요리 실패! 재료가 낭비되었습니다.",
                 "ingredients": ing_list,
+                "ingredient_details": ingredient_details,
                 "exp": exp_fail,
                 "rank_up_msg": rank_msg or "",
                 "system_key": "cooking",

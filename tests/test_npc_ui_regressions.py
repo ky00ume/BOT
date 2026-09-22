@@ -1,5 +1,6 @@
 import pytest
-from unittest.mock import patch
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, patch
 
 from npc_conversation import NPCConversationView
 
@@ -41,3 +42,39 @@ def test_spaw_dialogue_has_distinct_colony_and_rumor_text():
     rumor=NPC_KEYWORDS["군주 스포"]["소문"]["default"][0]
     assert colony != rumor
     assert chr(34) not in colony and chr(34) not in rumor
+
+def test_colony_places_expose_non_npc_interactions():
+    from ui.town_ui import ColonyPlaceView
+
+    expected = {
+        "마이코니드 군락 서쪽 입구": {"상인의 짐을 살핀다", "군락 바깥을 살핀다"},
+        "마이코니드 군락 광명회 야영지": {"연구 장비를 살핀다", "표본 선반을 살핀다"},
+        "마이코니드 군락 군주의 터": {"포자 군락을 느낀다", "의식 공간을 살핀다"},
+        "마이코니드 군락 서쪽 통로": {"통로의 흔적을 살핀다", "바깥 기척을 듣는다"},
+    }
+    for location, labels in expected.items():
+        actual = {label for label, _emoji, _observation in ColonyPlaceView.PLACE_ACTIONS[location]}
+        assert labels <= actual
+
+
+@pytest.mark.asyncio
+async def test_colony_place_observation_edits_same_message():
+    from ui.town_ui import ColonyPlaceView
+
+    view = ColonyPlaceView.__new__(ColonyPlaceView)
+    view.location = "마이코니드 군락 군주의 터"
+    interaction = SimpleNamespace(
+        response=SimpleNamespace(edit_message=AsyncMock())
+    )
+    callback = view._make_observation_callback("포자 군락을 느낀다", "기억의 잔향이 스쳐 간다.")
+
+    await callback(interaction)
+
+    interaction.response.edit_message.assert_awaited_once()
+    kwargs = interaction.response.edit_message.await_args.kwargs
+    assert kwargs["attachments"] == []
+    assert kwargs["view"] is view
+    assert kwargs["embed"].title == "군주의 터"
+    assert kwargs["embed"].fields[0].name == "포자 군락을 느낀다"
+    assert "기억의 잔향" in kwargs["embed"].fields[0].value
+

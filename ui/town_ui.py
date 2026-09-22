@@ -120,6 +120,24 @@ class ColonyPlaceView(View):
         "마이코니드 군락 군주의 터": ("군주의 터", "포자와 감각이 이어지는 군락의 중심. 군주의 의지가 가장 선명하게 닿는다."),
         "마이코니드 군락 서쪽 통로": ("서쪽 통로", "군락 바깥으로 이어지는 그늘진 통로."),
     }
+    PLACE_ACTIONS = {
+        "마이코니드 군락 서쪽 입구": [
+            ("상인의 짐을 살핀다", "📦", "데리스의 상자와 자루가 길 가장자리에 가지런히 쌓여 있다. 말린 버섯과 연금술 재료 냄새가 희미하게 섞인다."),
+            ("군락 바깥을 살핀다", "👁️", "입구 너머로 언더다크의 어둠이 이어진다. 오가는 발자국과 수레 자국 사이로 최근 지나간 흔적이 남아 있다."),
+        ],
+        "마이코니드 군락 광명회 야영지": [
+            ("연구 장비를 살핀다", "🔬", "유리병과 기록지, 생물 표본이 작은 작업대 위를 빼곡히 채운다. 몇몇 표본은 아직 희미하게 빛난다."),
+            ("표본 선반을 살핀다", "🧪", "언더다크에서 모은 균류와 광물이 이름표와 함께 정리되어 있다. 손대기보다는 눈으로 보는 편이 안전해 보인다."),
+        ],
+        "마이코니드 군락 군주의 터": [
+            ("포자 군락을 느낀다", "✨", "공기 속 포자가 느리게 떠다닌다. 가까이 서자 말이 아닌 감각과 오래된 기억의 잔향이 잠깐 스쳐 간다."),
+            ("의식 공간을 살핀다", "🍄", "균사와 발광버섯이 원을 이루고 있다. 군락의 마이코니드들이 지나간 자리마다 포자가 얇은 길처럼 남아 있다."),
+        ],
+        "마이코니드 군락 서쪽 통로": [
+            ("통로의 흔적을 살핀다", "🔎", "바위 틈의 균사가 여러 번 짓밟혀 있다. 군락 안쪽보다 바깥을 향한 발자국이 더 선명하다."),
+            ("바깥 기척을 듣는다", "👂", "멀리서 물 떨어지는 소리와 돌이 긁히는 소리가 번갈아 들린다. 바로 앞에 무언가 있는 기척은 아니다."),
+        ],
+    }
 
     def __init__(self, location, player, aff_manager, npc_manager_ref, village_manager=None):
         super().__init__(timeout=300.0)
@@ -138,9 +156,21 @@ class ColonyPlaceView(View):
             btn = Button(label=npc_name, style=discord.ButtonStyle.primary)
             btn.callback = self._make_npc_callback(npc_name)
             self.add_item(btn)
+        for label, emoji, observation in self.PLACE_ACTIONS.get(self.location, []):
+            btn = Button(label=label, style=discord.ButtonStyle.secondary, emoji=emoji)
+            btn.callback = self._make_observation_callback(label, observation)
+            self.add_item(btn)
         back = Button(label="군락을 둘러본다", style=discord.ButtonStyle.secondary, emoji="◀️")
         back.callback = self._back_callback
         self.add_item(back)
+
+    def _make_observation_callback(self, label, observation):
+        async def callback(interaction):
+            title, desc = self.PLACE_INFO.get(self.location, (_strip_town_prefix(self.location), "주변을 천천히 둘러본다."))
+            embed = discord.Embed(title=title, description=desc, color=0x6E6246)
+            embed.add_field(name=label, value=observation, inline=False)
+            await interaction.response.edit_message(attachments=[], embed=embed, view=self)
+        return callback
 
     def _make_npc_callback(self, npc_name):
         async def callback(interaction):

@@ -428,8 +428,6 @@ class PettingView(discord.ui.View):
 
     def make_embed(self):
         text = self.REACTIONS[min(self.step, len(self.REACTIONS) - 1)]
-        if self.opening and not self.opening.get("success"):
-            text += f"\n\n{self.opening['message']}"
         return discord.Embed(title="🕷️🫳 쓰다듬기", description=text, color=0x8C668A)
 
     async def _more(self, interaction):

@@ -19,6 +19,7 @@ def _care_state(player) -> dict:
     state.setdefault("rest_until", 0.0)
     state.setdefault("last_rest_summary", "")
     state.setdefault("last_update", time.time())
+    state.setdefault("traces", [])
     return state
 
 
@@ -44,6 +45,47 @@ def get_care_state(player) -> dict:
     return dict(update_care_over_time(player))
 
 
+OUTING_EFFECTS = {
+    "walk": {"hunger": 3, "boredom": -12, "cleanliness": -4, "fatigue": 5,
+             "trace": "산책에서 묻혀 온 잔먼지가 다리 끝에 조금 남아 있습니다."},
+    "fishing": {"hunger": 4, "boredom": -10, "cleanliness": -9, "fatigue": 7,
+                "trace": "거미 다리와 복부 아래쪽에 물기가 마른 자국이 있고 희미한 물비린내가 남아 있습니다."},
+    "gathering": {"hunger": 4, "boredom": -7, "cleanliness": -7, "fatigue": 7,
+                  "trace": "다리 관절 사이에 흙가루와 잘게 부서진 잎 조각이 끼어 있습니다."},
+    "woodcut": {"hunger": 5, "boredom": -6, "cleanliness": -8, "fatigue": 9,
+                "trace": "다리와 복부 아래에 옅은 톱밥과 나무 껍질 가루가 붙어 있습니다."},
+    "adventure": {"hunger": 6, "boredom": -9, "cleanliness": -10, "fatigue": 11,
+                  "trace": "밖을 오래 돌아다닌 듯 다리 끝과 복부 아래에 길먼지와 마른 흙자국이 남아 있습니다."},
+    "battle": {"hunger": 7, "boredom": -8, "cleanliness": -14, "fatigue": 14,
+               "trace": "전투 뒤의 먼지와 마른 얼룩이 거미 다리와 복부 가장자리에 남아 있습니다."},
+    "flee": {"hunger": 5, "boredom": -5, "cleanliness": -11, "fatigue": 12,
+             "trace": "급하게 빠져나온 흔적인지 다리 끝마다 흙과 먼지가 거칠게 묻어 있습니다."},
+}
+
+
+def apply_outing_effect(player, kind: str, *, trace: str | None = None) -> dict:
+    """Apply one completed outing to Churider's persistent home-care state."""
+    effect = OUTING_EFFECTS.get(kind)
+    if not effect:
+        return {}
+    state = update_care_over_time(player)
+    state["hunger"] = min(100, state["hunger"] + effect.get("hunger", 0))
+    state["boredom"] = max(0, min(100, state["boredom"] + effect.get("boredom", 0)))
+    state["cleanliness"] = max(0, min(100, state["cleanliness"] + effect.get("cleanliness", 0)))
+    player.fatigue = max(0, min(100, player.fatigue + effect.get("fatigue", 0)))
+    traces = state.setdefault("traces", [])
+    traces.append({"kind": kind, "text": trace or effect.get("trace", ""), "at": time.time()})
+    state["traces"] = traces[-4:]
+    return {
+        "kind": kind,
+        "hunger": effect.get("hunger", 0),
+        "boredom": effect.get("boredom", 0),
+        "cleanliness": effect.get("cleanliness", 0),
+        "fatigue": effect.get("fatigue", 0),
+        "trace": state["traces"][-1]["text"],
+    }
+
+
 class CareManager:
     """하이네스 돌봄 시스템 매니저."""
 
@@ -65,7 +107,7 @@ class CareManager:
             return {
                 "success":  False,
                 "cooldown": True,
-                "message":  f"아직 쓰담쓰담 쿨타임임미댜... ({mins}분 {secs}초 남음)",
+                "message":  f"아직 쓰다듬기 보상 쿨타임입니다. ({mins}분 {secs}초 남음)",
             }
 
         gain_condition = random.randint(5, 10)
@@ -77,10 +119,10 @@ class CareManager:
         player._flags["last_pet_time"] = now
 
         lines = [
-            "기분이 좋아졌슴미댜! 🐾",
-            "따뜻하고 좋슴미댜~ 🐾",
-            "쓰담쓰담 좋아하슴미댜! ✨",
-            "기분이 업됐슴미댜! 🎶",
+            "손길을 따라 고개를 조금 기울입니다. 🐾",
+            "어깨의 힘이 풀리고 앞다리가 천천히 접힙니다. 🐾",
+            "손바닥 쪽으로 머리를 기대며 가만히 있습니다. ✨",
+            "표정은 태연하지만 거미 다리는 한층 편하게 접혀 있습니다. 🎶",
         ]
         return {
             "success":         True,
@@ -100,12 +142,12 @@ class CareManager:
             item = ALL_ITEMS.get(snack_id) or SNACK_ITEMS.get(snack_id, {})
             return {
                 "success": False,
-                "message": f"[{item.get('name', snack_id)}]이(가) 없슴미댜.",
+                "message": f"[{item.get('name', snack_id)}]이(가) 없습니다.",
             }
 
         item = ALL_ITEMS.get(snack_id) or SNACK_ITEMS.get(snack_id, {})
         if not item or item.get("type") != "snack":
-            return {"success": False, "message": "간식이 아닌 아이템임미댜."}
+            return {"success": False, "message": "간식으로 먹일 수 없는 아이템입니다."}
 
         effect = item.get("effect", {})
         player.remove_hyness_item(snack_id)
@@ -128,9 +170,9 @@ class CareManager:
             changes["fatigue"] = delta
 
         lines = [
-            f"[{item.get('name', snack_id)}] 냠냠~ 맛있슴미댜! 🍴",
-            f"[{item.get('name', snack_id)}] 주셔서 감사슴미댜! 😊",
-            f"[{item.get('name', snack_id)}] 맛있는 간식임미댜! ✨",
+            f"[{item.get('name', snack_id)}]을(를) 받아 들고 금세 먹습니다. 🍴",
+            f"[{item.get('name', snack_id)}]을(를) 먹고 입가를 닦으며 자리를 고쳐 앉습니다. 😊",
+            f"[{item.get('name', snack_id)}]을(를) 먹는 동안 앞다리가 음식 쪽으로 조금씩 모입니다. ✨",
         ]
         return {
             "success": True,
@@ -154,11 +196,11 @@ class CareManager:
         edible_ids = set(COOKED_DISHES) | set(FISH_ITEMS) | set(GROCERIES)
         item = ALL_ITEMS.get(item_id, {})
         if item_id not in edible_ids:
-            return {"success": False, "message": "츄라이더에게 먹일 수 있는 음식이 아님미댜."}
+            return {"success": False, "message": "츄라이더에게 먹일 수 있는 음식이 아닙니다."}
         if getattr(player, "inventory", {}).get(item_id, 0) <= 0:
-            return {"success": False, "message": f"[{item.get('name', item_id)}]이(가) 가방에 없슴미댜."}
+            return {"success": False, "message": f"[{item.get('name', item_id)}]이(가) 가방에 없습니다."}
         if not player.remove_item(item_id, 1):
-            return {"success": False, "message": "먹을 것을 꺼내지 못했슴미댜."}
+            return {"success": False, "message": "먹을 것을 꺼내지 못했습니다."}
 
         state = update_care_over_time(player)
         if item_id in COOKED_DISHES:
@@ -178,11 +220,11 @@ class CareManager:
         player.stability = min(100, player.stability + mood_gain)
         name = item.get("name", item_id)
         if kind == "생선":
-            message = f"[{name}]을 내밀자 태연한 얼굴을 하면서도 앞다리가 먼저 두 걸음 다가왔슴미댜. 금세 받아 먹었슴미댜. 🕷️🐟"
+            message = f"[{name}]을 내밀자 태연한 얼굴을 하면서도 앞다리가 먼저 두 걸음 다가옵니다. 금세 받아 먹습니다. 🕷️🐟"
         elif kind == "요리":
-            message = f"[{name}] 냄새를 맡고 잠깐 들여다보더니 자리를 잡고 제대로 먹기 시작했슴미댜. 🕷️🍽️"
+            message = f"[{name}] 냄새를 맡고 잠깐 들여다보더니 자리를 잡고 제대로 먹기 시작합니다. 🕷️🍽️"
         else:
-            message = f"[{name}]을 받아 들고 한참 살펴본 뒤 천천히 먹었슴미댜. 🕷️"
+            message = f"[{name}]을 받아 들고 한참 살펴본 뒤 천천히 먹습니다. 🕷️"
         return {
             "success": True,
             "message": message,
@@ -204,7 +246,7 @@ class CareManager:
             return {
                 "success":  False,
                 "cooldown": True,
-                "message":  f"아직 놀아주기 쿨타임임미댜... ({mins}분 {secs}초 남음)",
+                "message":  f"아직 놀아주기 쿨타임입니다. ({mins}분 {secs}초 남음)",
             }
 
         options = ["rock", "scissors", "paper"]
@@ -232,8 +274,8 @@ class CareManager:
             player.fatigue   = min(100, player.fatigue   + gain_fatigue)
             player._flags["last_play_time"] = now
             messages = [
-                "이겼슴미댜! 신나슴미댜! 🎉",
-                "야호~ 제가 이겼슴미댜! 🎊",
+                "츄라이더가 이겼습니다. 태연한 얼굴과 달리 앞다리가 들썩입니다. 🎉",
+                "츄라이더가 이겼습니다. 거미 다리가 바닥을 가볍게 두드립니다. 🎊",
             ]
             return {
                 "success":        True,
@@ -251,8 +293,8 @@ class CareManager:
             player.fatigue   = min(100, player.fatigue   + gain_fatigue)
             player._flags["last_play_time"] = now
             messages = [
-                "비겼슴미댜~ 다시 해요! 😄",
-                "무승부임미댜! 재미있슴미댜! 😊",
+                "무승부입니다. 츄라이더가 바로 다음 손을 준비합니다. 😄",
+                "무승부입니다. 앞다리가 다시 선택지 쪽으로 향합니다. 😊",
             ]
             return {
                 "success":        True,
@@ -268,8 +310,8 @@ class CareManager:
             player.fatigue = min(100, player.fatigue + gain_fatigue)
             player._flags["last_play_time"] = now
             messages = [
-                "졌슴미댜... 다음엔 이길 거임미댜! 😤",
-                "으... 졌슴미댜. 다시 도전임미댜! 💪",
+                "츄라이더가 졌습니다. 눈은 가늘어지고 앞다리는 다시 자세를 잡습니다. 😤",
+                "츄라이더가 졌습니다. 잠깐 굳었다가 곧 다음 판을 준비합니다. 💪",
             ]
             return {
                 "success":      True,
@@ -293,21 +335,22 @@ class CareManager:
                 "success": False,
                 "cooldown": True,
                 "remaining": remaining,
-                "message": f"아직 털과 다리 사이에 목욕 뒤 물기가 남아 있슴미댜. ({mins}분 {secs}초 남음)",
+                "message": f"아직 몸과 다리 사이에 목욕 뒤 물기가 남아 있습니다. ({mins}분 {secs}초 남음)",
             }
         state = update_care_over_time(player)
         before = state["cleanliness"]
         state["cleanliness"] = min(100, before + random.randint(35, 55))
         state["wash_count"] += 1
+        state["traces"] = []
         player.condition = min(100, player.condition + random.randint(1, 3))
         player._flags["last_wash_time"] = time.time()
         lines = [
-            "욕조에 넣자 여덟 다리가 욕조 가장자리를 붙잡았슴미댜. 그래도 복부부터 북북박박 씻겼더니 결국 체념한 얼굴이 됐슴미댜. 🛁",
-            "거품을 잔뜩 내서 다리 사이까지 북북 씻겼슴미댜. 츄라이더가 죽을상으로 쳐다보지만 아주 깨끗해졌슴미댜. 🫧",
-            "욕조 밖으로 빠져나가려는 다리를 하나씩 다시 넣어 가며 북북박박 씻겼슴미댜. 🕷️🛁",
+            "욕조에 넣자 여덟 다리가 가장자리를 단단히 붙잡습니다. 복부부터 북북박박 씻기자 결국 체념한 얼굴이 됩니다. 🛁",
+            "거품을 잔뜩 내서 다리 사이까지 북북 씻깁니다. 츄라이더는 죽을상으로 쳐다보지만 몸은 아주 깨끗해집니다. 🫧",
+            "욕조 밖으로 빠져나가려는 다리를 하나씩 다시 넣어 가며 북북박박 씻깁니다. 🕷️🛁",
         ]
         if state["wash_count"] >= 3:
-            lines.append("욕조를 보자 도망칠지 잠깐 고민하더니 먼저 앞다리 두 개를 걸쳤슴미댜. 어차피 잡힐 걸 아는 눈치임미댜. 🕷️🫧")
+            lines.append("욕조를 보자 도망칠지 잠깐 고민하더니 먼저 앞다리 두 개를 걸칩니다. 어차피 잡힐 것을 아는 눈치입니다. 🕷️🫧")
         return {"success": True, "message": random.choice(lines), "cleanliness_gain": state["cleanliness"] - before}
 
     # ── 쉬게 하기 ─────────────────────────────────────────────────────────
@@ -338,14 +381,14 @@ class CareManager:
         return {
             "success": True,
             "remaining": self.REST_DURATION,
-            "message": "책장 뒤 담요와 실 사이에 몸을 접었슴미댜. 앞다리부터 하나씩 힘이 풀리더니 곧 눈을 감았슴미댜. 🕷️💤",
+            "message": "책장 뒤 담요와 실 사이에 몸을 접습니다. 앞다리부터 하나씩 힘이 풀리더니 곧 눈을 감습니다. 🕷️💤",
         }
 
     def finish_rest(self, player, *, wake_early: bool = False) -> dict:
         state = update_care_over_time(player)
         status = self.get_rest_status(player)
         if not status.get("active"):
-            return {"success": False, "message": "지금은 쉬고 있지 않슴미댜."}
+            return {"success": False, "message": "지금은 쉬고 있지 않습니다."}
         fraction = status.get("progress", 0.0)
         if status.get("completed"):
             fraction = 1.0
@@ -359,9 +402,9 @@ class CareManager:
         state["rest_until"] = 0.0
         actual = before - player.fatigue
         if wake_early and fraction < 1.0:
-            msg = "조심히 깨우자 츄라이더가 눈을 가늘게 뜨고 앞다리를 다시 펼쳤슴미댜. 조금은 쉬었지만 아직 잠기운이 남아 있슴미댜."
+            msg = "조심히 깨우자 츄라이더가 눈을 가늘게 뜨고 앞다리를 다시 펼칩니다. 조금은 쉬었지만 아직 잠기운이 남아 있습니다."
         else:
-            msg = "푹 쉬고 난 츄라이더가 몸을 길게 펴며 여덟 다리를 하나씩 바닥에 디뎠슴미댜."
+            msg = "푹 쉬고 난 츄라이더가 몸을 길게 펴며 여덟 다리를 하나씩 바닥에 디딥니다."
         state["last_rest_summary"] = msg
         return {"success": True, "message": msg, "fatigue_recovery": actual, "energy_recovery": energy_recovery, "fraction": fraction}
 
@@ -380,7 +423,7 @@ class CareManager:
         """간식 제작: 재료 소모 → 간식 아이템 획득."""
         recipe = SNACK_RECIPES.get(snack_id)
         if not recipe:
-            return {"success": False, "message": "제작 레시피가 없슴미댜."}
+            return {"success": False, "message": "제작 레시피가 없습니다."}
 
         snack_item = SNACK_ITEMS.get(snack_id, {})
         snack_name = snack_item.get("name", snack_id)
@@ -398,7 +441,7 @@ class CareManager:
         if missing:
             return {
                 "success": False,
-                "message": "재료가 부족슴미댜!\n" + "\n".join(f"  ✗ {m}" for m in missing),
+                "message": "재료가 부족합니다.\n" + "\n".join(f"  ✗ {m}" for m in missing),
             }
 
         # 재료 소모 (하이네스 방 인벤토리에서)
@@ -421,7 +464,7 @@ class CareManager:
         """의장 제작: 재료 소모 → 의장 아이템 획득."""
         recipe = COSTUME_RECIPES.get(costume_id)
         if not recipe:
-            return {"success": False, "message": "제작 레시피가 없슴미댜."}
+            return {"success": False, "message": "제작 레시피가 없습니다."}
 
         costume_item = COSTUME_ITEMS.get(costume_id, {})
         costume_name = costume_item.get("name", costume_id)
@@ -439,7 +482,7 @@ class CareManager:
         if missing:
             return {
                 "success": False,
-                "message": "재료가 부족슴미댜!\n" + "\n".join(f"  ✗ {m}" for m in missing),
+                "message": "재료가 부족합니다.\n" + "\n".join(f"  ✗ {m}" for m in missing),
             }
 
         # 재료 소모 (하이네스 방 인벤토리에서)

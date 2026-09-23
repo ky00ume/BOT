@@ -98,6 +98,12 @@ class FishingView(discord.ui.View):
         self._bite_task       = None
         self._message         = None
 
+    def _apply_outing_state(self):
+        from care import apply_outing_effect
+        from save_manager import save_manager
+        apply_outing_effect(self.player, "fishing")
+        save_manager.save(self.player)
+
     def _disable_buttons(self):
         for child in self.children:
             child.disabled = True
@@ -206,6 +212,7 @@ class FishingView(discord.ui.View):
                 await self._message.edit(embed=embed, view=self)
             if self.activity_id:
                 activity_service.finish(self.activity_id, outcome="missed")
+            self._apply_outing_state()
             self.stop()
 
     async def _handle_catch(self, interaction: discord.Interaction):
@@ -307,6 +314,7 @@ class FishingView(discord.ui.View):
         if self.activity_id:
             activity_service.finish(self.activity_id, outcome="caught", payload={"fish": caught_name, "grade": grade, "size_cm": size_cm, "added": added})
             bond_service.award("activity.fishing", actor_id=getattr(interaction.user, "id", None))
+        self._apply_outing_state()
 
     # ① 항상 보이는 "당기기" 버튼
     @discord.ui.button(label="🎣 낚싯줄 당기기!", style=discord.ButtonStyle.primary, row=0)
@@ -320,6 +328,7 @@ class FishingView(discord.ui.View):
             )
             if self.activity_id:
                 activity_service.finish(self.activity_id, outcome="pulled_early")
+            self._apply_outing_state()
             self.stop()
         elif self.state == "bite":
             self.state = "done"
@@ -367,6 +376,7 @@ class FishingView(discord.ui.View):
         await interaction.response.edit_message(embed=embed, view=self)
         if self.activity_id:
             activity_service.finish(self.activity_id, outcome="cancelled")
+        self._apply_outing_state()
         self.stop()
 
     async def on_timeout(self):
@@ -385,6 +395,7 @@ class FishingView(discord.ui.View):
                     logger.warning('fishing: on_timeout 메시지 편집 실패', exc_info=True)
             if self.activity_id:
                 activity_service.finish(self.activity_id, outcome="timeout")
+            self._apply_outing_state()
             self.stop()
 
 

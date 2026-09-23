@@ -85,6 +85,8 @@ class LifeCog(commands.Cog, name="생활"):
             if departure:
                 await ctx.send(departure)
             await self.ctx.gathering_engine.gather(ctx)
+            from care import apply_outing_effect
+            apply_outing_effect(self.ctx.player, "gathering")
             save_manager.save(self.ctx.player)
             enc_msg = self.ctx.encounter_manager.trigger_encounter()
             if enc_msg:
@@ -100,6 +102,8 @@ class LifeCog(commands.Cog, name="생활"):
             return
         async with lock:
             await self.ctx.gathering_engine.woodcut(ctx)
+            from care import apply_outing_effect
+            apply_outing_effect(self.ctx.player, "woodcut")
             save_manager.save(self.ctx.player)
 
     @commands.command(name="휴식")

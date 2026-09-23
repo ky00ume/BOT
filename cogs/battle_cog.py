@@ -82,6 +82,8 @@ class BattleCog(commands.Cog, name="전투"):
                                 f"  {ach.get('desc', '')}\n"
                                 f"  🎀 타이틀 획득: **{ach.get('title', '')}**"
                             )
+                    from care import apply_outing_effect
+                    apply_outing_effect(self.ctx.player, "battle" if won else "flee")
                     save_manager.save(self.ctx.player)
 
                 from ui.battle_view import BattleView
@@ -153,6 +155,8 @@ class BattleCog(commands.Cog, name="전투"):
                 else:
                     await send_msg_card(ctx, "전투", str(result), system_key="battle")
             if not self.ctx.battle_engine.in_battle:
+                from care import apply_outing_effect
+                apply_outing_effect(self.ctx.player, "battle" if self.ctx.player.hp > 0 else "flee")
                 if isinstance(result, io.BytesIO):
                     await send_image(ctx, result, 'battle_result.png')
                 else:
@@ -174,6 +178,8 @@ class BattleCog(commands.Cog, name="전투"):
             else:
                 await send_msg_card(ctx, "도주", str(result), system_key="battle")
             if not self.ctx.battle_engine.in_battle:
+                from care import apply_outing_effect
+                apply_outing_effect(self.ctx.player, "flee")
                 save_manager.save(self.ctx.player)
 
     @commands.command(name="탐험")
@@ -243,6 +249,8 @@ class BattleCog(commands.Cog, name="전투"):
             from adventure import AdventureView
 
             async def _on_adv_end(adv_result: dict):
+                from care import apply_outing_effect
+                apply_outing_effect(self.ctx.player, "adventure")
                 post_evt = self.ctx.adventure_engine.post_adventure_event(zone)
                 if post_evt:
                     await ctx.send(f"📬 {post_evt.get('text', '')}")

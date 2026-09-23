@@ -87,8 +87,11 @@ def _observation_details(player) -> list[str]:
         details.append("앞다리를 가볍게 들었다 놓으며 주변 소리에 바로 반응합니다. 아직 기운이 남아 있습니다.")
     else:
         details.append("앞다리 하나를 접었다 폈다 하며 편한 자세를 찾고 있습니다.")
+    traces = state.get("traces", [])
+    if traces:
+        details.append(traces[-1].get("text", ""))
     details.append(_nest_trace(player))
-    return details
+    return [detail for detail in details if detail]
 
 
 def _make_room_embed(player):
@@ -201,7 +204,7 @@ class CostumeManageView(ExpiringView):
                 slot_label = self.SLOT_LABELS.get(slot, slot)
                 file = _result_card(
                     "의장 장착",
-                    [{"label": "안내", "value": f"{slot_label}에 장착 가능한 의장 아이템이 없슴미댜."}],
+                    [{"label": "안내", "value": f"{slot_label}에 장착 가능한 의장 아이템이 없습니다."}],
                     grade="Fail",
                 )
                 await interaction.response.send_message(file=file, ephemeral=True)
@@ -214,7 +217,7 @@ class CostumeManageView(ExpiringView):
             )
             select_view = _ItemSelectView(select, self._on_equip_confirm)
             await interaction.response.send_message(
-                content=f"**{self.SLOT_LABELS.get(slot, slot)} 슬롯 장착**\n장착할 의장을 선택하셰요.",
+                content=f"**{self.SLOT_LABELS.get(slot, slot)} 슬롯 장착**\n장착할 의장을 선택합니다.",
                 view=select_view,
                 ephemeral=True,
             )
@@ -252,7 +255,7 @@ class CostumeManageView(ExpiringView):
         if not options:
             file = _result_card(
                 "의장 해제",
-                [{"label": "안내", "value": "장착된 의장이 없슴미댜."}],
+                [{"label": "안내", "value": "장착된 의장이 없습니다."}],
                 grade="Fail",
             )
             await interaction.response.send_message(file=file, ephemeral=True)
@@ -273,7 +276,7 @@ class CostumeManageView(ExpiringView):
         )
         select_view = _ItemSelectView(select, unequip_confirm)
         await interaction.response.send_message(
-            content="해제할 의장 슬롯을 선택하셰요.",
+            content="해제할 의장 슬롯을 선택합니다.",
             view=select_view,
             ephemeral=True,
         )
@@ -617,7 +620,7 @@ class SnackCraftView(ExpiringView):
 
         if options:
             select = discord.ui.Select(
-                placeholder="제작할 간식을 선택하셰요...",
+                placeholder="제작할 간식을 선택합니다...",
                 options=options[:25],
                 custom_id="snack_craft_select",
             )
@@ -649,7 +652,7 @@ class SnackCraftView(ExpiringView):
     async def _on_confirm(self, interaction: discord.Interaction):
         if not self._selected:
             await interaction.response.send_message(
-                "먼저 제작할 간식을 선택하셰요!", ephemeral=True
+                "먼저 제작할 간식을 선택합니다.", ephemeral=True
             )
             return
         result = self.care_manager.craft_snack(self.player, self._selected)
@@ -714,7 +717,7 @@ class CostumeCraftView(ExpiringView):
 
         if options:
             select = discord.ui.Select(
-                placeholder="제작할 의장을 선택하셰요...",
+                placeholder="제작할 의장을 선택합니다...",
                 options=options[:25],
                 custom_id="costume_craft_select",
             )
@@ -746,7 +749,7 @@ class CostumeCraftView(ExpiringView):
     async def _on_confirm(self, interaction: discord.Interaction):
         if not self._selected:
             await interaction.response.send_message(
-                "먼저 제작할 의장을 선택하셰요!", ephemeral=True
+                "먼저 제작할 의장을 선택합니다.", ephemeral=True
             )
             return
         result = self.care_manager.craft_costume(self.player, self._selected)
@@ -1225,7 +1228,7 @@ class CareRoomView(ExpiringView):
         remaining = self.WALK_COOLDOWN - (now - last_walk)
         if remaining > 0:
             mins, secs = divmod(int(remaining), 60)
-            embed = discord.Embed(title="🕷️🚶 산책", description=f"아직 산책할 수 없슴미댜! {mins}분 {secs}초 남음", color=0x5C6574)
+            embed = discord.Embed(title="🕷️🚶 산책", description=f"아직 산책할 수 없습니다. {mins}분 {secs}초 남음", color=0x5C6574)
             await interaction.response.edit_message(content=None, attachments=[], embed=embed, view=self)
             return
 
@@ -1248,9 +1251,11 @@ class CareRoomView(ExpiringView):
         stab_gain = random.randint(1, 3)
         self.player.condition = min(100, self.player.condition + cond_gain)
         self.player.stability = min(100, self.player.stability + stab_gain)
+        from care import apply_outing_effect
+        apply_outing_effect(self.player, "walk")
 
         rows = [
-            {"label": "🐾 상태", "value": "츄라이더가 신나게 산책하고 돌아왔슴미댜~!"},
+            {"label": "🐾 상태", "value": "츄라이더가 산책을 마치고 돌아옵니다."},
             {"label": "🎁 획득", "value": ", ".join(items_found)},
             {"label": "💛 컨디션", "value": f"+{cond_gain} → {self.player.condition}"},
             {"label": "💙 안정감", "value": f"+{stab_gain} → {self.player.stability}"},
@@ -1289,7 +1294,7 @@ class CareRoomView(ExpiringView):
 
         sub_view = RockPaperScissorsView(self.player, self.care_manager, self)
         sub_view.bind_message(getattr(interaction, "message", None))
-        embed = discord.Embed(title="🕷️🧶 놀기 — 가위바위보", description="✊ 바위 / ✌️ 가위 / ✋ 보 중 선택하셰요!", color=0x655A8A)
+        embed = discord.Embed(title="🕷️🧶 놀기 — 가위바위보", description="✊ 바위 / ✌️ 가위 / ✋ 보 중 하나를 선택합니다.", color=0x655A8A)
         await interaction.response.edit_message(
             content=None, attachments=[], embed=embed, view=sub_view
         )
@@ -1312,7 +1317,7 @@ class CareRoomView(ExpiringView):
         sub_view.bind_message(getattr(interaction, "message", None))
         file = _result_card(
             "🍳 간식제작",
-            [{"label": "안내", "value": "✅ = 재료 충분 / ❌ = 재료 부족\n제작할 간식을 선택하셰요."}],
+            [{"label": "안내", "value": "✅ = 재료 충분 / ❌ = 재료 부족\n제작할 간식을 선택합니다."}],
         )
         await interaction.response.edit_message(
             content=None, attachments=[file], view=sub_view
@@ -1324,7 +1329,7 @@ class CareRoomView(ExpiringView):
         sub_view.bind_message(getattr(interaction, "message", None))
         file = _result_card(
             "✂️ 의장제작",
-            [{"label": "안내", "value": "✅ = 재료 충분 / ❌ = 재료 부족\n제작할 의장을 선택하셰요."}],
+            [{"label": "안내", "value": "✅ = 재료 충분 / ❌ = 재료 부족\n제작할 의장을 선택합니다."}],
         )
         await interaction.response.edit_message(
             content=None, attachments=[file], view=sub_view

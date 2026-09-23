@@ -36,6 +36,36 @@ class EventsCog(commands.Cog, name="이벤트"):
         except Exception as e:
             logger.error("[자동저장] 실패: %s", e, exc_info=True)
 
+
+    async def _close_stale_interaction_windows(self) -> int:
+        """Remove controls left by the previous runtime.
+
+        discord.py View callbacks are process-local in this bot. After a restart,
+        old component rows look clickable but cannot work, so close them on ready.
+        """
+        channel = self.bot.get_channel(self.bot.ctx.allowed_channel_id)
+        if channel is None:
+            try:
+                channel = await self.bot.fetch_channel(self.bot.ctx.allowed_channel_id)
+            except Exception as e:
+                logger.warning("[뷰 정리] 채널 조회 실패: %s", e)
+                return 0
+        closed = 0
+        try:
+            async for message in channel.history(limit=100):
+                if message.author.id != self.bot.user.id or not message.components:
+                    continue
+                try:
+                    await message.edit(view=None)
+                    closed += 1
+                except (discord.NotFound, discord.Forbidden):
+                    continue
+                except Exception as e:
+                    logger.warning("[뷰 정리] 메시지 %s 정리 실패: %s", message.id, e)
+        except Exception as e:
+            logger.warning("[뷰 정리] 채널 기록 조회 실패: %s", e)
+        return closed
+
     # ─── on_ready ─────────────────────────────────────────────────────────────
     @commands.Cog.listener()
     async def on_ready(self) -> None:
@@ -52,6 +82,10 @@ class EventsCog(commands.Cog, name="이벤트"):
             return
 
         self._initialized = True
+
+        closed_views = await self._close_stale_interaction_windows()
+        if closed_views:
+            print(f"[복구] 이전 런타임의 만료된 상호작용 창 {closed_views}개 닫음")
 
         # DB 초기화
         init_db()

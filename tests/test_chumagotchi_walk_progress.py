@@ -1,7 +1,10 @@
 from ui.care_ui import (
     WALK_ROUTES,
+    WALK_RARE_EVENTS,
     WalkRouteView,
+    _choose_walk_rare_event,
     _make_walk_progress_embed,
+    _walk_rare_event_scene,
     _walk_progress_bar,
     _walk_scene,
 )
@@ -49,3 +52,34 @@ def test_route_rewards_scale_with_distance():
     assert WALK_ROUTES["indoor"]["items"] == (1, 1)
     assert WALK_ROUTES["near"]["items"] == (1, 2)
     assert WALK_ROUTES["far"]["items"] == (2, 3)
+
+
+def test_each_route_has_multiple_rare_events():
+    assert set(WALK_RARE_EVENTS) == {"indoor", "near", "far"}
+    assert all(len(events) >= 3 for events in WALK_RARE_EVENTS.values())
+
+
+def test_rare_event_only_triggers_below_thirty_percent_roll():
+    assert _choose_walk_rare_event("indoor", roll=0.99) is None
+    chosen = _choose_walk_rare_event("indoor", roll=0.0)
+    assert chosen in WALK_RARE_EVENTS["indoor"]
+
+
+def test_route_specific_rare_scene_overrides_normal_scene_in_window():
+    duration = WALK_ROUTES["near"]["duration"]
+    event_id = "bug"
+    event = WALK_RARE_EVENTS["near"][event_id]
+    midpoint = sum(event["window"]) / 2 * duration
+    rare = _walk_rare_event_scene("near", event_id, midpoint, duration)
+    assert rare is not None
+    phase, text = rare
+    assert "벌레" in phase
+    assert "잡을 수 있슴미댜." in text
+
+
+def test_rare_event_can_add_bonus_item_or_persistent_trace():
+    indoor = WALK_RARE_EVENTS["indoor"]
+    far = WALK_RARE_EVENTS["far"]
+    assert indoor["button"]["bonus_item"] == "mat_shiny_button"
+    assert far["strange_object"]["bonus_item"] == "mat_magic_dust"
+    assert "trace" in far["echo"]

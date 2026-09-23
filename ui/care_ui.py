@@ -1135,6 +1135,104 @@ WALK_SCENES = {
 }
 
 
+WALK_RARE_EVENT_CHANCE = 0.30
+WALK_RARE_EVENTS = {
+    "indoor": {
+        "karniss": {
+            "title": "🕷️ 기척",
+            "window": (0.42, 0.72),
+            "text": "복도 끝에서 익숙한 무거운 기척이 들립니다. 츄라이더가 그대로 굳었다가 여덟 다리를 최대한 작게 접고 상자 뒤로 숨습니다.\n“못 본 척 해주셰요...”",
+            "summary": "카르니스의 기척을 듣고 한동안 상자 뒤에 숨어 있었습니다.",
+            "trace": "복도에서 급히 몸을 숨긴 탓인지 복부 옆에 먼지가 한 줄 길게 묻어 있습니다.",
+        },
+        "majesty": {
+            "title": "👑 마제스티의 자리",
+            "window": (0.48, 0.78),
+            "text": "마제스티가 자주 머무는 자리 근처에서 발걸음을 멈춥니다. 한참 주변을 맴돌다가 떨어진 리본 조각을 아주 조심스럽게 집어 듭니다.\n“이건 가져가도 됩니댜?”",
+            "summary": "마제스티의 자리 근처에서 리본 조각을 하나 주웠습니다.",
+            "bonus_item": "mat_ribbon_scrap",
+        },
+        "button": {
+            "title": "✨ 반짝이는 단추",
+            "window": (0.50, 0.80),
+            "text": "상자 밑에서 무언가 반짝입니다. 츄라이더가 앞다리 끝으로 몇 번 굴려 본 뒤 손바닥에 올려놓습니다.\n“반짝입니댜.”",
+            "summary": "상자 밑에서 반짝이는 단추를 찾아냈습니다.",
+            "bonus_item": "mat_shiny_button",
+        },
+    },
+    "near": {
+        "bug": {
+            "title": "🪲 벌레 추적",
+            "window": (0.35, 0.68),
+            "text": "풀숲 사이로 작은 벌레 하나가 튀어나옵니다. 츄라이더의 얼굴은 태연한데 여덟 다리가 동시에 방향을 틀어 쫓아갑니다.\n“잡을 수 있슴미댜.”",
+            "summary": "풀숲에서 작은 벌레를 한참 쫓아다녔습니다.",
+            "trace": "벌레를 쫓아 풀숲을 헤집은 흔적으로 다리 사이에 작은 풀씨가 잔뜩 붙어 있습니다.",
+        },
+        "feather": {
+            "title": "🪶 날아온 깃털",
+            "window": (0.46, 0.75),
+            "text": "바람에 날린 깃털 하나가 거미 복부 위에 내려앉습니다. 츄라이더가 한동안 꼼짝하지 않다가 손으로 조심스럽게 떼어냅니다.\n“제 건가 봅니댜.”",
+            "summary": "바람에 날아온 깃털을 하나 챙겨 왔습니다.",
+            "bonus_item": "mat_feather",
+        },
+        "flower": {
+            "title": "🌸 작은 꽃",
+            "window": (0.52, 0.82),
+            "text": "탑 벽 아래에서 작은 꽃을 발견합니다. 한참 들여다보다가 꽃잎 하나만 살짝 떼어 손에 쥡니다.\n“예쁩니댜.”",
+            "summary": "탑 벽 아래에서 작은 꽃잎을 주워 왔습니다.",
+            "bonus_item": "mat_flower_petal",
+        },
+    },
+    "far": {
+        "strange_object": {
+            "title": "❖ 낯선 반짝임",
+            "window": (0.42, 0.70),
+            "text": "바위 틈 깊은 곳에서 희미한 빛이 납니다. 츄라이더가 몸을 낮추고 한참 끙끙거리더니 작은 마력 가루 묻은 조각을 끌어냅니다.\n“이상한 게 있슴미댜.”",
+            "summary": "먼 바위 틈에서 마력이 남은 가루를 찾아냈습니다.",
+            "bonus_item": "mat_magic_dust",
+            "trace": "복부 아래와 앞다리에 희미하게 반짝이는 가루가 조금 묻어 있습니다.",
+        },
+        "web": {
+            "title": "🕸️ 오래된 거미줄",
+            "window": (0.50, 0.78),
+            "text": "낯선 바위 틈에 오래된 거미줄이 걸려 있습니다. 츄라이더가 가까이 다가가 실의 결을 손끝과 앞다리로 번갈아 확인합니다.\n“이 실은 좀 다릅니댜.”",
+            "summary": "낯선 바위 틈에서 질긴 실 한 가닥을 가져왔습니다.",
+            "bonus_item": "mat_magic_thread",
+        },
+        "echo": {
+            "title": "🌒 메아리",
+            "window": (0.54, 0.82),
+            "text": "멀리서 정체를 알 수 없는 울림이 한 번 퍼집니다. 츄라이더가 그대로 멈춰 모든 다리를 바닥에 붙이고 한참 귀를 기울입니다.\n“저쪽은 안 갈래요... 임니댜.”",
+            "summary": "정체 모를 메아리를 듣고 한동안 움직이지 않았습니다.",
+            "trace": "급히 방향을 바꿔 돌아온 흔적으로 다리 끝에 거친 흙먼지가 묻어 있습니다.",
+        },
+    },
+}
+
+
+def _choose_walk_rare_event(route: str, *, roll: float | None = None) -> str | None:
+    value = random.random() if roll is None else roll
+    if value >= WALK_RARE_EVENT_CHANCE:
+        return None
+    events = WALK_RARE_EVENTS.get(route, {})
+    if not events:
+        return None
+    return random.choice(list(events.keys()))
+
+
+def _walk_rare_event_scene(route: str, event_id: str | None, elapsed: float, duration: float):
+    if not event_id:
+        return None
+    event = WALK_RARE_EVENTS.get(route, {}).get(event_id)
+    if not event:
+        return None
+    ratio = max(0.0, min(1.0, elapsed / max(1.0, duration)))
+    start, end = event["window"]
+    if start <= ratio < end:
+        return event["title"], event["text"]
+    return None
+
+
 def _walk_progress_bar(elapsed: float, duration: float, width: int = 10) -> str:
     ratio = max(0.0, min(1.0, elapsed / max(1.0, duration)))
     filled = min(width, int(ratio * width))
@@ -1156,10 +1254,11 @@ def _walk_scene(elapsed: float, duration: float = 24, route: str = "indoor") -> 
     return scenes[-1][1], scenes[-1][2]
 
 
-def _make_walk_progress_embed(route: str, remaining: int, elapsed: float) -> discord.Embed:
+def _make_walk_progress_embed(route: str, remaining: int, elapsed: float, event_id: str | None = None) -> discord.Embed:
     profile = WALK_ROUTES[route]
     duration = profile["duration"]
-    phase, scene = _walk_scene(elapsed, duration, route)
+    rare = _walk_rare_event_scene(route, event_id, elapsed, duration)
+    phase, scene = rare if rare else _walk_scene(elapsed, duration, route)
     embed = discord.Embed(title=f"🕷️🚶 산책 중 · {profile['label']}", description=scene, color=0x5C6574)
     embed.add_field(name=phase, value=f"{_walk_progress_bar(elapsed, duration)}  남은 시간 **{max(0, remaining)}초**", inline=False)
     embed.set_footer(text="츄라이더가 직접 움직이는 중입니다.")
@@ -1400,12 +1499,14 @@ class CareRoomView(ExpiringView):
         self.player._flags["walk_started_at"] = started
         self.player._flags["walk_active_until"] = started + duration
         self.player._flags["walk_route"] = route
-        first = _make_walk_progress_embed(route, duration, 0)
+        event_id = _choose_walk_rare_event(route)
+        self.player._flags["walk_rare_event"] = event_id or ""
+        first = _make_walk_progress_embed(route, duration, 0, event_id)
         await interaction.response.edit_message(content=None, attachments=[], embed=first, view=None)
         message = getattr(interaction, "message", None)
-        asyncio.create_task(self._run_walk_activity(message, started, route))
+        asyncio.create_task(self._run_walk_activity(message, started, route, event_id))
 
-    async def _run_walk_activity(self, message, started: float, route: str):
+    async def _run_walk_activity(self, message, started: float, route: str, event_id: str | None = None):
         profile = WALK_ROUTES[route]
         duration = profile["duration"]
         elapsed = 0.0
@@ -1415,7 +1516,7 @@ class CareRoomView(ExpiringView):
             remaining = max(0, int(round(duration - elapsed)))
             if message is not None:
                 try:
-                    await message.edit(embed=_make_walk_progress_embed(route, remaining, elapsed), view=None)
+                    await message.edit(embed=_make_walk_progress_embed(route, remaining, elapsed, event_id), view=None)
                 except (discord.NotFound, discord.Forbidden):
                     message = None
                 except Exception as e:
@@ -1437,10 +1538,19 @@ class CareRoomView(ExpiringView):
         self.player.condition = min(100, self.player.condition + cond_gain)
         self.player.stability = min(100, self.player.stability + stab_gain)
         from care import apply_outing_effect
-        apply_outing_effect(self.player, profile["outing"])
+        rare_event = WALK_RARE_EVENTS.get(route, {}).get(event_id) if event_id else None
+        trace = rare_event.get("trace") if rare_event else None
+        apply_outing_effect(self.player, profile["outing"], trace=trace)
+        if rare_event and rare_event.get("bonus_item"):
+            bonus_id = rare_event["bonus_item"]
+            self.player.add_hyness_item(bonus_id, 1)
+            from items import ALL_ITEMS
+            bonus_name = ALL_ITEMS.get(bonus_id, {}).get("name", bonus_id)
+            items_found.append(f"✨ {bonus_name}")
         self.player._flags["walk_active_until"] = 0.0
         self.player._flags["walk_started_at"] = 0.0
         self.player._flags["walk_route"] = ""
+        self.player._flags["walk_rare_event"] = ""
         self.player._flags["last_walk_time"] = _time.time()
 
         try:
@@ -1449,6 +1559,8 @@ class CareRoomView(ExpiringView):
             logger.error("산책 후 저장 실패: %s", e, exc_info=True)
 
         embed = discord.Embed(title=f"🕷️🚶 산책 완료 · {profile['label']}", description=f"츄라이더가 책장 뒤 틈으로 돌아와 주운 것을 내려놓습니다.\n“{CHURIDER_SPEECH['walk_return']}”", color=0x5C6574)
+        if rare_event:
+            embed.add_field(name="✨ 특별한 일", value=rare_event["summary"], inline=False)
         embed.add_field(name="🎁 주워 온 것", value=", ".join(items_found), inline=False)
         embed.add_field(name="변화", value=f"컨디션 +{cond_gain} · 안정감 +{stab_gain}", inline=False)
         if message is not None:

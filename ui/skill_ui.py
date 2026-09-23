@@ -595,6 +595,82 @@ class RecipeSelect(Select):
             await interaction.response.edit_message(embed=embed, attachments=[], view=view)
 
 
+def _smith_quality_bar(score: int, width: int = 10) -> str:
+    score = max(0, min(100, int(score)))
+    filled = int(round(score / 100 * width))
+    return "▰" * filled + "▱" * (width - filled)
+
+
+class BlacksmithForgeView(View):
+    def __init__(self, parent, recipe_id: str, session: dict):
+        super().__init__(timeout=GAME_VIEW_TIMEOUT)
+        self.parent = parent
+        self.player = parent.player
+        self.engine = parent.blacksmith_engine
+        self.recipe_id = recipe_id
+        self.session = session
+        self._build()
+
+    def _build(self):
+        from blacksmith import BLACKSMITH_ACTIONS, BLACKSMITH_STAGES
+        self.clear_items()
+        idx = int(self.session.get("stage_index", 0))
+        if idx >= len(BLACKSMITH_STAGES):
+            return
+        stage = BLACKSMITH_STAGES[idx]
+        for action_id, (label, _lo, _hi) in BLACKSMITH_ACTIONS[stage].items():
+            btn = Button(label=label, style=discord.ButtonStyle.primary if action_id in ("steady", "careful") else discord.ButtonStyle.secondary)
+            btn.callback = self._make_action(action_id)
+            self.add_item(btn)
+
+    def make_embed(self, last_result=None):
+        from blacksmith import BLACKSMITH_STAGE_LABELS, BLACKSMITH_STAGES, quality_tier
+        score = int(self.session.get("quality", 50))
+        idx = int(self.session.get("stage_index", 0))
+        if idx < len(BLACKSMITH_STAGES):
+            stage = BLACKSMITH_STAGES[idx]
+            title = f"⚒️ 블랙스미스 · {BLACKSMITH_STAGE_LABELS[stage]}"
+            desc = "가열 → 두드리기 → 마감의 세 공정을 거쳐 장비를 완성합니다."
+        else:
+            _key, label = quality_tier(score)
+            title = "⚒️ 블랙스미스 · 완성"
+            desc = f"세 공정이 끝났습니다. 최종 품질은 **{label}**입니다."
+        embed = discord.Embed(title=title, description=desc, color=0x8A6844)
+        embed.add_field(name="도면", value=self.session.get("recipe_name", self.recipe_id), inline=False)
+        embed.add_field(name="품질", value=f"{_smith_quality_bar(score)}  **{score}/100**", inline=False)
+        if last_result:
+            delta = last_result.get("delta", 0)
+            sign = "+" if delta >= 0 else ""
+            embed.add_field(name="방금 작업", value=f"{last_result.get('label')} · 품질 {sign}{delta}", inline=False)
+        embed.set_footer(text=f"공정 {min(idx + 1, 3)}/3" if idx < 3 else "공정 3/3 완료")
+        return embed
+
+    def _make_action(self, action_id: str):
+        async def callback(interaction: discord.Interaction):
+            result = self.engine.apply_stage(self.session, action_id)
+            if not result.get("success"):
+                await interaction.response.send_message(result.get("error", "작업할 수 없습니다."), ephemeral=True)
+                return
+            if result.get("complete"):
+                final = self.engine.finish_session(self.session)
+                if not final.get("success"):
+                    await interaction.response.edit_message(embed=discord.Embed(title="⚒️ 블랙스미스", description=final.get("error", "완성하지 못했습니다.")), view=None)
+                    return
+                from save_manager import save_manager
+                save_manager.save(self.player)
+                score = final.get("quality_score", 0)
+                embed = self.make_embed(result)
+                embed.description = f"**{final.get('result_name')}** 제작이 끝났습니다.\n최종 품질: **{final.get('quality_label')} ({score}/100)**\n블랙스미스 수련치 +{final.get('exp', 0):g}"
+                if final.get("rank_up_msg"):
+                    embed.add_field(name="랭크", value=final["rank_up_msg"], inline=False)
+                await interaction.response.edit_message(embed=embed, attachments=[], view=None)
+                return
+            self._build()
+            await interaction.response.edit_message(embed=self.make_embed(result), attachments=[], view=self)
+        return callback
+
+
+
 class SkillMainView(View):
     def __init__(self, player, potion_engine=None, crafting_engine=None,
                  cooking_engine=None, metallurgy_engine=None, blacksmith_engine=None, back_factory=None):
@@ -722,6 +798,15 @@ class SkillMainView(View):
 
     def _make_craft_callback(self, skill_id: str, recipe_id: str):
         async def callback(interaction: discord.Interaction):
+            if skill_id == "blacksmith" and self.blacksmith_engine:
+                session = self.blacksmith_engine.start_session(recipe_id)
+                if not session.get("success"):
+                    await interaction.response.send_message(session.get("error", "블랙스미스를 시작할 수 없습니다."), ephemeral=True)
+                    return
+                forge_view = BlacksmithForgeView(self, recipe_id, session)
+                await interaction.response.edit_message(embed=forge_view.make_embed(), attachments=[], view=forge_view)
+                return
+
             result = None
             if skill_id == "alchemy" and self.potion_engine:
                 result = self.potion_engine.craft(recipe_id)
@@ -731,8 +816,6 @@ class SkillMainView(View):
                 result = self.cooking_engine.cook(recipe_id)
             elif skill_id == "metallurgy" and self.metallurgy_engine:
                 result = self.metallurgy_engine.smelt(recipe_id)
-            elif skill_id == "blacksmith" and self.blacksmith_engine:
-                result = self.blacksmith_engine.forge(recipe_id)
 
             if result is None:
                 await interaction.response.send_message("제작 엔진을 찾을 수 없습니다.", ephemeral=True)

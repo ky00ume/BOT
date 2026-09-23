@@ -431,37 +431,84 @@ class ObserveView(ExpiringView):
 
 
 class PettingView(ExpiringView):
-    REACTIONS = [
-        "손을 내밀자 츄라이더가 시선을 올립니다. 앞다리 하나가 잠깐 들렸다가 다시 바닥에 내려옵니다.",
-        "흰 머리카락 사이를 천천히 쓰다듬자 어깨의 힘이 조금 풀립니다. 거미 다리 두 개도 몸 안쪽으로 접힙니다.",
-        "조금 더 쓰다듬자 츄라이더가 먼저 머리를 손바닥 쪽으로 기울입니다. 복부도 바닥에 편하게 내려놓습니다.",
-        "손을 떼지 않자 눈을 반쯤 감고 가만히 있습니다. 앞다리 하나가 손목 가까이에 조심스럽게 걸립니다.",
-        "이제는 손길이 멈출 때마다 고개를 아주 조금 따라옵니다. 더 쓰다듬어도 괜찮다는 뜻처럼 보입니다.",
+    MAX_STROKES = 3
+    SPOTS = [
+        ("🫳 머리", "head"),
+        ("🤍 배", "belly"),
+        ("🕷️ 꼬리", "tail"),
+        ("🦵 다리", "legs"),
+        ("🤝 손", "hand"),
+        ("💨 전부", "all"),
     ]
+    REACTIONS = {
+        "head": [
+            "흰 머리카락 사이를 천천히 쓸어내립니다. 츄라이더가 눈만 들어 손을 확인합니다.",
+            "정수리부터 귀 뒤까지 다시 쓰다듬자 어깨의 힘이 풀리고 고개가 손바닥 쪽으로 조금 기웁니다.",
+            "세 번째 손길에는 아예 눈을 반쯤 감고 머리를 손바닥에 맡깁니다. 앞다리도 몸 안쪽으로 편하게 접힙니다.",
+        ],
+        "belly": [
+            "거미 복부 위를 조심스럽게 쓸자 여덟 다리가 순간 굳었다가 곧 다시 바닥을 짚습니다.",
+            "복부 옆을 둥글게 쓰다듬자 앞다리 두 개가 바닥을 짧게 꿈질거립니다.",
+            "익숙해졌는지 복부를 조금 더 내려놓습니다. 드로우 상체는 아무렇지 않은 척하지만 다리 끝이 느슨해집니다.",
+        ],
+        "tail": [
+            "복부 끝, 꼬리처럼 보이는 부분을 손끝으로 살짝 쓸자 츄라이더가 홱 뒤를 돌아봅니다.",
+            "이번에는 놀라지 않고 복부 끝만 작게 움찔합니다. 시선은 여전히 손을 따라옵니다.",
+            "세 번째에는 몸을 피하지 않습니다. 대신 뒷다리 하나가 손목 쪽으로 슬쩍 다가옵니다.",
+        ],
+        "legs": [
+            "앞다리 하나를 따라 관절 사이를 천천히 쓸어줍니다. 다리 끝이 손가락을 피해 갔다가 다시 돌아옵니다.",
+            "이번에는 두 다리를 번갈아 쓰다듬습니다. 바닥을 두드리던 움직임이 점점 느려집니다.",
+            "세 번째에는 여러 다리가 한꺼번에 몸 안쪽으로 접힙니다. 완전히 편해진 자세입니다.",
+        ],
+        "hand": [
+            "드로우의 손등을 엄지로 천천히 쓸어줍니다. 츄라이더가 손을 빼지 않고 가만히 내려다봅니다.",
+            "손가락 사이를 조심스럽게 문지르자 손끝이 아주 조금 마주 잡힙니다.",
+            "세 번째에는 먼저 손가락을 걸어옵니다. 표정은 태연하지만 놓을 생각은 없어 보입니다.",
+        ],
+        "all": [
+            "머리부터 복부와 다리까지 와르르 북박북박 쓰다듬습니다. 츄라이더가 무슨 일이냐는 얼굴로 여덟 다리를 한꺼번에 버둥거립니다.",
+            "이번에는 양손으로 머리, 손, 복부, 다리를 정신없이 북박북박 훑습니다. 도망가려던 다리도 어느새 다시 가까이 붙습니다.",
+            "마지막으로 온몸을 와르르 북박북박 쓰다듬자 흰 머리카락은 헝클어지고 여덟 다리는 전부 제멋대로 접혀 있습니다. 츄라이더는 체념한 얼굴로 손에 기대 있습니다.",
+        ],
+    }
 
-    def __init__(self, player, care_manager, parent_view, *, step=0, opening=None):
+    def __init__(self, player, care_manager, parent_view, *, step=0, history=None, opening=None):
         super().__init__(timeout=CARE_VIEW_TIMEOUT)
         self.player = player
         self.care_manager = care_manager
         self.parent_view = parent_view
         self.step = step
+        self.history = list(history or [])
         self.opening = opening
-        if step < len(self.REACTIONS) - 1:
-            more = discord.ui.Button(label="🫳 계속 쓰다듬기", style=discord.ButtonStyle.primary)
-            more.callback = self._more
-            self.add_item(more)
-        done = discord.ui.Button(label="그만 쓰다듬기", style=discord.ButtonStyle.secondary)
+        if step < self.MAX_STROKES:
+            for idx, (label, spot) in enumerate(self.SPOTS):
+                btn = discord.ui.Button(label=label, style=discord.ButtonStyle.primary if spot == "all" else discord.ButtonStyle.secondary, row=idx // 3)
+                btn.callback = self._make_spot_cb(spot)
+                self.add_item(btn)
+        done = discord.ui.Button(label="그만 쓰다듬기", style=discord.ButtonStyle.secondary, row=2)
         done.callback = self._done
         self.add_item(done)
 
     def make_embed(self):
-        text = self.REACTIONS[min(self.step, len(self.REACTIONS) - 1)]
-        return discord.Embed(title="🕷️🫳 쓰다듬기", description=text, color=0x8C668A)
+        if self.step == 0:
+            text = "어디를 쓰다듬을지 고릅니다. 세 번까지 이어서 쓰다듬을 수 있습니다."
+        else:
+            spot = self.history[-1]
+            text = self.REACTIONS[spot][self.step - 1]
+        embed = discord.Embed(title="🕷️🫳 쓰다듬기", description=text, color=0x8C668A)
+        embed.add_field(name="쓰다듬기", value=f"**{self.step}/{self.MAX_STROKES}**", inline=True)
+        if self.step >= self.MAX_STROKES:
+            embed.set_footer(text="충분히 쓰다듬었습니다.")
+        return embed
 
-    async def _more(self, interaction):
-        view = PettingView(self.player, self.care_manager, self.parent_view, step=self.step + 1)
-        view.bind_message(getattr(interaction, "message", None))
-        await interaction.response.edit_message(attachments=[], embed=view.make_embed(), view=view)
+    def _make_spot_cb(self, spot: str):
+        async def cb(interaction):
+            next_step = min(self.MAX_STROKES, self.step + 1)
+            view = PettingView(self.player, self.care_manager, self.parent_view, step=next_step, history=self.history + [spot])
+            view.bind_message(getattr(interaction, "message", None))
+            await interaction.response.edit_message(attachments=[], embed=view.make_embed(), view=view)
+        return cb
 
     async def _done(self, interaction):
         await interaction.response.edit_message(attachments=[], embed=_make_room_embed(self.player), view=self.parent_view)
@@ -1037,35 +1084,115 @@ class TowerLiftView(ExpiringView):
 
 
 # ── 메인 비전의 탑 돌봄 View ──────────────────────────────────────────────────
-WALK_ACTIVITY_SECONDS = 30
 WALK_UPDATE_SECONDS = 3
+WALK_ROUTES = {
+    "indoor": {
+        "label": "🏠 실내",
+        "duration": 24,
+        "description": "비전의 탑 안을 돌아봅니다. 짧고 안전하며 피로와 오염이 적습니다.",
+        "items": (1, 1),
+        "outing": "walk_indoor",
+    },
+    "near": {
+        "label": "🌿 집 근처",
+        "duration": 36,
+        "description": "탑 바로 주변까지 다녀옵니다. 적당히 움직이고 주울 것도 조금 많습니다.",
+        "items": (1, 2),
+        "outing": "walk_near",
+    },
+    "far": {
+        "label": "🌒 좀 멀리",
+        "duration": 54,
+        "description": "탑에서 제법 멀리까지 다녀옵니다. 오래 걸리고 피곤하지만 더 많이 주워옵니다.",
+        "items": (2, 3),
+        "outing": "walk_far",
+    },
+}
+
+WALK_SCENES = {
+    "indoor": [
+        (0.18, "🚪 출발", "책장 뒤 틈에서 몸을 빼낸 뒤 여덟 다리를 차례로 펴고 복도로 나갑니다."),
+        (0.42, "🪜 계단", "난간 아래쪽으로 몸을 낮추고 계단 몇 칸을 오르내립니다. 다리 끝이 돌 틈을 하나씩 짚습니다."),
+        (0.68, "🔎 구석 탐색", "상자 뒤 좁은 틈에 앞다리를 넣고 꿈질꿈질 더듬습니다."),
+        (0.86, "🕸️ 실 정리", "복도 모서리에 늘어진 오래된 실을 앞다리로 감아 작은 뭉치로 만듭니다."),
+        (1.01, "🏠 귀환", "익숙한 발소리로 상층 생활 공간을 돌아 책장 뒤 틈으로 향합니다."),
+    ],
+    "near": [
+        (0.18, "🚪 출발", "탑 입구까지 내려가 바깥 공기를 한 번 확인한 뒤 조심스럽게 밖으로 나갑니다."),
+        (0.42, "🌿 풀숲", "탑 벽을 따라 난 풀 사이를 헤치며 다리 끝으로 바닥을 꿈질꿈질 살핍니다."),
+        (0.66, "🪨 돌무더기", "작은 돌무더기 앞에 멈춰 반짝이는 것을 찾듯 앞다리로 하나씩 뒤집어 봅니다."),
+        (0.86, "🕷️ 한 바퀴", "탑 주변을 크게 한 바퀴 돕니다. 흙이 다리 끝에 조금씩 묻습니다."),
+        (1.01, "🏠 귀환", "주운 것을 품에 안고 탑 입구를 지나 상층으로 돌아옵니다."),
+    ],
+    "far": [
+        (0.16, "🚪 출발", "탑 입구를 벗어나 익숙한 길보다 더 멀리 향합니다. 여덟 다리의 보폭도 조금 넓어집니다."),
+        (0.36, "🌒 먼 길", "희미한 빛이 닿는 바위길을 따라 한참 걷습니다. 드로우 상체는 주변 소리를 계속 살핍니다."),
+        (0.58, "🔎 낯선 흔적", "처음 보는 자국 앞에 멈춰 앞다리 두 개로 가장자리를 꿈질꿈질 더듬습니다."),
+        (0.78, "🕸️ 샛길", "좁은 바위 틈으로 들어갔다가 실 한 줄과 작은 물건을 끌고 다시 나타납니다."),
+        (0.92, "🐾 돌아오는 길", "올 때보다 조금 느린 걸음으로 탑 쪽을 향합니다. 다리 끝에 흙과 먼지가 제법 묻었습니다."),
+        (1.01, "🏠 귀환", "멀리 다녀온 티를 잔뜩 묻힌 채 탑 상층으로 돌아옵니다."),
+    ],
+}
 
 
-def _walk_progress_bar(elapsed: float, duration: float = WALK_ACTIVITY_SECONDS, width: int = 10) -> str:
+def _walk_progress_bar(elapsed: float, duration: float, width: int = 10) -> str:
     ratio = max(0.0, min(1.0, elapsed / max(1.0, duration)))
     filled = min(width, int(ratio * width))
     return "▰" * filled + "▱" * (width - filled)
 
 
-def _walk_scene(elapsed: float, duration: float = WALK_ACTIVITY_SECONDS) -> tuple[str, str]:
+def _walk_scene(elapsed: float, duration: float = 24, route: str = "indoor") -> tuple[str, str]:
     ratio = max(0.0, min(1.0, elapsed / max(1.0, duration)))
-    if ratio < 0.18:
-        return "🚪 출발", f"책장 뒤 틈에서 몸을 빼낸 뒤 여덟 다리를 차례로 펴고 복도로 나갑니다.\n“{CHURIDER_SPEECH['walk_start']}”"
-    if ratio < 0.40:
-        return "🐾 이동", "복도 가장자리를 따라 조심조심 걷습니다. 드로우 상체는 태연하지만 다리 끝은 계속 주변을 더듬습니다."
-    if ratio < 0.64:
-        return "🔎 탐색", f"낮은 틈 앞에서 멈춰 앞다리 두 개로 바닥을 꿈질꿈질 더듬습니다. 뭔가 작은 것을 발견한 듯합니다.\n“{CHURIDER_SPEECH['walk_find']}”"
-    if ratio < 0.84:
-        return "🕸️ 샛길", "벽 모서리를 타고 한 바퀴 돌아봅니다. 잠깐 보이지 않다가 실 한 줄을 달고 다시 나타납니다."
-    return "🏠 귀환", f"주운 것을 품에 안고 탑 상층으로 돌아옵니다. 다리 움직임이 처음보다 조금 느려졌습니다.\n“{CHURIDER_SPEECH['walk_return']}”"
+    scenes = WALK_SCENES.get(route, WALK_SCENES["indoor"])
+    for threshold, phase, text in scenes:
+        if ratio < threshold:
+            if phase == "🚪 출발":
+                text += f"\n“{CHURIDER_SPEECH['walk_start']}”"
+            elif "탐색" in phase or "흔적" in phase:
+                text += f"\n“{CHURIDER_SPEECH['walk_find']}”"
+            elif phase == "🏠 귀환":
+                text += f"\n“{CHURIDER_SPEECH['walk_return']}”"
+            return phase, text
+    return scenes[-1][1], scenes[-1][2]
 
 
-def _make_walk_progress_embed(remaining: int, elapsed: float) -> discord.Embed:
-    phase, scene = _walk_scene(elapsed)
-    embed = discord.Embed(title="🕷️🚶 산책 중", description=scene, color=0x5C6574)
-    embed.add_field(name=phase, value=f"{_walk_progress_bar(elapsed)}  남은 시간 **{max(0, remaining)}초**", inline=False)
+def _make_walk_progress_embed(route: str, remaining: int, elapsed: float) -> discord.Embed:
+    profile = WALK_ROUTES[route]
+    duration = profile["duration"]
+    phase, scene = _walk_scene(elapsed, duration, route)
+    embed = discord.Embed(title=f"🕷️🚶 산책 중 · {profile['label']}", description=scene, color=0x5C6574)
+    embed.add_field(name=phase, value=f"{_walk_progress_bar(elapsed, duration)}  남은 시간 **{max(0, remaining)}초**", inline=False)
     embed.set_footer(text="츄라이더가 직접 움직이는 중입니다.")
     return embed
+
+
+class WalkRouteView(ExpiringView):
+    def __init__(self, player, care_manager, parent_view):
+        super().__init__(timeout=CARE_VIEW_TIMEOUT)
+        self.player = player
+        self.care_manager = care_manager
+        self.parent_view = parent_view
+        for route, profile in WALK_ROUTES.items():
+            btn = discord.ui.Button(label=profile["label"], style=discord.ButtonStyle.primary if route == "near" else discord.ButtonStyle.secondary)
+            btn.callback = self._make_route_cb(route)
+            self.add_item(btn)
+        back = discord.ui.Button(label="◀ 돌아가기", style=discord.ButtonStyle.secondary, row=1)
+        back.callback = self._back
+        self.add_item(back)
+
+    def make_embed(self):
+        embed = discord.Embed(title="🕷️🚶 어디로 산책할까요?", description="거리마다 걸리는 시간과 피로, 주워 오는 것이 달라집니다.", color=0x5C6574)
+        for profile in WALK_ROUTES.values():
+            embed.add_field(name=f"{profile['label']} · {profile['duration']}초", value=profile["description"], inline=False)
+        return embed
+
+    def _make_route_cb(self, route: str):
+        async def cb(interaction):
+            await self.parent_view._start_walk(interaction, route)
+        return cb
+
+    async def _back(self, interaction):
+        await interaction.response.edit_message(attachments=[], embed=_make_room_embed(self.player), view=self.parent_view)
 
 
 class CareRoomView(ExpiringView):
@@ -1234,7 +1361,6 @@ class CareRoomView(ExpiringView):
 
     # ── 산책 ──────────────────────────────────────────────────────────────
     WALK_COOLDOWN = 180  # 산책 완료 후 3분
-    WALK_DURATION = WALK_ACTIVITY_SECONDS
     WALK_UPDATE_INTERVAL = WALK_UPDATE_SECONDS
     WALK_ITEMS = [
         # (아이템ID, 가중치)  — 장난감/의상 제작 재료
@@ -1255,48 +1381,49 @@ class CareRoomView(ExpiringView):
     async def _on_walk(self, interaction: discord.Interaction):
         if not hasattr(self.player, "_flags") or self.player._flags is None:
             self.player._flags = {}
-
         now = _time.time()
         last_walk = self.player._flags.get("last_walk_time", 0)
         remaining_cd = self.WALK_COOLDOWN - (now - last_walk)
         if remaining_cd > 0:
             mins, secs = divmod(int(remaining_cd), 60)
-            embed = discord.Embed(
-                title="🕷️🚶 산책",
-                description=f"아직 산책할 수 없습니다. {mins}분 {secs}초 남았습니다.",
-                color=0x5C6574,
-            )
+            embed = discord.Embed(title="🕷️🚶 산책", description=f"아직 산책할 수 없습니다. {mins}분 {secs}초 남았습니다.", color=0x5C6574)
             await interaction.response.edit_message(content=None, attachments=[], embed=embed, view=self)
             return
+        view = WalkRouteView(self.player, self.care_manager, self)
+        view.bind_message(getattr(interaction, "message", None))
+        await interaction.response.edit_message(content=None, attachments=[], embed=view.make_embed(), view=view)
 
-        # The activity itself now occupies real time. Results are granted only on return.
+    async def _start_walk(self, interaction: discord.Interaction, route: str):
+        profile = WALK_ROUTES[route]
+        duration = profile["duration"]
         started = _time.time()
         self.player._flags["walk_started_at"] = started
-        self.player._flags["walk_active_until"] = started + self.WALK_DURATION
-        first = _make_walk_progress_embed(self.WALK_DURATION, 0)
+        self.player._flags["walk_active_until"] = started + duration
+        self.player._flags["walk_route"] = route
+        first = _make_walk_progress_embed(route, duration, 0)
         await interaction.response.edit_message(content=None, attachments=[], embed=first, view=None)
-
         message = getattr(interaction, "message", None)
-        asyncio.create_task(self._run_walk_activity(message, started))
+        asyncio.create_task(self._run_walk_activity(message, started, route))
 
-    async def _run_walk_activity(self, message, started: float):
-        """Animate the walk without keeping the Discord button interaction open."""
+    async def _run_walk_activity(self, message, started: float, route: str):
+        profile = WALK_ROUTES[route]
+        duration = profile["duration"]
         elapsed = 0.0
-        while elapsed < self.WALK_DURATION:
+        while elapsed < duration:
             await asyncio.sleep(self.WALK_UPDATE_INTERVAL)
-            elapsed = min(self.WALK_DURATION, _time.time() - started)
-            remaining = max(0, int(round(self.WALK_DURATION - elapsed)))
+            elapsed = min(duration, _time.time() - started)
+            remaining = max(0, int(round(duration - elapsed)))
             if message is not None:
                 try:
-                    await message.edit(embed=_make_walk_progress_embed(remaining, elapsed), view=None)
+                    await message.edit(embed=_make_walk_progress_embed(route, remaining, elapsed), view=None)
                 except (discord.NotFound, discord.Forbidden):
                     message = None
                 except Exception as e:
                     logger.warning("산책 진행 화면 갱신 실패: %s", e)
 
-        # Return rewards and state changes happen only after the visible activity finishes.
         items_found = []
-        num_items = random.choices([1, 2], weights=[70, 30])[0]
+        min_items, max_items = profile["items"]
+        num_items = random.randint(min_items, max_items)
         pool_ids, pool_weights = zip(*self.WALK_ITEMS)
         for _ in range(num_items):
             chosen_id = random.choices(pool_ids, weights=pool_weights)[0]
@@ -1305,14 +1432,15 @@ class CareRoomView(ExpiringView):
             item_name = ALL_ITEMS.get(chosen_id, {}).get("name", chosen_id)
             items_found.append(item_name)
 
-        cond_gain = random.randint(2, 5)
-        stab_gain = random.randint(1, 3)
+        gains = {"indoor": (2, 1), "near": (3, 2), "far": (4, 3)}
+        cond_gain, stab_gain = gains[route]
         self.player.condition = min(100, self.player.condition + cond_gain)
         self.player.stability = min(100, self.player.stability + stab_gain)
         from care import apply_outing_effect
-        apply_outing_effect(self.player, "walk")
+        apply_outing_effect(self.player, profile["outing"])
         self.player._flags["walk_active_until"] = 0.0
         self.player._flags["walk_started_at"] = 0.0
+        self.player._flags["walk_route"] = ""
         self.player._flags["last_walk_time"] = _time.time()
 
         try:
@@ -1320,11 +1448,7 @@ class CareRoomView(ExpiringView):
         except Exception as e:
             logger.error("산책 후 저장 실패: %s", e, exc_info=True)
 
-        embed = discord.Embed(
-            title="🕷️🚶 산책 완료",
-            description=f"츄라이더가 책장 뒤 틈으로 돌아와 주운 것을 내려놓습니다.\n“{CHURIDER_SPEECH['walk_return']}”",
-            color=0x5C6574,
-        )
+        embed = discord.Embed(title=f"🕷️🚶 산책 완료 · {profile['label']}", description=f"츄라이더가 책장 뒤 틈으로 돌아와 주운 것을 내려놓습니다.\n“{CHURIDER_SPEECH['walk_return']}”", color=0x5C6574)
         embed.add_field(name="🎁 주워 온 것", value=", ".join(items_found), inline=False)
         embed.add_field(name="변화", value=f"컨디션 +{cond_gain} · 안정감 +{stab_gain}", inline=False)
         if message is not None:

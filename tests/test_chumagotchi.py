@@ -120,15 +120,25 @@ def test_observation_has_multiple_body_and_nest_details():
 
 
 @pytest.mark.asyncio
-async def test_petting_session_has_progressive_reactions():
+async def test_petting_session_uses_body_spots_and_exactly_three_strokes():
     from ui.care_ui import PettingView
 
     player = Player()
     parent = object()
     view0 = PettingView(player, CareManager(), parent, step=0)
-    view3 = PettingView(player, CareManager(), parent, step=3)
-    assert view0.make_embed().description != view3.make_embed().description
-    assert "🫳 계속 쓰다듬기" in {getattr(child, "label", "") for child in view0.children}
+    labels = {getattr(child, "label", "") for child in view0.children}
+    assert {"🫳 머리", "🤍 배", "🕷️ 꼬리", "🦵 다리", "🤝 손", "💨 전부"} <= labels
+    assert "0/3" in view0.make_embed().fields[0].value
+
+    view1 = PettingView(player, CareManager(), parent, step=1, history=["head"])
+    view2 = PettingView(player, CareManager(), parent, step=2, history=["legs", "head"])
+    view3 = PettingView(player, CareManager(), parent, step=3, history=["head", "legs", "all"])
+    assert "1/3" in view1.make_embed().fields[0].value
+    assert "2/3" in view2.make_embed().fields[0].value
+    assert "3/3" in view3.make_embed().fields[0].value
+    assert "북박북박" in view3.make_embed().description
+    final_labels = {getattr(child, "label", "") for child in view3.children}
+    assert final_labels == {"그만 쓰다듬기"}
 
 
 @pytest.mark.asyncio

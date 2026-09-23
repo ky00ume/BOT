@@ -61,6 +61,12 @@ def get_care_state(player) -> dict:
 OUTING_EFFECTS = {
     "walk": {"hunger": 3, "boredom": -12, "cleanliness": -4, "fatigue": 5,
              "trace": "산책에서 묻혀 온 잔먼지가 다리 끝에 조금 남아 있습니다."},
+    "walk_indoor": {"hunger": 2, "boredom": -8, "cleanliness": -2, "fatigue": 3,
+                    "trace": "탑 안을 돌아다니며 묻힌 잔먼지가 다리 끝에 조금 남아 있습니다."},
+    "walk_near": {"hunger": 4, "boredom": -13, "cleanliness": -6, "fatigue": 7,
+                  "trace": "탑 주변을 한 바퀴 돈 흔적으로 다리 끝에 흙가루와 작은 풀씨가 붙어 있습니다."},
+    "walk_far": {"hunger": 7, "boredom": -18, "cleanliness": -11, "fatigue": 12,
+                 "trace": "멀리 다녀온 흔적으로 다리와 복부 아래에 흙먼지와 마른 풀 조각이 제법 남아 있습니다."},
     "fishing": {"hunger": 4, "boredom": -10, "cleanliness": -9, "fatigue": 7,
                 "trace": "거미 다리와 복부 아래쪽에 물기가 마른 자국이 있고 희미한 물비린내가 남아 있습니다."},
     "gathering": {"hunger": 4, "boredom": -7, "cleanliness": -7, "fatigue": 7,

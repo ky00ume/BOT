@@ -94,7 +94,7 @@ def _observation_details(player) -> list[str]:
             flavor = COSTUME_FLAVOR.get(item_id, {}).get("observe")
             if flavor:
                 equipped_flavor.append(flavor)
-    details.extend(equipped_flavor[:2])
+    details.extend(equipped_flavor)
 
     traces = state.get("traces", [])
     if traces:
@@ -128,6 +128,15 @@ def _make_room_embed(player):
         color=0x544766,
     )
     embed.add_field(name="상태", value=_status_line(player), inline=False)
+    equipped = []
+    slot_labels = {"toy": "🪄", "hat": "🎀", "outfit": "👗", "shoes": "👢", "accessory": "💎"}
+    for slot in ("toy", "hat", "outfit", "shoes", "accessory"):
+        item_id = getattr(player, "costume", {}).get(slot)
+        if item_id:
+            item = COSTUME_ITEMS.get(item_id, {})
+            equipped.append(f"{slot_labels[slot]} {item.get('name', item_id)}")
+    if equipped:
+        embed.add_field(name="의장", value=" · ".join(equipped), inline=False)
     return embed
 
 

@@ -97,6 +97,7 @@ class FishingView(discord.ui.View):
         self.activity_id      = activity_id
         self._bite_task       = None
         self._message         = None
+        self._sync_buttons()
 
     def _apply_outing_state(self):
         from care import apply_outing_effect
@@ -107,6 +108,20 @@ class FishingView(discord.ui.View):
     def _disable_buttons(self):
         for child in self.children:
             child.disabled = True
+
+    def _sync_buttons(self):
+        """현재 낚시 상태에 맞춰 눌러야 할 버튼 하나만 명확하게 노출한다."""
+        for child in self.children:
+            custom_id = getattr(child, "custom_id", "") or ""
+            if custom_id.endswith("pull_button") or child is getattr(self, "pull_button", None):
+                child.disabled = self.state != "bite"
+                child.label = "🎣 지금 당기기!" if self.state == "bite" else "🎣 입질을 기다리세요"
+                child.style = discord.ButtonStyle.danger if self.state == "bite" else discord.ButtonStyle.secondary
+            elif custom_id.endswith("wait_button") or child is getattr(self, "wait_button", None):
+                child.disabled = True
+                child.label = "🕸️ 기다리는 중..." if self.state == "waiting" else "❗ 입질!"
+            elif custom_id.endswith("stop_button") or child is getattr(self, "stop_button", None):
+                child.disabled = self.state == "done"
 
     async def start(self, channel_or_ctx):
         from ui_theme import spider_scene
@@ -183,6 +198,7 @@ class FishingView(discord.ui.View):
         if self.state != "waiting":
             return
         self.state = "bite"
+        self._sync_buttons()
         if self._message:
             from ui_theme import spider_scene
             bite_msgs = [
@@ -195,11 +211,11 @@ class FishingView(discord.ui.View):
                 description=random.choice(bite_msgs),
                 color=0xff2200,
             )
-            embed.set_footer(text="⚡ 3초 안에 버튼을 눌러야 함미댜!")
+            embed.set_footer(text="⚡ 5초 안에 [지금 당기기!]를 누르셰요!")
             await self._message.edit(embed=embed, view=self)
 
-        # 타임아웃 — 3초 안에 안 누르면 놓침
-        await asyncio.sleep(3.0)
+        # 타임아웃 — Discord/모바일 반응 시간을 고려해 5초 제공
+        await asyncio.sleep(5.0)
         if self.state == "bite":
             self.state = "done"
             self._disable_buttons()
@@ -347,10 +363,10 @@ class FishingView(discord.ui.View):
                 ephemeral=True,
             )
         elif self.state == "bite":
-            self.state = "done"
-            self._disable_buttons()
-            await self._handle_catch(interaction)
-            self.stop()
+            await interaction.response.send_message(
+                "❗ 입질이 왔슴미댜! **[지금 당기기!]** 버튼을 누르셰요!",
+                ephemeral=True,
+            )
         elif self.state == "done":
             await interaction.response.send_message("이미 끝났슴미댜!", ephemeral=True)
 

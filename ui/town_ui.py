@@ -766,16 +766,8 @@ class FishingZoneView(View):
                 await interaction.channel.send(file=enc_file, view=view)
             else:
                 await interaction.channel.send(enc_msg)
-        # 낚시 후 같은 낚시터 뷰를 다시 전송
-        new_view = FishingZoneView(
-            self.zone_name, self.has_silen,
-            self.player, self.aff_manager, self.npc_manager_ref,
-        )
-        await new_view.send(interaction.channel)
-        try:
-            await interaction.delete_original_response()
-        except Exception:
-            logger.warning('town_ui: FishingZoneView._fish_callback delete_original_response 실패', exc_info=True)
+        # 낚시가 끝나기 전에는 낚시터 버튼을 중복으로 다시 띄우지 않는다.
+        # FishingView의 결과/종료가 현재 흐름을 책임지고, 다음 행동은 기존 낚시터 메시지에서 선택한다.
 
     async def _water_callback(self, interaction: discord.Interaction):
         """물뜨기 — 빈 병 1개를 물 1개로 전환 (기력 5 소모)."""

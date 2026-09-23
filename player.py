@@ -438,6 +438,27 @@ class Player:
         "accessory": "악세사리",
     }
 
+    def get_featured_costume(self):
+        if not hasattr(self, "_flags") or self._flags is None:
+            self._flags = {}
+        item_id = self._flags.get("featured_costume")
+        if item_id and item_id in self.costume.values():
+            return item_id
+        if item_id:
+            self._flags["featured_costume"] = None
+        return None
+
+    def set_featured_costume(self, item_id: str | None) -> bool:
+        if not hasattr(self, "_flags") or self._flags is None:
+            self._flags = {}
+        if item_id is None:
+            self._flags["featured_costume"] = None
+            return True
+        if item_id not in self.costume.values():
+            return False
+        self._flags["featured_costume"] = item_id
+        return True
+
     def equip_costume(self, item_id: str) -> str:
         from items import ALL_ITEMS
         item = ALL_ITEMS.get(item_id)
@@ -458,6 +479,8 @@ class Player:
 
         prev = self.costume.get(costume_slot)
         if prev:
+            if self.get_featured_costume() == prev:
+                self.set_featured_costume(None)
             self.add_hyness_item(prev)
 
         h_inv = self.get_hyness_inventory()
@@ -480,6 +503,8 @@ class Player:
             return f"[{slot_name}] 슬롯이 비어있슴미댜."
         item = ALL_ITEMS.get(eq_id, {})
         self.add_hyness_item(eq_id)
+        if self.get_featured_costume() == eq_id:
+            self.set_featured_costume(None)
         self.costume[slot] = None
         slot_name = self._COSTUME_SLOT_NAMES.get(slot, slot)
         return f"[{item.get('name', eq_id)}]을(를) {slot_name} 슬롯에서 해제했슴미댜!"

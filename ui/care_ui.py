@@ -103,6 +103,23 @@ def _observation_details(player) -> list[str]:
     return [detail for detail in details if detail]
 
 
+def _featured_costume(player):
+    try:
+        item_id = player.get_featured_costume()
+    except Exception:
+        item_id = getattr(player, "_flags", {}).get("featured_costume")
+    if not item_id:
+        return None, None
+    return item_id, COSTUME_ITEMS.get(item_id, {})
+
+
+def _churider_mark(player) -> str:
+    _item_id, item = _featured_costume(player)
+    if not item:
+        return "🕷️"
+    return f"🕷️ {item.get('emoji', '✨')}"
+
+
 def _make_room_embed(player):
     """Compact home surface: status is visible; details belong to interactions."""
     try:
@@ -123,7 +140,7 @@ def _make_room_embed(player):
         rest = None
     description = rest or obs.headline
     embed = discord.Embed(
-        title="🕷️ 츄라이더",
+        title=f"{_churider_mark(player)} 츄라이더",
         description=description,
         color=0x544766,
     )
@@ -134,9 +151,13 @@ def _make_room_embed(player):
         item_id = getattr(player, "costume", {}).get(slot)
         if item_id:
             item = COSTUME_ITEMS.get(item_id, {})
-            equipped.append(f"{slot_labels[slot]} {item.get('name', item_id)}")
+            star = "⭐ " if item_id == getattr(player, "get_featured_costume", lambda: None)() else ""
+            equipped.append(f"{star}{slot_labels[slot]} {item.get('name', item_id)}")
     if equipped:
         embed.add_field(name="의장", value=" · ".join(equipped), inline=False)
+    featured_id, featured = _featured_costume(player)
+    if featured_id and featured:
+        embed.add_field(name="⭐ 대표 의장", value=f"{featured.get('emoji', '✨')} {featured.get('name', featured_id)}", inline=False)
     return embed
 
 
@@ -190,12 +211,21 @@ class CostumeManageView(ExpiringView):
         unequip_btn.callback = self._on_unequip_select
         self.add_item(unequip_btn)
 
+        featured_btn = discord.ui.Button(
+            label="⭐ 대표 의장",
+            style=discord.ButtonStyle.success,
+            custom_id="featured_costume",
+            row=3,
+        )
+        featured_btn.callback = self._on_featured_select
+        self.add_item(featured_btn)
+
         # 뒤로 가기
         back_btn = discord.ui.Button(
             label="◀ 돌아가기",
             style=discord.ButtonStyle.secondary,
             custom_id="back_from_costume",
-            row=3,
+            row=4,
         )
         back_btn.callback = self._on_back
         self.add_item(back_btn)
@@ -1420,12 +1450,13 @@ def _walk_scene(elapsed: float, duration: float = 24, route: str = "indoor") -> 
     return scenes[-1][1], scenes[-1][2]
 
 
-def _make_walk_progress_embed(route: str, remaining: int, elapsed: float, event_id: str | None = None) -> discord.Embed:
+def _make_walk_progress_embed(route: str, remaining: int, elapsed: float, event_id: str | None = None, player=None) -> discord.Embed:
     profile = WALK_ROUTES[route]
     duration = profile["duration"]
     rare = _walk_rare_event_scene(route, event_id, elapsed, duration)
     phase, scene = rare if rare else _walk_scene(elapsed, duration, route)
-    embed = discord.Embed(title=f"🕷️🚶 산책 중 · {profile['label']}", description=scene, color=0x5C6574)
+    mark = _churider_mark(player) if player is not None else "🕷️"
+    embed = discord.Embed(title=f"{mark} 🚶 산책 중 · {profile['label']}", description=scene, color=0x5C6574)
     embed.add_field(name=phase, value=f"{_walk_progress_bar(elapsed, duration)}  남은 시간 **{max(0, remaining)}초**", inline=False)
     embed.set_footer(text="츄라이더가 직접 움직이는 중입니다.")
     return embed
@@ -1667,7 +1698,7 @@ class CareRoomView(ExpiringView):
         self.player._flags["walk_route"] = route
         event_id = _choose_walk_rare_event(route)
         self.player._flags["walk_rare_event"] = event_id or ""
-        first = _make_walk_progress_embed(route, duration, 0, event_id)
+        first = _make_walk_progress_embed(route, duration, 0, event_id, self.player)
         await interaction.response.edit_message(content=None, attachments=[], embed=first, view=None)
         message = getattr(interaction, "message", None)
         asyncio.create_task(self._run_walk_activity(message, started, route, event_id))
@@ -1682,7 +1713,7 @@ class CareRoomView(ExpiringView):
             remaining = max(0, int(round(duration - elapsed)))
             if message is not None:
                 try:
-                    await message.edit(embed=_make_walk_progress_embed(route, remaining, elapsed, event_id), view=None)
+                    await message.edit(embed=_make_walk_progress_embed(route, remaining, elapsed, event_id, self.player), view=None)
                 except (discord.NotFound, discord.Forbidden):
                     message = None
                 except Exception as e:
@@ -1724,7 +1755,7 @@ class CareRoomView(ExpiringView):
         except Exception as e:
             logger.error("산책 후 저장 실패: %s", e, exc_info=True)
 
-        embed = discord.Embed(title=f"🕷️🚶 산책 완료 · {profile['label']}", description=f"츄라이더가 책장 뒤 틈으로 돌아와 주운 것을 내려놓습니다.\n“{CHURIDER_SPEECH['walk_return']}”", color=0x5C6574)
+        embed = discord.Embed(title=f"{_churider_mark(self.player)} 🚶 산책 완료 · {profile['label']}", description=f"츄라이더가 책장 뒤 틈으로 돌아와 주운 것을 내려놓습니다.\n“{CHURIDER_SPEECH['walk_return']}”", color=0x5C6574)
         if rare_event:
             embed.add_field(name="✨ 특별한 일", value=rare_event["summary"], inline=False)
         embed.add_field(name="🎁 주워 온 것", value=", ".join(items_found), inline=False)

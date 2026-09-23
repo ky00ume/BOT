@@ -196,9 +196,10 @@ class BattleEngine:
         if leveled:
             rows.append({"label": "레벨 업!", "value": f"Lv.{old_level}→Lv.{self.player.level}"})
         return get_renderer().render_card(
-            title="🎉 다수 전투 승리!",
+            title="🎉 전투 승리!" if len(self.defeated_enemies) == 1 else "🎉 다수 전투 승리!",
             rows=rows,
-            system_key="battle",
+            grade="Legendary",
+            system_key="battle_win",
             footer=rank_msg or "전투 시스템",
             h=max(380, 160 + len(rows) * 34),
         )
@@ -918,7 +919,8 @@ class BattleEngine:
             return get_renderer().render_card(
                 title="🎉 전투 승리!",
                 rows=rows,
-                system_key="battle",
+                grade="Legendary",
+                system_key="battle_win",
                 footer=footer,
                 h=max(380, 160 + len(rows) * 34),
             )

@@ -126,6 +126,19 @@ def test_lightning_quick_cast_can_cancel_primary_counterattack(monkeypatch):
     assert "반격 차단" in renderer.last_battle["last_action"]
 
 
+def test_single_enemy_group_path_uses_single_victory_title_and_victory_theme(monkeypatch):
+    engine, p, renderer = _group_engine(monkeypatch, count=1, hp=15, attack=1)
+    p.skill_ranks["smash"] = "1"
+
+    engine.process_turn("smash")
+
+    assert engine.in_battle is False
+    assert len(engine.defeated_enemies) == 1
+    assert renderer.last_card["title"] == "🎉 전투 승리!"
+    assert renderer.last_card["grade"] == "Legendary"
+    assert renderer.last_card["system_key"] == "battle_win"
+
+
 def test_group_victory_waits_until_all_enemies_are_defeated(monkeypatch):
     engine, p, renderer = _group_engine(monkeypatch, count=2, hp=15, attack=1)
     p.skill_ranks["smash"] = "1"

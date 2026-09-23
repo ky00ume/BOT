@@ -390,9 +390,9 @@ COSTUME_RECIPES = {
     },
     "ct_toy_magic_wand": {
         "name":         "반짝이 마법봉 제작",
-        "materials":    {"mat_wood_scrap": 1, "mat_shiny_button": 3, "mat_magic_thread": 1},
+        "materials":    {"mat_wood_scrap": 1, "mat_shiny_button": 2, "mat_magic_thread": 1, "mat_magic_dust": 1},
         "result_count": 1,
-        "desc":         "나무 조각 1개 + 반짝이 단추 3개 + 마법실 1개 → 반짝이 마법봉",
+        "desc":         "나무 조각 1개 + 반짝이 단추 2개 + 마법실 1개 + 마법 가루 1개 → 반짝이 마법봉",
     },
     # 모자
     "ct_hat_ribbon": {
@@ -415,9 +415,9 @@ COSTUME_RECIPES = {
     },
     "ct_hat_witch": {
         "name":         "마녀 모자 제작",
-        "materials":    {"mat_leather_piece": 2, "mat_magic_thread": 2, "mat_silk_thread": 3},
+        "materials":    {"mat_leather_piece": 2, "mat_magic_thread": 2, "mat_silk_thread": 3, "mat_magic_dust": 1},
         "result_count": 1,
-        "desc":         "가죽 조각 2개 + 마법실 2개 + 비단실 3개 → 마녀 모자",
+        "desc":         "가죽 조각 2개 + 마법실 2개 + 비단실 3개 + 마법 가루 1개 → 마녀 모자",
     },
     # 의상
     "ct_outfit_apron": {
@@ -465,9 +465,9 @@ COSTUME_RECIPES = {
     },
     "ct_shoes_magic": {
         "name":         "마법 구두 제작",
-        "materials":    {"mat_leather_piece": 3, "mat_magic_thread": 3, "mat_shiny_button": 3},
+        "materials":    {"mat_leather_piece": 3, "mat_magic_thread": 3, "mat_shiny_button": 3, "mat_magic_dust": 1},
         "result_count": 1,
-        "desc":         "가죽 조각 3개 + 마법실 3개 + 반짝이 단추 3개 → 마법 구두",
+        "desc":         "가죽 조각 3개 + 마법실 3개 + 반짝이 단추 3개 + 마법 가루 1개 → 마법 구두",
     },
     # 악세사리
     "ct_acc_bracelet": {

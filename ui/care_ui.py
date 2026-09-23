@@ -1,6 +1,7 @@
 """care_ui.py — 비전의 탑 상층 · 츄라이더의 숨은 보금자리 돌봄 UI"""
 import discord
 from ui.view_timeouts import CARE_VIEW_TIMEOUT
+from ui.expiring_view import ExpiringView
 import random
 import time as _time
 from utils.logger import setup_logger
@@ -130,7 +131,7 @@ def _result_card(title, rows, grade="Normal"):
 
 
 # ── 의장 관리 서브 View ──────────────────────────────────────────────────────
-class CostumeManageView(discord.ui.View):
+class CostumeManageView(ExpiringView):
     SLOT_LABELS = {
         "toy":       "🪄 장난감",
         "hat":       "🎀 모자",
@@ -296,7 +297,7 @@ class CostumeManageView(discord.ui.View):
 
 
 # ── 간식 주기 서브 View ──────────────────────────────────────────────────────
-class SnackFeedView(discord.ui.View):
+class SnackFeedView(ExpiringView):
     def __init__(self, player, care_manager, parent_view):
         super().__init__(timeout=CARE_VIEW_TIMEOUT)
         self.player       = player
@@ -372,7 +373,7 @@ class SnackFeedView(discord.ui.View):
         await interaction.response.edit_message(
             content=None, attachments=[], embed=_make_room_embed(self.player), view=self.parent_view
         )
-class ObserveView(discord.ui.View):
+class ObserveView(ExpiringView):
     def __init__(self, player, parent_view, *, index=0):
         super().__init__(timeout=CARE_VIEW_TIMEOUT)
         self.player = player
@@ -396,13 +397,14 @@ class ObserveView(discord.ui.View):
         details = _observation_details(self.player)
         self.index = (self.index + 1) % len(details)
         view = ObserveView(self.player, self.parent_view, index=self.index)
+        view.bind_message(interaction.message)
         await interaction.response.edit_message(attachments=[], embed=view.make_embed(), view=view)
 
     async def _done(self, interaction):
         await interaction.response.edit_message(attachments=[], embed=_make_room_embed(self.player), view=self.parent_view)
 
 
-class PettingView(discord.ui.View):
+class PettingView(ExpiringView):
     REACTIONS = [
         "손을 내밀자 츄라이더가 시선을 올립니다. 앞다리 하나가 잠깐 들렸다가 다시 바닥에 내려옵니다.",
         "흰 머리카락 사이를 천천히 쓰다듬자 어깨의 힘이 조금 풀립니다. 거미 다리 두 개도 몸 안쪽으로 접힙니다.",
@@ -432,13 +434,14 @@ class PettingView(discord.ui.View):
 
     async def _more(self, interaction):
         view = PettingView(self.player, self.care_manager, self.parent_view, step=self.step + 1)
+        view.bind_message(interaction.message)
         await interaction.response.edit_message(attachments=[], embed=view.make_embed(), view=view)
 
     async def _done(self, interaction):
         await interaction.response.edit_message(attachments=[], embed=_make_room_embed(self.player), view=self.parent_view)
 
 
-class RestingView(discord.ui.View):
+class RestingView(ExpiringView):
     def __init__(self, player, care_manager, parent_view):
         super().__init__(timeout=CARE_VIEW_TIMEOUT)
         self.player = player
@@ -471,6 +474,7 @@ class RestingView(discord.ui.View):
 
     async def _watch(self, interaction):
         view = RestingView(self.player, self.care_manager, self.parent_view)
+        view.bind_message(interaction.message)
         embed = view.make_embed()
         if not self.care_manager.get_rest_status(self.player).get("active"):
             await interaction.response.edit_message(attachments=[], embed=_make_room_embed(self.player), view=self.parent_view)
@@ -490,7 +494,7 @@ class RestingView(discord.ui.View):
 
 
 # ── 가위바위보 서브 View ─────────────────────────────────────────────────────
-class RockPaperScissorsView(discord.ui.View):
+class RockPaperScissorsView(ExpiringView):
     def __init__(self, player, care_manager, parent_view, *, rounds=0):
         super().__init__(timeout=CARE_VIEW_TIMEOUT)
         self.player = player
@@ -523,6 +527,7 @@ class RockPaperScissorsView(discord.ui.View):
             except Exception as e:
                 logger.error("놀아주기 후 저장 실패: %s", e, exc_info=True)
             next_view = RockPaperScissorsResultView(self.player, self.care_manager, self.parent_view, result=result, rounds=self.rounds + 1)
+            next_view.bind_message(interaction.message)
             await interaction.response.edit_message(attachments=[], embed=next_view.make_embed(), view=next_view)
         return cb
 
@@ -530,7 +535,7 @@ class RockPaperScissorsView(discord.ui.View):
         await interaction.response.edit_message(attachments=[], embed=_make_room_embed(self.player), view=self.parent_view)
 
 
-class RockPaperScissorsResultView(discord.ui.View):
+class RockPaperScissorsResultView(ExpiringView):
     def __init__(self, player, care_manager, parent_view, *, result, rounds):
         super().__init__(timeout=CARE_VIEW_TIMEOUT)
         self.player = player
@@ -554,6 +559,7 @@ class RockPaperScissorsResultView(discord.ui.View):
 
     async def _again(self, interaction):
         view = RockPaperScissorsView(self.player, self.care_manager, self.parent_view, rounds=self.rounds)
+        view.bind_message(interaction.message)
         embed = discord.Embed(title="🕷️🧶 한 판 더", description="이번에는 뭘 낼까요?", color=0x655A8A)
         await interaction.response.edit_message(attachments=[], embed=embed, view=view)
 
@@ -562,7 +568,7 @@ class RockPaperScissorsResultView(discord.ui.View):
 
 
 # ── 간식 제작 서브 View ──────────────────────────────────────────────────────
-class SnackCraftView(discord.ui.View):
+class SnackCraftView(ExpiringView):
     def __init__(self, player, care_manager, parent_view):
         super().__init__(timeout=CARE_VIEW_TIMEOUT)
         self.player       = player
@@ -649,7 +655,7 @@ class SnackCraftView(discord.ui.View):
 
 
 # ── 의장 제작 서브 View ──────────────────────────────────────────────────────
-class CostumeCraftView(discord.ui.View):
+class CostumeCraftView(ExpiringView):
     SLOT_LABEL = {
         "toy":       "🪄 장난감",
         "hat":       "🎀 모자",
@@ -746,7 +752,7 @@ class CostumeCraftView(discord.ui.View):
 
 
 # ── 아이템 선택 헬퍼 View ───────────────────────────────────────────────────
-class _ItemSelectView(discord.ui.View):
+class _ItemSelectView(ExpiringView):
     """Select 메뉴 하나만 가지는 임시 뷰 (ephemeral 사용용)."""
     def __init__(self, select: discord.ui.Select, confirm_cb):
         super().__init__(timeout=CARE_VIEW_TIMEOUT)
@@ -760,7 +766,7 @@ class _ItemSelectView(discord.ui.View):
 
 
 # ── 비전의 탑 생활 공간 ──────────────────────────────────────────────────────
-class TowerPlaceView(discord.ui.View):
+class TowerPlaceView(ExpiringView):
     """비전의 탑을 같은 메시지 안에서 오가는 장소 UI."""
 
     PLACES = {
@@ -846,6 +852,7 @@ class TowerPlaceView(discord.ui.View):
 
     async def _open_nest(self, interaction):
         view = CareRoomView(self.player, self.care_manager, suspicious_actor_id=self.suspicious_actor_id)
+        view.bind_message(interaction.message)
         await interaction.response.edit_message(content=None, attachments=[], embed=_make_room_embed(self.player), view=view)
 
     async def _open_generator(self, interaction):
@@ -859,11 +866,13 @@ class TowerPlaceView(discord.ui.View):
             f"오래 멈춘 발전 장치다. 중앙의 빈 홈은 수서 꽃 한 송이가 들어갈 만한 크기다.\n\n휴대 중인 수서 꽃: **{bloom_count}**"
         )
         view = TowerGeneratorView(self.player, self.care_manager, suspicious_actor_id=self.suspicious_actor_id)
+        view.bind_message(interaction.message)
         await interaction.response.edit_message(attachments=[], embed=discord.Embed(title="비전의 탑 · 수서 발전기", description=desc, color=0x46594F), view=view)
 
     def _make_facility_callback(self, facility):
         async def callback(interaction):
             view = TowerFacilityView(self.player, self.care_manager, facility=facility, return_place=self.place, suspicious_actor_id=self.suspicious_actor_id)
+            view.bind_message(interaction.message)
             await interaction.response.edit_message(attachments=[], embed=view.make_embed(), view=view)
         return callback
 
@@ -879,10 +888,11 @@ class TowerPlaceView(discord.ui.View):
             await interaction.response.edit_message(attachments=[], embed=embed, view=self)
             return
         view = TowerLiftView(self.player, self.care_manager, current_place=self.place, suspicious_actor_id=self.suspicious_actor_id)
+        view.bind_message(interaction.message)
         await interaction.response.edit_message(attachments=[], embed=view.make_embed(), view=view)
 
 
-class TowerFacilityView(discord.ui.View):
+class TowerFacilityView(ExpiringView):
     def __init__(self, player, care_manager, *, facility, return_place, suspicious_actor_id=None):
         super().__init__(timeout=CARE_VIEW_TIMEOUT)
         self.player = player
@@ -927,14 +937,16 @@ class TowerFacilityView(discord.ui.View):
         restored = restore_facility(self.player, self.facility)
         result = "낡은 부품을 맞추고 재료를 덧댄다. 잠시 뒤 설비에 불이 들어온다." if restored else "아직 설비를 복구할 수 없다. 동력과 필요한 재료를 확인해야 한다."
         view = TowerFacilityView(self.player, self.care_manager, facility=self.facility, return_place=self.return_place, suspicious_actor_id=self.suspicious_actor_id)
+        view.bind_message(interaction.message)
         await interaction.response.edit_message(attachments=[], embed=view.make_embed(result), view=view)
 
     async def _back(self, interaction):
         view = TowerPlaceView(self.player, self.care_manager, place=self.return_place, suspicious_actor_id=self.suspicious_actor_id)
+        view.bind_message(interaction.message)
         await interaction.response.edit_message(attachments=[], embed=view.make_embed(), view=view)
 
 
-class TowerGeneratorView(discord.ui.View):
+class TowerGeneratorView(ExpiringView):
     def __init__(self, player, care_manager, *, suspicious_actor_id=None):
         super().__init__(timeout=CARE_VIEW_TIMEOUT)
         self.player = player
@@ -958,10 +970,12 @@ class TowerGeneratorView(discord.ui.View):
         else:
             text = "발전기를 움직이려면 **수서 꽃 한 송이**를 휴대하고 있어야 한다."
         view = TowerGeneratorView(self.player, self.care_manager, suspicious_actor_id=self.suspicious_actor_id)
+        view.bind_message(interaction.message)
         await interaction.response.edit_message(attachments=[], embed=discord.Embed(title="비전의 탑 · 수서 발전기", description=text, color=0x46594F), view=view)
 
     async def _back(self, interaction):
         view = TowerPlaceView(self.player, self.care_manager, place="storage", suspicious_actor_id=self.suspicious_actor_id)
+        view.bind_message(interaction.message)
         await interaction.response.edit_message(attachments=[], embed=view.make_embed(), view=view)
 
 
@@ -971,7 +985,7 @@ class TowerUpperFloorView(TowerPlaceView):
         super().__init__(player, care_manager, place="upper", suspicious_actor_id=suspicious_actor_id)
 
 
-class TowerLiftView(discord.ui.View):
+class TowerLiftView(ExpiringView):
     """탑의 층을 실제로 연결하는 승강기."""
     def __init__(self, player, care_manager, *, current_place="upper", suspicious_actor_id=None):
         super().__init__(timeout=CARE_VIEW_TIMEOUT)
@@ -991,12 +1005,13 @@ class TowerLiftView(discord.ui.View):
     def _make_floor_callback(self, place):
         async def callback(interaction):
             view = TowerPlaceView(self.player, self.care_manager, place=place, suspicious_actor_id=self.suspicious_actor_id)
+            view.bind_message(interaction.message)
             await interaction.response.edit_message(attachments=[], embed=view.make_embed(), view=view)
         return callback
 
 
 # ── 메인 비전의 탑 돌봄 View ──────────────────────────────────────────────────
-class CareRoomView(discord.ui.View):
+class CareRoomView(ExpiringView):
     def __init__(self, player, care_manager, *, suspicious_actor_id=None):
         super().__init__(timeout=CARE_VIEW_TIMEOUT)
         self.player       = player
@@ -1101,6 +1116,7 @@ class CareRoomView(discord.ui.View):
     # ── 관찰 / 몸단장 / 휴식 / 접촉 ─────────────────────────────────────
     async def _on_observe(self, interaction: discord.Interaction):
         view = ObserveView(self.player, self)
+        view.bind_message(interaction.message)
         await interaction.response.edit_message(content=None, attachments=[], embed=view.make_embed(), view=view)
 
     async def _on_wash(self, interaction: discord.Interaction):
@@ -1131,6 +1147,7 @@ class CareRoomView(discord.ui.View):
             except Exception as e:
                 logger.error("휴식 시작 저장 실패: %s", e, exc_info=True)
         view = RestingView(self.player, self.care_manager, self)
+        view.bind_message(interaction.message)
         await interaction.response.edit_message(content=None, attachments=[], embed=view.make_embed(), view=view)
 
     async def _on_pet(self, interaction: discord.Interaction):
@@ -1155,6 +1172,7 @@ class CareRoomView(discord.ui.View):
             except Exception as e:
                 logger.warning("일기 기록 실패: %s", e)
         view = PettingView(self.player, self.care_manager, self, opening=opening)
+        view.bind_message(interaction.message)
         await interaction.response.edit_message(content=None, attachments=[], embed=view.make_embed(), view=view)
 
     # ── 산책 ──────────────────────────────────────────────────────────────
@@ -1228,6 +1246,7 @@ class CareRoomView(discord.ui.View):
     # ── 간식주기 ──────────────────────────────────────────────────────────
     async def _on_snack(self, interaction: discord.Interaction):
         sub_view = SnackFeedView(self.player, self.care_manager, self)
+        sub_view.bind_message(interaction.message)
         embed = discord.Embed(title="🕷️🍖 먹이기", description="츄라이더에게 줄 먹을 것을 고릅니다.", color=0x7B6545)
         await interaction.response.edit_message(
             content=None, attachments=[], embed=embed, view=sub_view
@@ -1247,6 +1266,7 @@ class CareRoomView(discord.ui.View):
             return
 
         sub_view = RockPaperScissorsView(self.player, self.care_manager, self)
+        sub_view.bind_message(interaction.message)
         embed = discord.Embed(title="🕷️🧶 놀기 — 가위바위보", description="✊ 바위 / ✌️ 가위 / ✋ 보 중 선택하셰요!", color=0x655A8A)
         await interaction.response.edit_message(
             content=None, attachments=[], embed=embed, view=sub_view
@@ -1255,6 +1275,7 @@ class CareRoomView(discord.ui.View):
     # ── 의장관리 ──────────────────────────────────────────────────────────
     async def _on_costume(self, interaction: discord.Interaction):
         sub_view = CostumeManageView(self.player, self)
+        sub_view.bind_message(interaction.message)
         rows = sub_view._build_status_rows()
         embed = discord.Embed(title="🕷️👗 의장관리", description="츄라이더의 장난감과 의장을 정리합니다.", color=0x6D596E)
         for row in rows[:5]:
@@ -1266,6 +1287,7 @@ class CareRoomView(discord.ui.View):
     # ── 간식제작 ──────────────────────────────────────────────────────────
     async def _on_craft_snack(self, interaction: discord.Interaction):
         sub_view = SnackCraftView(self.player, self.care_manager, self)
+        sub_view.bind_message(interaction.message)
         file = _result_card(
             "🍳 간식제작",
             [{"label": "안내", "value": "✅ = 재료 충분 / ❌ = 재료 부족\n제작할 간식을 선택하셰요."}],
@@ -1277,6 +1299,7 @@ class CareRoomView(discord.ui.View):
     # ── 의장제작 ──────────────────────────────────────────────────────────
     async def _on_craft_costume(self, interaction: discord.Interaction):
         sub_view = CostumeCraftView(self.player, self.care_manager, self)
+        sub_view.bind_message(interaction.message)
         file = _result_card(
             "✂️ 의장제작",
             [{"label": "안내", "value": "✅ = 재료 충분 / ❌ = 재료 부족\n제작할 의장을 선택하셰요."}],
@@ -1286,10 +1309,4 @@ class CareRoomView(discord.ui.View):
         )
 
     async def on_timeout(self):
-        for child in self.children:
-            child.disabled = True
-        if self._message:
-            try:
-                await self._message.edit(view=self)
-            except Exception as e:
-                logger.debug("타임아웃 뷰 업데이트 실패 (정상적일 수 있음): %s", e)
+        await super().on_timeout()

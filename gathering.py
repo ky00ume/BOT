@@ -135,6 +135,15 @@ GATHER_ZONE_ITEMS = {
 }
 
 
+# 월드 하위 지역 이름을 기존 군락 버섯 풀에 연결한다.
+GATHER_ZONE_ITEMS["마이코니드 군락 외곽"] = GATHER_ZONE_ITEMS["버섯 군락지"]
+
+# 광맥별 산출물. 고급 광맥은 이후 지역 해금과 함께 별도로 확장한다.
+MINE_ZONE_ITEM_IDS = {
+    "그림포지 광맥": {"copper_ore", "tin_ore", "iron_ore", "coal", "silver_ore", "gold_ore", "mithril_ore", "gem_ruby", "gem_sapphire", "gem_emerald", "sulfur"},
+}
+
+
 def get_current_season() -> str:
     import datetime
     month = datetime.datetime.now().month
@@ -291,8 +300,8 @@ class GatheringEngine:
         else:
             await ctx.send(ansi(f"  {C.RED}✖ 인벤토리 부족으로 {item['name']}을(를) 주울 수 없슴미댜!{C.R}"))
 
-    async def mine(self, ctx):
-        """채광을 수행합니다."""
+    async def mine(self, ctx, zone_name: str = None):
+        """채광을 수행합니다. zone_name이 있으면 해당 광맥 산출물로 제한합니다."""
         energy_cost = 10
         if not self.player.consume_energy(energy_cost):
             await ctx.send(ansi(
@@ -305,6 +314,9 @@ class GatheringEngine:
 
         str_stat = self.player.base_stats.get("str", 10)
         available = [i for i in MINE_ITEMS if str_stat >= i["str_req"]]
+        zone_ids = MINE_ZONE_ITEM_IDS.get(zone_name)
+        if zone_ids:
+            available = [i for i in available if i["id"] in zone_ids]
 
         # 채광 스킬 랭크에 따른 보석 필터링
         mining_rank = self.player.skill_ranks.get("mining", "연습")

@@ -28,21 +28,21 @@ HUNTING_ZONE_DATA = {
     "드레드 할로우": {
         "name": "드레드 할로우",
         "level_range": (1, 5),
-        "desc": "초보 모험가들이 자주 찾는 작은 숲. 방울꽃이 피어 있고 소형 몬스터들이 서식한다.",
+        "desc": "거대한 수서 나무와 발광 식물이 뒤엉킨 숲. 초급 몬스터가 자주 모습을 드러낸다.",
         "monsters": ["슬라임", "작은 박쥐", "고블린"],
         "emoji": "🌿",
     },
     "폐허가 된 마을": {
         "name": "폐허가 된 마을",
         "level_range": (5, 15),
-        "desc": "고블린 무리가 점령한 어두운 동굴. 보물을 숨겨 놓은 것 같다.",
+        "desc": "에본레이크 가장자리의 버려진 정착지. 무너진 건물 사이로 위험한 무리가 숨어든다.",
         "monsters": ["고블린", "고블린 대장", "동굴 박쥐"],
-        "emoji": "🗝️",
+        "emoji": "🏚️",
     },
     "그림포지": {
         "name": "그림포지",
         "level_range": (10, 25),
-        "desc": "소금 결정이 빛나는 광산. 언데드 광부들이 배회한다.",
+        "desc": "듀에르가 유적과 오래된 작업장이 이어진 위험 지역. 광맥 주변에도 적이 배회한다.",
         "monsters": ["해골 광부", "좀비 광부", "암흑 결정"],
         "emoji": "⛏️",
     },
@@ -50,41 +50,60 @@ HUNTING_ZONE_DATA = {
 
 # ── 채집터 데이터 ─────────────────────────────────────────────────────────────
 GATHERING_ZONE_DATA = {
-    "수서 나무 숲": {
-        "name": "수서 나무 숲",
-        "desc": "드레드 할로우 주변의 초지. 약초와 야생 꽃이 풍부하다.",
-        "items": ["약초", "들꽃", "버섯", "야생 열매"],
-        "emoji": "🌸",
-    },
-    "지하 광맥": {
-        "name": "지하 광맥",
-        "desc": "마이코니드 군락과 비전의 탑 사이 바위지대의 광맥. 다양한 광석을 채굴할 수 있다.",
-        "items": ["구리 광석", "철광석", "석탄", "은 광석"],
-        "emoji": "🪨",
-    },
     "마이코니드 군락 외곽": {
         "name": "마이코니드 군락 외곽",
-        "desc": "군락 바깥의 거대한 버섯 숲. 다양한 버섯이 자생한다.",
+        "desc": "군락 바로 바깥의 안전한 버섯숲. 식용 버섯부터 희귀 균류까지 포자 사이에서 찾을 수 있다.",
         "items": ["버섯", "표고버섯", "발광버섯", "독버섯", "나이트라이트 버섯", "팀마스크", "블루캡", "비버뱅", "토치스톡", "서서 꽃"],
+        "activities": ("gather",),
         "emoji": "🍄",
+    },
+    "수서 나무 숲": {
+        "name": "수서 나무 숲",
+        "desc": "드레드 할로우를 감싼 거대한 수서 나무 숲. 약초와 야생 식물, 목재를 얻기 좋다.",
+        "items": ["약초", "들꽃", "버섯", "야생 열매"],
+        "activities": ("gather", "woodcut"),
+        "emoji": "🌿",
+    },
+    "그림포지 광맥": {
+        "name": "그림포지 광맥",
+        "desc": "그림포지 작업장 아래로 이어지는 오래된 광맥. 철과 귀금속, 드물게 미스릴이 섞여 나온다.",
+        "items": ["구리 광석", "철광석", "석탄", "은 광석", "금 광석", "미스릴 광석"],
+        "activities": ("mine",),
+        "emoji": "⛏️",
     },
 }
 
 # ── 낚시터 데이터 ─────────────────────────────────────────────────────────────
 FISHING_ZONE_DATA = {
-    "에본레이크": {
-        "name": "에본레이크",
-        "desc": "언더다크를 흐르는 신비로운 에본레이크. 어두운 물속에 희귀한 물고기가 산다.",
-        "fish": ["장어", "메기", "지하 붕어"],
+    "에본레이크 북안": {
+        "name": "에본레이크 북안",
+        "desc": "검은 호수의 비교적 잔잔한 북쪽 물가. 입문 낚시에 알맞다.",
         "has_silen": False,
         "emoji": "🎣",
     },
+    "에본레이크 얕은 물가": {
+        "name": "에본레이크 얕은 물가",
+        "desc": "돌과 수초가 드러난 얕은 물가. 작은 물고기와 가재가 자주 걸린다.",
+        "has_silen": False,
+        "emoji": "🐟",
+    },
+    "에본레이크 선착장": {
+        "name": "에본레이크 선착장",
+        "desc": "폐허가 된 정착지로 오가는 낡은 선착장. 깊은 물의 큰 어종까지 노릴 수 있다.",
+        "has_silen": False,
+        "emoji": "⚓",
+    },
     "곪아가는 만": {
         "name": "곪아가는 만",
-        "desc": "에본레이크 아래쪽에 숨은 습한 만. 조용하지만 낯선 생물의 기척이 번진다.",
-        "fish": ["황금잉어", "장어", "지하 붕어"],
+        "desc": "절벽 아래 숨은 쿠오토아의 만. 희귀하고 기묘한 어종이 올라온다.",
         "has_silen": False,
         "emoji": "🌊",
+    },
+    "그림포지 용암지대": {
+        "name": "그림포지 용암지대",
+        "desc": "열기와 광물이 스며든 그림포지의 특수 수역. 평범한 호수와 전혀 다른 생물이 산다.",
+        "has_silen": False,
+        "emoji": "🌋",
     },
 }
 
@@ -331,32 +350,53 @@ class WorldMapView(View):
 
     def _build_buttons(self):
         self.clear_items()
-        town_btn = Button(label="마이코니드 군락", style=discord.ButtonStyle.secondary, emoji="🏘️")
-        town_btn.callback = self._back_to_town
-        self.add_item(town_btn)
+        from movement import MAP_NODES
+        from world_activities import activities_for
 
-        for zone_name, zone in HUNTING_ZONE_DATA.items():
-            btn = Button(label=zone_name, style=discord.ButtonStyle.danger, emoji=zone["emoji"])
-            btn.callback = self._make_hunting_callback(zone_name)
+        current = getattr(self.player, "current_location", "마이코니드 군락")
+        if current == "마이코니드 군락":
+            town_btn = Button(label="군락 안으로", style=discord.ButtonStyle.secondary, emoji="🏘️")
+            town_btn.callback = self._back_to_town
+            self.add_item(town_btn)
+
+        for activity in activities_for(current):
+            kind = activity["kind"]
+            style = {
+                "hunt": discord.ButtonStyle.danger,
+                "gather": discord.ButtonStyle.success,
+                "mine": discord.ButtonStyle.success,
+                "fish": discord.ButtonStyle.primary,
+            }[kind]
+            btn = Button(label=activity["label"], style=style, emoji=activity["emoji"])
+            if kind == "hunt":
+                btn.callback = self._make_hunting_callback(activity["zone"])
+            elif kind in ("gather", "mine"):
+                btn.callback = self._make_gather_callback(activity["zone"])
+            else:
+                btn.callback = self._make_fishing_callback(activity["zone"])
             self.add_item(btn)
 
-        for zone_name, zone in GATHERING_ZONE_DATA.items():
-            btn = Button(label=zone_name, style=discord.ButtonStyle.success, emoji=zone["emoji"])
-            btn.callback = self._make_gather_callback(zone_name)
-            self.add_item(btn)
-
-        for zone_name, zone in FISHING_ZONE_DATA.items():
-            btn = Button(label=zone_name, style=discord.ButtonStyle.primary, emoji=zone["emoji"])
-            btn.callback = self._make_fishing_callback(zone_name)
-            self.add_item(btn)
+        node = MAP_NODES.get(current)
+        if node:
+            for destination in node.get("adjacent", []):
+                # 탑↔군락은 전용 생활 이동로가 있으므로 월드맵 순간 이동 버튼과 중복하지 않는다.
+                if {current, destination} == {"비전의 탑", "마이코니드 군락"}:
+                    continue
+                dest = MAP_NODES[destination]
+                btn = Button(label=f"{destination}로 이동", style=discord.ButtonStyle.secondary, emoji=dest["icon"])
+                btn.callback = self._make_travel_callback(destination)
+                self.add_item(btn)
 
     def _make_banner_file(self) -> discord.File:
-        """언더다크 배너 이미지를 생성한다."""
+        """현재 월드 위치와 그곳에서 할 수 있는 활동을 보여준다."""
+        from movement import MAP_NODES
+        current = getattr(self.player, "current_location", "마이코니드 군락")
+        node = MAP_NODES.get(current, {"name": current, "desc": UNDERDARK_DESC})
         return _render_banner(
-            location_name="언더다크",
-            description=UNDERDARK_DESC,
+            location_name=node.get("name", current),
+            description=node.get("desc", UNDERDARK_DESC),
             zone_type="town",
-            zone_id="언더다크",
+            zone_id=current,
         )
 
     async def send(self, channel_or_interaction, edit=False):
@@ -377,6 +417,29 @@ class WorldMapView(View):
         from village import village_manager as vm
         view = VisionTownView(self.player, self.aff_manager, self.npc_manager_ref, vm)
         await view.send(interaction, edit=True)
+
+    def _make_travel_callback(self, destination: str):
+        async def callback(interaction: discord.Interaction):
+            import app_context
+            movement = app_context.get("movement_system")
+            if movement is None:
+                movement = getattr(getattr(interaction.client, "ctx", None), "movement_system", None)
+            if movement is None:
+                await interaction.response.send_message("이동 시스템을 찾을 수 없습니다.", ephemeral=True)
+                return
+            before = movement._get_location()
+            result = movement.move_to(interaction.user.id, destination)
+            after = movement._get_location()
+            if after != destination or before == after:
+                await interaction.response.send_message(str(result), ephemeral=True)
+                return
+            try:
+                app_context.get_save_manager().save(self.player)
+            except Exception:
+                logger.warning("town_ui: 월드 이동 저장 실패", exc_info=True)
+            view = WorldMapView(self.player, self.aff_manager, self.npc_manager_ref)
+            await view.send(interaction, edit=True)
+        return callback
 
     def _make_hunting_callback(self, zone_name: str):
         async def callback(interaction: discord.Interaction):
@@ -525,13 +588,20 @@ class GatheringZoneView(View):
         self._build_buttons()
 
     def _build_buttons(self):
-        gather_btn = Button(label="채집", style=discord.ButtonStyle.success, emoji="🌿")
-        gather_btn.callback = self._gather_callback
-        self.add_item(gather_btn)
-
-        mine_btn = Button(label="채광", style=discord.ButtonStyle.success, emoji="⛏️")
-        mine_btn.callback = self._mine_callback
-        self.add_item(mine_btn)
+        zone = GATHERING_ZONE_DATA.get(self.zone_name, {})
+        activities = zone.get("activities", ("gather", "mine"))
+        if "gather" in activities:
+            gather_btn = Button(label="채집", style=discord.ButtonStyle.success, emoji="🌿")
+            gather_btn.callback = self._gather_callback
+            self.add_item(gather_btn)
+        if "woodcut" in activities:
+            wood_btn = Button(label="벌목", style=discord.ButtonStyle.success, emoji="🪓")
+            wood_btn.callback = self._woodcut_callback
+            self.add_item(wood_btn)
+        if "mine" in activities:
+            mine_btn = Button(label="채광", style=discord.ButtonStyle.success, emoji="⛏️")
+            mine_btn.callback = self._mine_callback
+            self.add_item(mine_btn)
 
         back_btn = Button(label="돌아간다", style=discord.ButtonStyle.secondary, emoji="◀️")
         back_btn.callback = self._back_callback
@@ -572,10 +642,22 @@ class GatheringZoneView(View):
         except Exception:
             logger.warning('town_ui: GatheringZoneView._gather_callback delete_original_response 실패', exc_info=True)
 
+    async def _woodcut_callback(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        import app_context
+        await app_context.get_gathering_engine().woodcut(interaction.channel)
+        app_context.get_save_manager().save(app_context.get_player())
+        new_view = GatheringZoneView(self.zone_name, self.player, self.aff_manager, self.npc_manager_ref)
+        await new_view.send(interaction.channel)
+        try:
+            await interaction.delete_original_response()
+        except Exception:
+            logger.warning('town_ui: GatheringZoneView._woodcut_callback delete_original_response 실패', exc_info=True)
+
     async def _mine_callback(self, interaction: discord.Interaction):
         await interaction.response.defer()
         import app_context
-        await app_context.get_gathering_engine().mine(interaction.channel)
+        await app_context.get_gathering_engine().mine(interaction.channel, zone_name=self.zone_name)
         app_context.get_save_manager().save(app_context.get_player())
         new_view = GatheringZoneView(self.zone_name, self.player, self.aff_manager, self.npc_manager_ref)
         await new_view.send(interaction.channel)

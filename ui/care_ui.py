@@ -440,40 +440,140 @@ class PettingView(ExpiringView):
         ("🤝 손", "hand"),
         ("💨 전부", "all"),
     ]
+    # Each spot has several variants per stroke depth. The same three-click session can
+    # therefore play differently even when the player chooses the same body part.
     REACTIONS = {
         "head": [
-            "흰 머리카락 사이를 천천히 쓸어내립니다. 츄라이더가 눈만 들어 손을 확인합니다.",
-            "정수리부터 귀 뒤까지 다시 쓰다듬자 어깨의 힘이 풀리고 고개가 손바닥 쪽으로 조금 기웁니다.",
-            "세 번째 손길에는 아예 눈을 반쯤 감고 머리를 손바닥에 맡깁니다. 앞다리도 몸 안쪽으로 편하게 접힙니다.",
+            [
+                "흰 머리카락 사이를 천천히 쓸어내립니다. 츄라이더가 눈만 들어 손을 확인합니다.",
+                "정수리를 손바닥으로 가볍게 눌러 쓸어줍니다. 귀 끝이 잠깐 움직이고 시선이 손끝을 따라옵니다.",
+                "앞머리를 넘겨주듯 쓰다듬자 고개를 아주 조금 숙입니다. 거미 다리는 아직 경계하듯 가지런히 서 있습니다.",
+                "머리 위에 손을 올리자 처음에는 굳어 있다가, 손길이 움직이자 슬쩍 눈을 감았다 뜹니다.\n“조금만 하셰요...”",
+            ],
+            [
+                "정수리부터 귀 뒤까지 다시 쓰다듬자 어깨의 힘이 풀리고 고개가 손바닥 쪽으로 조금 기웁니다.",
+                "귀 뒤쪽을 손끝으로 살살 긁어주자 앞다리 하나가 바닥을 두 번 두드리고 멈춥니다.",
+                "머리카락을 결대로 천천히 정리해주자 눈꺼풀이 점점 무거워집니다.\n“거긴 괜찮슴미댜.”",
+                "이번에는 먼저 고개가 손쪽으로 옵니다. 드로우 상체는 태연하지만 복부가 바닥 가까이 내려갑니다.",
+            ],
+            [
+                "세 번째 손길에는 아예 눈을 반쯤 감고 머리를 손바닥에 맡깁니다. 앞다리도 몸 안쪽으로 편하게 접힙니다.",
+                "손을 떼려는 순간 고개가 아주 조금 따라옵니다. 잠깐 더 있으라는 듯 손바닥 아래에 그대로 머뭅니다.",
+                "머리카락이 잔뜩 흐트러졌는데도 고칠 생각이 없습니다. 대신 이마를 손바닥에 살짝 기대고 가만히 있습니다.",
+                "마지막으로 귀 뒤를 긁어주자 눈을 완전히 감습니다.\n“이건... 더 해도 됩니댜.”",
+            ],
         ],
         "belly": [
-            "거미 복부 위를 조심스럽게 쓸자 여덟 다리가 순간 굳었다가 곧 다시 바닥을 짚습니다.",
-            "복부 옆을 둥글게 쓰다듬자 앞다리 두 개가 바닥을 짧게 꿈질거립니다.",
-            "익숙해졌는지 복부를 조금 더 내려놓습니다. 드로우 상체는 아무렇지 않은 척하지만 다리 끝이 느슨해집니다.",
+            [
+                "거미 복부 위를 조심스럽게 쓸자 여덟 다리가 순간 굳었다가 곧 다시 바닥을 짚습니다.",
+                "복부 옆면을 손바닥으로 살짝 쓸어줍니다. 츄라이더가 몸을 반 박자 늦게 움찔합니다.",
+                "복부 위에 손을 얹자 앞다리 둘이 동시에 들립니다. 몇 초 지나자 천천히 다시 내려놓습니다.",
+                "손끝이 복부에 닿자 뒤를 힐끗 돌아봅니다.\n“거긴 갑자기 만지면 놀람미댜.”",
+            ],
+            [
+                "복부 옆을 둥글게 쓰다듬자 앞다리 두 개가 바닥을 짧게 꿈질거립니다.",
+                "이번에는 복부 아래쪽을 천천히 쓸어줍니다. 여덟 다리의 힘이 조금씩 풀립니다.",
+                "손바닥 전체로 부드럽게 원을 그리자 복부가 바닥에 더 편하게 내려앉습니다.\n“이상한데 싫진 않슴미댜.”",
+                "두 번째에는 피하지 않습니다. 대신 앞다리가 손목 근처에서 가만히 방향을 바꿉니다.",
+            ],
+            [
+                "익숙해졌는지 복부를 조금 더 내려놓습니다. 드로우 상체는 아무렇지 않은 척하지만 다리 끝이 느슨해집니다.",
+                "세 번째에는 아예 몸을 맡기듯 복부를 바닥에 붙입니다. 여덟 다리가 사방으로 편하게 퍼집니다.",
+                "손이 멈추자 복부 끝이 한 번 작게 흔들립니다. 다시 움직이라는 뜻처럼 보입니다.",
+                "복부를 마지막으로 길게 쓸어주자 눈을 가늘게 뜨고 돌아봅니다.\n“이번에는 잘했슴미댜.”",
+            ],
         ],
         "tail": [
-            "복부 끝, 꼬리처럼 보이는 부분을 손끝으로 살짝 쓸자 츄라이더가 홱 뒤를 돌아봅니다.",
-            "이번에는 놀라지 않고 복부 끝만 작게 움찔합니다. 시선은 여전히 손을 따라옵니다.",
-            "세 번째에는 몸을 피하지 않습니다. 대신 뒷다리 하나가 손목 쪽으로 슬쩍 다가옵니다.",
+            [
+                "복부 끝, 꼬리처럼 보이는 부분을 손끝으로 살짝 쓸자 츄라이더가 홱 뒤를 돌아봅니다.",
+                "복부 끝을 손가락 하나로 건드리자 뒷다리 둘이 동시에 움찔합니다. 표정에는 '왜 거기?'가 그대로 드러납니다.",
+                "꼬리처럼 보이는 끝부분을 살살 문지르자 몸 전체가 아주 짧게 들썩입니다.",
+                "복부 끝에 손이 닿자 바로 뒤를 돌아봅니다.\n“거기 만질 줄은 몰랐슴미댜.”",
+            ],
+            [
+                "이번에는 놀라지 않고 복부 끝만 작게 움찔합니다. 시선은 여전히 손을 따라옵니다.",
+                "두 번째 손길에는 뒤돌아보지 않습니다. 다만 뒷다리 하나가 손 가까이 와서 가만히 멈춥니다.",
+                "조금 더 오래 쓸어주자 복부 끝의 긴장이 풀리고 다리 움직임도 잦아듭니다.",
+                "이번에는 피하지 않습니다.\n“조심해서 하면 괜찮슴미댜.”",
+            ],
+            [
+                "세 번째에는 몸을 피하지 않습니다. 대신 뒷다리 하나가 손목 쪽으로 슬쩍 다가옵니다.",
+                "마지막에는 복부 끝을 맡긴 채 다른 곳을 바라봅니다. 완전히 익숙해진 모양입니다.",
+                "손길을 따라 복부가 아주 미세하게 움직입니다. 뒤돌아보던 경계도 이제 없습니다.",
+                "세 번째로 살살 쓸어주자 한숨처럼 숨을 내쉽니다.\n“이제 안 놀람미댜.”",
+            ],
         ],
         "legs": [
-            "앞다리 하나를 따라 관절 사이를 천천히 쓸어줍니다. 다리 끝이 손가락을 피해 갔다가 다시 돌아옵니다.",
-            "이번에는 두 다리를 번갈아 쓰다듬습니다. 바닥을 두드리던 움직임이 점점 느려집니다.",
-            "세 번째에는 여러 다리가 한꺼번에 몸 안쪽으로 접힙니다. 완전히 편해진 자세입니다.",
+            [
+                "앞다리 하나를 따라 관절 사이를 천천히 쓸어줍니다. 다리 끝이 손가락을 피해 갔다가 다시 돌아옵니다.",
+                "가장 앞쪽 다리 하나를 살짝 잡고 관절을 따라 문질러줍니다. 끝부분이 손등을 톡 건드립니다.",
+                "다리 하나씩 손끝으로 훑자 여덟 다리가 제각각 다른 방향으로 꿈질거립니다.",
+                "앞다리를 쓰다듬자 끝부분이 손가락을 툭 밀어냅니다.\n“간지럽슴미댜.”",
+            ],
+            [
+                "이번에는 두 다리를 번갈아 쓰다듬습니다. 바닥을 두드리던 움직임이 점점 느려집니다.",
+                "관절 사이를 손끝으로 눌러주자 앞다리 둘이 차례로 힘을 뺍니다. 뒤쪽 다리도 슬쩍 가까이 모입니다.",
+                "다리 안쪽을 살살 긁어주자 바닥을 타닥거리던 소리가 멎습니다.\n“거기 시원합니댜.”",
+                "두 번째에는 먼저 다리 하나를 내밉니다. 어느 다리를 만져달라는 건지 꽤 분명합니다.",
+            ],
+            [
+                "세 번째에는 여러 다리가 한꺼번에 몸 안쪽으로 접힙니다. 완전히 편해진 자세입니다.",
+                "여덟 다리를 차례로 쓰다듬고 나니 몸 전체가 낮아집니다. 앞다리 하나는 아예 손목 위에 얹혀 있습니다.",
+                "마지막 다리까지 문질러주자 모든 다리가 느슨하게 접힙니다. 움직일 생각이 없어 보입니다.",
+                "세 번째에는 다리 끝이 손가락을 살짝 감쌉니다.\n“이제 됐... 아니 조금 더 해도 됩니댜.”",
+            ],
         ],
         "hand": [
-            "드로우의 손등을 엄지로 천천히 쓸어줍니다. 츄라이더가 손을 빼지 않고 가만히 내려다봅니다.",
-            "손가락 사이를 조심스럽게 문지르자 손끝이 아주 조금 마주 잡힙니다.",
-            "세 번째에는 먼저 손가락을 걸어옵니다. 표정은 태연하지만 놓을 생각은 없어 보입니다.",
+            [
+                "드로우의 손등을 엄지로 천천히 쓸어줍니다. 츄라이더가 손을 빼지 않고 가만히 내려다봅니다.",
+                "손바닥 가장자리를 손끝으로 쓸자 손가락이 반사적으로 오므라듭니다.",
+                "손목부터 손등까지 천천히 쓰다듬자 츄라이더가 자기 손과 플레이어의 손을 번갈아 봅니다.",
+                "손끝을 살짝 만지자 눈썹이 올라갑니다.\n“손도 쓰다듬는 검미까?”",
+            ],
+            [
+                "손가락 사이를 조심스럽게 문지르자 손끝이 아주 조금 마주 잡힙니다.",
+                "두 번째에는 손을 빼기는커녕 손바닥을 조금 펴줍니다. 엄지가 손등을 천천히 따라옵니다.",
+                "손가락 하나씩 가볍게 눌러주자 마지막에는 손을 느슨하게 맞잡습니다.\n“따뜻함미댜.”",
+                "손등을 다시 쓸자 이번에는 먼저 손을 뒤집어 손바닥을 보여줍니다.",
+            ],
+            [
+                "세 번째에는 먼저 손가락을 걸어옵니다. 표정은 태연하지만 놓을 생각은 없어 보입니다.",
+                "손바닥을 맞댄 채 가만히 있자 손가락이 천천히 맞물립니다. 여덟 다리도 편하게 접혀 있습니다.",
+                "마지막으로 손등을 쓸어주자 손목을 손바닥 쪽에 기대고 그대로 멈춥니다.",
+                "세 번째 손길에는 먼저 손을 내밉니다.\n“이번엔 제가 잡겠슴미댜.”",
+            ],
         ],
         "all": [
-            "머리부터 복부와 다리까지 와르르 북박북박 쓰다듬습니다. 츄라이더가 무슨 일이냐는 얼굴로 여덟 다리를 한꺼번에 버둥거립니다.",
-            "이번에는 양손으로 머리, 손, 복부, 다리를 정신없이 북박북박 훑습니다. 도망가려던 다리도 어느새 다시 가까이 붙습니다.",
-            "마지막으로 온몸을 와르르 북박북박 쓰다듬자 흰 머리카락은 헝클어지고 여덟 다리는 전부 제멋대로 접혀 있습니다. 츄라이더는 체념한 얼굴로 손에 기대 있습니다.",
+            [
+                "머리부터 복부와 다리까지 와르르 북박북박 쓰다듬습니다. 츄라이더가 무슨 일이냐는 얼굴로 여덟 다리를 한꺼번에 버둥거립니다.",
+                "양손으로 머리와 손, 복부와 다리를 한꺼번에 와르르 훑습니다. 츄라이더의 표정이 잠깐 완전히 멈춥니다.",
+                "어디 하나 고르지 않고 온몸을 북박북박 문지릅니다. 여덟 다리가 순식간에 사방으로 펼쳐집니다.\n“잠깐만욧!”",
+                "머리카락을 헝클고 복부를 쓸고 다리를 와르르 만집니다. 츄라이더가 몸을 수습하려다 포기합니다.",
+            ],
+            [
+                "이번에는 양손으로 머리, 손, 복부, 다리를 정신없이 북박북박 훑습니다. 도망가려던 다리도 어느새 다시 가까이 붙습니다.",
+                "두 번째 와르르 쓰다듬기가 시작되자 츄라이더가 미리 몸을 낮춥니다. 그래도 머리카락은 금세 엉망이 됩니다.",
+                "온몸을 번갈아 북박북박 문지르자 처음의 당황은 사라지고 여덟 다리가 손을 피해 장난치듯 움직입니다.\n“또 합니댜?”",
+                "손 두 개가 사방에서 움직이자 앞다리 둘이 플레이어 손을 붙잡으려 하지만 나머지 다리는 이미 편하게 접혀 있습니다.",
+            ],
+            [
+                "마지막으로 온몸을 와르르 북박북박 쓰다듬자 흰 머리카락은 헝클어지고 여덟 다리는 전부 제멋대로 접혀 있습니다. 츄라이더는 체념한 얼굴로 손에 기대 있습니다.",
+                "세 번째 와르르가 끝나자 머리카락은 폭발하고 다리는 뒤엉켰습니다. 츄라이더가 한참 플레이어를 보다가 그대로 기대버립니다.",
+                "온몸을 마지막으로 북박북박 훑자 여덟 다리가 잠깐 버둥거리다가 한꺼번에 툭 풀립니다.\n“졌슴미댜...”",
+                "마지막에는 도망가기는커녕 몸을 낮춰 손길을 전부 받아냅니다. 다 끝난 뒤에야 헝클어진 머리카락을 만지며 한숨을 쉽니다.",
+            ],
         ],
     }
+    COMBO_REACTIONS = {
+        ("head", "head", "head"): "세 번 내내 머리만 쓰다듬자 이제 손이 올라오기 전부터 먼저 고개를 낮춥니다.\n“여기가 제일 좋슴미댜.”",
+        ("belly", "belly", "belly"): "복부만 세 번 연달아 쓰다듬자 완전히 바닥에 엎드려 버립니다. 여덟 다리는 힘없이 사방으로 퍼져 있습니다.",
+        ("legs", "legs", "legs"): "여덟 다리를 하나하나 오래 만져준 끝에 모든 다리가 몸 안쪽으로 포개집니다. 움직일 생각이 완전히 사라진 모양입니다.",
+        ("hand", "hand", "hand"): "손만 계속 만지자 세 번째에는 츄라이더가 먼저 손가락을 깊게 맞잡습니다.\n“안 놓을 검미댜.”",
+        ("tail", "tail", "tail"): "세 번 모두 복부 끝만 만지자 처음의 놀람은 사라지고 오히려 손길이 멈출 때마다 뒤를 돌아봅니다.",
+        ("all", "all", "all"): "세 번 연속 와르르 북박북박 당한 츄라이더는 완전히 헝클어진 채 바닥에 퍼져 있습니다.\n“너무 많이 했슴미댜...”",
+    }
 
-    def __init__(self, player, care_manager, parent_view, *, step=0, history=None, opening=None):
+    def __init__(self, player, care_manager, parent_view, *, step=0, history=None, opening=None, reaction=None):
         super().__init__(timeout=CARE_VIEW_TIMEOUT)
         self.player = player
         self.care_manager = care_manager
@@ -481,6 +581,7 @@ class PettingView(ExpiringView):
         self.step = step
         self.history = list(history or [])
         self.opening = opening
+        self.reaction = reaction
         if step < self.MAX_STROKES:
             for idx, (label, spot) in enumerate(self.SPOTS):
                 btn = discord.ui.Button(label=label, style=discord.ButtonStyle.primary if spot == "all" else discord.ButtonStyle.secondary, row=idx // 3)
@@ -490,14 +591,42 @@ class PettingView(ExpiringView):
         done.callback = self._done
         self.add_item(done)
 
+    def _pick_reaction(self, spot: str, next_step: int, history: list[str]) -> str:
+        full_history = history + [spot]
+        if next_step == self.MAX_STROKES:
+            combo = self.COMBO_REACTIONS.get(tuple(full_history))
+            if combo and random.random() < 0.65:
+                return combo
+        pool = list(self.REACTIONS[spot][next_step - 1])
+        state = get_care_state(self.player)
+        # Small state-specific variants make frequently repeated petting feel tied to the day.
+        if spot == "head" and self.player.fatigue >= 65:
+            pool.append("피곤한지 머리를 쓰다듬는 동안 눈을 오래 감고 있습니다. 손이 멈추자 이마를 손바닥에 그대로 기댑니다.\n“졸림미댜...”")
+        if spot in {"belly", "legs", "all"} and state["cleanliness"] < 35:
+            pool.append("쓰다듬는 손끝에 바깥에서 묻혀 온 먼지가 조금 묻습니다. 츄라이더가 모른 척 시선을 피합니다.\n“그건 못 본 걸로 합니댜.”")
+        if spot == "hand" and state["comfort"] >= 75:
+            pool.append("손을 만지기도 전에 먼저 손가락을 걸어옵니다. 익숙한 동작처럼 자연스럽습니다.\n“손 주셰요.”")
+        if spot == "all" and state["comfort"] >= 75:
+            pool.append("와르르 손이 덮쳐오자 놀라기는커녕 몸을 낮춰 받아낼 준비부터 합니다. 여덟 다리가 들썩들썩 움직입니다.\n“이번엔 안 도망감미댜.”")
+
+        flags = getattr(self.player, "_flags", {})
+        recent = flags.setdefault("pet_reaction_recent", [])
+        candidates = [line for line in pool if line not in recent[-4:]] or pool
+        picked = random.choice(candidates)
+        recent.append(picked)
+        flags["pet_reaction_recent"] = recent[-8:]
+        return picked
+
     def make_embed(self):
         if self.step == 0:
             text = "어디를 쓰다듬을지 고릅니다. 세 번까지 이어서 쓰다듬을 수 있습니다."
         else:
-            spot = self.history[-1]
-            text = self.REACTIONS[spot][self.step - 1]
+            text = self.reaction or self.REACTIONS[self.history[-1]][self.step - 1][0]
         embed = discord.Embed(title="🕷️🫳 쓰다듬기", description=text, color=0x8C668A)
         embed.add_field(name="쓰다듬기", value=f"**{self.step}/{self.MAX_STROKES}**", inline=True)
+        if self.history:
+            labels = {spot: label.split(" ", 1)[1] for label, spot in self.SPOTS}
+            embed.add_field(name="이번 세션", value=" → ".join(labels[s] for s in self.history), inline=False)
         if self.step >= self.MAX_STROKES:
             embed.set_footer(text="충분히 쓰다듬었습니다.")
         return embed
@@ -505,8 +634,14 @@ class PettingView(ExpiringView):
     def _make_spot_cb(self, spot: str):
         async def cb(interaction):
             next_step = min(self.MAX_STROKES, self.step + 1)
-            view = PettingView(self.player, self.care_manager, self.parent_view, step=next_step, history=self.history + [spot])
+            reaction = self._pick_reaction(spot, next_step, self.history)
+            history = self.history + [spot]
+            view = PettingView(self.player, self.care_manager, self.parent_view, step=next_step, history=history, reaction=reaction)
             view.bind_message(getattr(interaction, "message", None))
+            try:
+                save_player_to_db(self.player)
+            except Exception as e:
+                logger.warning("쓰다듬기 반응 기록 저장 실패: %s", e)
             await interaction.response.edit_message(attachments=[], embed=view.make_embed(), view=view)
         return cb
 

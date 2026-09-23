@@ -5,8 +5,8 @@ from ui_theme import C, ansi, header_box, divider
 # ─── 맵 구조 ───────────────────────────────────────────────────────────────
 # 각 노드: 이름, 설명, 레벨 요구, 아이콘, 인접 노드 목록
 MAP_NODES = {
-    "비전의 탑": {"name":"비전의 탑", "icon":"🏰", "desc":"에본레이크 남서쪽 절벽에 선 츄라이더의 집이자 생활 거점.", "level":1, "hunting_available":False, "adjacent":["드레드 할로우", "에본레이크"]},
-    "마이코니드 군락": {"name":"마이코니드 군락", "icon":"🍄", "desc":"발광버섯과 포자 속에 자리한 언더다크의 안전한 생활 거점.", "level":1, "hunting_available":False, "adjacent":["드레드 할로우", "에본레이크", "비버뱅 군락"]},
+    "비전의 탑": {"name":"비전의 탑", "icon":"🏰", "desc":"에본레이크 남서쪽 절벽에 선 츄라이더의 집이자 생활 거점.", "level":1, "hunting_available":False, "adjacent":["마이코니드 군락", "드레드 할로우", "에본레이크"]},
+    "마이코니드 군락": {"name":"마이코니드 군락", "icon":"🍄", "desc":"발광버섯과 포자 속에 자리한 언더다크의 안전한 생활 거점.", "level":1, "hunting_available":False, "adjacent":["비전의 탑", "드레드 할로우", "에본레이크", "비버뱅 군락"]},
     "드레드 할로우": {"name":"드레드 할로우 · 수서 나무", "icon":"🌳", "desc":"거대한 수서 나무와 푸른 발광 식물이 자라는 위험한 숲.", "level":1, "hunting_available":True, "adjacent":["비전의 탑", "마이코니드 군락", "폐허가 된 마을"]},
     "에본레이크": {"name":"에본레이크", "icon":"🌊", "desc":"언더다크 깊은 곳의 검은 호수. 낚시와 선착장 이동의 중심.", "level":1, "hunting_available":False, "adjacent":["비전의 탑", "마이코니드 군락", "폐허가 된 마을", "곪아가는 만"]},
     "폐허가 된 마을": {"name":"폐허가 된 마을", "icon":"🏚️", "desc":"에본레이크 가장자리의 버려진 듀에르가 정착지와 선착장.", "level":5, "hunting_available":True, "adjacent":["드레드 할로우", "에본레이크", "그림포지"]},

@@ -133,6 +133,7 @@ def create_bot_context(
     _app_context.register("diary_manager",       _diary_manager)
     _app_context.register("npc_manager",         npc_manager)
     _app_context.register("affinity_manager",    affinity_manager)
+    _app_context.register("care_manager",        care_manager)
     _app_context.register("gathering_engine",    gathering_engine)
     _app_context.register("fishing_engine",      fishing_engine)
     _app_context.register("potion_engine",       potion_engine)

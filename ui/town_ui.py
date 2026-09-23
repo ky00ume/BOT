@@ -201,12 +201,13 @@ class ColonyPlaceView(View):
 class VisionTownView(View):
     """마이코니드 군락 메인 뷰. 클래스명은 저장/호출 호환을 위해 유지한다."""
 
-    def __init__(self, player, aff_manager, npc_manager_ref, village_manager=None):
+    def __init__(self, player, aff_manager, npc_manager_ref, village_manager=None, care_manager=None):
         super().__init__(timeout=GAME_VIEW_TIMEOUT)
         self.player = player
         self.aff_manager = aff_manager
         self.npc_manager_ref = npc_manager_ref
         self.village_manager = village_manager
+        self.care_manager = care_manager
         self._build_buttons()
 
     def _build_buttons(self):
@@ -230,7 +231,11 @@ class VisionTownView(View):
         cook_btn.callback = self._cooking_callback
         self.add_item(cook_btn)
 
-        leave_btn = Button(label="군락을 나간다", style=discord.ButtonStyle.danger, emoji="🗺️")
+        tower_btn = Button(label="비전의 탑으로 가는 길", style=discord.ButtonStyle.success, emoji="🏰")
+        tower_btn.callback = self._tower_road_callback
+        self.add_item(tower_btn)
+
+        leave_btn = Button(label="언더다크로 나간다", style=discord.ButtonStyle.danger, emoji="🗺️")
         leave_btn.callback = self._leave_callback
         self.add_item(leave_btn)
 
@@ -294,6 +299,20 @@ class VisionTownView(View):
         back_btn.callback = view._back_callback
         view.add_item(back_btn)
         await interaction.response.edit_message(attachments=[], embed=make_category_embed(self.player, "life"), view=view)
+
+    async def _tower_road_callback(self, interaction: discord.Interaction):
+        from ui.care_ui import TowerColonyRoadView
+        if self.care_manager is None:
+            import app_context
+            care_manager = app_context.get("care_manager")
+        else:
+            care_manager = self.care_manager
+        if care_manager is None:
+            from care import CareManager
+            care_manager = CareManager()
+        view = TowerColonyRoadView(self.player, care_manager, direction="to_tower")
+        view.bind_message(getattr(interaction, "message", None))
+        await interaction.response.edit_message(attachments=[], embed=view.make_embed(), view=view)
 
     async def _leave_callback(self, interaction: discord.Interaction):
         view = WorldMapView(self.player, self.aff_manager, self.npc_manager_ref)

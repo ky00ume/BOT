@@ -28,7 +28,7 @@ class TownCog(commands.Cog, name="마을"):
         if not await check_channel(ctx, self.ctx.allowed_channel_id):
             return
         from ui.town_ui import VisionTownView
-        view = VisionTownView(self.ctx.player, self.ctx.affinity_manager, self.ctx.npc_manager, village_manager)
+        view = VisionTownView(self.ctx.player, self.ctx.affinity_manager, self.ctx.npc_manager, village_manager, care_manager=self.ctx.care_manager)
         await view.send(ctx)
 
     @commands.command(name="대화")

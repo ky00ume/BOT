@@ -1046,6 +1046,7 @@ class TowerPlaceView(ExpiringView):
                 ("책장 뒤 작은 틈", "🕸️", "nest"),
                 ("마제스티의 자리", "🕯️", "마제스티의 자리", "손이 자주 닿는 물건들이 정돈되어 있다. 책장 아래에는 누군가 일부러 밀어 넣은 듯한 작은 간식 접시가 하나 놓여 있다."),
                 ("카르니스의 기척", "🕷️", "카르니스의 기척", "복도 너머에서 단단한 발끝이 바닥을 긁는 소리가 난다. 책장 아래의 작은 발자국은 그 소리가 가까워질수록 안쪽으로 향한다."),
+                ("군락으로 가는 길", "🍄", "road_to_colony"),
             ],
         },
         "workshop": {
@@ -1105,6 +1106,8 @@ class TowerPlaceView(ExpiringView):
             elif action[2] == "facility":
                 facility = action[3]
                 button.callback = self._make_facility_callback(facility)
+            elif action[2] == "road_to_colony":
+                button.callback = self._open_colony_road
             else:
                 button.callback = self._make_observation_callback(action[2], action[3])
             self.add_item(button)
@@ -1150,6 +1153,16 @@ class TowerPlaceView(ExpiringView):
             await interaction.response.edit_message(attachments=[], embed=self.make_embed((title, text)), view=self)
         return callback
 
+    async def _open_colony_road(self, interaction):
+        view = TowerColonyRoadView(
+            self.player,
+            self.care_manager,
+            direction="to_colony",
+            suspicious_actor_id=self.suspicious_actor_id,
+        )
+        view.bind_message(getattr(interaction, "message", None))
+        await interaction.response.edit_message(attachments=[], embed=view.make_embed(), view=view)
+
     async def _open_lift(self, interaction):
         from tower_power import facility_online
         if not facility_online(self.player, "lift"):
@@ -1159,6 +1172,110 @@ class TowerPlaceView(ExpiringView):
         view = TowerLiftView(self.player, self.care_manager, current_place=self.place, suspicious_actor_id=self.suspicious_actor_id)
         view.bind_message(getattr(interaction, "message", None))
         await interaction.response.edit_message(attachments=[], embed=view.make_embed(), view=view)
+
+
+class TowerColonyRoadView(ExpiringView):
+    """비전의 탑과 마이코니드 군락을 잇는 짧은 생활 이동로."""
+
+    ROUTES = {
+        "to_colony": [
+            ("탑 바깥", "탑의 오래된 문을 밀고 나오면 차고 눅눅한 언더다크 공기가 닿습니다. 멀리 발광버섯 빛이 점점이 이어집니다."),
+            ("균광 길", "절벽 아래쪽으로 난 좁은 길을 따라갑니다. 바위 틈의 푸른 균광과 작은 버섯들이 길 가장자리를 희미하게 밝힙니다."),
+            ("군락 외곽", "공기 속 포자가 눈에 띄게 짙어지고, 멀리 거대한 버섯 기둥 사이로 상인과 여행자의 불빛이 보이기 시작합니다."),
+        ],
+        "to_tower": [
+            ("군락 외곽", "발광버섯 숲을 빠져나오자 포자가 조금씩 옅어집니다. 뒤쪽에서는 군락의 빛이 천천히 멀어집니다."),
+            ("균광 길", "바위 벽을 따라 난 좁은 길을 되짚습니다. 푸른 균광 너머로 절벽 위 탑의 윤곽이 조금씩 커집니다."),
+            ("탑 아래", "마지막 굽이를 돌자 비전의 탑이 바로 위로 솟아 있습니다. 오래된 입구와 익숙한 돌계단이 눈앞에 나타납니다."),
+        ],
+    }
+
+    def __init__(self, player, care_manager, *, direction="to_colony", step=0, suspicious_actor_id=None):
+        super().__init__(timeout=CARE_VIEW_TIMEOUT)
+        self.player = player
+        self.care_manager = care_manager
+        self.direction = direction
+        self.step = step
+        self.suspicious_actor_id = suspicious_actor_id
+        self._build_buttons()
+
+    def _build_buttons(self):
+        self.clear_items()
+        stages = self.ROUTES[self.direction]
+        if self.step < len(stages) - 1:
+            btn = discord.ui.Button(label="길을 따라간다", emoji="👣", style=discord.ButtonStyle.primary)
+            btn.callback = self._advance
+            self.add_item(btn)
+            back = discord.ui.Button(label="돌아간다", emoji="↩️", style=discord.ButtonStyle.secondary)
+            back.callback = self._turn_back
+            self.add_item(back)
+        else:
+            label = "군락으로 들어간다" if self.direction == "to_colony" else "탑으로 들어간다"
+            emoji = "🍄" if self.direction == "to_colony" else "🏰"
+            btn = discord.ui.Button(label=label, emoji=emoji, style=discord.ButtonStyle.success)
+            btn.callback = self._arrive
+            self.add_item(btn)
+
+    def make_embed(self):
+        stages = self.ROUTES[self.direction]
+        title, desc = stages[self.step]
+        origin = "비전의 탑 → 마이코니드 군락" if self.direction == "to_colony" else "마이코니드 군락 → 비전의 탑"
+        bar = "●" * (self.step + 1) + "○" * (len(stages) - self.step - 1)
+        embed = discord.Embed(title=f"👣 {title}", description=desc, color=0x485B50)
+        embed.add_field(name=origin, value=f"{bar}  {self.step + 1}/{len(stages)}", inline=False)
+        return embed
+
+    async def _advance(self, interaction):
+        view = TowerColonyRoadView(
+            self.player,
+            self.care_manager,
+            direction=self.direction,
+            step=min(self.step + 1, len(self.ROUTES[self.direction]) - 1),
+            suspicious_actor_id=self.suspicious_actor_id,
+        )
+        view.bind_message(getattr(interaction, "message", None))
+        await interaction.response.edit_message(attachments=[], embed=view.make_embed(), view=view)
+
+    async def _turn_back(self, interaction):
+        if self.direction == "to_colony":
+            view = TowerUpperFloorView(self.player, self.care_manager, suspicious_actor_id=self.suspicious_actor_id)
+            view.bind_message(getattr(interaction, "message", None))
+            await interaction.response.edit_message(attachments=[], embed=view.make_embed(), view=view)
+        else:
+            from ui.town_ui import VisionTownView
+            import app_context
+            from village import village_manager
+            view = VisionTownView(
+                self.player,
+                app_context.get_affinity_manager(),
+                app_context.get_npc_manager(),
+                village_manager,
+                care_manager=self.care_manager,
+            )
+            await view.send(interaction, edit=True)
+
+    async def _arrive(self, interaction):
+        from save_manager import save_player_to_db
+        if self.direction == "to_colony":
+            self.player.current_location = "마이코니드 군락"
+            save_player_to_db(self.player)
+            from ui.town_ui import VisionTownView
+            import app_context
+            from village import village_manager
+            view = VisionTownView(
+                self.player,
+                app_context.get_affinity_manager(),
+                app_context.get_npc_manager(),
+                village_manager,
+                care_manager=self.care_manager,
+            )
+            await view.send(interaction, edit=True)
+        else:
+            self.player.current_location = "비전의 탑"
+            save_player_to_db(self.player)
+            view = TowerUpperFloorView(self.player, self.care_manager, suspicious_actor_id=self.suspicious_actor_id)
+            view.bind_message(getattr(interaction, "message", None))
+            await interaction.response.edit_message(attachments=[], embed=view.make_embed(), view=view)
 
 
 class TowerFacilityView(ExpiringView):

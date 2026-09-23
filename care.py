@@ -5,6 +5,19 @@ import time
 from costume_data import SNACK_ITEMS, COSTUME_ITEMS, SNACK_RECIPES, COSTUME_RECIPES
 
 
+CHURIDER_SPEECH = {
+    "food_good": "맛있슴미댜.",
+    "food_fish": "이건 좋슴미댜!",
+    "play_win": "제가 이겼슴미댜!",
+    "play_draw": "한 판 더 합니댜.",
+    "play_lose": "다시 하면 이길 수 있슴미댜.",
+    "bath_protest": "싫슴미댜...",
+    "walk_start": "다녀오겠슴미댜.",
+    "walk_find": "뭔가 있슴미댜.",
+    "walk_return": "다녀왔슴미댜.",
+}
+
+
 def _care_state(player) -> dict:
     if not hasattr(player, "_flags") or player._flags is None:
         player._flags = {}
@@ -220,11 +233,11 @@ class CareManager:
         player.stability = min(100, player.stability + mood_gain)
         name = item.get("name", item_id)
         if kind == "생선":
-            message = f"[{name}]을 내밀자 태연한 얼굴을 하면서도 앞다리가 먼저 두 걸음 다가옵니다. 금세 받아 먹습니다. 🕷️🐟"
+            message = f"[{name}]을 내밀자 태연한 얼굴을 하면서도 앞다리가 먼저 두 걸음 다가옵니다. 금세 받아 먹습니다. 🕷️🐟\n“{CHURIDER_SPEECH['food_fish']}”"
         elif kind == "요리":
-            message = f"[{name}] 냄새를 맡고 잠깐 들여다보더니 자리를 잡고 제대로 먹기 시작합니다. 🕷️🍽️"
+            message = f"[{name}] 냄새를 맡고 잠깐 들여다보더니 자리를 잡고 제대로 먹기 시작합니다. 🕷️🍽️\n“{CHURIDER_SPEECH['food_good']}”"
         else:
-            message = f"[{name}]을 받아 들고 한참 살펴본 뒤 천천히 먹습니다. 🕷️"
+            message = f"[{name}]을 받아 들고 한참 살펴본 뒤 천천히 먹습니다. 🕷️\n“{CHURIDER_SPEECH['food_good']}”"
         return {
             "success": True,
             "message": message,
@@ -274,8 +287,8 @@ class CareManager:
             player.fatigue   = min(100, player.fatigue   + gain_fatigue)
             player._flags["last_play_time"] = now
             messages = [
-                "츄라이더가 이겼습니다. 태연한 얼굴과 달리 앞다리가 들썩입니다. 🎉",
-                "츄라이더가 이겼습니다. 거미 다리가 바닥을 가볍게 두드립니다. 🎊",
+                f"츄라이더가 이겼습니다. 태연한 얼굴과 달리 앞다리가 들썩입니다. 🎉\n“{CHURIDER_SPEECH['play_win']}”",
+                f"츄라이더가 이겼습니다. 거미 다리가 바닥을 가볍게 두드립니다. 🎊\n“{CHURIDER_SPEECH['play_win']}”",
             ]
             return {
                 "success":        True,
@@ -293,8 +306,8 @@ class CareManager:
             player.fatigue   = min(100, player.fatigue   + gain_fatigue)
             player._flags["last_play_time"] = now
             messages = [
-                "무승부입니다. 츄라이더가 바로 다음 손을 준비합니다. 😄",
-                "무승부입니다. 앞다리가 다시 선택지 쪽으로 향합니다. 😊",
+                f"무승부입니다. 츄라이더가 바로 다음 손을 준비합니다. 😄\n“{CHURIDER_SPEECH['play_draw']}”",
+                f"무승부입니다. 앞다리가 다시 선택지 쪽으로 향합니다. 😊\n“{CHURIDER_SPEECH['play_draw']}”",
             ]
             return {
                 "success":        True,
@@ -310,8 +323,8 @@ class CareManager:
             player.fatigue = min(100, player.fatigue + gain_fatigue)
             player._flags["last_play_time"] = now
             messages = [
-                "츄라이더가 졌습니다. 눈은 가늘어지고 앞다리는 다시 자세를 잡습니다. 😤",
-                "츄라이더가 졌습니다. 잠깐 굳었다가 곧 다음 판을 준비합니다. 💪",
+                f"츄라이더가 졌습니다. 눈은 가늘어지고 앞다리는 다시 자세를 잡습니다. 😤\n“{CHURIDER_SPEECH['play_lose']}”",
+                f"츄라이더가 졌습니다. 잠깐 굳었다가 곧 다음 판을 준비합니다. 💪\n“{CHURIDER_SPEECH['play_lose']}”",
             ]
             return {
                 "success":      True,
@@ -346,7 +359,7 @@ class CareManager:
         player._flags["last_wash_time"] = time.time()
         lines = [
             "욕조에 넣자 여덟 다리가 가장자리를 단단히 붙잡습니다. 복부부터 북북박박 씻기자 결국 체념한 얼굴이 됩니다. 🛁",
-            "거품을 잔뜩 내서 다리 사이까지 북북 씻깁니다. 츄라이더는 죽을상으로 쳐다보지만 몸은 아주 깨끗해집니다. 🫧",
+            f"거품을 잔뜩 내서 다리 사이까지 북북 씻깁니다. 츄라이더는 죽을상으로 쳐다보지만 몸은 아주 깨끗해집니다. 🫧\n“{CHURIDER_SPEECH['bath_protest']}”",
             "욕조 밖으로 빠져나가려는 다리를 하나씩 다시 넣어 가며 북북박박 씻깁니다. 🕷️🛁",
         ]
         if state["wash_count"] >= 3:
@@ -454,7 +467,7 @@ class CareManager:
 
         return {
             "success": True,
-            "message": f"[{snack_name}] x{count} 제작 완료임미댜! 🍴",
+            "message": f"[{snack_name}] x{count} 제작이 완료되었습니다. 🍴",
             "item_id": snack_id,
             "count":   count,
         }
@@ -495,7 +508,7 @@ class CareManager:
 
         return {
             "success": True,
-            "message": f"[{costume_name}] 제작 완료임미댜! ✂️",
+            "message": f"[{costume_name}] 제작이 완료되었습니다. ✂️",
             "item_id": costume_id,
             "count":   count,
         }

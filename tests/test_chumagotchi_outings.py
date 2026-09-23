@@ -57,10 +57,12 @@ def test_observation_surfaces_latest_outing_trace():
     assert "톱밥" in text
 
 
-def test_chumagotchi_description_sources_do_not_use_mimida_narration():
-    root = Path(__file__).resolve().parents[1]
-    for rel in ["care.py", "ui/care_ui.py"]:
-        text = (root / rel).read_text(encoding="utf-8")
-        assert "슴미댜" not in text
-        assert "입미댜" not in text
-        assert "합니댜" not in text
+def test_churider_direct_speech_keeps_dialect_but_narrator_is_formal():
+    from care import CHURIDER_SPEECH
+    from ui.care_ui import _walk_scene
+
+    assert any("미댜" in line or "니댜" in line for line in CHURIDER_SPEECH.values())
+    phase, scene = _walk_scene(0)
+    assert "나갑니다." in scene
+    assert "다녀오겠슴미댜." in scene
+    assert phase == "🚪 출발"

@@ -1,4 +1,5 @@
 """care_ui.py — 비전의 탑 상층 · 츄라이더의 숨은 보금자리 돌봄 UI"""
+import asyncio
 import discord
 from ui.view_timeouts import CARE_VIEW_TIMEOUT
 from ui.expiring_view import ExpiringView
@@ -15,7 +16,7 @@ from database import save_player_to_db
 from core.events import GameEvent, event_store
 from core.bond import bond_service
 from core.pet_state import observe_pet
-from care import get_care_state
+from care import get_care_state, CHURIDER_SPEECH
 
 
 # ── 헬퍼: stat bar ──────────────────────────────────────────────────────────
@@ -1036,6 +1037,37 @@ class TowerLiftView(ExpiringView):
 
 
 # ── 메인 비전의 탑 돌봄 View ──────────────────────────────────────────────────
+WALK_ACTIVITY_SECONDS = 30
+WALK_UPDATE_SECONDS = 3
+
+
+def _walk_progress_bar(elapsed: float, duration: float = WALK_ACTIVITY_SECONDS, width: int = 10) -> str:
+    ratio = max(0.0, min(1.0, elapsed / max(1.0, duration)))
+    filled = min(width, int(ratio * width))
+    return "▰" * filled + "▱" * (width - filled)
+
+
+def _walk_scene(elapsed: float, duration: float = WALK_ACTIVITY_SECONDS) -> tuple[str, str]:
+    ratio = max(0.0, min(1.0, elapsed / max(1.0, duration)))
+    if ratio < 0.18:
+        return "🚪 출발", f"책장 뒤 틈에서 몸을 빼낸 뒤 여덟 다리를 차례로 펴고 복도로 나갑니다.\n“{CHURIDER_SPEECH['walk_start']}”"
+    if ratio < 0.40:
+        return "🐾 이동", "복도 가장자리를 따라 조심조심 걷습니다. 드로우 상체는 태연하지만 다리 끝은 계속 주변을 더듬습니다."
+    if ratio < 0.64:
+        return "🔎 탐색", f"낮은 틈 앞에서 멈춰 앞다리 두 개로 바닥을 꿈질꿈질 더듬습니다. 뭔가 작은 것을 발견한 듯합니다.\n“{CHURIDER_SPEECH['walk_find']}”"
+    if ratio < 0.84:
+        return "🕸️ 샛길", "벽 모서리를 타고 한 바퀴 돌아봅니다. 잠깐 보이지 않다가 실 한 줄을 달고 다시 나타납니다."
+    return "🏠 귀환", f"주운 것을 품에 안고 탑 상층으로 돌아옵니다. 다리 움직임이 처음보다 조금 느려졌습니다.\n“{CHURIDER_SPEECH['walk_return']}”"
+
+
+def _make_walk_progress_embed(remaining: int, elapsed: float) -> discord.Embed:
+    phase, scene = _walk_scene(elapsed)
+    embed = discord.Embed(title="🕷️🚶 산책 중", description=scene, color=0x5C6574)
+    embed.add_field(name=phase, value=f"{_walk_progress_bar(elapsed)}  남은 시간 **{max(0, remaining)}초**", inline=False)
+    embed.set_footer(text="츄라이더가 직접 움직이는 중입니다.")
+    return embed
+
+
 class CareRoomView(ExpiringView):
     def __init__(self, player, care_manager, *, suspicious_actor_id=None):
         super().__init__(timeout=CARE_VIEW_TIMEOUT)
@@ -1201,7 +1233,9 @@ class CareRoomView(ExpiringView):
         await interaction.response.edit_message(content=None, attachments=[], embed=view.make_embed(), view=view)
 
     # ── 산책 ──────────────────────────────────────────────────────────────
-    WALK_COOLDOWN = 180  # 3분
+    WALK_COOLDOWN = 180  # 산책 완료 후 3분
+    WALK_DURATION = WALK_ACTIVITY_SECONDS
+    WALK_UPDATE_INTERVAL = WALK_UPDATE_SECONDS
     WALK_ITEMS = [
         # (아이템ID, 가중치)  — 장난감/의상 제작 재료
         ("mat_wood_scrap",    20),
@@ -1222,20 +1256,41 @@ class CareRoomView(ExpiringView):
         if not hasattr(self.player, "_flags") or self.player._flags is None:
             self.player._flags = {}
 
-        # 쿨타임 체크
         now = _time.time()
         last_walk = self.player._flags.get("last_walk_time", 0)
-        remaining = self.WALK_COOLDOWN - (now - last_walk)
-        if remaining > 0:
-            mins, secs = divmod(int(remaining), 60)
-            embed = discord.Embed(title="🕷️🚶 산책", description=f"아직 산책할 수 없습니다. {mins}분 {secs}초 남음", color=0x5C6574)
+        remaining_cd = self.WALK_COOLDOWN - (now - last_walk)
+        if remaining_cd > 0:
+            mins, secs = divmod(int(remaining_cd), 60)
+            embed = discord.Embed(
+                title="🕷️🚶 산책",
+                description=f"아직 산책할 수 없습니다. {mins}분 {secs}초 남았습니다.",
+                color=0x5C6574,
+            )
             await interaction.response.edit_message(content=None, attachments=[], embed=embed, view=self)
             return
 
-        # 쿨타임 갱신
-        self.player._flags["last_walk_time"] = now
+        # The activity itself now occupies real time. Results are granted only on return.
+        started = _time.time()
+        self.player._flags["walk_started_at"] = started
+        self.player._flags["walk_active_until"] = started + self.WALK_DURATION
+        first = _make_walk_progress_embed(self.WALK_DURATION, 0)
+        await interaction.response.edit_message(content=None, attachments=[], embed=first, view=None)
 
-        # 랜덤 아이템 1~2개 획득
+        message = getattr(interaction, "message", None)
+        elapsed = 0.0
+        while elapsed < self.WALK_DURATION:
+            await asyncio.sleep(self.WALK_UPDATE_INTERVAL)
+            elapsed = min(self.WALK_DURATION, _time.time() - started)
+            remaining = max(0, int(round(self.WALK_DURATION - elapsed)))
+            if message is not None:
+                try:
+                    await message.edit(embed=_make_walk_progress_embed(remaining, elapsed), view=None)
+                except (discord.NotFound, discord.Forbidden):
+                    message = None
+                except Exception as e:
+                    logger.warning("산책 진행 화면 갱신 실패: %s", e)
+
+        # Return rewards and state changes happen only after the visible activity finishes.
         items_found = []
         num_items = random.choices([1, 2], weights=[70, 30])[0]
         pool_ids, pool_weights = zip(*self.WALK_ITEMS)
@@ -1246,29 +1301,34 @@ class CareRoomView(ExpiringView):
             item_name = ALL_ITEMS.get(chosen_id, {}).get("name", chosen_id)
             items_found.append(item_name)
 
-        # 컨디션/안정감 소량 변화
         cond_gain = random.randint(2, 5)
         stab_gain = random.randint(1, 3)
         self.player.condition = min(100, self.player.condition + cond_gain)
         self.player.stability = min(100, self.player.stability + stab_gain)
         from care import apply_outing_effect
         apply_outing_effect(self.player, "walk")
-
-        rows = [
-            {"label": "🐾 상태", "value": "츄라이더가 산책을 마치고 돌아옵니다."},
-            {"label": "🎁 획득", "value": ", ".join(items_found)},
-            {"label": "💛 컨디션", "value": f"+{cond_gain} → {self.player.condition}"},
-            {"label": "💙 안정감", "value": f"+{stab_gain} → {self.player.stability}"},
-        ]
-
-        embed = discord.Embed(title="🕷️🚶 산책", description=rows[0]["value"], color=0x5C6574)
-        embed.add_field(name="🎁 획득", value=", ".join(items_found), inline=False)
+        self.player._flags["walk_active_until"] = 0.0
+        self.player._flags["walk_started_at"] = 0.0
+        self.player._flags["last_walk_time"] = _time.time()
 
         try:
             save_player_to_db(self.player)
         except Exception as e:
             logger.error("산책 후 저장 실패: %s", e, exc_info=True)
-        await interaction.response.edit_message(content=None, attachments=[], embed=embed, view=self)
+
+        embed = discord.Embed(
+            title="🕷️🚶 산책 완료",
+            description=f"츄라이더가 책장 뒤 틈으로 돌아와 주운 것을 내려놓습니다.\n“{CHURIDER_SPEECH['walk_return']}”",
+            color=0x5C6574,
+        )
+        embed.add_field(name="🎁 주워 온 것", value=", ".join(items_found), inline=False)
+        embed.add_field(name="변화", value=f"컨디션 +{cond_gain} · 안정감 +{stab_gain}", inline=False)
+        if message is not None:
+            try:
+                await message.edit(embed=embed, view=self)
+                self.bind_message(message)
+            except Exception as e:
+                logger.warning("산책 완료 화면 갱신 실패: %s", e)
 
     # ── 간식주기 ──────────────────────────────────────────────────────────
     async def _on_snack(self, interaction: discord.Interaction):
@@ -1286,7 +1346,7 @@ class CareRoomView(ExpiringView):
         if remaining > 0:
             mins = remaining // 60
             secs = remaining % 60
-            embed = discord.Embed(title="🕷️🧶 놀기", description=f"아직 쿨타임임미댜... ({mins}분 {secs}초 남음)", color=0x6B5C5C)
+            embed = discord.Embed(title="🕷️🧶 놀기", description=f"아직 놀아줄 수 없습니다. {mins}분 {secs}초 남았습니다.", color=0x6B5C5C)
             await interaction.response.edit_message(
                 content=None, attachments=[], embed=embed, view=self
             )

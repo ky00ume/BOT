@@ -1277,6 +1277,10 @@ class CareRoomView(ExpiringView):
         await interaction.response.edit_message(content=None, attachments=[], embed=first, view=None)
 
         message = getattr(interaction, "message", None)
+        asyncio.create_task(self._run_walk_activity(message, started))
+
+    async def _run_walk_activity(self, message, started: float):
+        """Animate the walk without keeping the Discord button interaction open."""
         elapsed = 0.0
         while elapsed < self.WALK_DURATION:
             await asyncio.sleep(self.WALK_UPDATE_INTERVAL)

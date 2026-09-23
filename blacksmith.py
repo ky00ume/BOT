@@ -127,6 +127,17 @@ class BlacksmithEngine:
         ) or self.player.add_item(result_id, 1)
         multiplier = {"Rough": 0.8, "Normal": 1.0, "Fine": 1.1, "Excellent": 1.25, "Masterpiece": 1.5}[quality_key]
         exp = round(recipe.get("exp", 30.0) * multiplier, 1)
+        try:
+            from skill_training import record_training_event
+            record_training_event(self.player, "blacksmith", "forge_complete", 1)
+            if score >= 60:
+                record_training_event(self.player, "blacksmith", "forge_fine", 1)
+            if score >= 75:
+                record_training_event(self.player, "blacksmith", "forge_excellent", 1)
+            if score >= 90:
+                record_training_event(self.player, "blacksmith", "forge_masterpiece", 1)
+        except Exception:
+            pass
         rank_msg = self.player.train_skill("blacksmith", exp)
         return {
             "success": True,

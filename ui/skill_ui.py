@@ -63,6 +63,23 @@ def _exp_gauge(skill_id: str, rank: str, current_exp: float) -> str:
     return f"{bar} {pct}%"
 
 
+def _training_checklist_text(player, skill_id: str, rank: str) -> str | None:
+    try:
+        from skill_training import training_progress
+        rows = training_progress(player, skill_id, rank)
+    except Exception:
+        return None
+    if not rows:
+        return None
+    lines = []
+    for row in rows:
+        current = int(row.get("current", 0))
+        target = int(row.get("target", 0))
+        mark = "✅" if target and current >= target else "▫️"
+        lines.append(f"{mark} {row.get('label', row.get('event'))}  **{current}/{target}**")
+    return "\n".join(lines)
+
+
 def make_skill_detail_embed(player, skill_id: str) -> discord.Embed:
     """스킬 상세 임베드 생성."""
     skill_ranks = getattr(player, "skill_ranks", {})
@@ -109,6 +126,10 @@ def make_skill_detail_embed(player, skill_id: str) -> discord.Embed:
     )
     if next_rank:
         embed.add_field(name="다음 랭크", value=f"**{next_rank}**", inline=True)
+
+    training_text = _training_checklist_text(player, skill_id, rank)
+    if training_text:
+        embed.add_field(name="📋 이번 랭크 수련 항목", value=training_text, inline=False)
 
     # 스킬 종류별 수치
     if skill_id in COMBAT_SKILLS:
@@ -469,6 +490,9 @@ class LifeSkillSelect(Select):
                 description=f"{desc}\n\n**랭크:** {rank}\n**경험치:** {skill_exp:.1f} / {needed:.0f} ({pct:.1f}%)",
                 color=EMBED_COLOR,
             )
+            training_text = _training_checklist_text(self.player, skill_id, rank)
+            if training_text:
+                embed.add_field(name="📋 이번 랭크 수련 항목", value=training_text, inline=False)
             await interaction.response.edit_message(embed=embed, view=view, attachments=[])
             return
 

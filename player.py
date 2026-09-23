@@ -660,6 +660,11 @@ class Player:
             self.skill_exp[skill_id] -= threshold
             self.skill_ranks[skill_id] = next_rank
             current_rank = next_rank
+            try:
+                from skill_training import clear_training_for_new_rank
+                clear_training_for_new_rank(self, skill_id, next_rank)
+            except Exception:
+                pass
 
             mastery_key = f"{skill_id}_mastery"
             mastery = MASTERY_SKILLS.get(mastery_key)

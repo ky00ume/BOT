@@ -355,6 +355,15 @@ class GatheringEngine:
         grade  = item["grade"]
 
         added    = self.player.add_item(item["id"], count)
+        try:
+            from skill_training import record_training_event
+            record_training_event(self.player, "mining", "mine_success", 1)
+            if grade in ("Rare", "Epic", "Legendary"):
+                record_training_event(self.player, "mining", "mine_uncommon", 1)
+            if item["id"] in {"silver_ore", "gold_ore", "mithril_ore", "orichalcum_ore", "adamantium_ore", "dragonite_ore", "gem_diamond"}:
+                record_training_event(self.player, "mining", "mine_precious", 1)
+        except Exception:
+            logger.warning('gathering: 채광 수련 항목 기록 실패', exc_info=True)
         rank_msg = self.player.train_skill("mining", 12.0)
 
         try:

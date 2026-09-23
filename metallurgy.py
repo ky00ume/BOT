@@ -181,6 +181,11 @@ class MetallurgyEngine:
         # 마비노기풍: 낮은 랭크는 철판 앞에서 실패도 수련이고, 랭크가 오르면 안정된다.
         success_rate = min(0.98, 0.52 + will * 0.01 + rank_idx * 0.025)
         success = random.random() < success_rate
+        try:
+            from skill_training import record_training_event
+            record_training_event(self.player, "metallurgy", "smelt_attempt", 1)
+        except Exception:
+            logger.warning('metallurgy: 제련 시도 수련 항목 기록 실패', exc_info=True)
 
         if success:
             result_names = []
@@ -198,6 +203,13 @@ class MetallurgyEngine:
                     logger.warning('metallurgy: collection_manager.register 실패', exc_info=True)
 
             exp = recipe.get("exp", 10.0)
+            try:
+                from skill_training import record_training_event
+                record_training_event(self.player, "metallurgy", "smelt_success", 1)
+                if recipe.get("rank_req") in {"C", "B", "A", "9", "8", "7", "6", "5", "4", "3", "2", "1"}:
+                    record_training_event(self.player, "metallurgy", "smelt_advanced", 1)
+            except Exception:
+                logger.warning('metallurgy: 제련 성공 수련 항목 기록 실패', exc_info=True)
             rank_msg = self.player.train_skill("metallurgy", exp)
             return {
                 "success": True,
@@ -216,6 +228,11 @@ class MetallurgyEngine:
                 out_name = ALL_ITEMS.get(out_id, {}).get("name", out_id)
                 fail_names.append(f"{out_name} x{cnt}")
             exp_fail = recipe.get("exp", 10.0) * 0.2
+            try:
+                from skill_training import record_training_event
+                record_training_event(self.player, "metallurgy", "smelt_failure", 1)
+            except Exception:
+                logger.warning('metallurgy: 제련 실패 수련 항목 기록 실패', exc_info=True)
             rank_msg = self.player.train_skill("metallurgy", exp_fail)
             return {
                 "success": False,

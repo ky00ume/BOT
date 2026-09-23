@@ -300,6 +300,100 @@ class BattleEngine:
                 size_label=getattr(self, '_last_size_label', ''),
             )
 
+        # 디펜스/힐링은 공격 대신 한 턴을 소비하는 행동이다.
+        if skill_id == "defense":
+            from skills_db import COMBAT_SKILLS
+            from skill_training import record_training_event
+            rank = player.skill_ranks.get("defense", "연습")
+            reduce_rate = COMBAT_SKILLS["defense"]["damage_reduce"].get(rank, 0.05)
+            mon_atk = monster.get("attack", 5)
+            defense = player.get_defense() if hasattr(player, "get_defense") else 0
+            raw_after_armor = max(1, int(mon_atk * random.uniform(0.85, 1.15)) - int(defense * mods.get("def_mult", 1.0)))
+            mon_dmg = max(1, int(round(raw_after_armor * (1.0 - reduce_rate))))
+            prevented = max(0, raw_after_armor - mon_dmg)
+            low_hp_before = player.hp <= max(1, int(player.max_hp * 0.35))
+            player.hp = max(0, player.hp - mon_dmg)
+            record_training_event(player, "defense", "defense_use", 1)
+            if prevented >= max(2, int(raw_after_armor * 0.20)):
+                record_training_event(player, "defense", "defense_reduce", 1)
+            if low_hp_before and player.hp > 0:
+                record_training_event(player, "defense", "defense_low_hp", 1)
+            record_training_event(player, "combat_mastery", "combat_action", 1)
+            rank_msg = player.train_skill("defense", 10.0)
+            player.train_skill("combat_mastery", 3.0)
+            self.turn += 1
+            if player.hp <= 0:
+                self.in_battle = False
+                self._last_grade = "실패"
+            return get_renderer().render_battle_card(
+                monster_name=monster["name"],
+                monster_level=monster.get("level", 1),
+                monster_hp=max(0, self.monster_hp),
+                monster_max_hp=monster["hp"],
+                danger=monster.get("danger", "보통"),
+                turn=self.turn,
+                player_hp=player.hp,
+                player_max_hp=player.max_hp,
+                player_mp=player.mp,
+                player_max_mp=player.max_mp,
+                last_action=f"🛡 디펜스! 피해 {raw_after_armor} → {mon_dmg} (-{prevented})",
+                last_dmg=0,
+                is_crit=False,
+                size_label=getattr(self, '_last_size_label', ''),
+            )
+
+        if skill_id == "healing":
+            from skills_db import RECOVERY_SKILLS
+            from skill_training import record_training_event
+            rank = player.skill_ranks.get("healing", "연습")
+            heal_data = RECOVERY_SKILLS["healing"]
+            mp_cost = heal_data["mp_cost"].get(rank, 10)
+            if player.mp < mp_cost:
+                return get_renderer().render_card(
+                    title="⚔ MP 부족",
+                    rows=[{"label": "필요 MP", "value": str(mp_cost)}, {"label": "보유 MP", "value": str(player.mp)}],
+                    system_key="battle",
+                    footer="전투 시스템",
+                )
+            hp_before = player.hp
+            was_low_hp = hp_before <= max(1, int(player.max_hp * 0.35))
+            player.mp -= mp_cost
+            heal_amount = heal_data["heal_amount"].get(rank, 20)
+            player.hp = min(player.max_hp, player.hp + heal_amount)
+            healed = player.hp - hp_before
+            record_training_event(player, "healing", "healing_use", 1)
+            if healed >= max(10, int(player.max_hp * 0.20)):
+                record_training_event(player, "healing", "healing_big", 1)
+            if was_low_hp and healed > 0:
+                record_training_event(player, "healing", "healing_low_hp", 1)
+            record_training_event(player, "combat_mastery", "combat_action", 1)
+            rank_msg = player.train_skill("healing", 10.0)
+            player.train_skill("combat_mastery", 2.0)
+            mon_atk = monster.get("attack", 5)
+            defense = player.get_defense() if hasattr(player, "get_defense") else 0
+            mon_dmg = max(1, int(mon_atk * random.uniform(0.85, 1.15)) - int(defense * mods.get("def_mult", 1.0)))
+            player.hp = max(0, player.hp - mon_dmg)
+            self.turn += 1
+            if player.hp <= 0:
+                self.in_battle = False
+                self._last_grade = "실패"
+            return get_renderer().render_battle_card(
+                monster_name=monster["name"],
+                monster_level=monster.get("level", 1),
+                monster_hp=max(0, self.monster_hp),
+                monster_max_hp=monster["hp"],
+                danger=monster.get("danger", "보통"),
+                turn=self.turn,
+                player_hp=player.hp,
+                player_max_hp=player.max_hp,
+                player_mp=player.mp,
+                player_max_mp=player.max_mp,
+                last_action=f"💚 힐링 +{healed} HP · {monster['name']} 반격 -{mon_dmg} HP",
+                last_dmg=0,
+                is_crit=False,
+                size_label=getattr(self, '_last_size_label', ''),
+            )
+
         # 플레이어 공격
         base_atk = player.get_attack() if hasattr(player, "get_attack") else 10
         base_atk = int(base_atk * mods["atk_mult"])
@@ -315,14 +409,19 @@ class BattleEngine:
         dmg      = max(1, dmg - monster.get("defense", 0))
 
         # 스킬 보너스
-        from skills_db import COMBAT_SKILLS, MAGIC_SKILLS
+        from skills_db import COMBAT_SKILLS, MAGIC_SKILLS, RECOVERY_SKILLS
         skill_rank = player.skill_ranks.get(skill_id, "연습")
         skill_name = skill_id
         if skill_id in COMBAT_SKILLS:
             sk         = COMBAT_SKILLS[skill_id]
             skill_name = sk["name"]
-            bonus      = sk.get("damage_bonus", {}).get(skill_rank, 1.0)
-            dmg        = int(dmg * bonus)
+            if skill_id == "counter":
+                bonus = sk.get("counter_multiplier", {}).get(skill_rank, 1.5)
+            elif skill_id == "windmill":
+                bonus = sk.get("aoe_multiplier", {}).get(skill_rank, 0.8)
+            else:
+                bonus = sk.get("damage_bonus", {}).get(skill_rank, 1.0)
+            dmg = max(1, int(dmg * bonus))
         elif skill_id in MAGIC_SKILLS:
             sk         = MAGIC_SKILLS[skill_id]
             skill_name = sk["name"]
@@ -358,8 +457,39 @@ class BattleEngine:
         else:
             sound_director.cue("battle/crit" if crit else "battle/player_hit", interrupt=crit)
 
-        # 스킬 훈련 경험치
+        # 스킬별 수련 항목 + 전투 마스터리
+        try:
+            from skill_training import record_training_event
+            if skill_id == "smash":
+                record_training_event(player, "smash", "smash_use", 1)
+                if crit:
+                    record_training_event(player, "smash", "smash_crit", 1)
+                if self.monster_hp <= 0:
+                    record_training_event(player, "smash", "smash_kill", 1)
+            elif skill_id == "counter":
+                record_training_event(player, "counter", "counter_use", 1)
+                if monster.get("attack", 5) >= max(8, player.get_defense() + 5):
+                    record_training_event(player, "counter", "counter_strong", 1)
+                if self.monster_hp <= 0:
+                    record_training_event(player, "counter", "counter_kill", 1)
+            elif skill_id == "windmill":
+                record_training_event(player, "windmill", "windmill_use", 1)
+                if crit:
+                    record_training_event(player, "windmill", "windmill_crit", 1)
+                if self.monster_hp <= 0:
+                    record_training_event(player, "windmill", "windmill_kill", 1)
+            elif skill_id in MAGIC_SKILLS:
+                record_training_event(player, skill_id, "magic_cast", 1)
+                if crit:
+                    record_training_event(player, skill_id, "magic_crit", 1)
+                if self.monster_hp <= 0:
+                    record_training_event(player, skill_id, "magic_kill", 1)
+            record_training_event(player, "combat_mastery", "combat_action", 1)
+        except Exception:
+            logger.warning('battle: 전투 수련 항목 기록 실패', exc_info=True)
+
         rank_msg = player.train_skill(skill_id, 10.0)
+        player.train_skill("combat_mastery", 3.0)
 
         if self.monster_hp <= 0:
             self.monster_hp = 0
@@ -368,6 +498,11 @@ class BattleEngine:
             self._last_grade = grade
             sound_director.cue("battle/victory", interrupt=True)
             reward = self._calc_reward(monster, grade)
+            try:
+                from skill_training import record_training_event
+                record_training_event(player, "combat_mastery", "combat_win", 1)
+            except Exception:
+                logger.warning('battle: 전투 마스터리 승리 수련 기록 실패', exc_info=True)
             self._add_village_contribution_battle()
 
             # 라파엘 계약 처치 기록
@@ -439,6 +574,8 @@ class BattleEngine:
         defense = player.get_defense() if hasattr(player, "get_defense") else 0
         defense = int(defense * mods["def_mult"])
         mon_dmg = max(1, int(mon_atk * random.uniform(0.85, 1.15)) - defense)
+        if skill_id == "counter":
+            mon_dmg = max(1, int(mon_dmg * 0.75))
 
         # 몬스터 공격 서사화 로그
         mon_pool = MONSTER_ATTACK_LOGS.get(monster["name"], MONSTER_ATTACK_LOGS["_default"])

@@ -61,7 +61,7 @@ class BattleView(discord.ui.View):
         self.clear_items()
         player = self.battle_engine.player
 
-        from skills_db import COMBAT_SKILLS, MAGIC_SKILLS
+        from skills_db import COMBAT_SKILLS, MAGIC_SKILLS, RECOVERY_SKILLS
 
         # 스킬 버튼 추가
         skill_icons = {
@@ -71,12 +71,12 @@ class BattleView(discord.ui.View):
             "windmill": "🌀",
             "firebolt": "🔥",
             "icebolt": "❄",
-            "lightning": "⚡",
+            "lightningbolt": "⚡",
             "healing": "💊",
         }
         for skill_id, rank in player.skill_ranks.items():
-            if skill_id in COMBAT_SKILLS or skill_id in MAGIC_SKILLS:
-                all_skills = {**COMBAT_SKILLS, **MAGIC_SKILLS}
+            if skill_id in COMBAT_SKILLS or skill_id in MAGIC_SKILLS or skill_id in RECOVERY_SKILLS:
+                all_skills = {**COMBAT_SKILLS, **MAGIC_SKILLS, **RECOVERY_SKILLS}
                 sk = all_skills.get(skill_id, {})
                 icon = skill_icons.get(skill_id, "⚔")
                 label = f"{icon} {sk.get('name', skill_id)}"

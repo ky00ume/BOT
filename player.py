@@ -160,6 +160,7 @@ class Player:
             "smash":      "연습",
             "defense":    "연습",
             "counter":    "연습",
+            "combat_mastery": "연습",
             "mining":     "연습",
             "metallurgy": "연습",
             "blacksmith": "연습",
@@ -168,6 +169,7 @@ class Player:
             "smash":      0.0,
             "defense":    0.0,
             "counter":    0.0,
+            "combat_mastery": 0.0,
             "mining":     0.0,
             "metallurgy": 0.0,
             "blacksmith": 0.0,
@@ -667,7 +669,9 @@ class Player:
                 pass
 
             mastery_key = f"{skill_id}_mastery"
-            mastery = MASTERY_SKILLS.get(mastery_key)
+            # cooking/fishing 같은 기반 스킬은 *_mastery 보너스를 사용하고,
+            # combat_mastery처럼 마스터리 스킬 자체를 올리는 경우에는 자기 정의를 사용한다.
+            mastery = MASTERY_SKILLS.get(skill_id) or MASTERY_SKILLS.get(mastery_key)
             if mastery:
                 bonus = mastery["stat_bonus"].get(next_rank, {})
                 for stat, val in bonus.items():
@@ -817,7 +821,7 @@ class Player:
 
         if "skill_ranks" in data and isinstance(data["skill_ranks"], dict):
             # 기본 스킬은 항상 최소 연습 랭크 보장
-            merged = {"smash": "연습", "defense": "연습", "counter": "연습", "mining": "연습", "metallurgy": "연습", "blacksmith": "연습"}
+            merged = {"smash": "연습", "defense": "연습", "counter": "연습", "combat_mastery": "연습", "mining": "연습", "metallurgy": "연습", "blacksmith": "연습"}
             merged.update(data["skill_ranks"])
             self.skill_ranks = merged
         if "skill_exp" in data and isinstance(data["skill_exp"], dict):

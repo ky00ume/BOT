@@ -231,7 +231,8 @@ def make_category_embed(player, category: str) -> discord.Embed:
     if category == "combat":
         title = "⚔️ 전투 스킬"
         lines = []
-        for sid, sdata in COMBAT_SKILLS.items():
+        combat_db = {**COMBAT_SKILLS, "combat_mastery": MASTERY_SKILLS["combat_mastery"]}
+        for sid, sdata in combat_db.items():
             rank = skill_ranks.get(sid)
             if rank:
                 exp = skill_exp.get(sid, 0)
@@ -401,7 +402,7 @@ class SkillCategorySelect(Select):
                     btn.callback = view._make_healing_callback()
                     view.add_item(btn)
         else:  # combat
-            _add_skill_info_buttons(view, self.player, COMBAT_SKILLS)
+            _add_skill_info_buttons(view, self.player, {**COMBAT_SKILLS, "combat_mastery": MASTERY_SKILLS["combat_mastery"]})
 
         await interaction.response.edit_message(embed=embed, view=view)
 

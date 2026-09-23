@@ -49,6 +49,67 @@ def training_objectives(skill_id: str, rank: str) -> list[dict]:
             rows.append({"event": "forge_masterpiece", "label": "걸작을 만든다", "target": 1})
         return rows
 
+    if skill_id == "smash":
+        rows = [
+            {"event": "smash_use", "label": "스매시를 사용한다", "target": 8 + idx * 2},
+            {"event": "smash_crit", "label": "스매시로 크리티컬을 낸다", "target": 2 + idx // 3},
+        ]
+        if idx >= 3:
+            rows.append({"event": "smash_kill", "label": "스매시로 적을 쓰러뜨린다", "target": 2 + idx // 4})
+        return rows
+
+    if skill_id == "defense":
+        rows = [
+            {"event": "defense_use", "label": "디펜스로 공격을 받아낸다", "target": 8 + idx * 2},
+            {"event": "defense_reduce", "label": "피해를 크게 경감한다", "target": 3 + idx // 3},
+        ]
+        if idx >= 4:
+            rows.append({"event": "defense_low_hp", "label": "위기 상태에서 방어에 성공한다", "target": 1 + idx // 5})
+        return rows
+
+    if skill_id == "counter":
+        rows = [
+            {"event": "counter_use", "label": "카운터를 성공시킨다", "target": 6 + idx * 2},
+            {"event": "counter_strong", "label": "강한 공격을 받아치고 반격한다", "target": 2 + idx // 3},
+        ]
+        if idx >= 3:
+            rows.append({"event": "counter_kill", "label": "카운터로 적을 쓰러뜨린다", "target": 1 + idx // 5})
+        return rows
+
+    if skill_id == "windmill":
+        rows = [
+            {"event": "windmill_use", "label": "윈드밀을 사용한다", "target": 8 + idx * 2},
+            {"event": "windmill_crit", "label": "윈드밀로 크리티컬을 낸다", "target": 2 + idx // 3},
+        ]
+        if idx >= 3:
+            rows.append({"event": "windmill_kill", "label": "윈드밀로 적을 쓰러뜨린다", "target": 2 + idx // 4})
+        return rows
+
+    if skill_id in {"firebolt", "icebolt", "lightningbolt"}:
+        rows = [
+            {"event": "magic_cast", "label": "볼트 마법을 시전한다", "target": 8 + idx * 2},
+            {"event": "magic_crit", "label": "마법으로 크리티컬을 낸다", "target": 2 + idx // 3},
+        ]
+        if idx >= 3:
+            rows.append({"event": "magic_kill", "label": "마법으로 적을 쓰러뜨린다", "target": 2 + idx // 4})
+        return rows
+
+    if skill_id == "healing":
+        rows = [
+            {"event": "healing_use", "label": "힐링으로 체력을 회복한다", "target": 6 + idx * 2},
+            {"event": "healing_big", "label": "한 번에 큰 체력을 회복한다", "target": 2 + idx // 3},
+        ]
+        if idx >= 3:
+            rows.append({"event": "healing_low_hp", "label": "위기 상태에서 힐링한다", "target": 1 + idx // 5})
+        return rows
+
+    if skill_id == "combat_mastery":
+        rows = [
+            {"event": "combat_action", "label": "전투 행동을 수행한다", "target": 15 + idx * 3},
+            {"event": "combat_win", "label": "전투에서 승리한다", "target": 3 + idx // 2},
+        ]
+        return rows
+
     return []
 
 

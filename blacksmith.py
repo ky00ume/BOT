@@ -114,9 +114,17 @@ class BlacksmithEngine:
             self.player.remove_item(item_id, count)
             ingredients.append((ALL_ITEMS.get(item_id, {}).get("name", item_id), count))
         result_id = recipe.get("result", recipe_id)
-        self.player.add_gear_item(result_id, 1) or self.player.add_item(result_id, 1)
         score = int(session.get("quality", 50))
         quality_key, quality_label = quality_tier(score)
+        self.player.add_gear_item(
+            result_id,
+            1,
+            quality_score=score,
+            quality_key=quality_key,
+            quality_label=quality_label,
+            crafted_by=getattr(self.player, "name", None),
+            source="blacksmith",
+        ) or self.player.add_item(result_id, 1)
         multiplier = {"Rough": 0.8, "Normal": 1.0, "Fine": 1.1, "Excellent": 1.25, "Masterpiece": 1.5}[quality_key]
         exp = round(recipe.get("exp", 30.0) * multiplier, 1)
         rank_msg = self.player.train_skill("blacksmith", exp)

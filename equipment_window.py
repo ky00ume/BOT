@@ -27,6 +27,10 @@ def create_equipment_image(player) -> io.BytesIO:
             if atk:  parts.append(f"ATK+{atk}")
             if matk: parts.append(f"MATK+{matk}")
             if defv: parts.append(f"DEF+{defv}")
+            inst = player.get_equipped_gear_instance(slot) if hasattr(player, "get_equipped_gear_instance") else None
+            if inst:
+                parts.append(inst.get("quality_label", "⚒️ 보통"))
+                parts.append(f"내구 {inst.get('durability', 100)}/{inst.get('max_durability', 100)}")
             stats_text = " ".join(parts)
             slots.append({
                 "slot_name": sname,

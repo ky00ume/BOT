@@ -1,3 +1,4 @@
+import uuid
 from typing import Dict, List, Optional, Any
 from utils.logger import setup_logger
 from skills_db import (
@@ -246,13 +247,98 @@ class Player:
         logger.debug(f"아이템 제거: player={self.name}, item={item_id}, count={count}")
         return True
 
-    def add_gear_item(self, item_id: str, count: int = 1) -> bool:
-        """여분 장비를 장비 가방에 넣는다. 착용 중 장비는 여기에 포함하지 않는다."""
+    def _gear_instance_store(self) -> dict:
+        if not hasattr(self, "_flags") or self._flags is None:
+            self._flags = {}
+        return self._flags.setdefault("gear_instances", {})
+
+    def _equipped_instance_store(self) -> dict:
+        if not hasattr(self, "_flags") or self._flags is None:
+            self._flags = {}
+        return self._flags.setdefault("equipped_gear_instances", {})
+
+    def _make_gear_instance(self, item_id: str, *, quality_score: int = 50,
+                            quality_key: str = "Normal", quality_label: str = "⚒️ 보통",
+                            crafted_by=None, source: str = "loot", uid: str | None = None) -> dict:
+        max_durability_by_quality = {
+            "Rough": 90, "Normal": 100, "Fine": 105,
+            "Excellent": 110, "Masterpiece": 120,
+        }
+        max_durability = max_durability_by_quality.get(quality_key, 100)
+        return {
+            "uid": uid or uuid.uuid4().hex,
+            "item_id": item_id,
+            "quality_score": max(0, min(100, int(quality_score))),
+            "quality_key": quality_key,
+            "quality_label": quality_label,
+            "durability": max_durability,
+            "max_durability": max_durability,
+            "crafted_by": crafted_by,
+            "source": source,
+        }
+
+    def ensure_gear_instances(self) -> None:
+        """기존 수량형 장비 저장을 개별 인스턴스로 안전하게 보강한다."""
+        store = self._gear_instance_store()
+        equipped_store = self._equipped_instance_store()
+        counts = {}
+        for inst in store.values():
+            item_id = inst.get("item_id")
+            if item_id:
+                counts[item_id] = counts.get(item_id, 0) + 1
+        for item_id, count in list(self.gear_inventory.items()):
+            missing = max(0, int(count) - counts.get(item_id, 0))
+            for _ in range(missing):
+                inst = self._make_gear_instance(item_id, source="legacy")
+                store[inst["uid"]] = inst
+        for slot, item_id in self.equipment.items():
+            if item_id and slot not in equipped_store:
+                inst = self._make_gear_instance(item_id, source="legacy_equipped")
+                equipped_store[slot] = inst
+
+    def get_gear_instances(self, item_id: str | None = None) -> list[dict]:
+        self.ensure_gear_instances()
+        rows = list(self._gear_instance_store().values())
+        if item_id is not None:
+            rows = [row for row in rows if row.get("item_id") == item_id]
+        return rows
+
+    def get_equipped_gear_instance(self, slot: str):
+        self.ensure_gear_instances()
+        inst = self._equipped_instance_store().get(slot)
+        return dict(inst) if inst else None
+
+    def _quality_stat_multiplier(self, instance: dict | None) -> float:
+        if not instance:
+            return 1.0
+        return {
+            "Rough": 0.90,
+            "Normal": 1.00,
+            "Fine": 1.05,
+            "Excellent": 1.10,
+            "Masterpiece": 1.15,
+        }.get(instance.get("quality_key", "Normal"), 1.0)
+
+    def add_gear_item(self, item_id: str, count: int = 1, *, quality_score: int = 50,
+                      quality_key: str = "Normal", quality_label: str = "⚒️ 보통",
+                      crafted_by=None, source: str = "loot") -> bool:
+        """장비를 개별 인스턴스로 생성해 장비 가방에 넣는다."""
         from inventory_domains import is_equipment
         if not is_equipment(item_id) or count <= 0:
             return False
         if item_id not in self.gear_inventory and len(self.gear_inventory) >= self.gear_bag_slots:
             return False
+        store = self._gear_instance_store()
+        for _ in range(count):
+            inst = self._make_gear_instance(
+                item_id,
+                quality_score=quality_score,
+                quality_key=quality_key,
+                quality_label=quality_label,
+                crafted_by=crafted_by,
+                source=source,
+            )
+            store[inst["uid"]] = inst
         self.gear_inventory[item_id] = self.gear_inventory.get(item_id, 0) + count
         return True
 
@@ -372,34 +458,52 @@ class Player:
         """기력을 amount만큼 회복한다 (max_energy를 초과하지 않는다)."""
         self.energy = min(self.max_energy, self.energy + amount)
 
-    def equip_item(self, item_id: str) -> str:
+    def equip_item(self, item_id: str, instance_uid: str | None = None) -> str:
         from items import ALL_ITEMS
         item = ALL_ITEMS.get(item_id)
         if not item:
             return f"[{item_id}] 아이템을 찾을 수 없슴미댜."
-
-        item_type = item.get("type")
-        if item_type not in ("weapon", "armor"):
+        if item.get("type") not in ("weapon", "armor"):
             return f"[{item.get('name', item_id)}]은(는) 장착할 수 없는 아이템임미댜."
-
         slot = item.get("slot")
         if not slot:
             return f"[{item.get('name', item_id)}]의 슬롯 정보가 없슴미댜."
 
+        self.ensure_gear_instances()
+        candidates = self.get_gear_instances(item_id)
+        if instance_uid:
+            candidates = [row for row in candidates if row.get("uid") == instance_uid]
+        if not candidates:
+            # 구버전 일반 인벤토리에 남은 장비는 이 시점에 Normal 인스턴스로 이관한다.
+            if self.inventory.get(item_id, 0) > 0:
+                self.remove_item(item_id, 1)
+                self.add_gear_item(item_id, 1, source="legacy_inventory")
+                candidates = self.get_gear_instances(item_id)
+            if not candidates:
+                # equip_item()은 오래된 내부 호출/tests와의 호환을 위해 직접 호출 시
+                # 암묵적 Normal 개체를 허용한다. 실제 Discord 명령은 소유 여부를 먼저 검사한다.
+                self.add_gear_item(item_id, 1, source="legacy_direct_equip")
+                candidates = self.get_gear_instances(item_id)
+        # 이름만 지정했을 때는 가장 품질이 높은 개체를 선택한다.
+        chosen = max(candidates, key=lambda row: (row.get("quality_score", 50), row.get("durability", 0)))
+
         prev = self.equipment.get(slot)
         if prev:
-            self.add_gear_item(prev)
+            prev_inst = self._equipped_instance_store().pop(slot, None)
+            if prev_inst:
+                self._gear_instance_store()[prev_inst["uid"]] = prev_inst
+                self.gear_inventory[prev] = self.gear_inventory.get(prev, 0) + 1
+            else:
+                self.add_gear_item(prev, source="legacy_equipped")
 
-        if item_id in self.gear_inventory:
-            self.gear_inventory[item_id] -= 1
-            if self.gear_inventory[item_id] <= 0:
-                del self.gear_inventory[item_id]
-        elif item_id in self.inventory:
-            # 기존 저장 데이터의 장비도 계속 장착 가능하게 한다.
-            self.remove_item(item_id)
-
-        self.equipment[slot] = item_id  # type: ignore[assignment]
-        return f"[{item.get('name', item_id)}]을(를) 장착했슴미댜!"
+        self._gear_instance_store().pop(chosen["uid"], None)
+        self.gear_inventory[item_id] = max(0, self.gear_inventory.get(item_id, 0) - 1)
+        if self.gear_inventory[item_id] <= 0:
+            self.gear_inventory.pop(item_id, None)
+        self.equipment[slot] = item_id
+        self._equipped_instance_store()[slot] = chosen
+        quality = chosen.get("quality_label", "⚒️ 보통")
+        return f"[{item.get('name', item_id)}]을(를) 장착했슴미댜! · {quality}"
 
     def unequip_item(self, slot: str) -> str:
         from items import ALL_ITEMS
@@ -408,10 +512,16 @@ class Player:
         eq_id = self.equipment.get(slot)
         if not eq_id:
             return f"[{_SLOT_NAMES.get(slot, slot)}] 슬롯이 비어있슴미댜."
-        item = ALL_ITEMS.get(eq_id, {})
-        if not self.add_gear_item(eq_id):
+        if eq_id not in self.gear_inventory and len(self.gear_inventory) >= self.gear_bag_slots:
             return "장비 가방이 가득 차서 벗을 수 없슴미댜."
+        self.ensure_gear_instances()
+        inst = self._equipped_instance_store().pop(slot, None)
+        if not inst:
+            inst = self._make_gear_instance(eq_id, source="legacy_equipped")
+        self._gear_instance_store()[inst["uid"]] = inst
+        self.gear_inventory[eq_id] = self.gear_inventory.get(eq_id, 0) + 1
         self.equipment[slot] = None
+        item = ALL_ITEMS.get(eq_id, {})
         return f"[{item.get('name', eq_id)}]을(를) 벗었슴미댜!"
 
     def swap_weapons(self) -> str:
@@ -419,6 +529,14 @@ class Player:
         sub  = self.equipment.get("sub")
         self.equipment["main"] = sub
         self.equipment["sub"]  = main
+        self.ensure_gear_instances()
+        inst = self._equipped_instance_store()
+        main_inst = inst.pop("main", None)
+        sub_inst = inst.pop("sub", None)
+        if sub_inst:
+            inst["main"] = sub_inst
+        if main_inst:
+            inst["sub"] = main_inst
         return "주·보조 슬롯을 교환했슴미댜!"
 
     # ─── 의장(코스튬) 슬롯 ─────────────────────────────────────────────────
@@ -720,6 +838,7 @@ class Player:
         # 1회성 플래그 복원
         if "_flags" in data and isinstance(data["_flags"], dict):
             self._flags = data["_flags"]
+        self.ensure_gear_instances()
 
         # E-6: 오토 전투 포션 자동 사용 설정 복원
         self.auto_use_potion = data.get("auto_use_potion", True)
@@ -730,7 +849,8 @@ class Player:
         main_id = self.equipment.get("main")
         if main_id:
             weapon = ALL_ITEMS.get(main_id, {})
-            base += weapon.get("attack", 0)
+            inst = self.get_equipped_gear_instance("main")
+            base += round(weapon.get("attack", 0) * self._quality_stat_multiplier(inst))
         # 의장 장난감 슬롯 공격력 합산
         toy_id = self.costume.get("toy")
         if toy_id:
@@ -753,7 +873,8 @@ class Player:
             eq_id = self.equipment.get(slot)
             if eq_id:
                 armor = ALL_ITEMS.get(eq_id, {})
-                base += armor.get("defense", 0)
+                inst = self.get_equipped_gear_instance(slot)
+                base += round(armor.get("defense", 0) * self._quality_stat_multiplier(inst))
         # 의장 방어구 방어력 합산 (모든 의장 슬롯)
         for cslot in ("toy", "hat", "outfit", "shoes", "accessory"):
             ceq_id = self.costume.get(cslot)

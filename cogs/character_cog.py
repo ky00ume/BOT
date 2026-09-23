@@ -66,8 +66,9 @@ class CharacterCog(commands.Cog, name="캐릭터"):
         if not item_id:
             await ctx.send(ansi(f"  {C.RED}✖ [{item_name}]을(를) 찾을 수 없슴미댜!{C.R}"))
             return
-        if self.ctx.player.inventory.get(item_id, 0) == 0:
-            await ctx.send(ansi(f"  {C.RED}✖ 인벤토리에 [{item_name}]가 없슴미댜!{C.R}"))
+        self.ctx.player.ensure_gear_instances()
+        if not self.ctx.player.get_gear_instances(item_id) and self.ctx.player.inventory.get(item_id, 0) == 0:
+            await ctx.send(ansi(f"  {C.RED}✖ 장비 가방에 [{item_name}]가 없슴미댜!{C.R}"))
             return
         item_data = ALL_ITEMS.get(item_id, {})
         if item_data.get("type") not in ("weapon", "armor"):

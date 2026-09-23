@@ -18,11 +18,30 @@ def _care_state(player) -> dict:
     state.setdefault("rest_started_at", 0.0)
     state.setdefault("rest_until", 0.0)
     state.setdefault("last_rest_summary", "")
+    state.setdefault("last_update", time.time())
+    return state
+
+
+def update_care_over_time(player, *, now: float | None = None) -> dict:
+    """Apply lazy real-time needs decay. No background task is required."""
+    state = _care_state(player)
+    current = time.time() if now is None else float(now)
+    last = float(state.get("last_update", current) or current)
+    elapsed = max(0.0, min(current - last, 72 * 3600))
+    if elapsed < 60:
+        return state
+    hours = elapsed / 3600.0
+    # Slow enough to be forgiving: hunger is the main clock, grime is activity-led.
+    state["hunger"] = min(100, state["hunger"] + 7.0 * hours)
+    state["boredom"] = min(100, state["boredom"] + 4.0 * hours)
+    state["cleanliness"] = max(0, state["cleanliness"] - 0.75 * hours)
+    state["comfort"] = max(0, state["comfort"] - 0.35 * hours)
+    state["last_update"] = current
     return state
 
 
 def get_care_state(player) -> dict:
-    return dict(_care_state(player))
+    return dict(update_care_over_time(player))
 
 
 class CareManager:
@@ -53,7 +72,7 @@ class CareManager:
         gain_stability = random.randint(3, 5)
         player.condition = min(100, player.condition + gain_condition)
         player.stability = min(100, player.stability + gain_stability)
-        state = _care_state(player)
+        state = update_care_over_time(player)
         state["comfort"] = min(100, state["comfort"] + random.randint(5, 9))
         player._flags["last_pet_time"] = now
 
@@ -90,7 +109,7 @@ class CareManager:
 
         effect = item.get("effect", {})
         player.remove_hyness_item(snack_id)
-        state = _care_state(player)
+        state = update_care_over_time(player)
         hunger_drop = max(12, abs(int(effect.get("condition", 0))) + 10)
         state["hunger"] = max(0, state["hunger"] - hunger_drop)
 
@@ -120,6 +139,58 @@ class CareManager:
             "item_name": item.get("name", snack_id),
         }
 
+    def available_foods(self, player) -> list[tuple[str, int, dict]]:
+        """Portable real foods Churider can be fed: cooked dishes, fish, groceries."""
+        from items import ALL_ITEMS, COOKED_DISHES, FISH_ITEMS, GROCERIES
+        edible_ids = set(COOKED_DISHES) | set(FISH_ITEMS) | set(GROCERIES)
+        result = []
+        for item_id, count in getattr(player, "inventory", {}).items():
+            if count > 0 and item_id in edible_ids:
+                result.append((item_id, count, ALL_ITEMS.get(item_id, {})))
+        return result
+
+    def feed_food(self, player, item_id: str) -> dict:
+        from items import ALL_ITEMS, COOKED_DISHES, FISH_ITEMS, GROCERIES
+        edible_ids = set(COOKED_DISHES) | set(FISH_ITEMS) | set(GROCERIES)
+        item = ALL_ITEMS.get(item_id, {})
+        if item_id not in edible_ids:
+            return {"success": False, "message": "츄라이더에게 먹일 수 있는 음식이 아님미댜."}
+        if getattr(player, "inventory", {}).get(item_id, 0) <= 0:
+            return {"success": False, "message": f"[{item.get('name', item_id)}]이(가) 가방에 없슴미댜."}
+        if not player.remove_item(item_id, 1):
+            return {"success": False, "message": "먹을 것을 꺼내지 못했슴미댜."}
+
+        state = update_care_over_time(player)
+        if item_id in COOKED_DISHES:
+            hunger_drop = max(20, min(55, 22 + int(item.get("en", 0)) // 3))
+            mood_gain = 4
+            kind = "요리"
+        elif item_id in FISH_ITEMS:
+            hunger_drop = 24
+            mood_gain = 6
+            kind = "생선"
+        else:
+            hunger_drop = 16
+            mood_gain = 2
+            kind = "먹을거리"
+        before = state["hunger"]
+        state["hunger"] = max(0, state["hunger"] - hunger_drop)
+        player.stability = min(100, player.stability + mood_gain)
+        name = item.get("name", item_id)
+        if kind == "생선":
+            message = f"[{name}]을 내밀자 태연한 얼굴을 하면서도 앞다리가 먼저 두 걸음 다가왔슴미댜. 금세 받아 먹었슴미댜. 🕷️🐟"
+        elif kind == "요리":
+            message = f"[{name}] 냄새를 맡고 잠깐 들여다보더니 자리를 잡고 제대로 먹기 시작했슴미댜. 🕷️🍽️"
+        else:
+            message = f"[{name}]을 받아 들고 한참 살펴본 뒤 천천히 먹었슴미댜. 🕷️"
+        return {
+            "success": True,
+            "message": message,
+            "item_name": name,
+            "hunger_recovery": round(before - state["hunger"], 1),
+            "kind": kind,
+        }
+
     # ── 놀아주기 ──────────────────────────────────────────────────────────
     def play_result(self, player, choice: str, *, continue_session: bool = False) -> dict:
         """놀아주기 결과 처리. 같은 놀이 세션의 재경기는 쿨타임을 무시한다."""
@@ -138,7 +209,7 @@ class CareManager:
 
         options = ["rock", "scissors", "paper"]
         bot_choice = random.choice(options)
-        state = _care_state(player)
+        state = update_care_over_time(player)
         state["boredom"] = max(0, state["boredom"] - random.randint(18, 28))
 
         # 승패 판정
@@ -224,7 +295,7 @@ class CareManager:
                 "remaining": remaining,
                 "message": f"아직 털과 다리 사이에 목욕 뒤 물기가 남아 있슴미댜. ({mins}분 {secs}초 남음)",
             }
-        state = _care_state(player)
+        state = update_care_over_time(player)
         before = state["cleanliness"]
         state["cleanliness"] = min(100, before + random.randint(35, 55))
         state["wash_count"] += 1
@@ -241,7 +312,7 @@ class CareManager:
 
     # ── 쉬게 하기 ─────────────────────────────────────────────────────────
     def get_rest_status(self, player) -> dict:
-        state = _care_state(player)
+        state = update_care_over_time(player)
         now = time.time()
         until = float(state.get("rest_until", 0) or 0)
         if until <= 0:
@@ -258,7 +329,7 @@ class CareManager:
             return {"success": False, "already_resting": True, **status}
         if status.get("completed"):
             self.finish_rest(player)
-        state = _care_state(player)
+        state = update_care_over_time(player)
         now = time.time()
         state["rest_started_at"] = now
         state["rest_until"] = now + self.REST_DURATION
@@ -271,7 +342,7 @@ class CareManager:
         }
 
     def finish_rest(self, player, *, wake_early: bool = False) -> dict:
-        state = _care_state(player)
+        state = update_care_over_time(player)
         status = self.get_rest_status(player)
         if not status.get("active"):
             return {"success": False, "message": "지금은 쉬고 있지 않슴미댜."}

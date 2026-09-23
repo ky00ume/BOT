@@ -300,41 +300,49 @@ class CostumeManageView(ExpiringView):
 class SnackFeedView(ExpiringView):
     def __init__(self, player, care_manager, parent_view):
         super().__init__(timeout=CARE_VIEW_TIMEOUT)
-        self.player       = player
+        self.player = player
         self.care_manager = care_manager
-        self.parent_view  = parent_view
+        self.parent_view = parent_view
 
         from items import ALL_ITEMS
         options = []
+
+        # Real portable food first: cooked dishes, caught fish, groceries.
+        for item_id, count, item in care_manager.available_foods(player):
+            grade = item.get("grade", "Normal")
+            icon = GRADE_EMOJI.get(grade, "⚬")
+            item_type = item.get("type", "")
+            kind = "요리" if item_type == "cooked" else "생선" if item_type == "fish" else "먹을거리"
+            options.append(discord.SelectOption(
+                label=f"{icon} {item.get('name', item_id)} x{count}",
+                value=f"food:{item_id}",
+                description=f"{kind} · 가방에서 1개 먹입니다."[:50],
+            ))
+
+        # Existing crafted treats remain valid and use the dedicated room inventory.
         h_inv = player.get_hyness_inventory()
         for item_id, count in h_inv.items():
             item = ALL_ITEMS.get(item_id, {})
             if item.get("type") == "snack":
-                grade = item.get("grade", "일반")
-                icon  = GRADE_EMOJI.get(grade, "⚬")
-                eff   = item.get("effect", {})
-                eff_str = " ".join(
-                    f"{k[0].upper()}{'+'if v>0 else ''}{v}"
-                    for k, v in eff.items()
-                )
+                grade = item.get("grade", "Normal")
+                icon = GRADE_EMOJI.get(grade, "⚬")
                 options.append(discord.SelectOption(
                     label=f"{icon} {item.get('name', item_id)} x{count}",
-                    value=item_id,
-                    description=eff_str[:50],
+                    value=f"snack:{item_id}",
+                    description="간식 · 돌봄 보관함에서 1개 먹입니다.",
                 ))
 
         if options:
             select = discord.ui.Select(
-                placeholder="줄 간식을 선택하셰요...",
+                placeholder="츄라이더에게 먹일 것을 고릅니다...",
                 options=options[:25],
-                custom_id="snack_select",
+                custom_id="food_select",
             )
-            select.callback = self._on_snack_select
+            select.callback = self._on_food_select
             self.add_item(select)
         else:
-            # 간식 없음 안내 버튼 (비활성화)
             btn = discord.ui.Button(
-                label="보유한 간식이 없슴미댜",
+                label="지금 먹일 수 있는 음식이 없어요",
                 style=discord.ButtonStyle.secondary,
                 disabled=True,
             )
@@ -343,36 +351,50 @@ class SnackFeedView(ExpiringView):
         back_btn = discord.ui.Button(
             label="◀ 돌아가기",
             style=discord.ButtonStyle.secondary,
-            custom_id="back_from_snack",
+            custom_id="back_from_food",
             row=1,
         )
         back_btn.callback = self._on_back
         self.add_item(back_btn)
 
-    async def _on_snack_select(self, interaction: discord.Interaction):
-        snack_id = interaction.data["values"][0]
-        result = self.care_manager.feed_snack(self.player, snack_id)
-        rows = [{"label": "결과", "value": result["message"]}]
-        if result.get("changes"):
-            for k, v in result["changes"].items():
-                labels = {"condition": "💛 컨디션", "stability": "💙 안정감", "fatigue": "🔥 피로도"}
-                sign = "+" if v >= 0 else ""
-                rows.append({"label": labels.get(k, k), "value": f"{sign}{v}"})
-        grade = "Normal" if result["success"] else "Fail"
-        if result["success"]:
-            event_store.append(GameEvent(event_type="care.feed", actor_id=interaction.user.id, subject="츄라이더", location="비전의 탑", payload={"snack": SNACK_ITEMS.get(snack_id, {}).get("name", snack_id)}))
+    async def _on_food_select(self, interaction: discord.Interaction):
+        value = interaction.data["values"][0]
+        kind, item_id = value.split(":", 1)
+        if kind == "food":
+            result = self.care_manager.feed_food(self.player, item_id)
+        else:
+            result = self.care_manager.feed_snack(self.player, item_id)
+
+        if result.get("success"):
+            event_store.append(GameEvent(
+                event_type="care.feed",
+                actor_id=interaction.user.id,
+                subject="츄라이더",
+                location="비전의 탑",
+                payload={"food": result.get("item_name", item_id), "kind": kind},
+            ))
             try:
                 save_player_to_db(self.player)
             except Exception as e:
-                logger.error("간식 급여 후 저장 실패: %s", e, exc_info=True)
-        await interaction.response.edit_message(
-            content=None, attachments=[], embed=_make_room_embed(self.player), view=self
+                logger.error("먹이기 후 저장 실패: %s", e, exc_info=True)
+
+        embed = discord.Embed(
+            title="🕷️🍖 먹이기",
+            description=result["message"],
+            color=0x7B6545 if result.get("success") else 0x6B5C5C,
         )
+        if result.get("success") and "hunger_recovery" in result:
+            embed.add_field(name="배부름", value=f"허기 -{result['hunger_recovery']:g}", inline=True)
+        # Rebuild so consumed items/counts update immediately.
+        view = SnackFeedView(self.player, self.care_manager, self.parent_view)
+        view.bind_message(getattr(interaction, "message", None))
+        await interaction.response.edit_message(content=None, attachments=[], embed=embed, view=view)
 
     async def _on_back(self, interaction: discord.Interaction):
         await interaction.response.edit_message(
             content=None, attachments=[], embed=_make_room_embed(self.player), view=self.parent_view
         )
+
 class ObserveView(ExpiringView):
     def __init__(self, player, parent_view, *, index=0):
         super().__init__(timeout=CARE_VIEW_TIMEOUT)
@@ -397,7 +419,7 @@ class ObserveView(ExpiringView):
         details = _observation_details(self.player)
         self.index = (self.index + 1) % len(details)
         view = ObserveView(self.player, self.parent_view, index=self.index)
-        view.bind_message(interaction.message)
+        view.bind_message(getattr(interaction, "message", None))
         await interaction.response.edit_message(attachments=[], embed=view.make_embed(), view=view)
 
     async def _done(self, interaction):
@@ -434,7 +456,7 @@ class PettingView(ExpiringView):
 
     async def _more(self, interaction):
         view = PettingView(self.player, self.care_manager, self.parent_view, step=self.step + 1)
-        view.bind_message(interaction.message)
+        view.bind_message(getattr(interaction, "message", None))
         await interaction.response.edit_message(attachments=[], embed=view.make_embed(), view=view)
 
     async def _done(self, interaction):
@@ -474,7 +496,7 @@ class RestingView(ExpiringView):
 
     async def _watch(self, interaction):
         view = RestingView(self.player, self.care_manager, self.parent_view)
-        view.bind_message(interaction.message)
+        view.bind_message(getattr(interaction, "message", None))
         embed = view.make_embed()
         if not self.care_manager.get_rest_status(self.player).get("active"):
             await interaction.response.edit_message(attachments=[], embed=_make_room_embed(self.player), view=self.parent_view)
@@ -527,7 +549,7 @@ class RockPaperScissorsView(ExpiringView):
             except Exception as e:
                 logger.error("놀아주기 후 저장 실패: %s", e, exc_info=True)
             next_view = RockPaperScissorsResultView(self.player, self.care_manager, self.parent_view, result=result, rounds=self.rounds + 1)
-            next_view.bind_message(interaction.message)
+            next_view.bind_message(getattr(interaction, "message", None))
             await interaction.response.edit_message(attachments=[], embed=next_view.make_embed(), view=next_view)
         return cb
 
@@ -559,7 +581,7 @@ class RockPaperScissorsResultView(ExpiringView):
 
     async def _again(self, interaction):
         view = RockPaperScissorsView(self.player, self.care_manager, self.parent_view, rounds=self.rounds)
-        view.bind_message(interaction.message)
+        view.bind_message(getattr(interaction, "message", None))
         embed = discord.Embed(title="🕷️🧶 한 판 더", description="이번에는 뭘 낼까요?", color=0x655A8A)
         await interaction.response.edit_message(attachments=[], embed=embed, view=view)
 
@@ -852,7 +874,7 @@ class TowerPlaceView(ExpiringView):
 
     async def _open_nest(self, interaction):
         view = CareRoomView(self.player, self.care_manager, suspicious_actor_id=self.suspicious_actor_id)
-        view.bind_message(interaction.message)
+        view.bind_message(getattr(interaction, "message", None))
         await interaction.response.edit_message(content=None, attachments=[], embed=_make_room_embed(self.player), view=view)
 
     async def _open_generator(self, interaction):
@@ -866,13 +888,13 @@ class TowerPlaceView(ExpiringView):
             f"오래 멈춘 발전 장치다. 중앙의 빈 홈은 수서 꽃 한 송이가 들어갈 만한 크기다.\n\n휴대 중인 수서 꽃: **{bloom_count}**"
         )
         view = TowerGeneratorView(self.player, self.care_manager, suspicious_actor_id=self.suspicious_actor_id)
-        view.bind_message(interaction.message)
+        view.bind_message(getattr(interaction, "message", None))
         await interaction.response.edit_message(attachments=[], embed=discord.Embed(title="비전의 탑 · 수서 발전기", description=desc, color=0x46594F), view=view)
 
     def _make_facility_callback(self, facility):
         async def callback(interaction):
             view = TowerFacilityView(self.player, self.care_manager, facility=facility, return_place=self.place, suspicious_actor_id=self.suspicious_actor_id)
-            view.bind_message(interaction.message)
+            view.bind_message(getattr(interaction, "message", None))
             await interaction.response.edit_message(attachments=[], embed=view.make_embed(), view=view)
         return callback
 
@@ -888,7 +910,7 @@ class TowerPlaceView(ExpiringView):
             await interaction.response.edit_message(attachments=[], embed=embed, view=self)
             return
         view = TowerLiftView(self.player, self.care_manager, current_place=self.place, suspicious_actor_id=self.suspicious_actor_id)
-        view.bind_message(interaction.message)
+        view.bind_message(getattr(interaction, "message", None))
         await interaction.response.edit_message(attachments=[], embed=view.make_embed(), view=view)
 
 
@@ -937,12 +959,12 @@ class TowerFacilityView(ExpiringView):
         restored = restore_facility(self.player, self.facility)
         result = "낡은 부품을 맞추고 재료를 덧댄다. 잠시 뒤 설비에 불이 들어온다." if restored else "아직 설비를 복구할 수 없다. 동력과 필요한 재료를 확인해야 한다."
         view = TowerFacilityView(self.player, self.care_manager, facility=self.facility, return_place=self.return_place, suspicious_actor_id=self.suspicious_actor_id)
-        view.bind_message(interaction.message)
+        view.bind_message(getattr(interaction, "message", None))
         await interaction.response.edit_message(attachments=[], embed=view.make_embed(result), view=view)
 
     async def _back(self, interaction):
         view = TowerPlaceView(self.player, self.care_manager, place=self.return_place, suspicious_actor_id=self.suspicious_actor_id)
-        view.bind_message(interaction.message)
+        view.bind_message(getattr(interaction, "message", None))
         await interaction.response.edit_message(attachments=[], embed=view.make_embed(), view=view)
 
 
@@ -970,12 +992,12 @@ class TowerGeneratorView(ExpiringView):
         else:
             text = "발전기를 움직이려면 **수서 꽃 한 송이**를 휴대하고 있어야 한다."
         view = TowerGeneratorView(self.player, self.care_manager, suspicious_actor_id=self.suspicious_actor_id)
-        view.bind_message(interaction.message)
+        view.bind_message(getattr(interaction, "message", None))
         await interaction.response.edit_message(attachments=[], embed=discord.Embed(title="비전의 탑 · 수서 발전기", description=text, color=0x46594F), view=view)
 
     async def _back(self, interaction):
         view = TowerPlaceView(self.player, self.care_manager, place="storage", suspicious_actor_id=self.suspicious_actor_id)
-        view.bind_message(interaction.message)
+        view.bind_message(getattr(interaction, "message", None))
         await interaction.response.edit_message(attachments=[], embed=view.make_embed(), view=view)
 
 
@@ -1005,7 +1027,7 @@ class TowerLiftView(ExpiringView):
     def _make_floor_callback(self, place):
         async def callback(interaction):
             view = TowerPlaceView(self.player, self.care_manager, place=place, suspicious_actor_id=self.suspicious_actor_id)
-            view.bind_message(interaction.message)
+            view.bind_message(getattr(interaction, "message", None))
             await interaction.response.edit_message(attachments=[], embed=view.make_embed(), view=view)
         return callback
 
@@ -1116,7 +1138,7 @@ class CareRoomView(ExpiringView):
     # ── 관찰 / 몸단장 / 휴식 / 접촉 ─────────────────────────────────────
     async def _on_observe(self, interaction: discord.Interaction):
         view = ObserveView(self.player, self)
-        view.bind_message(interaction.message)
+        view.bind_message(getattr(interaction, "message", None))
         await interaction.response.edit_message(content=None, attachments=[], embed=view.make_embed(), view=view)
 
     async def _on_wash(self, interaction: discord.Interaction):
@@ -1147,7 +1169,7 @@ class CareRoomView(ExpiringView):
             except Exception as e:
                 logger.error("휴식 시작 저장 실패: %s", e, exc_info=True)
         view = RestingView(self.player, self.care_manager, self)
-        view.bind_message(interaction.message)
+        view.bind_message(getattr(interaction, "message", None))
         await interaction.response.edit_message(content=None, attachments=[], embed=view.make_embed(), view=view)
 
     async def _on_pet(self, interaction: discord.Interaction):
@@ -1172,7 +1194,7 @@ class CareRoomView(ExpiringView):
             except Exception as e:
                 logger.warning("일기 기록 실패: %s", e)
         view = PettingView(self.player, self.care_manager, self, opening=opening)
-        view.bind_message(interaction.message)
+        view.bind_message(getattr(interaction, "message", None))
         await interaction.response.edit_message(content=None, attachments=[], embed=view.make_embed(), view=view)
 
     # ── 산책 ──────────────────────────────────────────────────────────────
@@ -1246,7 +1268,7 @@ class CareRoomView(ExpiringView):
     # ── 간식주기 ──────────────────────────────────────────────────────────
     async def _on_snack(self, interaction: discord.Interaction):
         sub_view = SnackFeedView(self.player, self.care_manager, self)
-        sub_view.bind_message(interaction.message)
+        sub_view.bind_message(getattr(interaction, "message", None))
         embed = discord.Embed(title="🕷️🍖 먹이기", description="츄라이더에게 줄 먹을 것을 고릅니다.", color=0x7B6545)
         await interaction.response.edit_message(
             content=None, attachments=[], embed=embed, view=sub_view
@@ -1266,7 +1288,7 @@ class CareRoomView(ExpiringView):
             return
 
         sub_view = RockPaperScissorsView(self.player, self.care_manager, self)
-        sub_view.bind_message(interaction.message)
+        sub_view.bind_message(getattr(interaction, "message", None))
         embed = discord.Embed(title="🕷️🧶 놀기 — 가위바위보", description="✊ 바위 / ✌️ 가위 / ✋ 보 중 선택하셰요!", color=0x655A8A)
         await interaction.response.edit_message(
             content=None, attachments=[], embed=embed, view=sub_view
@@ -1275,7 +1297,7 @@ class CareRoomView(ExpiringView):
     # ── 의장관리 ──────────────────────────────────────────────────────────
     async def _on_costume(self, interaction: discord.Interaction):
         sub_view = CostumeManageView(self.player, self)
-        sub_view.bind_message(interaction.message)
+        sub_view.bind_message(getattr(interaction, "message", None))
         rows = sub_view._build_status_rows()
         embed = discord.Embed(title="🕷️👗 의장관리", description="츄라이더의 장난감과 의장을 정리합니다.", color=0x6D596E)
         for row in rows[:5]:
@@ -1287,7 +1309,7 @@ class CareRoomView(ExpiringView):
     # ── 간식제작 ──────────────────────────────────────────────────────────
     async def _on_craft_snack(self, interaction: discord.Interaction):
         sub_view = SnackCraftView(self.player, self.care_manager, self)
-        sub_view.bind_message(interaction.message)
+        sub_view.bind_message(getattr(interaction, "message", None))
         file = _result_card(
             "🍳 간식제작",
             [{"label": "안내", "value": "✅ = 재료 충분 / ❌ = 재료 부족\n제작할 간식을 선택하셰요."}],
@@ -1299,7 +1321,7 @@ class CareRoomView(ExpiringView):
     # ── 의장제작 ──────────────────────────────────────────────────────────
     async def _on_craft_costume(self, interaction: discord.Interaction):
         sub_view = CostumeCraftView(self.player, self.care_manager, self)
-        sub_view.bind_message(interaction.message)
+        sub_view.bind_message(getattr(interaction, "message", None))
         file = _result_card(
             "✂️ 의장제작",
             [{"label": "안내", "value": "✅ = 재료 충분 / ❌ = 재료 부족\n제작할 의장을 선택하셰요."}],

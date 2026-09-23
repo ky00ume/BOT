@@ -54,6 +54,343 @@ class BattleEngine:
         self._cheer_active   = False  # 이번 턴 응원 활성화 여부
         self._last_size      = "M"
         self._last_grade     = None  # 마지막 전투 결과 등급
+        self.enemies         = []    # 복수 적 전투용 [{monster,hp,statuses,size}]
+        self.defeated_enemies = []
+
+    def _alive_enemies(self):
+        return [enemy for enemy in self.enemies if enemy.get("hp", 0) > 0]
+
+    def _sync_primary_enemy(self) -> None:
+        alive = self._alive_enemies()
+        if not alive:
+            return
+        primary = alive[0]
+        self.current_monster = primary["monster"]
+        self.monster_hp = primary["hp"]
+        self._last_size = primary.get("size", primary["monster"].get("_size", "M"))
+
+    def _group_display_name(self) -> str:
+        alive = self._alive_enemies()
+        if not alive:
+            return self.current_monster.get("name", "?") if self.current_monster else "?"
+        name = alive[0]["monster"].get("name", "?")
+        return f"{name} 외 {len(alive)-1}체" if len(alive) > 1 else name
+
+    def _enemy_status_text(self) -> str:
+        parts = []
+        for enemy in self._alive_enemies():
+            statuses = enemy.get("statuses", {})
+            icons = []
+            if statuses.get("slow", 0) > 0:
+                icons.append(f"❄️둔화{statuses['slow']}")
+            burn = statuses.get("burn")
+            if burn and burn.get("turns", 0) > 0:
+                icons.append(f"🔥화상{burn['turns']}")
+            if icons:
+                parts.append(f"{enemy['monster']['name']}({' '.join(icons)})")
+        return " · ".join(parts)
+
+    def _apply_status_ticks(self) -> list[str]:
+        logs = []
+        for enemy in self._alive_enemies():
+            burn = enemy.setdefault("statuses", {}).get("burn")
+            if burn and burn.get("turns", 0) > 0:
+                tick = max(1, int(burn.get("damage", 1)))
+                enemy["hp"] = max(0, enemy["hp"] - tick)
+                burn["turns"] -= 1
+                logs.append(f"🔥 {enemy['monster']['name']} 화상 -{tick}")
+                if burn["turns"] <= 0:
+                    enemy["statuses"].pop("burn", None)
+        return logs
+
+    def _register_newly_defeated(self) -> list[dict]:
+        newly = []
+        known = {id(enemy) for enemy in self.defeated_enemies}
+        for enemy in self.enemies:
+            if enemy.get("hp", 0) <= 0 and id(enemy) not in known:
+                self.defeated_enemies.append(enemy)
+                newly.append(enemy)
+        return newly
+
+    def _enemy_attack_phase(self, mods: dict, *, skip_enemy=None, counter=False) -> tuple[int, list[str]]:
+        total = 0
+        logs = []
+        player = self.player
+        defense = int((player.get_defense() if hasattr(player, "get_defense") else 0) * mods.get("def_mult", 1.0))
+        for enemy in self._alive_enemies():
+            if skip_enemy is enemy:
+                logs.append(f"⚡ {enemy['monster']['name']}은(는) 빠른 시전에 반격하지 못했다")
+                continue
+            monster = enemy["monster"]
+            statuses = enemy.setdefault("statuses", {})
+            slow_mult = 0.65 if statuses.get("slow", 0) > 0 else 1.0
+            mon_atk = int(monster.get("attack", 5) * slow_mult)
+            mon_dmg = max(1, int(mon_atk * random.uniform(0.85, 1.15)) - defense)
+            if counter:
+                mon_dmg = max(1, int(mon_dmg * 0.75))
+            player.hp = max(0, player.hp - mon_dmg)
+            total += mon_dmg
+            slow_note = " (둔화)" if slow_mult < 1.0 else ""
+            logs.append(f"{monster['name']}{slow_note} -{mon_dmg}HP")
+            if statuses.get("slow", 0) > 0:
+                statuses["slow"] -= 1
+                if statuses["slow"] <= 0:
+                    statuses.pop("slow", None)
+            if player.hp <= 0:
+                break
+        if total:
+            sound_director.cue("battle/enemy_hit")
+        return total, logs
+
+    def _finalize_group_victory(self, last_action: str, rank_msg: str = ""):
+        from battle_log_data import GRADE_LABELS, VICTORY_LOGS
+        grade = _calc_battle_grade(self.player.hp, self.player.max_hp)
+        self._last_grade = grade
+        self.in_battle = False
+        sound_director.cue("battle/victory", interrupt=True)
+        total_gold = 0
+        total_exp = 0
+        total_items = {}
+        contracts = []
+        leveled = False
+        level_gains = {}
+        old_level = self.player.level
+        for enemy in self.defeated_enemies:
+            monster = enemy["monster"]
+            reward = self._calc_reward(monster, grade)
+            total_gold += reward.get("gold", 0)
+            total_exp += reward.get("exp", 0)
+            leveled = leveled or reward.get("leveled_up", False)
+            for key, value in reward.get("level_gains", {}).items():
+                level_gains[key] = level_gains.get(key, 0) + value
+            for item_id, cnt in reward.get("items", {}).items():
+                total_items[item_id] = total_items.get(item_id, 0) + cnt
+            monster_id = monster.get("id", "")
+            if monster_id:
+                try:
+                    from special_npc import SpecialNPCEncounterManager
+                    msg = SpecialNPCEncounterManager(self.player).record_kill(monster_id)
+                    if msg:
+                        contracts.append(msg)
+                except Exception:
+                    logger.warning('battle: group contract kill record failed', exc_info=True)
+        try:
+            from skill_training import record_training_event
+            record_training_event(self.player, "combat_mastery", "combat_win", 1)
+        except Exception:
+            logger.warning('battle: group combat mastery win training failed', exc_info=True)
+        self._add_village_contribution_battle()
+        rows = [
+            {"label": "행동", "value": last_action},
+            {"label": "격파", "value": f"적 {len(self.defeated_enemies)}체"},
+            {"label": "결과 등급", "value": GRADE_LABELS.get(grade, grade)},
+            {"label": "한마디", "value": random.choice(VICTORY_LOGS.get(grade, VICTORY_LOGS["안정"]))},
+            {"label": "골드", "value": f"+{total_gold}G"},
+            {"label": "경험치", "value": f"+{total_exp}"},
+        ]
+        if total_items:
+            from items import ALL_ITEMS
+            rows.append({"label": "드롭", "value": ", ".join(f"{ALL_ITEMS.get(i,{}).get('name',i)} x{c}" for i,c in total_items.items())})
+        if contracts:
+            rows.append({"label": "계약 진행", "value": " / ".join(contracts)})
+        if leveled:
+            rows.append({"label": "레벨 업!", "value": f"Lv.{old_level}→Lv.{self.player.level}"})
+        return get_renderer().render_card(
+            title="🎉 다수 전투 승리!",
+            rows=rows,
+            system_key="battle",
+            footer=rank_msg or "전투 시스템",
+            h=max(380, 160 + len(rows) * 34),
+        )
+
+    def _process_group_turn(self, skill_id: str = "smash"):
+        player = self.player
+        alive = self._alive_enemies()
+        if not alive:
+            return self._finalize_group_victory("상태이상으로 마지막 적이 쓰러졌다")
+        self._sync_primary_enemy()
+        monster = self.current_monster
+        mods = self._get_condition_modifiers()
+        status_logs = self._apply_status_ticks()
+        self._register_newly_defeated()
+        if not self._alive_enemies():
+            return self._finalize_group_victory(" · ".join(status_logs) or "상태이상으로 적을 쓰러뜨렸다")
+        self._sync_primary_enemy()
+        monster = self.current_monster
+        primary = self._alive_enemies()[0]
+
+        from skills_db import COMBAT_SKILLS, MAGIC_SKILLS, RECOVERY_SKILLS, RANK_ORDER
+        from skill_training import record_training_event
+
+        # 방어 / 힐링은 공격 대신 한 턴을 사용하고 모든 생존 적이 반응한다.
+        if skill_id == "defense":
+            rank = player.skill_ranks.get("defense", "연습")
+            reduce_rate = COMBAT_SKILLS["defense"]["damage_reduce"].get(rank, 0.05)
+            total_before = 0
+            total_after = 0
+            defense = int((player.get_defense() if hasattr(player, "get_defense") else 0) * mods.get("def_mult", 1.0))
+            low_hp_before = player.hp <= max(1, int(player.max_hp * 0.35))
+            attack_logs = []
+            for enemy in self._alive_enemies():
+                mon = enemy["monster"]
+                slow_mult = 0.65 if enemy.get("statuses", {}).get("slow", 0) > 0 else 1.0
+                raw = max(1, int(mon.get("attack", 5) * slow_mult * random.uniform(0.85, 1.15)) - defense)
+                dealt = max(1, int(round(raw * (1.0 - reduce_rate))))
+                total_before += raw
+                total_after += dealt
+                player.hp = max(0, player.hp - dealt)
+                attack_logs.append(f"{mon['name']} -{dealt}")
+                if enemy.get("statuses", {}).get("slow", 0) > 0:
+                    enemy["statuses"]["slow"] -= 1
+                if player.hp <= 0:
+                    break
+            prevented = max(0, total_before - total_after)
+            record_training_event(player, "defense", "defense_use", 1)
+            if prevented >= max(2, int(total_before * 0.2)):
+                record_training_event(player, "defense", "defense_reduce", 1)
+            if low_hp_before and player.hp > 0:
+                record_training_event(player, "defense", "defense_low_hp", 1)
+            record_training_event(player, "combat_mastery", "combat_action", 1)
+            rank_msg = player.train_skill("defense", 10.0)
+            player.train_skill("combat_mastery", 3.0)
+            self.turn += 1
+            if player.hp <= 0:
+                self.in_battle = False
+                self._last_grade = "실패"
+            self._sync_primary_enemy()
+            return get_renderer().render_battle_card(
+                monster_name=self._group_display_name(), monster_level=monster.get("level",1),
+                monster_hp=max(0,self.monster_hp), monster_max_hp=monster["hp"], danger=monster.get("danger","보통"),
+                turn=self.turn, player_hp=player.hp, player_max_hp=player.max_hp, player_mp=player.mp, player_max_mp=player.max_mp,
+                last_action=f"🛡 디펜스! 총 피해 {total_before} → {total_after} (-{prevented})\n" + " · ".join(attack_logs),
+                last_dmg=0, is_crit=False, size_label=f"적 {len(self._alive_enemies())}체")
+
+        if skill_id == "healing":
+            rank = player.skill_ranks.get("healing", "연습")
+            heal_data = RECOVERY_SKILLS["healing"]
+            mp_cost = heal_data["mp_cost"].get(rank, 10)
+            if player.mp < mp_cost:
+                return get_renderer().render_card(title="⚔ MP 부족", rows=[{"label":"필요 MP","value":str(mp_cost)},{"label":"보유 MP","value":str(player.mp)}], system_key="battle", footer="전투 시스템")
+            before = player.hp
+            low = before <= max(1, int(player.max_hp*0.35))
+            player.mp -= mp_cost
+            player.hp = min(player.max_hp, player.hp + heal_data["heal_amount"].get(rank,20))
+            healed = player.hp-before
+            record_training_event(player,"healing","healing_use",1)
+            if healed >= max(10,int(player.max_hp*0.2)): record_training_event(player,"healing","healing_big",1)
+            if low and healed>0: record_training_event(player,"healing","healing_low_hp",1)
+            record_training_event(player,"combat_mastery","combat_action",1)
+            rank_msg = player.train_skill("healing",10.0); player.train_skill("combat_mastery",2.0)
+            total, logs = self._enemy_attack_phase(mods)
+            self.turn += 1
+            if player.hp <= 0:
+                self.in_battle=False; self._last_grade="실패"
+            self._sync_primary_enemy()
+            return get_renderer().render_battle_card(monster_name=self._group_display_name(), monster_level=monster.get("level",1), monster_hp=max(0,self.monster_hp), monster_max_hp=monster["hp"], danger=monster.get("danger","보통"), turn=self.turn, player_hp=player.hp, player_max_hp=player.max_hp, player_mp=player.mp, player_max_mp=player.max_mp, last_action=f"💚 힐링 +{healed} HP · 적 반격 총 -{total}HP\n"+" · ".join(logs), last_dmg=0, is_crit=False, size_label=f"적 {len(self._alive_enemies())}체")
+
+        base_atk = int((player.get_attack() if hasattr(player,"get_attack") else 10) * mods["atk_mult"])
+        if self._cheer_active:
+            base_atk=int(base_atk*1.15); self._cheer_active=False
+        crit = random.random() < (player.base_stats.get("luck",5)*0.01 + mods["crit_bonus"])
+        skill_rank = player.skill_ranks.get(skill_id,"연습")
+        skill_name = skill_id
+        mp_cost = 0
+        quick_skip = None
+
+        if skill_id in MAGIC_SKILLS:
+            sk=MAGIC_SKILLS[skill_id]; skill_name=sk["name"]
+            mp_cost=sk["mp_cost"].get(skill_rank,5)
+            if player.mp < mp_cost:
+                return get_renderer().render_card(title="⚔ MP 부족", rows=[{"label":"필요 MP","value":str(mp_cost)},{"label":"보유 MP","value":str(player.mp)}], system_key="battle", footer="전투 시스템")
+            player.mp -= mp_cost
+            magic_dmg=sk["damage"].get(skill_rank,10)
+            raw_base=int((magic_dmg + player.base_stats.get("int",10)//2)*mods["atk_mult"]*random.uniform(0.85,1.15))
+        else:
+            raw_base=int(base_atk*(1.5 if crit else 1.0)*random.uniform(0.85,1.15))
+
+        targets = self._alive_enemies() if skill_id=="windmill" else [primary]
+        hit_logs=[]; killed=0; total_damage=0
+        for enemy in list(targets):
+            mon=enemy["monster"]
+            if skill_id in MAGIC_SKILLS:
+                dmg=max(1, raw_base - mon.get("defense",0)//2)
+            else:
+                dmg=max(1, raw_base - mon.get("defense",0))
+                if skill_id in COMBAT_SKILLS:
+                    sk=COMBAT_SKILLS[skill_id]; skill_name=sk["name"]
+                    if skill_id=="counter": bonus=sk["counter_multiplier"].get(skill_rank,1.5)
+                    elif skill_id=="windmill": bonus=sk["aoe_multiplier"].get(skill_rank,0.8)
+                    else: bonus=sk.get("damage_bonus",{}).get(skill_rank,1.0)
+                    dmg=max(1,int(dmg*bonus))
+            enemy["hp"] = max(0, enemy["hp"]-dmg)
+            total_damage += dmg
+            hit_logs.append(f"{mon['name']} {dmg} 피해")
+            if enemy["hp"]<=0: killed += 1
+
+        # 속성 효과
+        status_note=[]
+        if skill_id=="icebolt" and primary.get("hp",0)>0:
+            primary.setdefault("statuses",{})["slow"] = max(primary.get("statuses",{}).get("slow",0), 2)
+            status_note.append("❄️ 둔화 2턴")
+        elif skill_id=="firebolt" and primary.get("hp",0)>0:
+            burn_dmg=max(2,int(total_damage*0.15))
+            primary.setdefault("statuses",{})["burn"]={"turns":2,"damage":burn_dmg}
+            status_note.append(f"🔥 화상 2턴({burn_dmg}/턴)")
+        elif skill_id=="lightningbolt" and primary.get("hp",0)>0:
+            idx=RANK_ORDER.index(skill_rank) if skill_rank in RANK_ORDER else 0
+            quick_chance=min(0.65, 0.25 + idx*0.025)
+            if random.random() < quick_chance:
+                quick_skip=primary
+                status_note.append("⚡ 빠른 시전: 대상 반격 차단")
+
+        newly=self._register_newly_defeated()
+        self._sync_primary_enemy()
+        if skill_id in MAGIC_SKILLS:
+            sound_director.cue("battle/magic_crit" if crit else "battle/magic_hit", interrupt=crit)
+        else:
+            sound_director.cue("battle/crit" if crit else "battle/player_hit", interrupt=crit)
+
+        # 수련
+        if skill_id=="smash":
+            record_training_event(player,"smash","smash_use",1)
+            if crit: record_training_event(player,"smash","smash_crit",1)
+            if killed: record_training_event(player,"smash","smash_kill",killed)
+        elif skill_id=="counter":
+            record_training_event(player,"counter","counter_use",1)
+            if monster.get("attack",5)>=max(8,player.get_defense()+5): record_training_event(player,"counter","counter_strong",1)
+            if killed: record_training_event(player,"counter","counter_kill",killed)
+        elif skill_id=="windmill":
+            record_training_event(player,"windmill","windmill_use",1)
+            if crit: record_training_event(player,"windmill","windmill_crit",1)
+            if len(targets)>=2: record_training_event(player,"windmill","windmill_multi",1)
+            if killed: record_training_event(player,"windmill","windmill_kill",killed)
+        elif skill_id in MAGIC_SKILLS:
+            record_training_event(player,skill_id,"magic_cast",1)
+            if crit: record_training_event(player,skill_id,"magic_crit",1)
+            if killed: record_training_event(player,skill_id,"magic_kill",killed)
+            if skill_id=="icebolt": record_training_event(player,skill_id,"ice_slow",1)
+            if skill_id=="firebolt": record_training_event(player,skill_id,"fire_burn",1)
+            if skill_id=="lightningbolt" and quick_skip is not None: record_training_event(player,skill_id,"lightning_quick",1)
+        record_training_event(player,"combat_mastery","combat_action",1)
+        rank_msg=player.train_skill(skill_id,10.0); player.train_skill("combat_mastery",3.0)
+
+        action=f"{'💥크리티컬! ' if crit else ''}{skill_name}: " + " · ".join(hit_logs)
+        if status_note: action += "\n" + " · ".join(status_note)
+        if status_logs: action += "\n" + " · ".join(status_logs)
+
+        if not self._alive_enemies():
+            return self._finalize_group_victory(action, rank_msg)
+
+        total_taken, enemy_logs=self._enemy_attack_phase(mods, skip_enemy=quick_skip, counter=(skill_id=="counter"))
+        if player.hp<=0:
+            self.in_battle=False; self._last_grade="실패"; sound_director.cue("battle/defeat",interrupt=True)
+            return get_renderer().render_card(title="💀 전투 패배...", rows=[{"label":"행동","value":action},{"label":"적의 반격","value":" · ".join(enemy_logs)},{"label":"결과","value":"쓰러졌슴미댜..."}], system_key="battle", footer=rank_msg or "전투 시스템")
+        self.turn += 1
+        self._sync_primary_enemy()
+        status_text=self._enemy_status_text()
+        if status_text: action += "\n상태: " + status_text
+        action += f"\n적 반격 총 -{total_taken}HP · " + " · ".join(enemy_logs)
+        return get_renderer().render_battle_card(monster_name=self._group_display_name(), monster_level=self.current_monster.get("level",1), monster_hp=max(0,self.monster_hp), monster_max_hp=self.current_monster["hp"], danger=self.current_monster.get("danger","보통"), turn=self.turn, player_hp=player.hp, player_max_hp=player.max_hp, player_mp=player.mp, player_max_mp=player.max_mp, last_action=action, last_dmg=total_damage, is_crit=crit, size_label=f"적 {len(self._alive_enemies())}체")
 
     def build_battle_image(self, action_name: str = "",
                            dmg: int = 0, is_crit: bool = False) -> io.BytesIO:
@@ -75,7 +412,7 @@ class BattleEngine:
             si = MONSTER_SIZES.get(self._last_size, {})
             size_label = f"{si.get('icon','')} [{self._last_size}]"
         return get_renderer().render_battle_card(
-            monster_name=self.current_monster.get("name","?"),
+            monster_name=self._group_display_name() if self.enemies else self.current_monster.get("name","?"),
             monster_level=self.current_monster.get("level",1),
             monster_hp=max(0,self.monster_hp),
             monster_max_hp=self.current_monster.get("hp",1),
@@ -145,11 +482,25 @@ class BattleEngine:
             self.player.hp = self.player.max_hp
             logger.info('battle: HP가 0 이하로 감지됨 — max_hp로 복원: %d', self.player.max_hp)
 
-        monster_base = random.choice(zone["monsters"])
-        size         = roll_monster_size()
-        monster_data = apply_size_to_monster(monster_base, size)
-        self.current_monster = monster_data
-        self.monster_hp      = monster_data["hp"]
+        # 지역 전투는 1~3체가 동시에 등장할 수 있다. 저레벨 지역은 단독전 비율이 높다.
+        level_min, level_max = zone.get("level_range", (1, 1))
+        group_roll = random.random()
+        if group_roll < (0.12 if level_max <= 5 else 0.22):
+            group_size = 3
+        elif group_roll < (0.42 if level_max <= 5 else 0.55):
+            group_size = 2
+        else:
+            group_size = 1
+        self.enemies = []
+        self.defeated_enemies = []
+        for _ in range(group_size):
+            monster_base = random.choice(zone["monsters"])
+            size = roll_monster_size()
+            monster_data = apply_size_to_monster(monster_base, size)
+            self.enemies.append({"monster": monster_data, "hp": monster_data["hp"], "statuses": {}, "size": size})
+        self._sync_primary_enemy()
+        monster_data = self.current_monster
+        size = self._last_size
         self.in_battle       = True
         self.current_zone    = zone_key
         self.turn            = 1
@@ -163,7 +514,7 @@ class BattleEngine:
         size_label = f"{size_info['icon']} [{size}]"
 
         buf = get_renderer().render_battle_card(
-            monster_name=monster_data["name"],
+            monster_name=self._group_display_name(),
             monster_level=monster_data["level"],
             monster_hp=self.monster_hp,
             monster_max_hp=monster_data["hp"],
@@ -249,6 +600,9 @@ class BattleEngine:
                 system_key="battle",
                 footer="전투 시스템",
             )
+
+        if self.enemies:
+            return self._process_group_turn(skill_id)
 
         player  = self.player
         monster = self.current_monster
@@ -658,7 +1012,10 @@ class BattleEngine:
             )
         else:
             monster = self.current_monster
-            mon_atk = monster.get("attack", 5) if monster else 5
+            if self.enemies:
+                mon_atk = sum(enemy["monster"].get("attack", 5) for enemy in self._alive_enemies())
+            else:
+                mon_atk = monster.get("attack", 5) if monster else 5
             dmg     = max(1, int(mon_atk * 0.5))
             self.player.hp -= dmg
             self.player.hp  = max(0, self.player.hp)

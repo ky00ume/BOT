@@ -81,6 +81,7 @@ def training_objectives(skill_id: str, rank: str) -> list[dict]:
             {"event": "windmill_use", "label": "윈드밀을 사용한다", "target": 8 + idx * 2},
             {"event": "windmill_crit", "label": "윈드밀로 크리티컬을 낸다", "target": 2 + idx // 3},
         ]
+        rows.append({"event": "windmill_multi", "label": "윈드밀로 여러 적을 동시에 맞힌다", "target": 2 + idx // 3})
         if idx >= 3:
             rows.append({"event": "windmill_kill", "label": "윈드밀로 적을 쓰러뜨린다", "target": 2 + idx // 4})
         return rows
@@ -90,6 +91,12 @@ def training_objectives(skill_id: str, rank: str) -> list[dict]:
             {"event": "magic_cast", "label": "볼트 마법을 시전한다", "target": 8 + idx * 2},
             {"event": "magic_crit", "label": "마법으로 크리티컬을 낸다", "target": 2 + idx // 3},
         ]
+        if skill_id == "icebolt":
+            rows.append({"event": "ice_slow", "label": "아이스볼트로 적을 둔화시킨다", "target": 3 + idx // 3})
+        elif skill_id == "firebolt":
+            rows.append({"event": "fire_burn", "label": "파이어볼트로 화상을 건다", "target": 3 + idx // 3})
+        elif skill_id == "lightningbolt":
+            rows.append({"event": "lightning_quick", "label": "빠른 시전으로 반격 틈을 끊는다", "target": 2 + idx // 4})
         if idx >= 3:
             rows.append({"event": "magic_kill", "label": "마법으로 적을 쓰러뜨린다", "target": 2 + idx // 4})
         return rows

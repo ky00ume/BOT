@@ -38,7 +38,7 @@ class EventsCog(commands.Cog, name="이벤트"):
             logger.error("[자동저장] 실패: %s", e, exc_info=True)
 
 
-    async def _close_stale_interaction_windows(self) -> int:
+    async def _close_stale_interaction_windows(self, *, before=None) -> int:
         """Remove controls left by the previous runtime.
 
         discord.py View callbacks are process-local in this bot. After a restart,
@@ -56,6 +56,9 @@ class EventsCog(commands.Cog, name="이벤트"):
             async for message in channel.history(limit=100):
                 if message.author.id != self.bot.user.id or not message.components:
                     continue
+                if before is not None and getattr(message, "created_at", None) is not None:
+                    if message.created_at >= before:
+                        continue
                 try:
                     await message.edit(view=None)
                     closed += 1
@@ -71,6 +74,7 @@ class EventsCog(commands.Cog, name="이벤트"):
     @commands.Cog.listener()
     async def on_ready(self) -> None:
         ctx = self.bot.ctx
+        runtime_started_at = discord.utils.utcnow()
         print(f"[봇 시작] {self.bot.user} 로그인 완료")
 
         if self._initialized:
@@ -161,7 +165,7 @@ class EventsCog(commands.Cog, name="이벤트"):
 
         async def _background_cleanup():
             # First pass closes the obvious previous-runtime windows immediately.
-            closed_views = await self._close_stale_interaction_windows()
+            closed_views = await self._close_stale_interaction_windows(before=runtime_started_at)
             if closed_views:
                 print(f"[복구] 이전 런타임의 만료된 상호작용 창 {closed_views}개 닫음")
 
@@ -169,7 +173,7 @@ class EventsCog(commands.Cog, name="이벤트"):
             # the first history scan. Run one delayed pass so it does not remain looking
             # clickable while its process-local callback is already gone.
             await asyncio.sleep(12)
-            closed_late = await self._close_stale_interaction_windows()
+            closed_late = await self._close_stale_interaction_windows(before=runtime_started_at)
             if closed_late:
                 print(f"[복구] 늦게 남은 만료 상호작용 창 {closed_late}개 추가로 닫음")
 

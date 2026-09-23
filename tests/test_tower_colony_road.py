@@ -39,3 +39,29 @@ async def test_colony_view_has_tower_road_and_world_map_exit():
     labels = {getattr(child, "label", "") for child in view.children}
     assert "비전의 탑으로 가는 길" in labels
     assert "언더다크로 나간다" in labels
+
+
+@pytest.mark.asyncio
+async def test_arrival_callback_updates_location_without_import_error(monkeypatch):
+    import ui.care_ui as care_ui
+
+    class DummyResponse:
+        def __init__(self):
+            self.edits = []
+        async def edit_message(self, **kwargs):
+            self.edits.append(kwargs)
+
+    class DummyInteraction:
+        def __init__(self):
+            self.response = DummyResponse()
+            self.message = object()
+
+    monkeypatch.setattr(care_ui, "save_player_to_db", lambda player: None)
+
+    player = Player()
+    view = TowerColonyRoadView(player, CareManager(), direction="to_tower", step=2)
+    interaction = DummyInteraction()
+    await view._arrive(interaction)
+
+    assert player.current_location == "비전의 탑"
+    assert interaction.response.edits

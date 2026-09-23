@@ -1,4 +1,6 @@
-﻿import pytest
+﻿from datetime import datetime, timedelta, timezone
+
+import pytest
 
 from cogs.events_cog import EventsCog
 
@@ -9,10 +11,11 @@ class FakeAuthor:
 
 
 class FakeMessage:
-    def __init__(self, message_id, author_id, has_components=True):
+    def __init__(self, message_id, author_id, has_components=True, created_at=None):
         self.id = message_id
         self.author = FakeAuthor(author_id)
         self.components = [object()] if has_components else []
+        self.created_at = created_at or datetime.now(timezone.utc) - timedelta(minutes=10)
         self.edits = []
 
     async def edit(self, **kwargs):
@@ -59,3 +62,17 @@ async def test_startup_cleanup_closes_only_own_stale_component_windows():
     assert own_stale.edits == [{"view": None}]
     assert own_plain.edits == []
     assert someone_else.edits == []
+
+
+@pytest.mark.asyncio
+async def test_startup_cleanup_never_closes_current_runtime_components():
+    cutoff = datetime.now(timezone.utc)
+    old_message = FakeMessage(10, 777, True, cutoff - timedelta(seconds=1))
+    current_message = FakeMessage(11, 777, True, cutoff + timedelta(seconds=1))
+    cog = EventsCog(FakeBot(FakeChannel([current_message, old_message])))
+
+    closed = await cog._close_stale_interaction_windows(before=cutoff)
+
+    assert closed == 1
+    assert old_message.edits == [{"view": None}]
+    assert current_message.edits == []

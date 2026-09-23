@@ -1255,7 +1255,6 @@ class TowerColonyRoadView(ExpiringView):
             await view.send(interaction, edit=True)
 
     async def _arrive(self, interaction):
-        from save_manager import save_player_to_db
         if self.direction == "to_colony":
             self.player.current_location = "마이코니드 군락"
             save_player_to_db(self.player)

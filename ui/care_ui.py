@@ -9,7 +9,7 @@ from utils.logger import setup_logger
 logger = setup_logger('care_ui')
 from bg3_renderer import get_renderer
 from costume_data import (
-    COSTUME_ITEMS, SNACK_ITEMS, SNACK_RECIPES, COSTUME_RECIPES,
+    COSTUME_ITEMS, COSTUME_FLAVOR, SNACK_ITEMS, SNACK_RECIPES, COSTUME_RECIPES,
     GRADE_EMOJI, GRADE_LABELS,
 )
 from database import save_player_to_db
@@ -88,6 +88,14 @@ def _observation_details(player) -> list[str]:
         details.append("앞다리를 가볍게 들었다 놓으며 주변 소리에 바로 반응합니다. 아직 기운이 남아 있습니다.")
     else:
         details.append("앞다리 하나를 접었다 폈다 하며 편한 자세를 찾고 있습니다.")
+    equipped_flavor = []
+    for item_id in getattr(player, "costume", {}).values():
+        if item_id:
+            flavor = COSTUME_FLAVOR.get(item_id, {}).get("observe")
+            if flavor:
+                equipped_flavor.append(flavor)
+    details.extend(equipped_flavor[:2])
+
     traces = state.get("traces", [])
     if traces:
         details.append(traces[-1].get("text", ""))
@@ -234,11 +242,14 @@ class CostumeManageView(ExpiringView):
             save_player_to_db(self.player)
         except Exception as e:
             logger.error("의장 장착 후 저장 실패: %s", e, exc_info=True)
-        file = _result_card(
-            "의장 장착",
-            grade=grade_eng,
+        flavor = COSTUME_FLAVOR.get(item_id, {})
+        embed = discord.Embed(
+            title=f"{item.get('emoji', '👗')} {item.get('name', item_id)} 장착",
+            description=flavor.get("equip") or item.get("description", msg),
+            color=0x6D596E,
         )
-        await interaction.response.edit_message(content=None, attachments=[file], view=None)
+        embed.add_field(name="기본 설명", value=item.get("description", ""), inline=False)
+        await interaction.response.edit_message(content=None, attachments=[], embed=embed, view=None)
 
     async def _on_unequip_select(self, interaction: discord.Interaction):
         # 장착된 의장 슬롯 목록 표시
@@ -951,7 +962,18 @@ class CostumeCraftView(ExpiringView):
                 save_player_to_db(self.player)
             except Exception as e:
                 logger.error("의장 제작 후 저장 실패: %s", e, exc_info=True)
-        await interaction.response.edit_message(content=None, attachments=[], embed=_make_room_embed(self.player), view=self)
+        if result.get("success") and result.get("item_id"):
+            costume = COSTUME_ITEMS.get(result["item_id"], {})
+            flavor = COSTUME_FLAVOR.get(result["item_id"], {})
+            embed = discord.Embed(
+                title=f"{costume.get('emoji', '✂️')} {costume.get('name', result['item_id'])} 완성",
+                description=flavor.get("craft") or costume.get("description", result["message"]),
+                color=0x6D596E,
+            )
+            embed.add_field(name="획득", value=f"{costume.get('name', result['item_id'])} x{result.get('count', 1)}", inline=True)
+        else:
+            embed = discord.Embed(title="✂️ 의장제작", description=result["message"], color=0x6B5C5C)
+        await interaction.response.edit_message(content=None, attachments=[], embed=embed, view=self)
 
     async def _on_back(self, interaction: discord.Interaction):
         await interaction.response.edit_message(

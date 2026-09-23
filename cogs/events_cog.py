@@ -4,6 +4,7 @@
 기존 main.py 의 이벤트/초기화 로직을 Cog 로 분리한 것이다.
 """
 
+import asyncio
 import discord
 from discord.ext import commands, tasks
 
@@ -52,7 +53,7 @@ class EventsCog(commands.Cog, name="이벤트"):
                 return 0
         closed = 0
         try:
-            async for message in channel.history(limit=100):
+            async for message in channel.history(limit=50):
                 if message.author.id != self.bot.user.id or not message.components:
                     continue
                 try:
@@ -82,10 +83,6 @@ class EventsCog(commands.Cog, name="이벤트"):
             return
 
         self._initialized = True
-
-        closed_views = await self._close_stale_interaction_windows()
-        if closed_views:
-            print(f"[복구] 이전 런타임의 만료된 상호작용 창 {closed_views}개 닫음")
 
         # DB 초기화
         init_db()
@@ -161,6 +158,14 @@ class EventsCog(commands.Cog, name="이벤트"):
                 logger.error("Cog 로드 실패: %s — %s", cog_path, e, exc_info=True)
 
         print("[봇 준비] 모든 시스템 초기화 완료!")
+
+        async def _background_cleanup():
+            closed_views = await self._close_stale_interaction_windows()
+            if closed_views:
+                print(f"[복구] 이전 런타임의 만료된 상호작용 창 {closed_views}개 닫음")
+
+        # Stale component cleanup may hit Discord rate limits; never block readiness.
+        asyncio.create_task(_background_cleanup())
 
     # ─── on_message ──────────────────────────────────────────────────────────
     @commands.Cog.listener()

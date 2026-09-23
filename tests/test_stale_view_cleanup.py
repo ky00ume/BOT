@@ -1,4 +1,4 @@
-import pytest
+﻿import pytest
 
 from cogs.events_cog import EventsCog
 
@@ -24,7 +24,7 @@ class FakeChannel:
         self.messages = messages
 
     def history(self, *, limit):
-        assert limit == 100
+        assert limit == 50
         async def gen():
             for message in self.messages:
                 yield message

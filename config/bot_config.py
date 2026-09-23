@@ -64,6 +64,8 @@ def create_bot_context(
     fishing_engine    = FishingEngine(shared_player)
     cooking_engine    = CookingEngine(shared_player)
     metallurgy_engine = MetallurgyEngine(shared_player)
+    from blacksmith import BlacksmithEngine
+    blacksmith_engine = BlacksmithEngine(shared_player)
     gathering_engine  = GatheringEngine(shared_player)
     potion_engine     = PotionEngine(shared_player)
     quest_manager     = QuestManager(shared_player)
@@ -104,6 +106,7 @@ def create_bot_context(
     ctx.fishing_engine      = fishing_engine
     ctx.cooking_engine      = cooking_engine
     ctx.metallurgy_engine   = metallurgy_engine
+    ctx.blacksmith_engine    = blacksmith_engine
     ctx.gathering_engine    = gathering_engine
     ctx.potion_engine       = potion_engine
     ctx.quest_manager       = quest_manager
@@ -140,5 +143,6 @@ def create_bot_context(
     _app_context.register("crafting_engine",     crafting_engine)
     _app_context.register("cooking_engine",      cooking_engine)
     _app_context.register("metallurgy_engine",   metallurgy_engine)
+    _app_context.register("blacksmith_engine",    blacksmith_engine)
 
     return ctx

@@ -22,6 +22,7 @@ _LIFE_SKILL_ENGINE = {
     "cooking":    "cooking",
     "alchemy":    "alchemy",
     "crafting":   "crafting",
+    "blacksmith":  "blacksmith",
     "metallurgy": "metallurgy",
     "fishing":    None,
     "gathering":  None,
@@ -596,13 +597,14 @@ class RecipeSelect(Select):
 
 class SkillMainView(View):
     def __init__(self, player, potion_engine=None, crafting_engine=None,
-                 cooking_engine=None, metallurgy_engine=None, back_factory=None):
+                 cooking_engine=None, metallurgy_engine=None, blacksmith_engine=None, back_factory=None):
         super().__init__(timeout=GAME_VIEW_TIMEOUT)
         self.player = player
         self.potion_engine = potion_engine
         self.crafting_engine = crafting_engine
         self.cooking_engine = cooking_engine
         self.metallurgy_engine = metallurgy_engine
+        self.blacksmith_engine = blacksmith_engine
         self.current_category = None
         self.back_factory = back_factory
         self.add_item(SkillCategorySelect(player))
@@ -729,6 +731,8 @@ class SkillMainView(View):
                 result = self.cooking_engine.cook(recipe_id)
             elif skill_id == "metallurgy" and self.metallurgy_engine:
                 result = self.metallurgy_engine.smelt(recipe_id)
+            elif skill_id == "blacksmith" and self.blacksmith_engine:
+                result = self.blacksmith_engine.forge(recipe_id)
 
             if result is None:
                 await interaction.response.send_message("제작 엔진을 찾을 수 없습니다.", ephemeral=True)
@@ -738,7 +742,7 @@ class SkillMainView(View):
             try:
                 from core.sound_director import sound_director
                 cue = {"alchemy": "craft/alchemy/complete", "cooking": "craft/cooking/complete",
-                       "metallurgy": "craft/smithing/complete", "crafting": "craft/general/complete"}.get(skill_id)
+                       "metallurgy": "craft/smithing/complete", "blacksmith": "craft/smithing/complete", "crafting": "craft/general/complete"}.get(skill_id)
                 if cue:
                     sound_director.cue(cue, interrupt=True)
             except Exception:
@@ -847,5 +851,8 @@ def _get_recipes_for_skill(skill_id: str) -> dict:
     elif skill_id == "metallurgy":
         from metallurgy import SMELT_RECIPES
         return SMELT_RECIPES
+    elif skill_id == "blacksmith":
+        from blacksmith import BLACKSMITH_RECIPES
+        return BLACKSMITH_RECIPES
     return {}
 

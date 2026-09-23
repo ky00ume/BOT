@@ -177,7 +177,9 @@ class MetallurgyEngine:
             ing_list.append((ing_name, cnt))
 
         will = self.player.base_stats.get("will", 10)
-        success_rate = min(0.95, 0.60 + will * 0.01)
+        rank_idx = RANK_ORDER_SMELT.index(rank) if rank in RANK_ORDER_SMELT else 0
+        # 마비노기풍: 낮은 랭크는 철판 앞에서 실패도 수련이고, 랭크가 오르면 안정된다.
+        success_rate = min(0.98, 0.52 + will * 0.01 + rank_idx * 0.025)
         success = random.random() < success_rate
 
         if success:

@@ -246,6 +246,7 @@ class MiscCog(commands.Cog, name="기타"):
             crafting_engine=self.ctx.crafting_engine,
             cooking_engine=self.ctx.cooking_engine,
             metallurgy_engine=self.ctx.metallurgy_engine,
+            blacksmith_engine=self.ctx.blacksmith_engine,
         )
         await ctx.send(embed=embed, view=view)
 

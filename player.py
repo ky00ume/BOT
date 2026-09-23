@@ -156,14 +156,20 @@ class Player:
 
         # 기본 전투 스킬은 처음부터 연습 랭크로 습득
         self.skill_ranks = {
-            "smash":   "연습",
-            "defense": "연습",
-            "counter": "연습",
+            "smash":      "연습",
+            "defense":    "연습",
+            "counter":    "연습",
+            "mining":     "연습",
+            "metallurgy": "연습",
+            "blacksmith": "연습",
         }
         self.skill_exp = {
-            "smash":   0.0,
-            "defense": 0.0,
-            "counter": 0.0,
+            "smash":      0.0,
+            "defense":    0.0,
+            "counter":    0.0,
+            "mining":     0.0,
+            "metallurgy": 0.0,
+            "blacksmith": 0.0,
         }
 
         self._affinity_manager = None
@@ -688,7 +694,7 @@ class Player:
 
         if "skill_ranks" in data and isinstance(data["skill_ranks"], dict):
             # 기본 스킬은 항상 최소 연습 랭크 보장
-            merged = {"smash": "연습", "defense": "연습", "counter": "연습"}
+            merged = {"smash": "연습", "defense": "연습", "counter": "연습", "mining": "연습", "metallurgy": "연습", "blacksmith": "연습"}
             merged.update(data["skill_ranks"])
             self.skill_ranks = merged
         if "skill_exp" in data and isinstance(data["skill_exp"], dict):

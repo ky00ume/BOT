@@ -137,10 +137,25 @@ GATHER_ZONE_ITEMS = {
 
 # 월드 하위 지역 이름을 기존 군락 버섯 풀에 연결한다.
 GATHER_ZONE_ITEMS["마이코니드 군락 외곽"] = GATHER_ZONE_ITEMS["버섯 군락지"]
+GATHER_ZONE_ITEMS["비버뱅 군락지"] = [
+    i for i in GATHER_ZONE_ITEMS["버섯 군락지"]
+    if i["id"] in {"bibberbang", "timmask", "torchstalk", "nightlight_mushroom", "toxic_mushroom"}
+]
+GATHER_ZONE_ITEMS["셀루네 수정지"] = [
+    {"id": "mana_herb", "name": "마나 허브", "grade": "Rare", "rate": 0.45},
+    {"id": "moonlight_dew", "name": "달빛 이슬", "grade": "Epic", "rate": 0.08},
+    {"id": "glow_mushroom", "name": "발광버섯", "grade": "Rare", "rate": 0.20},
+]
+GATHER_ZONE_ITEMS["샤의 잔해 채집지"] = [
+    {"id": "ancient_fragment", "name": "고대의 조각", "grade": "Epic", "rate": 0.20},
+    {"id": "magic_stone", "name": "마법의 돌", "grade": "Rare", "rate": 0.35},
+    {"id": "black_pearl", "name": "검은 진주", "grade": "Epic", "rate": 0.08},
+]
 
 # 광맥별 산출물. 고급 광맥은 이후 지역 해금과 함께 별도로 확장한다.
 MINE_ZONE_ITEM_IDS = {
     "그림포지 광맥": {"copper_ore", "tin_ore", "iron_ore", "coal", "silver_ore", "gold_ore", "mithril_ore", "gem_ruby", "gem_sapphire", "gem_emerald", "sulfur"},
+    "아다만틴 심층 광맥": {"mithril_ore", "orichalcum_ore", "adamantium_ore", "gem_diamond", "gem_amethyst", "gem_aquamarine"},
 }
 
 

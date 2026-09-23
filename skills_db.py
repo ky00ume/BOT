@@ -373,8 +373,9 @@ OTHER_SKILLS = {
         "ranks": {r: {} for r in RANK_ORDER},
     },
     "metallurgy": {
-        "name": "제련술",
-        "desc": "광석을 가공하여 주괴를 만든다.",
+        "name": "제련",
+        "desc": "광석을 불에 녹여 주괴로 만든다. 실패해도 수련치는 남는다.",
+        "icon": "🔥",
         "ranks": {r: {} for r in RANK_ORDER},
     },
     "fishing": {
@@ -404,6 +405,12 @@ OTHER_SKILLS = {
         "icon": "🔨",
         "ranks": {r: {} for r in RANK_ORDER},
     },
+    "blacksmith": {
+        "name": "블랙스미스",
+        "desc": "주괴를 달구고 두드려 금속 장비를 만든다. 망치질이 곧 수련이다.",
+        "icon": "⚒️",
+        "ranks": {r: {} for r in RANK_ORDER},
+    },
     "gathering": {
         "name": "채집",
         "desc": "자연에서 재료를 채집한다.",
@@ -412,8 +419,8 @@ OTHER_SKILLS = {
     },
     "mining": {
         "name": "채광",
-        "desc": "광석을 채굴한다.",
-        "icon": "⛏",
+        "desc": "곡괭이로 광맥을 두드려 광석과 보석을 캔다. 랭크가 오르면 희귀 광물이 열린다.",
+        "icon": "⛏️",
         "ranks": {r: {} for r in RANK_ORDER},
     },
 }

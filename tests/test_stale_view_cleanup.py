@@ -24,7 +24,7 @@ class FakeChannel:
         self.messages = messages
 
     def history(self, *, limit):
-        assert limit == 50
+        assert limit == 100
         async def gen():
             for message in self.messages:
                 yield message

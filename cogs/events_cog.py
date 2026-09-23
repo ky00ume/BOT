@@ -53,7 +53,7 @@ class EventsCog(commands.Cog, name="이벤트"):
                 return 0
         closed = 0
         try:
-            async for message in channel.history(limit=50):
+            async for message in channel.history(limit=100):
                 if message.author.id != self.bot.user.id or not message.components:
                     continue
                 try:
@@ -160,9 +160,18 @@ class EventsCog(commands.Cog, name="이벤트"):
         print("[봇 준비] 모든 시스템 초기화 완료!")
 
         async def _background_cleanup():
+            # First pass closes the obvious previous-runtime windows immediately.
             closed_views = await self._close_stale_interaction_windows()
             if closed_views:
                 print(f"[복구] 이전 런타임의 만료된 상호작용 창 {closed_views}개 닫음")
+
+            # A component message can race with reconnect/startup and arrive just after
+            # the first history scan. Run one delayed pass so it does not remain looking
+            # clickable while its process-local callback is already gone.
+            await asyncio.sleep(12)
+            closed_late = await self._close_stale_interaction_windows()
+            if closed_late:
+                print(f"[복구] 늦게 남은 만료 상호작용 창 {closed_late}개 추가로 닫음")
 
         # Stale component cleanup may hit Discord rate limits; never block readiness.
         asyncio.create_task(_background_cleanup())

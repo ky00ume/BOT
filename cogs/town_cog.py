@@ -23,6 +23,29 @@ class TownCog(commands.Cog, name="마을"):
             return
         await send_town_notice(ctx.channel)
 
+    @commands.command(name="탑", aliases=["비전의탑"])
+    async def tower_cmd(self, ctx):
+        """비전의 탑 상층을 바로 연다."""
+        if not await check_channel(ctx, self.ctx.allowed_channel_id):
+            return
+        from ui.care_ui import TowerUpperFloorView
+        view = TowerUpperFloorView(self.ctx.player, self.ctx.care_manager, suspicious_actor_id=getattr(self.ctx, "drider_id", None))
+        await ctx.send(embed=view.make_embed(), view=view)
+
+    @commands.command(name="연주", aliases=["악기연주"])
+    async def music_cmd(self, ctx):
+        """배운 루바토 선율을 골라 바로 연주 미니게임으로 들어간다."""
+        if not await check_channel(ctx, self.ctx.allowed_channel_id):
+            return
+        from music_system import learned_melodies
+        from lubato_song_memory import REPERTOIRE
+        learned = learned_melodies(self.ctx.player)
+        if not learned:
+            await ctx.send("🎼 아직 배운 선율이 없슴미댜. `/탑` → 전시관 → 루바토의 노래 기억에서 레퍼토리를 먼저 들어보셰요!")
+            return
+        view = QuickMusicView(self.ctx.player, self.ctx.care_manager, learned, suspicious_actor_id=getattr(self.ctx, "drider_id", None))
+        await ctx.send(embed=view.make_embed(), view=view)
+
     @commands.command(name="군락", aliases=["마이코니드", "마이코니드군락", "비전타운"])
     async def vision_town_cmd(self, ctx):
         if not await check_channel(ctx, self.ctx.allowed_channel_id):
@@ -153,6 +176,28 @@ class TownCog(commands.Cog, name="마을"):
         else:
             result = self.ctx.movement_system.show_map(ctx.author.id)
         await send_msg_card(ctx, "이동", str(result), system_key="system")
+
+
+class QuickMusicView(discord.ui.View):
+    def __init__(self, player, care_manager, melody_ids, *, suspicious_actor_id=None):
+        from ui.view_timeouts import GAME_VIEW_TIMEOUT
+        super().__init__(timeout=GAME_VIEW_TIMEOUT)
+        self.player=player;self.care_manager=care_manager;self.suspicious_actor_id=suspicious_actor_id
+        from lubato_song_memory import REPERTOIRE
+        for melody_id in melody_ids[:20]:
+            song=REPERTOIRE.get(melody_id)
+            if not song: continue
+            b=discord.ui.Button(label=song["title"],emoji="🎻",style=discord.ButtonStyle.primary)
+            b.callback=self._make_play(melody_id);self.add_item(b)
+    def make_embed(self):
+        return discord.Embed(title="🎻 악기 연주",description="배운 선율을 골라 연주합니다. 곡을 고르면 바로 리듬 연주가 시작됨미댜!",color=0x6B5578)
+    def _make_play(self, melody_id):
+        async def cb(interaction):
+            from ui.care_ui import RhythmPerformanceView
+            v=RhythmPerformanceView(self.player,self.care_manager,melody_id,suspicious_actor_id=self.suspicious_actor_id)
+            v.bind_message(getattr(interaction,"message",None))
+            await interaction.response.edit_message(attachments=[],embed=v.make_embed(),view=v)
+        return cb
 
 
 async def setup(bot):

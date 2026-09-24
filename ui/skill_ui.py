@@ -29,6 +29,7 @@ _LIFE_SKILL_ENGINE = {
     "mining":     None,
     "rest":       None,
     "music":      None,
+    "composition": None,
 }
 
 _CATEGORY_LABELS = {
@@ -323,7 +324,8 @@ def make_life_detail_embed(player, skill_id: str) -> discord.Embed:
         "gathering": "채집 지역에서 🌿 채집으로 재료를 모읍니다.",
         "mining": "광맥 지역에서 ⛏️ 채광으로 광석을 모읍니다.",
         "rest": "휴식 장소에서 사용하며 컨디션을 회복합니다.",
-        "music": "연주 활동을 통해 수련합니다.",
+        "music": "마제스티(루바토)에게 배운 선율을 직접 연주하며 수련합니다.",
+        "composition": "배운 선율의 핵심 멜로디로 츄라이더만의 변주곡을 만들며 수련합니다.",
     }.get(skill_id)
     if recipes:
         unlocked = 0

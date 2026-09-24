@@ -1405,7 +1405,27 @@ class LubatoSongMemoryView(ExpiringView):
     def _make_repertoire(self,key):
         async def cb(interaction):
             from lubato_song_memory import repertoire_text
-            v=LubatoSongMemoryView(self.player,self.care_manager,suspicious_actor_id=self.suspicious_actor_id);v.bind_message(getattr(interaction,"message",None));await interaction.response.edit_message(attachments=[],embed=v.make_embed(repertoire_text(key)),view=v)
+            from music_system import learn_melody
+            learned=learn_melody(self.player,key)
+            note=repertoire_text(key) + ("\n\n🎼 **새 선율을 배웠습니다.** 이제 츄라이더가 이 멜로디를 연주하거나 작곡에 사용할 수 있습니다." if learned else "")
+            v=LubatoSongMemoryView(self.player,self.care_manager,suspicious_actor_id=self.suspicious_actor_id);v.bind_message(getattr(interaction,"message",None));v._add_music_actions(key);await interaction.response.edit_message(attachments=[],embed=v.make_embed(note),view=v)
+        return cb
+    def _add_music_actions(self,key):
+        if len(self.children)<24:
+            b=discord.ui.Button(label="츄라이더가 연주",emoji="🎻",style=discord.ButtonStyle.success);b.callback=self._make_perform(key);self.add_item(b)
+        if len(self.children)<24:
+            b=discord.ui.Button(label="이 선율로 작곡",emoji="✍️",style=discord.ButtonStyle.success);b.callback=self._make_compose(key);self.add_item(b)
+    def _make_perform(self,key):
+        async def cb(interaction):
+            from music_system import perform
+            ok,msg=perform(self.player,key)
+            v=LubatoSongMemoryView(self.player,self.care_manager,suspicious_actor_id=self.suspicious_actor_id);v.bind_message(getattr(interaction,"message",None));v._add_music_actions(key);await interaction.response.edit_message(attachments=[],embed=v.make_embed(msg),view=v)
+        return cb
+    def _make_compose(self,key):
+        async def cb(interaction):
+            from music_system import compose_variation
+            ok,msg=compose_variation(self.player,key)
+            v=LubatoSongMemoryView(self.player,self.care_manager,suspicious_actor_id=self.suspicious_actor_id);v.bind_message(getattr(interaction,"message",None));v._add_music_actions(key);await interaction.response.edit_message(attachments=[],embed=v.make_embed(msg),view=v)
         return cb
     async def _back(self,interaction):
         v=TowerExhibitionView(self.player,self.care_manager,suspicious_actor_id=self.suspicious_actor_id);v.bind_message(getattr(interaction,"message",None));await interaction.response.edit_message(attachments=[],embed=v.make_embed(),view=v)

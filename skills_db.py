@@ -384,8 +384,15 @@ OTHER_SKILLS = {
         "ranks": {r: {} for r in RANK_ORDER},
     },
     "music": {
-        "name": "연주",
-        "desc": "악기를 연주하여 버프를 부여한다.",
+        "name": "악기 연주",
+        "desc": "배운 선율을 악기로 연주한다. 루바토의 곡에서 기억한 멜로디도 연주할 수 있다.",
+        "icon": "🎻",
+        "ranks": {r: {} for r in RANK_ORDER},
+    },
+    "composition": {
+        "name": "작곡",
+        "desc": "배운 선율의 핵심 멜로디를 바탕으로 새로운 변주곡을 만든다.",
+        "icon": "✍️",
         "ranks": {r: {} for r in RANK_ORDER},
     },
     "cooking": {

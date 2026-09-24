@@ -489,6 +489,10 @@ RECIPES = {
         "exp":         75.0,
         "desc":        "비버뱅 + 버섯 + 물 + 고춧가루 → 비버뱅 전골",
     },
+    "noblestalk_stew": {"name":"공작버섯 약선 스튜","rank_req":"A","ingredients":{"noblestalk":1,"mushroom":2,"water":2},"result":{"noblestalk_stew":1},"tool_req":"tool_pot","exp":220.0,"desc":"희귀한 공작버섯의 향과 회복성을 살린 약선 스튜."},
+    "underdark_truffle_pasta": {"name":"언더다크 트러플 파스타","rank_req":"C","ingredients":{"underdark_truffle":1,"flour":1,"butter":1,"milk":1},"result":{"underdark_truffle_pasta":1},"tool_req":"tool_pot","exp":85.0,"desc":"향 짙은 언더다크 트러플을 넣은 크림 파스타."},
+    "spore_mushroom_broth": {"name":"포자 버섯 육수","rank_req":"D","ingredients":{"timmask_spores":1,"mushroom":2,"water":2},"result":{"spore_mushroom_broth":1},"tool_req":"tool_pot","exp":65.0,"desc":"팀마스크 포자를 극소량 써 향을 낸 위험한 언더다크식 육수."},
+
 }
 
 class CookingEngine:

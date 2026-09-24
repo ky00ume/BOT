@@ -530,6 +530,30 @@
       "hp": 500,
       "mp": 300,
       "en": 50
+    },
+    "noblestalk_tonic": {
+      "name": "공작버섯 회복제",
+      "type": "consumable",
+      "grade": "Rare",
+      "desc": "공작버섯을 보존해 만든 최고급 회복제."
+    },
+    "timmask_draught": {
+      "name": "팀마스크 조제액",
+      "type": "consumable",
+      "grade": "Rare",
+      "desc": "팀마스크 포자를 희석한 연금술 조제액."
+    },
+    "haste_spore_tonic": {
+      "name": "가속 포자 강장제",
+      "type": "consumable",
+      "grade": "Rare",
+      "desc": "가속 포자를 안정화한 기력 강장제."
+    },
+    "antitoxin_spore_tonic": {
+      "name": "포자 해독제",
+      "type": "consumable",
+      "grade": "Rare",
+      "desc": "독 포자를 역으로 이용해 만든 해독 조제액."
     }
   },
   "GATHERING_ITEMS": {
@@ -906,6 +930,36 @@
       "grade": "Legendary",
       "price": 8000,
       "desc": "완벽한 투명 보석. 최고급 재료."
+    },
+    "noblestalk": {
+      "name": "공작버섯",
+      "type": "gathering",
+      "grade": "Legendary",
+      "desc": "언더다크에서 극히 드물게 발견되는 강력한 회복성 버섯."
+    },
+    "timmask_spores": {
+      "name": "팀마스크 포자",
+      "type": "gathering",
+      "grade": "Rare",
+      "desc": "정신을 혼란시키는 팀마스크의 포자."
+    },
+    "hastening_spores": {
+      "name": "가속 포자",
+      "type": "gathering",
+      "grade": "Rare",
+      "desc": "몸의 움직임을 북돋는 희귀 포자."
+    },
+    "poison_spores": {
+      "name": "독 포자",
+      "type": "gathering",
+      "grade": "Rare",
+      "desc": "독성 조제에 쓰이는 위험한 포자."
+    },
+    "underdark_truffle": {
+      "name": "언더다크 트러플",
+      "type": "gathering",
+      "grade": "Rare",
+      "desc": "츄라이더 오리지널. 깊은 동굴 흙에서 자라는 향 짙은 식용 균류."
     }
   },
   "LOOT_ITEMS": {
@@ -1619,6 +1673,24 @@
       "hp": 140,
       "mp": 45,
       "en": 55
+    },
+    "noblestalk_stew": {
+      "name": "공작버섯 약선 스튜",
+      "type": "food",
+      "grade": "Rare",
+      "desc": "언더다크 균류를 활용한 특수 요리."
+    },
+    "underdark_truffle_pasta": {
+      "name": "언더다크 트러플 파스타",
+      "type": "food",
+      "grade": "Rare",
+      "desc": "언더다크 균류를 활용한 특수 요리."
+    },
+    "spore_mushroom_broth": {
+      "name": "포자 버섯 육수",
+      "type": "food",
+      "grade": "Rare",
+      "desc": "언더다크 균류를 활용한 특수 요리."
     }
   },
   "DROP_ITEMS": {

@@ -85,6 +85,11 @@ POTION_RECIPES = {
         "hp": 500, "mp": 300, "en": 50,
         "desc": "달빛 이슬+치유의 뿌리+마나꽃+물 → 만능 포션",
     },
+    "noblestalk_tonic": {"name":"공작버섯 회복제","rank_req":"A","ingredients":{"noblestalk":1,"water":2},"result":"noblestalk_tonic","tool_req":"tool_mortar","exp":280.0,"hp":800,"mp":300,"en":80,"desc":"공작버섯을 보존해 만든 최고급 회복제."},
+    "timmask_draught": {"name":"팀마스크 조제액","rank_req":"D","ingredients":{"timmask_spores":2,"water":1},"result":"timmask_draught","tool_req":"tool_mortar","exp":70.0,"hp":0,"mp":120,"en":0,"desc":"팀마스크 포자를 안전하게 희석한 조제액."},
+    "haste_spore_tonic": {"name":"가속 포자 강장제","rank_req":"C","ingredients":{"hastening_spores":2,"honey":1,"water":1},"result":"haste_spore_tonic","tool_req":"tool_mortar","exp":90.0,"hp":0,"mp":0,"en":100,"desc":"가속 포자를 안정화해 만든 기력 강장제."},
+    "antitoxin_spore_tonic": {"name":"포자 해독제","rank_req":"D","ingredients":{"poison_spores":1,"antidote_herb":1,"water":1},"result":"antitoxin_spore_tonic","tool_req":"tool_mortar","exp":65.0,"hp":80,"mp":0,"en":0,"desc":"독 포자를 역으로 이용한 해독 조제액."},
+
 }
 
 class PotionEngine:

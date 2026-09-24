@@ -130,6 +130,10 @@ GATHER_ZONE_ITEMS = {
         {"id": "timmask",             "name": "팀마스크",          "grade": "Rare",    "rate": 0.05},
         {"id": "bibberbang",          "name": "비버뱅",            "grade": "Rare",    "rate": 0.04},
         {"id": "reishi",              "name": "영지버섯",          "grade": "Epic",    "rate": 0.02},
+        {"id": "timmask_spores",      "name": "팀마스크 포자",     "grade": "Rare",    "rate": 0.05},
+        {"id": "hastening_spores",    "name": "가속 포자",         "grade": "Rare",    "rate": 0.035},
+        {"id": "poison_spores",       "name": "독 포자",           "grade": "Rare",    "rate": 0.04},
+        {"id": "underdark_truffle",   "name": "언더다크 트러플",   "grade": "Rare",    "rate": 0.03},
         {"id": "sussur_bloom",        "name": "서서 꽃",           "grade": "Epic",    "rate": 0.005},
     ],
 }
@@ -141,6 +145,11 @@ GATHER_ZONE_ITEMS["비버뱅 군락지"] = [
     i for i in GATHER_ZONE_ITEMS["버섯 군락지"]
     if i["id"] in {"bibberbang", "timmask", "torchstalk", "nightlight_mushroom", "toxic_mushroom"}
 ]
+GATHER_ZONE_ITEMS["비버뱅 군락지"].extend([
+    {"id":"timmask_spores","name":"팀마스크 포자","grade":"Rare","rate":0.10},
+    {"id":"poison_spores","name":"독 포자","grade":"Rare","rate":0.06},
+    {"id":"noblestalk","name":"공작버섯","grade":"Legendary","rate":0.003},
+])
 GATHER_ZONE_ITEMS["셀루네 수정지"] = [
     {"id": "mana_herb", "name": "마나 허브", "grade": "Rare", "rate": 0.45},
     {"id": "moonlight_dew", "name": "달빛 이슬", "grade": "Epic", "rate": 0.08},

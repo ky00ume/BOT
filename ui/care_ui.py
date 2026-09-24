@@ -1044,8 +1044,8 @@ class TowerPlaceView(ExpiringView):
             "description": "마제스티와 카르니스가 생활하는 탑의 상층. 오래된 가구와 책장 사이, 눈에 잘 띄지 않는 곳에 작은 흔적들이 숨어 있다.",
             "actions": [
                 ("책장 뒤 작은 틈", "🕸️", "nest"),
-                ("마제스티의 자리", "🕯️", "마제스티의 자리", "손이 자주 닿는 물건들이 정돈되어 있다. 책장 아래에는 누군가 일부러 밀어 넣은 듯한 작은 간식 접시가 하나 놓여 있다."),
-                ("카르니스의 기척", "🕷️", "카르니스의 기척", "복도 너머에서 단단한 발끝이 바닥을 긁는 소리가 난다. 책장 아래의 작은 발자국은 그 소리가 가까워질수록 안쪽으로 향한다."),
+                ("마제스티가 남긴 흔적", "🕯️", "마제스티가 남긴 흔적", "손이 자주 닿은 물건들이 정돈되어 있다. 지금 누가 있는지는 알 수 없지만, 책장 아래에는 누군가 일부러 밀어 넣은 듯한 작은 간식 접시가 하나 놓여 있다."),
+                ("복도에 남은 흔적", "🕷️", "복도에 남은 흔적", "돌바닥에 단단한 발끝이 스친 자국이 길게 남아 있다. 책장 아래의 작은 발자국은 그 자국을 피해 안쪽으로 향한다. 카르니스가 지금 근처에 있다는 뜻은 아니다."),
                 ("전시관", "🏛️", "exhibition"),
                 ("군락으로 가는 길", "🍄", "road_to_colony"),
             ],
@@ -1884,6 +1884,21 @@ class CareRoomView(ExpiringView):
         )
         walk_btn.callback = self._on_walk
         self.add_item(walk_btn)
+
+        # Row 4: 돌보기 방에서 상층 생활 공간으로 나가기
+        leave_btn = discord.ui.Button(
+            label="↩️ 상층으로 나가기",
+            style=discord.ButtonStyle.secondary,
+            custom_id="care_leave_room",
+            row=4,
+        )
+        leave_btn.callback = self._leave_room
+        self.add_item(leave_btn)
+
+    async def _leave_room(self, interaction: discord.Interaction):
+        view = TowerUpperFloorView(self.player, self.care_manager, suspicious_actor_id=self.suspicious_actor_id)
+        view.bind_message(getattr(interaction, "message", None))
+        await interaction.response.edit_message(content=None, attachments=[], embed=view.make_embed(), view=view)
 
     # ── 관찰 / 몸단장 / 휴식 / 접촉 ─────────────────────────────────────
     async def _on_observe(self, interaction: discord.Interaction):

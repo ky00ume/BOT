@@ -633,6 +633,23 @@ class BibberbangNoblestalkView(View):
                 app_context.get_save_manager().save(self.player)
             b.callback=cb; self.add_item(b)
 
+class RareDiscoveryView(View):
+    def __init__(self, zone_name, player):
+        super().__init__(timeout=GAME_VIEW_TIMEOUT); self.zone_name=zone_name; self.player=player
+        from rare_discovery_events import EVENTS
+        self.event=EVENTS[zone_name]
+        for key,label in self.event["choices"]:
+            b=Button(label=label,style=discord.ButtonStyle.secondary if key=="leave" else discord.ButtonStyle.primary)
+            async def cb(interaction,choice=key):
+                import random,app_context
+                from rare_discovery_events import resolve
+                result=resolve(self.player,self.zone_name,choice,rng=random.random)
+                if result.get("resolved"):
+                    for child in self.children: child.disabled=True
+                await interaction.response.edit_message(embed=discord.Embed(title=self.event["title"],description=result["text"]),view=self)
+                app_context.get_save_manager().save(self.player)
+            b.callback=cb;self.add_item(b)
+
 class GatheringZoneView(View):
     """채집터 상세 뷰 (이미지 + 버튼)"""
 
@@ -657,6 +674,11 @@ class GatheringZoneView(View):
                 event_btn=Button(label="공작버섯 흔적",style=discord.ButtonStyle.primary,emoji="🍄")
                 event_btn.callback=self._noblestalk_callback
                 self.add_item(event_btn)
+        from rare_discovery_events import EVENTS, available as rare_available
+        if self.zone_name in EVENTS and rare_available(self.player,self.zone_name):
+            rare_btn=Button(label="희귀한 흔적",style=discord.ButtonStyle.primary,emoji="✨")
+            rare_btn.callback=self._rare_discovery_callback
+            self.add_item(rare_btn)
         if "woodcut" in activities:
             wood_btn = Button(label="벌목", style=discord.ButtonStyle.success, emoji="🪓")
             wood_btn.callback = self._woodcut_callback
@@ -691,6 +713,11 @@ class GatheringZoneView(View):
             )
         else:
             await channel_or_interaction.send(file=file, view=self)
+
+    async def _rare_discovery_callback(self, interaction: discord.Interaction):
+        from rare_discovery_events import EVENTS
+        event=EVENTS[self.zone_name]
+        await interaction.response.send_message(embed=discord.Embed(title=event["title"],description=event["text"]),view=RareDiscoveryView(self.zone_name,self.player))
 
     async def _noblestalk_callback(self, interaction: discord.Interaction):
         from bibberbang_event import event_payload

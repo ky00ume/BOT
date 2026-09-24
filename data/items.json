@@ -960,6 +960,12 @@
       "type": "gathering",
       "grade": "Rare",
       "desc": "츄라이더 오리지널. 깊은 동굴 흙에서 자라는 향 짙은 식용 균류."
+    },
+    "black_pearl": {
+      "name": "검은 진주",
+      "type": "gathering",
+      "grade": "Epic",
+      "desc": "빛을 거의 반사하지 않는 희귀한 진주. 샤의 잔해 근처에서 드물게 발견된다."
     }
   },
   "LOOT_ITEMS": {

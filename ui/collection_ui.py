@@ -9,7 +9,7 @@ JS Risulike RPG v9 의 도감 UI 구조를 Discord 봇에 맞게 이식:
 import discord
 from ui.view_timeouts import GAME_VIEW_TIMEOUT
 from discord.ui import View, Button
-from collection import collection_manager, CATEGORY_ICONS, COLLECTION_MILESTONES
+from collection import collection_manager, CATEGORY_ICONS, COLLECTION_MILESTONES, CATEGORY_MILESTONES, get_collection_catalog
 from ui.ui_theme import GRADE_EMBED_COLOR
 
 GRADE_ORDER = ["Legendary", "Epic", "Rare", "Normal"]
@@ -31,67 +31,48 @@ def _progress_bar(collected: int, total: int, width: int = 12) -> str:
 
 
 def make_collection_embed(category: str) -> discord.Embed:
-    """카테고리 도감 임베드 생성."""
+    """실제 DB 전체 슬롯을 기준으로 발견/미발견을 함께 보여준다."""
     icon = CATEGORY_ICONS.get(category, "📖")
     cat_data: dict = collection_manager.to_dict().get(category, {})
-
-    collected = len(cat_data)
-
-    # 등급별로 묶기
-    by_grade: dict[str, list] = {g: [] for g in GRADE_ORDER}
-    for item_id, info in cat_data.items():
-        grade = info.get("grade", "Normal")
-        if grade not in by_grade:
-            grade = "Normal"
-        by_grade[grade].append((item_id, info))
-
-    # 색상: 가장 높은 등급의 색 사용
-    embed_color = 0x1A6878  # 기본 (낚시 색)
-    for g in GRADE_ORDER:
-        if by_grade[g]:
-            embed_color = GRADE_EMBED_COLOR.get(g, 0x4A7EC2)
-            break
-
-    bar = _progress_bar(collected, collected)  # 전체 종 수 미확정 → 수집 수만 표시
+    catalog = get_collection_catalog(category)
+    collected = len({row["id"] for row in catalog if row["id"] in cat_data})
+    total = len(catalog)
     embed = discord.Embed(
         title=f"📖 {icon} {category} 도감",
-        description=f"수집 완료: **{collected}종**\n\n",
-        color=embed_color,
+        description=f"**{collected} / {total}종** 발견\n{_progress_bar(collected, total)}",
+        color=0x1A6878,
     )
+    targets = CATEGORY_MILESTONES.get(category, ())
+    nxt = next((n for n in targets if collected < n), None)
+    if nxt:
+        embed.add_field(name="🎁 다음 카테고리 보상", value=f"**{nxt}종**까지 앞으로 **{nxt-collected}종**", inline=False)
+    elif targets:
+        embed.add_field(name="🏆 카테고리 완성", value="모든 수집 보상을 달성했습니다.", inline=False)
 
-    if not cat_data:
-        embed.description = "아직 등록된 항목이 없습니다.\n게임을 통해 아이템을 발견해보세요!"
-        return embed
-
-    for grade in GRADE_ORDER:
-        items = by_grade[grade]
-        if not items:
-            continue
-
-        emoji = GRADE_EMOJI[grade]
-        label = GRADE_LABEL[grade]
-
-        # 항목 목록 텍스트 (한 줄에 최대 2개씩)
-        lines = []
-        for item_id, info in sorted(items, key=lambda x: x[1].get("name", "")):
-            name = info.get("name", item_id)
-            count = info.get("count", 1)
-            best_size = info.get("best_size", 0)
-            size_str = f" `{best_size:.1f}cm`" if best_size > 0 else ""
-            lines.append(f"{emoji} **{name}**{size_str} ×{count}")
-
-        # Discord embed field value 한도: 1024자
-        value = "\n".join(lines)
-        if len(value) > 1020:
-            value = value[:1017] + "..."
-
-        embed.add_field(
-            name=f"{label}  ({len(items)}종)",
-            value=value,
-            inline=False,
-        )
-
-    embed.set_footer(text="탭 버튼으로 카테고리를 전환하세요")
+    if category == "몬스터":
+        zones: dict[str, list[dict]] = {}
+        for row in catalog: zones.setdefault(row.get("zone", "기타"), []).append(row)
+        for zone, rows in zones.items():
+            found = sum(r["id"] in cat_data for r in rows)
+            lines = [f"{'✅' if r['id'] in cat_data else '❔'} **{r['name']}**" if r['id'] in cat_data else "❔ ???" for r in rows]
+            embed.add_field(name=f"🗺️ {zone}  {found}/{len(rows)}", value="\n".join(lines), inline=False)
+    else:
+        by_grade: dict[str, list[dict]] = {g: [] for g in GRADE_ORDER}
+        for row in catalog: by_grade.setdefault(row.get("grade", "Normal"), []).append(row)
+        for grade in GRADE_ORDER:
+            rows = by_grade.get(grade, [])
+            if not rows: continue
+            found = sum(r["id"] in cat_data for r in rows)
+            lines=[]
+            for r in rows:
+                info=cat_data.get(r["id"])
+                if info:
+                    size=info.get("best_size",0); extra=f" `{size:.1f}cm`" if size else ""
+                    lines.append(f"{GRADE_EMOJI[grade]} **{info.get('name',r['name'])}**{extra}")
+                else: lines.append("❔ ???")
+            value="\n".join(lines); value=value if len(value)<=1020 else value[:1017]+"..."
+            embed.add_field(name=f"{GRADE_LABEL[grade]}  {found}/{len(rows)}", value=value, inline=False)
+    embed.set_footer(text="???를 발견해 도감을 채우세요 · 발견 종수에 따라 영구 보상이 열립니다")
     return embed
 
 
@@ -107,7 +88,9 @@ def make_collection_overview_embed() -> discord.Embed:
     )
     for cat, icon in CATEGORY_ICONS.items():
         cat_data = all_data.get(cat, {})
-        count = len(cat_data)
+        catalog = get_collection_catalog(cat)
+        total = len(catalog)
+        count = sum(row["id"] in cat_data for row in catalog)
         by_grade = {g: 0 for g in GRADE_ORDER}
         for info in cat_data.values():
             g = info.get("grade", "Normal")
@@ -121,7 +104,7 @@ def make_collection_overview_embed() -> discord.Embed:
         ) or "—"
         embed.add_field(
             name=f"{icon} {cat}",
-            value=f"**{count}종** 수집\n{grade_summary}",
+            value=f"**{count}/{total}종** · {_progress_bar(count, total, 6)}\n{grade_summary}",
             inline=True,
         )
     next_m = collection_manager.next_milestone()

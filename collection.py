@@ -221,4 +221,37 @@ class CollectionManager:
         self._save()
 
 
+def get_collection_catalog(category: str) -> list[dict]:
+    """실제 게임 DB에서 도감 전체 슬롯을 만든다. 미발견 항목도 포함한다."""
+    rows: dict[str, dict] = {}
+    if category == "낚시":
+        from fishing import FISH_DB
+        for name, d in FISH_DB.items(): rows[d["id"]] = {"id": d["id"], "name": name, "grade": d.get("grade", "Normal")}
+    elif category == "요리":
+        from cooking_db import RECIPES
+        for rid, d in RECIPES.items(): rows[rid] = {"id": rid, "name": d.get("name", rid), "grade": d.get("grade", "Normal")}
+    elif category == "채집":
+        from gathering import GATHER_ITEMS_BY_SEASON, GATHER_ZONE_ITEMS
+        for pool in list(GATHER_ITEMS_BY_SEASON.values()) + list(GATHER_ZONE_ITEMS.values()):
+            for d in pool: rows[d["id"]] = {"id": d["id"], "name": d["name"], "grade": d.get("grade", "Normal")}
+    elif category == "채광":
+        from gathering import MINE_ITEMS
+        for d in MINE_ITEMS: rows[d["id"]] = {"id": d["id"], "name": d["name"], "grade": d.get("grade", "Normal")}
+    elif category == "벌목":
+        from gathering import WOODCUT_TABLE
+        for d in WOODCUT_TABLE.values(): rows[d["id"]] = {"id": d["id"], "name": d["name"], "grade": d.get("grade", "Normal")}
+    elif category == "제련":
+        from metallurgy import SMELT_RECIPES
+        for rid, d in SMELT_RECIPES.items():
+            out_id = next(iter(d.get("output", {})), rid); rows[out_id] = {"id": out_id, "name": d.get("name", rid).replace(" 제련", ""), "grade": d.get("grade", "Normal")}
+    elif category == "몬스터":
+        from monsters_db import MONSTERS_DB
+        for zone, zd in MONSTERS_DB.items():
+            for d in zd.get("monsters", []): rows[d["id"]] = {"id": d["id"], "name": d["name"], "grade": d.get("grade", "Normal"), "zone": zone}
+    return list(rows.values())
+
+def collection_total_possible(category: str) -> int:
+    return len(get_collection_catalog(category))
+
+
 collection_manager = CollectionManager()

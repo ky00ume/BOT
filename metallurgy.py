@@ -212,6 +212,11 @@ class MetallurgyEngine:
                     record_training_event(self.player, "metallurgy", "smelt_advanced", 1)
             except Exception:
                 logger.warning('metallurgy: 제련 성공 수련 항목 기록 실패', exc_info=True)
+            try:
+                from skill_breakthrough import record as record_breakthrough
+                if recipe_id == "mithril_ore": record_breakthrough(self.player,"smelt_mithril")
+            except Exception:
+                logger.warning('metallurgy: 돌파 퀘스트 기록 실패', exc_info=True)
             rank_msg = self.player.train_skill("metallurgy", exp)
             return {
                 "success": True,

@@ -8,6 +8,26 @@ BREAKTHROUGHS = {
         "description": "셀루네 수정지에서 수서꽃을 직접 발견하고, 그 성질을 조사해야 B랭크의 문이 열린다.",
         "objectives": [("discover_sussur", "셀루네 수정지에서 수서꽃을 직접 확보한다")],
     },
+    ("cooking", "C"): {
+        "target_rank":"B","id":"cooking_c_b_underdark_table","title":"🍳 요리 돌파 · 언더다크의 식탁",
+        "description":"낯선 균류를 재료가 아니라 한 접시의 음식으로 이해해야 한다.",
+        "objectives":[("cook_underdark_truffle_pasta","언더다크 트러플 파스타를 직접 완성한다"),("cook_spore_mushroom_broth","포자 버섯 육수를 직접 완성한다")],
+    },
+    ("gathering", "B"): {
+        "target_rank":"A","id":"gathering_b_a_noblestalk","title":"🌿 채집 돌파 · 폭발밭의 한 송이",
+        "description":"비버뱅 군락의 위험을 뚫고 공작버섯을 파괴하지 않은 채 직접 회수한다.",
+        "objectives":[("discover_noblestalk","비버뱅 군락지에서 공작버섯을 직접 확보한다")],
+    },
+    ("metallurgy", "B"): {
+        "target_rank":"A","id":"metallurgy_b_a_mithril","title":"🔥 제련 돌파 · 푸른 금속의 온도",
+        "description":"고급 광석의 불순물과 온도를 다루는 법을 증명한다.",
+        "objectives":[("smelt_mithril","미스릴 주괴 제련에 직접 성공한다")],
+    },
+    ("blacksmith", "B"): {
+        "target_rank":"A","id":"blacksmith_b_a_fine_forge","title":"🔨 블랙스미스 돌파 · 대장장이의 손끝",
+        "description":"단순 완성이 아니라 훌륭함 이상의 금속 장비를 직접 만들어 낸다.",
+        "objectives":[("forge_excellent_breakthrough","훌륭함 이상의 장비를 직접 완성한다")],
+    },
 }
 
 def get_breakthrough(skill_id, rank): return BREAKTHROUGHS.get((skill_id,rank))

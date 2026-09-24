@@ -610,6 +610,11 @@ class CookingEngine:
                     logger.warning('cooking_db: diary_manager.increment 실패', exc_info=True)
 
             exp = recipe.get("exp", 10.0)
+            try:
+                from skill_breakthrough import record as record_breakthrough
+                record_breakthrough(self.player, f"cook_{dish_id}")
+            except Exception:
+                logger.warning('cooking_db: 돌파 퀘스트 기록 실패', exc_info=True)
             rank_msg = self.player.train_skill("cooking", exp)
             return {
                 "success": True,

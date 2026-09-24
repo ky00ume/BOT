@@ -138,6 +138,11 @@ class BlacksmithEngine:
                 record_training_event(self.player, "blacksmith", "forge_masterpiece", 1)
         except Exception:
             pass
+        try:
+            from skill_breakthrough import record as record_breakthrough
+            if score >= 75: record_breakthrough(self.player,"forge_excellent_breakthrough")
+        except Exception:
+            pass
         rank_msg = self.player.train_skill("blacksmith", exp)
         return {
             "success": True,

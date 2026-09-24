@@ -373,6 +373,11 @@ class GatheringEngine:
                 record_training_event(self.player, "mining", "mine_precious", 1)
         except Exception:
             logger.warning('gathering: 채광 수련 항목 기록 실패', exc_info=True)
+        try:
+            from skill_breakthrough import record as record_breakthrough
+            if item["id"] in {"gem_diamond", "diamond"}: record_breakthrough(self.player,"mine_diamond")
+        except Exception:
+            logger.warning('gathering: 채광 돌파 퀘스트 기록 실패', exc_info=True)
         rank_msg = self.player.train_skill("mining", 12.0)
 
         try:
@@ -446,6 +451,11 @@ class GatheringEngine:
         grade  = item["grade"]
 
         added    = self.player.add_item(item["id"], count)
+        try:
+            from skill_breakthrough import record as record_breakthrough
+            if item["id"] == "treant_core": record_breakthrough(self.player,"find_treant_core")
+        except Exception:
+            logger.warning('gathering: 벌목 돌파 퀘스트 기록 실패', exc_info=True)
         rank_msg = self.player.train_skill("woodcutting", 11.0)
 
         try:

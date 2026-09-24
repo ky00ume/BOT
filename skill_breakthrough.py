@@ -28,6 +28,21 @@ BREAKTHROUGHS = {
         "description":"단순 완성이 아니라 훌륭함 이상의 금속 장비를 직접 만들어 낸다.",
         "objectives":[("forge_excellent_breakthrough","훌륭함 이상의 장비를 직접 완성한다")],
     },
+    ("fishing", "B"): {
+        "target_rank":"A","id":"fishing_b_a_golden_eel","title":"🎣 낚시 돌파 · 황금빛 입질",
+        "description":"평범한 어획이 아닌 전설의 입질을 직접 읽어내야 한다.",
+        "objectives":[("catch_golden_eel","황금장어를 직접 낚는다")],
+    },
+    ("mining", "A"): {
+        "target_rank":"9","id":"mining_a_9_diamond","title":"⛏️ 채광 돌파 · 돌 속의 별",
+        "description":"고급 광맥에서 전설급 보석을 직접 캐내 광맥을 읽는 눈을 증명한다.",
+        "objectives":[("mine_diamond","다이아몬드를 직접 채굴한다")],
+    },
+    ("woodcutting", "A"): {
+        "target_rank":"9","id":"woodcutting_a_9_treant","title":"🪓 벌목 돌파 · 살아 있는 나이테",
+        "description":"평범한 목재가 아닌 숲의 오래된 생명력을 품은 재료를 직접 얻는다.",
+        "objectives":[("find_treant_core","나무정령 심장을 직접 얻는다")],
+    },
 }
 
 def get_breakthrough(skill_id, rank): return BREAKTHROUGHS.get((skill_id,rank))

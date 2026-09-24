@@ -270,6 +270,11 @@ class FishingView(discord.ui.View):
         )
         added    = catch_result["added"]
         is_new_collection = catch_result["is_new_collection"]
+        try:
+            from skill_breakthrough import record as record_breakthrough
+            if caught_name == "황금장어": record_breakthrough(player,"catch_golden_eel")
+        except Exception:
+            logger.warning('fishing: 돌파 퀘스트 기록 실패', exc_info=True)
         rank_msg = player.train_skill("fishing", 15.0)
 
         if is_new_collection and self._message:

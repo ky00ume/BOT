@@ -330,9 +330,10 @@ class BattleEngine:
                     elif skill_id=="windmill": bonus=sk["aoe_multiplier"].get(skill_rank,0.8)
                     else: bonus=sk.get("damage_bonus",{}).get(skill_rank,1.0)
                     dmg=max(1,int(dmg*bonus))
+            dmg, trait_note = self._apply_monster_traits(mon, dmg, skill_id)
             enemy["hp"] = max(0, enemy["hp"]-dmg)
             total_damage += dmg
-            hit_logs.append(f"{mon['name']} {dmg} 피해")
+            hit_logs.append(f"{mon['name']} {dmg} 피해" + (f" {trait_note}" if trait_note else ""))
             if enemy["hp"]<=0: killed += 1
 
         # 속성 효과
@@ -592,6 +593,32 @@ class BattleEngine:
 
         return mods
 
+    def _attack_tags(self, skill_id: str) -> set[str]:
+        """현재 공격을 몬스터 생태 특성과 비교하기 위한 최소 피해 태그."""
+        if skill_id == "firebolt": return {"fire", "magic"}
+        if skill_id == "icebolt": return {"cold", "magic"}
+        if skill_id == "lightningbolt": return {"lightning", "magic"}
+        try:
+            from items import ALL_ITEMS
+            wid = self.player.equipment.get("main")
+            name = ALL_ITEMS.get(wid, {}).get("name", "") if wid else ""
+            if any(x in name for x in ("메이스", "해머", "몽둥이")): return {"bludgeoning", "physical"}
+            if "활" in name: return {"piercing", "physical"}
+        except Exception:
+            pass
+        return {"slashing", "physical"}
+
+    def _apply_monster_traits(self, monster: dict, dmg: int, skill_id: str) -> tuple[int, str]:
+        traits = set(monster.get("traits", [])); tags = self._attack_tags(skill_id); note = ""
+        mult = 1.0
+        if "둔기 취약" in traits and "bludgeoning" in tags:
+            mult *= 1.5; note = "💥 약점!"
+        if "베기 저항" in traits and "slashing" in tags:
+            mult *= 0.5; note = "🛡️ 저항"
+        if "번개 저항" in traits and "lightning" in tags:
+            mult *= 0.5; note = "🛡️ 저항"
+        return max(1, int(round(dmg * mult))), note
+
     def process_turn(self, skill_id: str = "smash") -> io.BytesIO:
         """전투 턴 진행.
 
@@ -803,6 +830,8 @@ class BattleEngine:
             magic_atk   = player.base_stats.get("int", 10) // 2
             dmg         = int((magic_dmg + magic_atk) * mods["atk_mult"] * random.uniform(0.85, 1.15))
 
+        dmg, trait_note = self._apply_monster_traits(monster, dmg, skill_id)
+
         # 서사화 로그 선택
         from battle_log_data import (
             PLAYER_ATTACK_LOGS, MONSTER_ATTACK_LOGS,
@@ -812,6 +841,8 @@ class BattleEngine:
         atk_log  = random.choice(atk_pool).format(monster=monster["name"])
         if crit:
             atk_log = random.choice(PLAYER_CRIT_LOGS) + " " + atk_log
+        if trait_note:
+            atk_log += f" {trait_note}"
 
         self.monster_hp -= dmg
         if skill_id in MAGIC_SKILLS:

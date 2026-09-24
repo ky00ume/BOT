@@ -54,8 +54,13 @@ def make_collection_embed(category: str) -> discord.Embed:
         for row in catalog: zones.setdefault(row.get("zone", "기타"), []).append(row)
         for zone, rows in zones.items():
             found = sum(r["id"] in cat_data for r in rows)
+            complete = found == len(rows)
             lines = [f"{'✅' if r['id'] in cat_data else '❔'} **{r['name']}**" if r['id'] in cat_data else "❔ ???" for r in rows]
-            embed.add_field(name=f"🗺️ {zone}  {found}/{len(rows)}", value="\n".join(lines), inline=False)
+            if complete:
+                lines.append("🏆 **지역 완성 보상:** 기력 최대치 +1")
+            else:
+                lines.append(f"🎁 완성까지 **{len(rows)-found}종** · 보상: 기력 최대치 +1")
+            embed.add_field(name=f"{'🏆' if complete else '🗺️'} {zone}  {found}/{len(rows)}", value="\n".join(lines), inline=False)
     else:
         by_grade: dict[str, list[dict]] = {g: [] for g in GRADE_ORDER}
         for row in catalog: by_grade.setdefault(row.get("grade", "Normal"), []).append(row)

@@ -159,10 +159,33 @@ class CollectionManager:
         flags["collection_category_milestones"] = sorted(claimed)
         return awarded
 
+    def apply_monster_zone_bonuses(self, player) -> list[str]:
+        """지역 몬스터를 전부 발견했을 때 지역 완성 보상을 1회 지급한다."""
+        from monsters_db import MONSTERS_DB
+        flags = getattr(player, "_flags", None)
+        if flags is None:
+            player._flags = {}; flags = player._flags
+        claimed = set(flags.get("collection_monster_zones", []))
+        found = self._data.get("몬스터", {})
+        awarded = []
+        for zone, zd in MONSTERS_DB.items():
+            ids = {m["id"] for m in zd.get("monsters", [])}
+            if not ids or zone in claimed or not ids.issubset(found):
+                continue
+            # 지역 완성은 탐험 체크포인트: 작은 영구 기력 보상으로 반복 탐험 가치를 만든다.
+            player.max_energy += 1
+            player.energy = min(player.max_energy, player.energy + 1)
+            claimed.add(zone)
+            awarded.append(f"{zone} 생태 도감 완성 — 기력 최대치 +1")
+        flags["collection_monster_zones"] = sorted(claimed)
+        return awarded
+
     def apply_all_bonuses(self, player, category: str | None = None) -> list[str]:
         rewards = self.apply_player_bonuses(player)
         if category:
             rewards += self.apply_category_bonuses(player, category)
+        if category == "몬스터":
+            rewards += self.apply_monster_zone_bonuses(player)
         return rewards
 
     def get_progress(self, category: str, total_possible: int) -> tuple[int, int, float]:

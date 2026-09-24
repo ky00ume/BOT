@@ -50,6 +50,12 @@ def apply_milestones(player):
         for stat in ("str","int","dex","will","luck"):
             if stat in bonus: player.stats[stat]=player.stats.get(stat,0)+bonus[stat]
         st["claimed"].append(token);rewards.append((label,dict(bonus)))
+        if need == 3:
+            try:
+                from lubato_song_memory import remember
+                remember(player, "first_exhibition_resonance")
+            except Exception:
+                pass
     return rewards
 def summary(player):
     st=ensure_state(player);n=len(st["displayed"]);next_m=next((m for m in MILESTONES if n<m[0]),None)

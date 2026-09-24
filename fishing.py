@@ -273,6 +273,9 @@ class FishingView(discord.ui.View):
         try:
             from skill_breakthrough import record as record_breakthrough
             if caught_name == "황금장어": record_breakthrough(player,"catch_golden_eel")
+            if caught_name == "황금장어":
+                from lubato_song_memory import remember
+                remember(player, "golden_eel")
         except Exception:
             logger.warning('fishing: 돌파 퀘스트 기록 실패', exc_info=True)
         rank_msg = player.train_skill("fishing", 15.0)

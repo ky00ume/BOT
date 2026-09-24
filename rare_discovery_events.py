@@ -21,6 +21,11 @@ def resolve(player, zone, choice, *, rng):
             if e["id"] == "selune_sussur_bloom":
                 from skill_breakthrough import record
                 record(player, "discover_sussur")
+                try:
+                    from lubato_song_memory import remember
+                    remember(player, "sussur_found")
+                except Exception:
+                    pass
             return {"text":f"✨ 위험을 피해 **{e['item_name']}**을 온전히 확보했습니다!","resolved":True,"reward":f"{e['item_name']} ×1"}
         return {"text":"가방에 자리가 없어 손대지 않고 돌아섰습니다.","resolved":False}
     st.update(resolved=True,outcome="lost")

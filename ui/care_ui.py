@@ -1347,6 +1347,7 @@ class TowerExhibitionView(ExpiringView):
         from tower_exhibition import available_to_display,EXHIBITS
         for key in available_to_display(player):
             data=EXHIBITS[key];b=discord.ui.Button(label=f"전시: {data['name']}",emoji=data['emoji'],style=discord.ButtonStyle.success);b.callback=self._make_display(key);self.add_item(b)
+        songs=discord.ui.Button(label="루바토의 노래 기억",emoji="🎼",style=discord.ButtonStyle.secondary);songs.callback=self._songs;self.add_item(songs)
         back=discord.ui.Button(label="상층으로",emoji="↩️",style=discord.ButtonStyle.secondary);back.callback=self._back;self.add_item(back)
     def make_embed(self,note=None):
         from tower_exhibition import summary,hall_stage
@@ -1371,8 +1372,36 @@ class TowerExhibitionView(ExpiringView):
             except Exception: logger.warning('전시관 저장 실패',exc_info=True)
             v=TowerExhibitionView(self.player,self.care_manager,suspicious_actor_id=self.suspicious_actor_id);v.bind_message(getattr(interaction,"message",None));await interaction.response.edit_message(attachments=[],embed=v.make_embed(note),view=v)
         return cb
+    async def _songs(self,interaction):
+        v=LubatoSongMemoryView(self.player,self.care_manager,suspicious_actor_id=self.suspicious_actor_id);v.bind_message(getattr(interaction,"message",None));await interaction.response.edit_message(attachments=[],embed=v.make_embed(),view=v)
     async def _back(self,interaction):
         v=TowerUpperFloorView(self.player,self.care_manager,suspicious_actor_id=self.suspicious_actor_id);v.bind_message(getattr(interaction,"message",None));await interaction.response.edit_message(attachments=[],embed=v.make_embed(),view=v)
+
+
+class LubatoSongMemoryView(ExpiringView):
+    def __init__(self,player,care_manager,*,suspicious_actor_id=None):
+        super().__init__(timeout=CARE_VIEW_TIMEOUT);self.player=player;self.care_manager=care_manager;self.suspicious_actor_id=suspicious_actor_id
+        from lubato_song_memory import unlocked_songs
+        for key,song in unlocked_songs(player)[:20]:
+            b=discord.ui.Button(label=song["title"],emoji="🎵",style=discord.ButtonStyle.secondary);b.callback=self._make_song(key);self.add_item(b)
+        back=discord.ui.Button(label="전시관으로",emoji="↩️",style=discord.ButtonStyle.secondary);back.callback=self._back;self.add_item(back)
+    def make_embed(self,note=None):
+        from lubato_song_memory import unlocked_songs
+        songs=unlocked_songs(self.player)
+        desc="루바토가 츄라이더와 하이네스가 실제로 지나온 날들만 노래로 기억합니다."
+        e=discord.Embed(title=f"🎼 루바토의 노래 기억 · {len(songs)}곡",description=desc,color=0x6B5578)
+        if songs:
+            e.add_field(name="기억하는 노래",value="\n".join(f"🎵 **{song['title']}** · {song['trigger']}" for _,song in songs),inline=False)
+        else:e.add_field(name="아직 조용한 악보",value="함께 겪은 특별한 날이 생기면 루바토가 한 곡씩 기억합니다.",inline=False)
+        if note:e.add_field(name="🎶 연주",value=note,inline=False)
+        return e
+    def _make_song(self,key):
+        async def cb(interaction):
+            from lubato_song_memory import song_text
+            v=LubatoSongMemoryView(self.player,self.care_manager,suspicious_actor_id=self.suspicious_actor_id);v.bind_message(getattr(interaction,"message",None));await interaction.response.edit_message(attachments=[],embed=v.make_embed(song_text(key)),view=v)
+        return cb
+    async def _back(self,interaction):
+        v=TowerExhibitionView(self.player,self.care_manager,suspicious_actor_id=self.suspicious_actor_id);v.bind_message(getattr(interaction,"message",None));await interaction.response.edit_message(attachments=[],embed=v.make_embed(),view=v)
 
 
 class TowerGeneratorView(ExpiringView):
@@ -1929,6 +1958,12 @@ class CareRoomView(ExpiringView):
         rare_event = WALK_RARE_EVENTS.get(route, {}).get(event_id) if event_id else None
         trace = rare_event.get("trace") if rare_event else None
         apply_outing_effect(self.player, profile["outing"], trace=trace)
+        if event_id in {"karniss", "highness_pet", "majesty_pet", "lubato_song", "lubato_karniss"}:
+            try:
+                from lubato_song_memory import remember
+                remember(self.player, event_id)
+            except Exception:
+                logger.warning("루바토 노래 기억 기록 실패", exc_info=True)
         if rare_event and rare_event.get("bonus_item"):
             bonus_id = rare_event["bonus_item"]
             self.player.add_hyness_item(bonus_id, 1)

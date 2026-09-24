@@ -1,0 +1,93 @@
+"""루바토의 노래 기억: 플레이에서 실제로 겪은 일을 짧은 노래로 남긴다."""
+from __future__ import annotations
+
+STATE_KEY = "lubato_song_memories"
+
+SONGS = {
+    "karniss_hide": {
+        "title": "책장 아래의 작은 것",
+        "trigger": "카르니스를 피해 숨었던 날",
+        "verse": "♪ 여덟 다리를 꼭 접고\n작은 소리도 감춘 채\n지나가라, 지나가라\n오늘은 여기 없는 척 ♪\n\n♪ 무서운 건 알고 있고\n미움받는 것도 알지만\n그래도 돌아갈 자리는\n아직 따뜻하게 남아 있네 ♪",
+        "after": "“끝. 네 노래치고는 조금 조용하지?”\n\n츄라이더가 책장 아래에서 고개를 내밉니다.\n“...카르니스 들으면 화낼 검미댜.”\n\n“그럼 다음엔 더 작게 부르지, 뭐.”",
+    },
+    "highness_pet": {
+        "title": "하이네스의 손바닥",
+        "trigger": "하이네스에게 오래 복복 받은 날",
+        "verse": "♪ 쪼르르 달려가 머리를 콩\n한 번 더 해달라 손바닥 콩\n여덟 다리 힘이 전부 풀려도\n오늘의 복복은 아직 안 끝났네 ♪",
+        "after": "루바토가 웃으며 츄라이더를 봅니다.\n“이건 후렴이 끝이 없겠는데?”\n\n“하이네스는 영원히 복복함미댜. 그러니까 노래도 영원히 해야 함미댜.”",
+    },
+    "majesty_pet": {
+        "title": "조금만 더",
+        "trigger": "마제스티의 손길에 늘어진 날",
+        "verse": "♪ 한 번 쓰다듬으면 눈이 가늘어지고\n두 번 쓰다듬으면 다리가 풀리고\n세 번째부터는 세지 않기로 해\n조금만 더, 조금만 더 ♪",
+        "after": "“이 노래는 끝나는 법을 모르네.”\n\n츄라이더가 당연하다는 듯 몸을 낮춥니다.\n“마제스티가 그만할 때까지임미댜.”",
+    },
+    "lubato_song": {
+        "title": "노래는 안 물어뜯어",
+        "trigger": "리라 소리를 따라 루바토를 찾아온 날",
+        "verse": "♪ 상자 뒤의 눈 두 개\n아니, 더 많이 반짝이네\n겁낼 필요 없어 나야\n오늘 온 건 노래뿐이야 ♪",
+        "after": "루바토가 리라를 무릎에 눕힙니다.\n“이제 알겠지? 내 노래는 안 물어뜯어.”\n\n“그건 이미 알고 있었슴미댜.”",
+    },
+    "lubato_karniss": {
+        "title": "망토 반쪽",
+        "trigger": "루바토의 망토 뒤에서 카르니스를 피한 날",
+        "verse": "♪ 절반은 망토 뒤에\n절반은 노래 곁에\n저쪽의 무거운 발소리는\n그냥 저쪽에 두자 ♪\n\n♪ 숨을 곳 하나 있으면\n한 소절쯤 들을 수 있지\n오늘도 끝까지 들었으니\n그걸로 된 거야 ♪",
+        "after": "루바토가 망토 끝을 살펴봅니다.\n“좋아. 거미줄은 없네.”\n\n“약속은 지킴미댜.”",
+    },
+    "noblestalk_saved": {
+        "title": "포자밭에서 가져온 것",
+        "trigger": "비버뱅 사이에서 공작버섯을 구해낸 날",
+        "verse": "♪ 한 발 잘못 디디면 펑\n다음 것도 그다음 것도 펑\n그래도 두 손에 남은 건\n재가 아니라 작은 버섯 하나 ♪\n\n♪ 살아 돌아와 보여줬으니\n이제 그날은 노래가 됐네 ♪",
+        "after": "“위험한 모험은 별로지만, 무사히 돌아온 모험은 좋아해.”\n\n츄라이더가 고개를 끄덕입니다.\n“노래로 만들 수 있으니까 말임미까?”\n\n“그것도 있고.”",
+    },
+    "sussur_found": {
+        "title": "마법을 조용하게 하는 꽃",
+        "trigger": "수서꽃을 온전히 발견한 날",
+        "verse": "♪ 빛나는 주문도 잠잠하게\n떠들던 마력도 얌전하게\n푸른 꽃 한 송이 앞에서는\n리라도 잠깐 쉬어가네 ♪",
+        "after": "루바토가 일부러 한 박자 쉬었다가 다시 현을 튕깁니다.\n“꽃이 여기 없어서 다행이지?”",
+    },
+    "golden_eel": {
+        "title": "금빛 꼬리가 물을 찬 날",
+        "trigger": "황금장어를 처음 낚은 날",
+        "verse": "♪ 물 아래 금빛 한 줄\n손끝에는 팽팽한 줄\n놓치지 마, 조금만 더\n오늘 저녁 자랑거리가 올라온다 ♪",
+        "after": "“내가 봤으면 더 크게 환호했을 텐데.”\n\n“그러면 물고기가 도망갔을 검미댜.”\n\n“그건 그렇네.”",
+    },
+    "first_exhibition_resonance": {
+        "title": "탑이 기억한 세 가지",
+        "trigger": "전시관의 첫 공명을 깨운 날",
+        "verse": "♪ 빈 진열대 하나 둘 셋\n모험에서 가져온 이야기도 하나 둘 셋\n먼지뿐이던 오래된 방이\n이제 네가 다녀온 곳을 기억하네 ♪",
+        "after": "루바토가 전시관 쪽을 돌아봅니다.\n“물건을 모은 줄 알았는데, 지나온 날을 모으고 있었네.”",
+    },
+}
+
+
+def _state(player) -> dict:
+    if not hasattr(player, "_flags") or player._flags is None:
+        player._flags = {}
+    state = player._flags.setdefault(STATE_KEY, {"unlocked": []})
+    if not isinstance(state, dict):
+        state = {"unlocked": []}
+        player._flags[STATE_KEY] = state
+    state.setdefault("unlocked", [])
+    return state
+
+
+def remember(player, song_id: str) -> bool:
+    """처음 겪은 사건만 기억한다. 새 기억이면 True."""
+    if song_id not in SONGS:
+        return False
+    unlocked = _state(player)["unlocked"]
+    if song_id in unlocked:
+        return False
+    unlocked.append(song_id)
+    return True
+
+
+def unlocked_songs(player) -> list[tuple[str, dict]]:
+    unlocked = _state(player)["unlocked"]
+    return [(key, SONGS[key]) for key in unlocked if key in SONGS]
+
+
+def song_text(song_id: str) -> str:
+    song = SONGS[song_id]
+    return f"루바토가 리라의 줄을 천천히 고릅니다.\n\n“이건 **{song['trigger']}**의 노래야.”\n\n{song['verse']}\n\n{song['after']}"

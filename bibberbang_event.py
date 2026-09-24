@@ -26,6 +26,11 @@ def resolve(player, choice: str, *, rng) -> dict:
                 record(player,"discover_noblestalk")
             except Exception:
                 pass
+            try:
+                from lubato_song_memory import remember
+                remember(player, "noblestalk_saved")
+            except Exception:
+                pass
             return {"text":"🍄 포자 주머니 사이를 무사히 통과해 공작버섯을 온전히 회수했습니다!","resolved":True,"reward":"공작버섯 ×1"}
         return {"text":"공작버섯까지 닿았지만 가방이 가득 찼습니다. 버섯은 아직 그 자리에 있습니다.","resolved":False}
     state.update(resolved=True,outcome="destroyed")

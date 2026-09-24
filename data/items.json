@@ -966,6 +966,36 @@
       "type": "gathering",
       "grade": "Epic",
       "desc": "빛을 거의 반사하지 않는 희귀한 진주. 샤의 잔해 근처에서 드물게 발견된다."
+    },
+    "quest_star_diamond": {
+      "name": "별빛을 품은 다이아몬드",
+      "type": "quest_exhibit",
+      "grade": "Legendary",
+      "price": 0,
+      "sellable": false,
+      "tradable": false,
+      "discardable": false,
+      "desc": "채광 돌파에서 얻은 비전의 탑 전시용 유일품."
+    },
+    "quest_sussur_specimen": {
+      "name": "수서꽃 표본",
+      "type": "quest_exhibit",
+      "grade": "Epic",
+      "price": 0,
+      "sellable": false,
+      "tradable": false,
+      "discardable": false,
+      "desc": "연금술 돌파에서 얻은 비전의 탑 전시용 표본."
+    },
+    "quest_noblestalk_specimen": {
+      "name": "공작버섯 표본",
+      "type": "quest_exhibit",
+      "grade": "Legendary",
+      "price": 0,
+      "sellable": false,
+      "tradable": false,
+      "discardable": false,
+      "desc": "채집 돌파에서 얻은 비전의 탑 전시용 표본."
     }
   },
   "LOOT_ITEMS": {

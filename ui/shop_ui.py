@@ -38,6 +38,8 @@ class SellView(discord.ui.View):
         options = []
         for item_id, count in list(player.inventory.items())[:25]:
             item  = ALL_ITEMS.get(item_id, {})
+            if item.get("sellable") is False:
+                continue
             name  = item.get("name", item_id)
             price = item.get("price", 0)
             sell  = price // 2

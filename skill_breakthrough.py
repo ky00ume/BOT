@@ -59,7 +59,12 @@ def record(player,event,count=1):
         if not b.get("started"):continue
         for key,_ in q["objectives"]:
             if key==event:
+                was_complete=complete(player,q)
                 b["progress"][key]=min(1,b["progress"].get(key,0)+count);changed.append(q["id"])
+                if not was_complete and complete(player,q):
+                    reward={"alchemy_c_b_sussur":"quest_sussur_specimen","gathering_b_a_noblestalk":"quest_noblestalk_specimen","mining_a_9_diamond":"quest_star_diamond"}.get(q["id"])
+                    if reward and getattr(player,"inventory",{}).get(reward,0)<1:
+                        player.add_item(reward,1)
     return changed
 
 def complete(player,q):

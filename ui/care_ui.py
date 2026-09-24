@@ -1046,6 +1046,7 @@ class TowerPlaceView(ExpiringView):
                 ("책장 뒤 작은 틈", "🕸️", "nest"),
                 ("마제스티의 자리", "🕯️", "마제스티의 자리", "손이 자주 닿는 물건들이 정돈되어 있다. 책장 아래에는 누군가 일부러 밀어 넣은 듯한 작은 간식 접시가 하나 놓여 있다."),
                 ("카르니스의 기척", "🕷️", "카르니스의 기척", "복도 너머에서 단단한 발끝이 바닥을 긁는 소리가 난다. 책장 아래의 작은 발자국은 그 소리가 가까워질수록 안쪽으로 향한다."),
+                ("전시관", "🏛️", "exhibition"),
                 ("군락으로 가는 길", "🍄", "road_to_colony"),
             ],
         },
@@ -1108,6 +1109,8 @@ class TowerPlaceView(ExpiringView):
                 button.callback = self._make_facility_callback(facility)
             elif action[2] == "road_to_colony":
                 button.callback = self._open_colony_road
+            elif action[2] == "exhibition":
+                button.callback = self._open_exhibition
             else:
                 button.callback = self._make_observation_callback(action[2], action[3])
             self.add_item(button)
@@ -1121,6 +1124,11 @@ class TowerPlaceView(ExpiringView):
         if observation:
             embed.add_field(name=observation[0], value=observation[1], inline=False)
         return embed
+
+    async def _open_exhibition(self, interaction):
+        view = TowerExhibitionView(self.player, self.care_manager, suspicious_actor_id=self.suspicious_actor_id)
+        view.bind_message(getattr(interaction,"message",None))
+        await interaction.response.edit_message(attachments=[],embed=view.make_embed(),view=view)
 
     async def _open_nest(self, interaction):
         view = CareRoomView(self.player, self.care_manager, suspicious_actor_id=self.suspicious_actor_id)
@@ -1329,6 +1337,38 @@ class TowerFacilityView(ExpiringView):
         view = TowerPlaceView(self.player, self.care_manager, place=self.return_place, suspicious_actor_id=self.suspicious_actor_id)
         view.bind_message(getattr(interaction, "message", None))
         await interaction.response.edit_message(attachments=[], embed=view.make_embed(), view=view)
+
+
+class TowerExhibitionView(ExpiringView):
+    def __init__(self,player,care_manager,*,suspicious_actor_id=None):
+        super().__init__(timeout=CARE_VIEW_TIMEOUT);self.player=player;self.care_manager=care_manager;self.suspicious_actor_id=suspicious_actor_id
+        from tower_exhibition import available_to_display,EXHIBITS
+        for key in available_to_display(player):
+            data=EXHIBITS[key];b=discord.ui.Button(label=f"전시: {data['name']}",emoji=data['emoji'],style=discord.ButtonStyle.success);b.callback=self._make_display(key);self.add_item(b)
+        back=discord.ui.Button(label="상층으로",emoji="↩️",style=discord.ButtonStyle.secondary);back.callback=self._back;self.add_item(back)
+    def make_embed(self,note=None):
+        from tower_exhibition import summary
+        info=summary(self.player);lines=[f"{x['emoji']} **{x['name']}** · {x['set']}\n{x['desc']}" for x in info['displayed']]
+        desc="탑의 한 방이 모험에서 가져온 유일한 발견물들을 위한 전시실로 바뀌고 있다."
+        e=discord.Embed(title=f"🏛️ 비전의 탑 · 전시관  {info['count']}/{info['total']}",description=desc,color=0x6A5B3F)
+        e.add_field(name="전시품",value="\n\n".join(lines) if lines else "아직 진열장은 비어 있다.",inline=False)
+        if info['next']:
+            need,bonus,label=info['next'];pretty={"max_energy":"최대 기력","luck":"LUCK","dex":"DEX","int":"INT"};effect=" · ".join(f"{pretty.get(k,k)} +{v}" for k,v in bonus.items());e.add_field(name=f"🔮 다음 공명 · {need}점",value=f"{label} — {effect}",inline=False)
+        else:e.add_field(name="🔮 전시관 공명",value="현재 준비된 모든 공명이 깨어났다.",inline=False)
+        if note:e.add_field(name="✨ 변화",value=note,inline=False)
+        return e
+    def _make_display(self,key):
+        async def cb(interaction):
+            from tower_exhibition import display,EXHIBITS
+            ok,rewards=display(self.player,key);note=f"{EXHIBITS[key]['name']}을 전시했습니다." if ok else "전시할 수 없습니다."
+            if rewards: note+="\n"+"\n".join(f"🔮 **{label}** 공명이 깨어났습니다." for label,_ in rewards)
+            try:
+                from save_manager import save_manager;save_manager.save(self.player)
+            except Exception: logger.warning('전시관 저장 실패',exc_info=True)
+            v=TowerExhibitionView(self.player,self.care_manager,suspicious_actor_id=self.suspicious_actor_id);v.bind_message(getattr(interaction,"message",None));await interaction.response.edit_message(attachments=[],embed=v.make_embed(note),view=v)
+        return cb
+    async def _back(self,interaction):
+        v=TowerUpperFloorView(self.player,self.care_manager,suspicious_actor_id=self.suspicious_actor_id);v.bind_message(getattr(interaction,"message",None));await interaction.response.edit_message(attachments=[],embed=v.make_embed(),view=v)
 
 
 class TowerGeneratorView(ExpiringView):

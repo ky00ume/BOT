@@ -154,6 +154,8 @@ class ShopManager:
 
         item = ALL_ITEMS.get(item_id, {})
         name  = item.get("name",  item_id)
+        if item.get("sellable") is False:
+            return ansi(f"  {C.RED}✖ [{name}]은(는) 비전의 탑 전시용 유일품이라 판매할 수 없슴미댜!{C.R}")
         price = item.get("price", 0)
         sell  = (price // 2) * count
 

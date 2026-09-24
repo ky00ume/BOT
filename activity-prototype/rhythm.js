@@ -1,0 +1,23 @@
+(()=>{
+'use strict';
+const BPM=136, BEAT=60000/BPM;
+const MODES={
+ easy:{keys:['d','f','j','k'],label:'EASY · 4K',pattern:[0,1,2,3,1,2,0,3,0,2,1,3,0,1,2,3,1,3,0,2,0,1,3,2,1,2,0,3,0,2,3,1]},
+ hard:{keys:['a','s','d','f','h','j','k','l'],label:'EXPERT · 8K',pattern:[0,4,2,6,1,5,3,7,0,3,4,7,1,2,5,6,0,4,1,5,2,6,3,7,0,2,4,6,1,3,5,7,0,7,2,5,1,6,3,4,0,4,2,6,1,5,3,7,0,3,5,7,1,2,4,6,0,4,1,5,2,6,3,7]}
+};
+const els={stage:document.querySelector('#stage'),lanes:document.querySelector('#lanes'),judge:document.querySelector('#judge'),countdown:document.querySelector('#countdown'),score:document.querySelector('#score'),combo:document.querySelector('#combo'),status:document.querySelector('#status'),accuracy:document.querySelector('#accuracy'),song:document.querySelector('#song'),start:document.querySelector('#start'),speed:document.querySelector('#speed')};
+let mode='easy', chart=[],running=false,startAt=0,raf=0,combo=0,score=0,hits=0,judged=0,totalErr=0;
+const travel=1800, windows={perfect:45,great:85,good:130};
+function buildChart(){const p=MODES[mode].pattern;chart=p.map((lane,i)=>({t:900+i*(mode==='easy'?BEAT:BEAT/2),lane,hit:false,miss:false,el:null}));}
+function buildLanes(){els.lanes.innerHTML='';els.lanes.className='lanes '+(mode==='hard'?'hard':'');MODES[mode].keys.forEach(k=>{const lane=document.createElement('div');lane.className='lane';lane.innerHTML=`<span class="lane-key">${k.toUpperCase()}</span>`;els.lanes.appendChild(lane);});}
+function reset(){cancelAnimationFrame(raf);els.song.pause();els.song.currentTime=0;running=false;combo=score=hits=judged=totalErr=0;buildChart();buildLanes();updateHud();els.judge.textContent='READY';els.judge.className='judge';}
+function updateHud(){els.score.textContent=String(score).padStart(6,'0');els.combo.textContent=`COMBO ${combo}`;els.accuracy.textContent=judged?`ACC ${(Math.max(0,100-totalErr/judged/1.3)).toFixed(2)}%`:'ACC --%';}
+function flash(text,cls){els.judge.textContent=text;els.judge.className='judge '+cls;}
+function now(){return performance.now()-startAt;}
+function frame(){if(!running)return;const t=now(),h=els.stage.clientHeight,judgeY=h-49;chart.forEach(n=>{if(n.hit||n.miss)return;const dt=n.t-t;if(dt < -windows.good){n.miss=true;judged++;combo=0;totalErr+=130;flash('MISS','miss');updateHud();if(n.el)n.el.remove();return;}if(dt>travel||dt<-windows.good)return;if(!n.el){n.el=document.createElement('div');n.el.className='note';els.lanes.children[n.lane].appendChild(n.el);}const y=judgeY-(dt/travel)*(judgeY-20);n.el.style.top=`${y}px`;});if(t>chart.at(-1).t+900){finish();return;}raf=requestAnimationFrame(frame);}
+function press(key){if(!running)return;const lane=MODES[mode].keys.indexOf(key);if(lane<0)return;const laneEl=els.lanes.children[lane];laneEl.classList.add('pressed');setTimeout(()=>laneEl.classList.remove('pressed'),70);const t=now();let best=null,err=Infinity;chart.forEach(n=>{if(n.lane!==lane||n.hit||n.miss)return;const e=Math.abs(n.t-t);if(e<err){err=e;best=n;}});if(!best||err>windows.good){combo=0;flash('MISS','miss');updateHud();return;}best.hit=true;judged++;hits++;totalErr+=err;combo++;let pts,txt,cls;if(err<=windows.perfect){pts=1000;txt='PERFECT';cls='perfect'}else if(err<=windows.great){pts=700;txt='GREAT';cls='great'}else{pts=400;txt='GOOD';cls='good'}score+=pts+Math.min(combo,100)*5;flash(txt,cls);if(best.el){best.el.classList.add('hit');setTimeout(()=>best.el?.remove(),130)}updateHud();}
+async function start(){reset();els.stage.focus();els.status.textContent=`${MODES[mode].label} · 오디오 기준 판정`;els.countdown.textContent='3';await new Promise(r=>setTimeout(r,450));els.countdown.textContent='2';await new Promise(r=>setTimeout(r,450));els.countdown.textContent='1';await new Promise(r=>setTimeout(r,450));els.countdown.textContent='';try{els.song.playbackRate=Number(els.speed.value);await els.song.play();}catch(e){els.status.textContent='오디오 재생을 시작하지 못했습니다. 다시 눌러 주세요.';return;}startAt=performance.now()+900;running=true;raf=requestAnimationFrame(frame);}
+function finish(){running=false;cancelAnimationFrame(raf);els.song.pause();const acc=judged?Math.max(0,100-totalErr/judged/1.3):0;flash(acc>=95?'FULL GROOVE':acc>=85?'CLEAR':'FINISH',acc>=85?'perfect':'great');els.status.textContent=`완주 · ${hits}/${chart.length} HIT · ${(acc).toFixed(2)}%`;}
+document.querySelectorAll('.difficulty').forEach(b=>b.addEventListener('click',()=>{mode=b.dataset.mode;document.querySelectorAll('.difficulty').forEach(x=>x.classList.toggle('active',x===b));reset();}));
+els.start.addEventListener('click',start);document.addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(MODES[mode].keys.includes(k)){e.preventDefault();if(!e.repeat)press(k);}});reset();
+})();

@@ -270,7 +270,7 @@ def get_collection_catalog(category: str) -> list[dict]:
     elif category == "몬스터":
         from monsters_db import MONSTERS_DB
         for zone, zd in MONSTERS_DB.items():
-            for d in zd.get("monsters", []): rows[d["id"]] = {"id": d["id"], "name": d["name"], "grade": d.get("grade", "Normal"), "zone": zone}
+            for d in zd.get("monsters", []): rows[d["id"]] = {"id": d["id"], "name": d["name"], "grade": d.get("grade", "Normal"), "zone": zone, "creature_type": d.get("creature_type", "Unknown"), "lore_basis": d.get("lore_basis", ""), "bestiary": d.get("bestiary", ""), "traits": d.get("traits", [])}
     return list(rows.values())
 
 def collection_total_possible(category: str) -> int:

@@ -55,7 +55,14 @@ def make_collection_embed(category: str) -> discord.Embed:
         for zone, rows in zones.items():
             found = sum(r["id"] in cat_data for r in rows)
             complete = found == len(rows)
-            lines = [f"{'✅' if r['id'] in cat_data else '❔'} **{r['name']}**" if r['id'] in cat_data else "❔ ???" for r in rows]
+            lines = []
+            for r in rows:
+                if r["id"] not in cat_data:
+                    lines.append("❔ ???")
+                    continue
+                traits = " · ".join(r.get("traits", [])[:2])
+                detail = f" — `{r.get('creature_type','?')}`" + (f" · {traits}" if traits else "")
+                lines.append(f"✅ **{r['name']}**{detail}")
             if complete:
                 lines.append("🏆 **지역 완성 보상:** 기력 최대치 +1")
             else:

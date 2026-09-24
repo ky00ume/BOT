@@ -66,6 +66,10 @@ MONSTERS_DB = {
         "monsters": [
             {
                 "id": "slime",
+                "creature_type": 'Ooze',
+                "lore_basis": 'BG3 대응: Ochre Jelly',
+                "bestiary": '산성 점액을 두른 동굴성 우즈. 베기와 번개에 강하고 산성 공격을 사용한다.',
+                "traits": ['베기 저항', '번개 저항', '산성 공격'],
                 "name": "슬라임",
                 "level": 1,
                 "hp": 30,
@@ -81,6 +85,10 @@ MONSTERS_DB = {
             },
             {
                 "id": "forest_spider",
+                "creature_type": 'Beast',
+                "lore_basis": 'BG3 대응: Giant Spider',
+                "bestiary": '거미줄 지형을 자유롭게 오가며 독성 물기로 사냥하는 거대 거미.',
+                "traits": ['거미줄 이동', '독성 물기'],
                 "name": "숲 거미",
                 "level": 2,
                 "hp": 45,
@@ -96,6 +104,10 @@ MONSTERS_DB = {
             },
             {
                 "id": "green_goblin",
+                "creature_type": 'Humanoid',
+                "lore_basis": 'BG3 계열: Goblin',
+                "bestiary": '민첩하고 기습에 능한 소형 고블린. 츄라이더 지역 변종이다.',
+                "traits": ['기습', '소형'],
                 "name": "풀 고블린",
                 "level": 3,
                 "hp": 60,
@@ -111,6 +123,10 @@ MONSTERS_DB = {
             },
             {
                 "id": "honey_bear",
+                "creature_type": 'Beast',
+                "lore_basis": '츄라이더 오리지널',
+                "bestiary": '꿀 향을 따라 숲을 떠도는 곰. BG3 직접 대응 개체는 없다.',
+                "traits": ['강한 근접 공격'],
                 "name": "꿀벌 곰",
                 "level": 4,
                 "hp": 90,
@@ -126,6 +142,10 @@ MONSTERS_DB = {
             },
             {
                 "id": "bell_sprite",
+                "creature_type": 'Fey',
+                "lore_basis": '츄라이더 오리지널',
+                "bestiary": '방울 같은 마력을 흩뿌리는 작은 페이 정령. BG3 직접 대응 개체는 없다.',
+                "traits": ['마법 생물'],
                 "name": "방울 정령",
                 "level": 5,
                 "hp": 120,
@@ -147,6 +167,10 @@ MONSTERS_DB = {
         "monsters": [
             {
                 "id": "goblin_warrior",
+                "creature_type": 'Humanoid',
+                "lore_basis": 'BG3 대응: Goblin Warrior',
+                "bestiary": '큰 무기를 휘두르는 전열 고블린. BG3의 Goblin Warrior는 Cleave와 Lacerate를 사용한다.',
+                "traits": ['강공', '베기'],
                 "name": "고블린 전사",
                 "level": 5,
                 "hp": 140,
@@ -162,6 +186,10 @@ MONSTERS_DB = {
             },
             {
                 "id": "goblin_shaman",
+                "creature_type": 'Humanoid',
+                "lore_basis": 'BG3 영감: Goblin spellcaster',
+                "bestiary": '주술과 지원 마법을 사용하는 고블린 술사. 특정 BG3 고유 개체를 그대로 옮긴 것은 아니다.',
+                "traits": ['주술', '원거리 마법'],
                 "name": "고블린 주술사",
                 "level": 7,
                 "hp": 110,
@@ -177,6 +205,10 @@ MONSTERS_DB = {
             },
             {
                 "id": "goblin_king",
+                "creature_type": 'Humanoid',
+                "lore_basis": '츄라이더 오리지널',
+                "bestiary": '고블린 무리를 지배하는 우두머리. BG3의 특정 Goblin King과 직접 대응하지 않는다.',
+                "traits": ['지휘관', '강공'],
                 "name": "고블린 대왕",
                 "level": 10,
                 "hp": 300,
@@ -199,6 +231,10 @@ MONSTERS_DB = {
         "monsters": [
             {
                 "id": "skeleton",
+                "creature_type": 'Undead',
+                "lore_basis": 'BG3 대응: Skeleton',
+                "bestiary": '암흑 마법으로 움직이는 뼈 언데드. 둔기에 약하고 독에 면역이다.',
+                "traits": ['둔기 취약', '독 면역'],
                 "name": "해골 병사",
                 "level": 10,
                 "hp": 200,
@@ -214,6 +250,10 @@ MONSTERS_DB = {
             },
             {
                 "id": "salt_golem",
+                "creature_type": 'Construct',
+                "lore_basis": '츄라이더 오리지널',
+                "bestiary": '소금 결정으로 만들어진 골렘. BG3 직접 대응 개체는 없다.',
+                "traits": ['구조물', '높은 방어'],
                 "name": "소금 골렘",
                 "level": 13,
                 "hp": 420,
@@ -229,6 +269,10 @@ MONSTERS_DB = {
             },
             {
                 "id": "dark_wizard",
+                "creature_type": 'Humanoid',
+                "lore_basis": '츄라이더 오리지널',
+                "bestiary": '그림포지의 어둠 마법사. BG3 특정 몬스터와 직접 대응하지 않는다.',
+                "traits": ['암흑 마법'],
                 "name": "어둠 마법사",
                 "level": 15,
                 "hp": 280,
@@ -252,6 +296,10 @@ MONSTERS_DB = {
         "monsters": [
             {
                 "id": "ent_guardian",
+                "creature_type": 'Plant',
+                "lore_basis": 'BG3 영감: Wood Woad',
+                "bestiary": '숲과 결속된 식물 수호자. BG3의 Wood Woad/Dryad 계열에서 전투 정체성을 참고했다.',
+                "traits": ['속박', '자연 마법'],
                 "name": "엔트 수호자",
                 "level": 18,
                 "hp": 500,
@@ -267,6 +315,10 @@ MONSTERS_DB = {
             },
             {
                 "id": "forest_fairy",
+                "creature_type": 'Fey',
+                "lore_basis": 'BG3 영감: Dryad',
+                "bestiary": '자연 마법과 속박을 다루는 숲의 페이. BG3 Dryad의 자연 마법 정체성을 참고했다.',
+                "traits": ['자연 마법', '속박'],
                 "name": "숲의 요정",
                 "level": 22,
                 "hp": 350,
@@ -283,6 +335,10 @@ MONSTERS_DB = {
             },
             {
                 "id": "fairy_queen",
+                "creature_type": 'Fey',
+                "lore_basis": '츄라이더 오리지널',
+                "bestiary": '요정의 숲을 다스리는 지배자. BG3 직접 대응 개체는 없다.',
+                "traits": ['마법 저항', '자연 마법'],
                 "name": "요정 여왕",
                 "level": 28,
                 "hp": 800,
@@ -305,6 +361,10 @@ MONSTERS_DB = {
         "monsters": [
             {
                 "id": "drake",
+                "creature_type": 'Dragon',
+                "lore_basis": 'D&D/BG3 용족 영감',
+                "bestiary": '용의 혈통을 지닌 포식자. BG3의 특정 이름 개체와 직접 대응하지 않는다.',
+                "traits": ['용족', '브레스 영감'],
                 "name": "드레이크",
                 "level": 30,
                 "hp": 1200,
@@ -320,6 +380,10 @@ MONSTERS_DB = {
             },
             {
                 "id": "elder_dragon",
+                "creature_type": 'Dragon',
+                "lore_basis": 'D&D/BG3 용족 영감',
+                "bestiary": '오랜 세월 힘을 축적한 츄라이더 용. BG3 특정 개체의 복제는 아니다.',
+                "traits": ['마법 저항', '브레스'],
                 "name": "장로 드래곤",
                 "level": 40,
                 "hp": 3000,
@@ -336,6 +400,10 @@ MONSTERS_DB = {
             },
             {
                 "id": "ancient_dragon",
+                "creature_type": 'Dragon',
+                "lore_basis": 'BG3 Red Dragon 영감',
+                "bestiary": '거대한 고대 용. BG3 Red Dragon의 화염 브레스와 마법 저항 정체성을 참고했다.',
+                "traits": ['화염 브레스', '마법 저항'],
                 "name": "태고의 드래곤",
                 "level": 50,
                 "hp": 6000,

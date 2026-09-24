@@ -3,6 +3,16 @@ from __future__ import annotations
 
 STATE_KEY = "lubato_song_memories"
 
+# 마제스티(루바토)가 원래 가지고 있는 레퍼토리. 사건 해금 없이 언제든 들을 수 있다.
+REPERTOIRE = {
+    "eight_shadows": {"title": "여덟 개의 그림자", "verse": "♪ 길 하나에 그림자는 여덟\n어느 것이 먼저 닿아도\n나는 뒤따라 걷지 않아\n내 노래로 옆을 걸을 거야 ♪\n\n♪ 듣고 있는지 묻지 않을게\n대답 같은 것도 필요 없어\n네가 저만큼 앞에 있다면\n나는 여기서 계속 부를 테니 ♪"},
+    "shadowlantern": {"title": "그림자등불", "verse": "♪ 손에 든 빛이 길을 비추면\n그 빛은 누구의 것이 될까\n쥔 사람의 것일까\n따라가는 사람의 것일까 ♪\n\n♪ 나는 등불을 들지 않을래\n대신 네가 보이는 데 있을게\n길을 잃으면 이름을 부르고\n대답이 없으면 한 번 더 부를게 ♪"},
+    "spider_rhythm": {"title": "거미는 박자를 모른다", "verse": "♪ 다리가 둘이면 하나 둘\n다리가 넷이면 하나 둘 셋 넷\n그런데 여덟 개가 우다다 오면\n잠깐만, 처음부터 다시 ♪\n\n“츄라이더, 오른쪽 세 번째 다리가 자꾸 빨라.”\n“그걸 어떻게 구분함미까?”\n“나도 몰라. 그래서 노래가 망했잖아.”"},
+    "come_back_alive": {"title": "살아 돌아온 사람에게", "verse": "♪ 영웅이라 부르지 않아도 돼\n멋진 이야기가 아니어도 돼\n흙투성이 신발을 끌고 와서\n여기 있다고 말해주면 돼 ♪\n\n♪ 이긴 날은 크게 부르고\n진 날에는 조금 작게 부르자\n오늘 돌아온 사람에게는\n내일 부를 노래가 있으니까 ♪"},
+    "tower_lights": {"title": "탑에 불이 켜지는 시간", "verse": "♪ 높은 창에 불이 하나\n아래층에도 불이 하나\n누가 돌아왔는지 묻지 않아도\n오늘은 방들이 따뜻하네 ♪\n\n♪ 먼저 온 사람은 기다리고\n늦게 온 사람은 문을 열고\n그렇게 하나씩 돌아오다 보면\n커다란 탑도 집이 되네 ♪"},
+    "pet_song": {"title": "복복송", "verse": "♪ 복복 한 번, 복복 두 번\n세 번째부터 세지 마세요\n츄라이더가 납작해져도\n행복한 거니까 계속하세요 ♪\n\n츄라이더가 눈을 반짝입니다.\n“2절도 있슴미까?”\n\n마제스티가 리라 줄을 한 번 튕깁니다.\n“당연하지.”"},
+}
+
 SONGS = {
     "karniss_hide": {
         "title": "책장 아래의 작은 것",
@@ -91,3 +101,11 @@ def unlocked_songs(player) -> list[tuple[str, dict]]:
 def song_text(song_id: str) -> str:
     song = SONGS[song_id]
     return f"루바토가 리라의 줄을 천천히 고릅니다.\n\n“이건 **{song['trigger']}**의 노래야.”\n\n{song['verse']}\n\n{song['after']}"
+
+
+def repertoire_songs() -> list[tuple[str, dict]]:
+    return list(REPERTOIRE.items())
+
+def repertoire_text(song_id: str) -> str:
+    song = REPERTOIRE[song_id]
+    return f"마제스티가 리라를 들고 익숙한 곡을 시작합니다.\n\n**〈{song['title']}〉**\n\n{song['verse']}"

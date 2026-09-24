@@ -1381,14 +1381,16 @@ class TowerExhibitionView(ExpiringView):
 class LubatoSongMemoryView(ExpiringView):
     def __init__(self,player,care_manager,*,suspicious_actor_id=None):
         super().__init__(timeout=CARE_VIEW_TIMEOUT);self.player=player;self.care_manager=care_manager;self.suspicious_actor_id=suspicious_actor_id
-        from lubato_song_memory import unlocked_songs
-        for key,song in unlocked_songs(player)[:20]:
+        from lubato_song_memory import unlocked_songs, repertoire_songs
+        for key,song in unlocked_songs(player)[:12]:
             b=discord.ui.Button(label=song["title"],emoji="🎵",style=discord.ButtonStyle.secondary);b.callback=self._make_song(key);self.add_item(b)
+        for key,song in repertoire_songs()[:6]:
+            b=discord.ui.Button(label=song["title"],emoji="🎶",style=discord.ButtonStyle.primary);b.callback=self._make_repertoire(key);self.add_item(b)
         back=discord.ui.Button(label="전시관으로",emoji="↩️",style=discord.ButtonStyle.secondary);back.callback=self._back;self.add_item(back)
     def make_embed(self,note=None):
         from lubato_song_memory import unlocked_songs
         songs=unlocked_songs(self.player)
-        desc="루바토가 츄라이더와 하이네스가 실제로 지나온 날들만 노래로 기억합니다."
+        desc="마제스티(루바토)가 기억한 모험의 노래와, 원래 즐겨 부르는 레퍼토리를 들을 수 있습니다."
         e=discord.Embed(title=f"🎼 루바토의 노래 기억 · {len(songs)}곡",description=desc,color=0x6B5578)
         if songs:
             e.add_field(name="기억하는 노래",value="\n".join(f"🎵 **{song['title']}** · {song['trigger']}" for _,song in songs),inline=False)
@@ -1399,6 +1401,11 @@ class LubatoSongMemoryView(ExpiringView):
         async def cb(interaction):
             from lubato_song_memory import song_text
             v=LubatoSongMemoryView(self.player,self.care_manager,suspicious_actor_id=self.suspicious_actor_id);v.bind_message(getattr(interaction,"message",None));await interaction.response.edit_message(attachments=[],embed=v.make_embed(song_text(key)),view=v)
+        return cb
+    def _make_repertoire(self,key):
+        async def cb(interaction):
+            from lubato_song_memory import repertoire_text
+            v=LubatoSongMemoryView(self.player,self.care_manager,suspicious_actor_id=self.suspicious_actor_id);v.bind_message(getattr(interaction,"message",None));await interaction.response.edit_message(attachments=[],embed=v.make_embed(repertoire_text(key)),view=v)
         return cb
     async def _back(self,interaction):
         v=TowerExhibitionView(self.player,self.care_manager,suspicious_actor_id=self.suspicious_actor_id);v.bind_message(getattr(interaction,"message",None));await interaction.response.edit_message(attachments=[],embed=v.make_embed(),view=v)

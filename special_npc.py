@@ -343,9 +343,10 @@ class SpecialNPCEncounterManager:
         self.player.mp = min(self.player.mp + heal_mp, self.player.max_mp)
 
         songs = [
-            "♪ 길을 잃어도 괜찮아, 빛은 언제나 있으니 ♪",
-            "♫ 상처는 흔적이 되고, 흔적은 용기가 돼 ♫",
-            "♪ 오늘도 살아있으니, 그걸로 충분해 ♪",
+            "♪ 길이 어두우면 내가 먼저 한 소절 부를게 ♪",
+            "♫ 살아 돌아오면 그걸로 다음 노래가 생겨 ♫",
+            "♪ 말로 못 한 건 현에 걸어두자, 잊히지 않게 ♪",
+            "♫ 발소리가 멎어도 노래는 그 자리에 남아 ♫",
         ]
         song = random.choice(songs)
 

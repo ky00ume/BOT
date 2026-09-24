@@ -474,6 +474,22 @@ class WorldMapView(View):
         return callback
 
 
+class AdventureEventView(View):
+    def __init__(self, event, player, continue_hunt):
+        super().__init__(timeout=GAME_VIEW_TIMEOUT); self.event=event; self.player=player; self.continue_hunt=continue_hunt
+        for key,label in event["choices"]:
+            b=Button(label=label,style=discord.ButtonStyle.primary if key!="leave" else discord.ButtonStyle.secondary)
+            async def cb(interaction, choice=key):
+                from adventure_events import resolve_adventure_event
+                result=resolve_adventure_event(self.player,self.event["id"],choice)
+                for child in self.children: child.disabled=True
+                await interaction.response.edit_message(embed=discord.Embed(title=self.event["title"],description=result["text"]),view=self)
+                if result.get("battle"):
+                    await self.continue_hunt(interaction, advantage=result.get("advantage",False))
+                else:
+                    import app_context; app_context.get_save_manager().save(self.player)
+            b.callback=cb; self.add_item(b)
+
 class HuntingZoneView(View):
     """사냥터 상세 뷰 (이미지 + 버튼)"""
 
@@ -527,6 +543,19 @@ class HuntingZoneView(View):
         departure = encounter_manager.clear_encounter()
         if departure:
             await interaction.channel.send(departure)
+        from adventure_events import roll_adventure_event
+        event = roll_adventure_event(self.zone_name)
+        if event:
+            embed=discord.Embed(title=event["title"],description=event["text"])
+            async def _continue(inter, advantage=False):
+                if advantage:
+                    battle_engine._cheer_active=True
+                await self._start_hunt(interaction.channel, battle_engine, encounter_manager, quest_manager, achievement_manager, diary_manager)
+            await interaction.channel.send(embed=embed,view=AdventureEventView(event,self.player,_continue))
+            return
+        await self._start_hunt(interaction.channel, battle_engine, encounter_manager, quest_manager, achievement_manager, diary_manager)
+
+    async def _start_hunt(self, channel, battle_engine, encounter_manager, quest_manager, achievement_manager, diary_manager):
         success, result = battle_engine.start_encounter(self.zone_name)
         if success:
             _bimg = battle_engine.build_battle_image()
@@ -542,27 +571,27 @@ class HuntingZoneView(View):
                     npc_manager = app_context.get_npc_manager()
                     _hunt_completed = npc_manager.update_hunt_kill(monster_id=_killed_monster, count=1)
                     if _hunt_completed:
-                        await npc_manager.complete_pending_hunts(interaction.channel, _hunt_completed)
+                        await npc_manager.complete_pending_hunts(channel, _hunt_completed)
                 app_context.get_save_manager().save(app_context.get_player())
 
             from ui.battle_view import BattleView
-            view = BattleView(battle_engine, interaction.channel, on_battle_end=_on_battle_end)
+            view = BattleView(battle_engine, channel, on_battle_end=_on_battle_end)
             if _bimg:
                 _bimg.seek(0)
-                await interaction.channel.send(file=discord.File(fp=_bimg, filename="battle.png"), view=view)
+                await channel.send(file=discord.File(fp=_bimg, filename="battle.png"), view=view)
             elif isinstance(result, io.BytesIO):
                 result.seek(0)
-                await interaction.channel.send(file=discord.File(fp=result, filename="battle.png"), view=view)
+                await channel.send(file=discord.File(fp=result, filename="battle.png"), view=view)
             else:
-                await interaction.channel.send(str(result), view=view)
+                await channel.send(str(result), view=view)
         else:
             if isinstance(result, io.BytesIO):
                 result.seek(0)
-                await interaction.channel.send(file=discord.File(fp=result, filename="battle.png"))
+                await channel.send(file=discord.File(fp=result, filename="battle.png"))
             elif isinstance(result, discord.Embed):
-                await interaction.channel.send(embed=result)
+                await channel.send(embed=result)
             else:
-                await interaction.channel.send(str(result))
+                await channel.send(str(result))
         if success:
             enc_msg = encounter_manager.trigger_encounter()
             if enc_msg:
@@ -577,9 +606,9 @@ class HuntingZoneView(View):
                                          getattr(encounter_manager, '_npc_manager_ref', None),
                                          encounter_manager)
                     enc_file = discord.File(fp=buf, filename="encounter.png")
-                    await interaction.channel.send(file=enc_file, view=view)
+                    await channel.send(file=enc_file, view=view)
                 else:
-                    await interaction.channel.send(enc_msg)
+                    await channel.send(enc_msg)
 
     async def _back_callback(self, interaction: discord.Interaction):
         view = WorldMapView(self.player, self.aff_manager, self.npc_manager_ref)

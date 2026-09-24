@@ -72,3 +72,16 @@ def rhythm_chart(melody_id: str) -> list[dict]:
             chart.append({"at_ms": round(elapsed), "key": RHYTHM_KEYS[idx % len(RHYTHM_KEYS)], "note": note})
         elapsed += beat_ms*beats
     return chart
+
+
+def performance_result(player, melody_id: str, hits: int, total: int) -> tuple[str, int]:
+    """리듬 연주 결과를 판정하고 실제 성공도에 비례해 수련치를 준다."""
+    ensure_music_skills(player)
+    total=max(1,int(total));hits=max(0,min(int(hits),total));rate=hits/total
+    exp=max(5,round(10+30*rate))
+    player.skill_exp["music"] = float(player.skill_exp.get("music",0.0))+exp
+    if rate>=.9: grade="✨ 완벽한 연주"
+    elif rate>=.7: grade="🎶 좋은 연주"
+    elif rate>=.45: grade="🎵 끝까지 연주했다"
+    else: grade="💦 조금 엉켰다"
+    return grade,exp

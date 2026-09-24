@@ -1,4 +1,4 @@
-"""care_ui.py — 비전의 탑 상층 · 츄라이더의 숨은 보금자리 돌봄 UI"""
+﻿"""care_ui.py — 비전의 탑 상층 · 츄라이더의 숨은 보금자리 돌봄 UI"""
 import asyncio
 import discord
 from ui.view_timeouts import CARE_VIEW_TIMEOUT
@@ -563,7 +563,7 @@ class PettingView(ExpiringView):
             [
                 "이번에는 두 다리를 번갈아 쓰다듬습니다. 바닥을 두드리던 움직임이 점점 느려집니다.",
                 "관절 사이를 손끝으로 눌러주자 앞다리 둘이 차례로 힘을 뺍니다. 뒤쪽 다리도 슬쩍 가까이 모입니다.",
-                "다리 안쪽을 살살 긁어주자 바닥을 타닥거리던 소리가 멎습니다.\n“거기 시원합니댜.”",
+                "다리 안쪽을 살살 긁어주자 바닥을 타닥거리던 소리가 잦아듭니다.\n“거기 시원합니댜.”",
                 "두 번째에는 먼저 다리 하나를 내밉니다. 어느 다리를 만져달라는 건지 꽤 분명합니다.",
             ],
             [
@@ -1417,9 +1417,9 @@ class LubatoSongMemoryView(ExpiringView):
             b=discord.ui.Button(label="이 선율로 작곡",emoji="✍️",style=discord.ButtonStyle.success);b.callback=self._make_compose(key);self.add_item(b)
     def _make_perform(self,key):
         async def cb(interaction):
-            from music_system import perform
-            ok,msg=perform(self.player,key)
-            v=LubatoSongMemoryView(self.player,self.care_manager,suspicious_actor_id=self.suspicious_actor_id);v.bind_message(getattr(interaction,"message",None));v._add_music_actions(key);await interaction.response.edit_message(attachments=[],embed=v.make_embed(msg),view=v)
+            v=RhythmPerformanceView(self.player,self.care_manager,key,suspicious_actor_id=self.suspicious_actor_id)
+            v.bind_message(getattr(interaction,"message",None))
+            await interaction.response.edit_message(attachments=[],embed=v.make_embed(),view=v)
         return cb
     def _make_compose(self,key):
         async def cb(interaction):
@@ -1429,6 +1429,51 @@ class LubatoSongMemoryView(ExpiringView):
         return cb
     async def _back(self,interaction):
         v=TowerExhibitionView(self.player,self.care_manager,suspicious_actor_id=self.suspicious_actor_id);v.bind_message(getattr(interaction,"message",None));await interaction.response.edit_message(attachments=[],embed=v.make_embed(),view=v)
+
+
+class RhythmPerformanceView(ExpiringView):
+    """Discord 버튼으로 한 음씩 따라가는 짧은 연주 미니게임."""
+    def __init__(self,player,care_manager,melody_id,*,suspicious_actor_id=None):
+        super().__init__(timeout=90);self.player=player;self.care_manager=care_manager;self.melody_id=melody_id;self.suspicious_actor_id=suspicious_actor_id
+        from music_system import rhythm_chart
+        self.chart=rhythm_chart(melody_id);self.step=0;self.hits=0;self.finished=False;self._build_keys()
+    def _build_keys(self):
+        self.clear_items()
+        if self.finished:return
+        from music_system import RHYTHM_KEYS
+        for key in RHYTHM_KEYS:
+            b=discord.ui.Button(label=key,style=discord.ButtonStyle.primary,custom_id=f"rhythm_{self.melody_id}_{self.step}_{RHYTHM_KEYS.index(key)}")
+            b.callback=self._make_key(key);self.add_item(b)
+        q=discord.ui.Button(label="연주 그만두기",emoji="↩️",style=discord.ButtonStyle.secondary);q.callback=self._quit;self.add_item(q)
+    def make_embed(self,note=None):
+        from lubato_song_memory import REPERTOIRE
+        title=REPERTOIRE.get(self.melody_id,{}).get("title",self.melody_id);total=len(self.chart)
+        if self.finished: desc=note or "연주가 끝났습니다."
+        else:
+            target=self.chart[self.step]["key"] if self.step<total else "🎵"
+            upcoming="  ".join(x["key"] for x in self.chart[self.step:self.step+4])
+            desc=f"**지금:** {target}\n\n`{upcoming}`\n\n진행 **{self.step}/{total}** · 정확 **{self.hits}**\n표시된 키를 눌러 선율을 이어가세요."
+            if note: desc=note+"\n\n"+desc
+        return discord.Embed(title=f"🎻 연주 · {title}",description=desc,color=0x6B5578)
+    def _make_key(self,key):
+        async def cb(interaction):
+            if self.finished or self.step>=len(self.chart):return
+            expected=self.chart[self.step]["key"];correct=key==expected
+            if correct:self.hits+=1
+            self.step+=1
+            if self.step>=len(self.chart):
+                from music_system import performance_result
+                grade,exp=performance_result(self.player,self.melody_id,self.hits,len(self.chart));self.finished=True;self.clear_items()
+                try: save_player_to_db(self.player)
+                except Exception: logger.warning("연주 미니게임 저장 실패",exc_info=True)
+                back=discord.ui.Button(label="노래 기억으로",emoji="↩️",style=discord.ButtonStyle.secondary);back.callback=self._back;self.add_item(back)
+                msg=f"{grade}\n**{self.hits}/{len(self.chart)}** 음을 맞혔습니다.  `악기 연주 EXP +{exp}`"
+                await interaction.response.edit_message(attachments=[],embed=self.make_embed(msg),view=self);return
+            self._build_keys();await interaction.response.edit_message(attachments=[],embed=self.make_embed("✨ 정확!" if correct else f"💫 살짝 빗나갔습니다. 정답은 {expected}"),view=self)
+        return cb
+    async def _quit(self,interaction): await self._back(interaction)
+    async def _back(self,interaction):
+        v=LubatoSongMemoryView(self.player,self.care_manager,suspicious_actor_id=self.suspicious_actor_id);v.bind_message(getattr(interaction,"message",None));await interaction.response.edit_message(attachments=[],embed=v.make_embed(),view=v)
 
 
 class TowerGeneratorView(ExpiringView):

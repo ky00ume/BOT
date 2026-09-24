@@ -317,7 +317,7 @@ class VisionTownView(View):
 
     async def _cooking_callback(self, interaction: discord.Interaction):
         import app_context
-        from ui.skill_ui import SkillMainView, make_category_embed
+        from ui.skill_ui import SkillMainView, make_life_hub_embed
         def _back():
             return VisionTownView(self.player, self.aff_manager, self.npc_manager_ref, self.village_manager)
         view = SkillMainView(
@@ -326,14 +326,8 @@ class VisionTownView(View):
         )
         # 취사장에서는 곧바로 생활 스킬 화면으로 들어간다.
         view.current_category = "life"
-        view.clear_items()
-        from ui.skill_ui import SkillCategorySelect, LifeSkillSelect
-        view.add_item(SkillCategorySelect(self.player))
-        view.add_item(LifeSkillSelect(self.player))
-        back_btn = Button(label="군락으로 돌아가기", style=discord.ButtonStyle.secondary, emoji="◀️")
-        back_btn.callback = view._back_callback
-        view.add_item(back_btn)
-        await interaction.response.edit_message(attachments=[], embed=make_category_embed(self.player, "life"), view=view)
+        view._build_life_hub()
+        await interaction.response.edit_message(attachments=[], embed=make_life_hub_embed(self.player), view=view)
 
     async def _tower_road_callback(self, interaction: discord.Interaction):
         from ui.care_ui import TowerColonyRoadView

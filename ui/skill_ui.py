@@ -291,6 +291,63 @@ def make_category_embed(player, category: str) -> discord.Embed:
     return embed
 
 
+def make_life_hub_embed(player) -> discord.Embed:
+    """생활 스킬을 한눈에 보는 성장 허브."""
+    ranks = getattr(player, "skill_ranks", {})
+    exp_map = getattr(player, "skill_exp", {})
+    lines = []
+    for sid, sdata in OTHER_SKILLS.items():
+        if sid not in ranks or sid not in _LIFE_SKILL_ENGINE:
+            continue
+        rank = ranks[sid]
+        lines.append(f"**{sdata.get('icon','🌿')} {sdata['name']}** {_rank_badge(rank)}  {_exp_gauge(sid, rank, exp_map.get(sid, 0.0))}")
+    embed = discord.Embed(
+        title="🌿 생활 스킬 · 성장판",
+        description=("\n".join(lines) if lines else "보유한 생활 스킬이 없습니다.") +
+                    "\n\n아래 **스킬 버튼**을 누르면 수련 현황과 다음 행동을 바로 볼 수 있습니다.",
+        color=0x2ECC71,
+    )
+    embed.set_footer(text="스킬 선택 → 상태 확인 → 레시피/사용처로 이동")
+    return embed
+
+
+def make_life_detail_embed(player, skill_id: str) -> discord.Embed:
+    data = OTHER_SKILLS.get(skill_id, {})
+    rank = getattr(player, "skill_ranks", {}).get(skill_id, "연습")
+    exp = getattr(player, "skill_exp", {}).get(skill_id, 0.0)
+    threshold = SKILL_RANK_THRESHOLD.get(skill_id, RANK_UP_THRESHOLD).get(rank)
+    progress = "MAX" if not threshold else f"{exp:.0f} / {threshold:.0f}"
+    recipes = _get_recipes_for_skill(skill_id)
+    action_hint = {
+        "fishing": "낚시터에서 🎣 낚시를 시작할 수 있습니다.",
+        "gathering": "채집 지역에서 🌿 채집으로 재료를 모읍니다.",
+        "mining": "광맥 지역에서 ⛏️ 채광으로 광석을 모읍니다.",
+        "rest": "휴식 장소에서 사용하며 컨디션을 회복합니다.",
+        "music": "연주 활동을 통해 수련합니다.",
+    }.get(skill_id)
+    if recipes:
+        unlocked = 0
+        for recipe in recipes.values():
+            req = recipe.get("rank_req", "연습")
+            try:
+                unlocked += int(RANK_ORDER.index(rank) >= RANK_ORDER.index(req))
+            except ValueError:
+                unlocked += 1
+        action_hint = f"레시피 **{len(recipes)}개** · 현재 랭크에서 **{unlocked}개** 사용 가능"
+    embed = discord.Embed(
+        title=f"{data.get('icon','🌿')} {data.get('name',skill_id)} · {rank}랭크",
+        description=f"{data.get('desc','')}\n\n**성장**  {_exp_gauge(skill_id, rank, exp)}  `{progress}`",
+        color=0x2ECC71,
+    )
+    training = _training_checklist_text(player, skill_id, rank)
+    if training:
+        embed.add_field(name="📋 이번 랭크 수련", value=training, inline=False)
+    if action_hint:
+        embed.add_field(name="▶ 다음 행동", value=action_hint, inline=False)
+    embed.set_footer(text="레시피가 있는 스킬은 아래 [📖 레시피]에서 바로 이어집니다." if recipes else "생활 스킬로 돌아가 다른 스킬도 확인할 수 있습니다.")
+    return embed
+
+
 def make_recipe_list_embed(player, skill_id: str, recipes: dict) -> discord.Embed:
     """레시피 목록 임베드 (드롭다운 선택 전)."""
     from skills_db import OTHER_SKILLS
@@ -391,7 +448,8 @@ class SkillCategorySelect(Select):
         view.add_item(SkillCategorySelect(self.player))
 
         if category == "life":
-            view.add_item(LifeSkillSelect(self.player))
+            embed = make_life_hub_embed(self.player)
+            view._build_life_hub()
         elif category == "magic":
             # 마법 스킬 정보 버튼 추가
             _add_skill_info_buttons(view, self.player, {**MAGIC_SKILLS, **RECOVERY_SKILLS})
@@ -717,6 +775,50 @@ class SkillMainView(View):
     async def _back_callback(self, interaction: discord.Interaction):
         view = self.back_factory()
         await view.send(interaction, edit=True)
+
+    def _build_life_hub(self):
+        self.clear_items()
+        self.add_item(SkillCategorySelect(self.player))
+        ranks = getattr(self.player, "skill_ranks", {})
+        for sid, data in OTHER_SKILLS.items():
+            if sid not in ranks or sid not in _LIFE_SKILL_ENGINE or len(self.children) >= 24:
+                continue
+            btn = Button(label=data.get("name", sid), emoji=data.get("icon", "🌿"), style=discord.ButtonStyle.secondary, custom_id=f"life_open_{sid}")
+            btn.callback = self._make_life_open_callback(sid)
+            self.add_item(btn)
+        if self.back_factory is not None and len(self.children) < 25:
+            back_btn = Button(label="군락으로 돌아가기", style=discord.ButtonStyle.secondary, emoji="◀️")
+            back_btn.callback = self._back_callback
+            self.add_item(back_btn)
+
+    def _make_life_open_callback(self, skill_id: str):
+        async def callback(interaction: discord.Interaction):
+            self.clear_items()
+            recipes = _get_recipes_for_skill(skill_id)
+            if recipes:
+                recipe_btn = Button(label="레시피 보기", emoji="📖", style=discord.ButtonStyle.primary, custom_id=f"life_recipes_{skill_id}")
+                recipe_btn.callback = self._make_life_recipe_callback(skill_id)
+                self.add_item(recipe_btn)
+            back_btn = Button(label="생활 스킬", emoji="◀️", style=discord.ButtonStyle.secondary, custom_id="life_hub_back")
+            back_btn.callback = self._life_hub_callback
+            self.add_item(back_btn)
+            await interaction.response.edit_message(embed=make_life_detail_embed(self.player, skill_id), attachments=[], view=self)
+        return callback
+
+    async def _life_hub_callback(self, interaction: discord.Interaction):
+        self._build_life_hub()
+        await interaction.response.edit_message(embed=make_life_hub_embed(self.player), attachments=[], view=self)
+
+    def _make_life_recipe_callback(self, skill_id: str):
+        async def callback(interaction: discord.Interaction):
+            recipes = _get_recipes_for_skill(skill_id)
+            self.clear_items()
+            self.add_item(RecipeSelect(self.player, skill_id, recipes))
+            back_btn = Button(label="스킬 상세", emoji="◀️", style=discord.ButtonStyle.secondary, custom_id=f"life_detail_back_{skill_id}")
+            back_btn.callback = self._make_life_open_callback(skill_id)
+            self.add_item(back_btn)
+            await interaction.response.edit_message(embed=make_recipe_list_embed(self.player, skill_id, recipes), attachments=[], view=self)
+        return callback
 
     def _make_skill_detail_callback(self, skill_id: str):
         async def callback(interaction: discord.Interaction):

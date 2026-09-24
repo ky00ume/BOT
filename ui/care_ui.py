@@ -1279,8 +1279,10 @@ class TowerColonyRoadView(ExpiringView):
             await view.send(interaction, edit=True)
         else:
             self.player.current_location = "비전의 탑"
+            from tower_exhibition import entry_notice as exhibition_entry_notice
+            notice = exhibition_entry_notice(self.player)
             save_player_to_db(self.player)
-            view = TowerUpperFloorView(self.player, self.care_manager, suspicious_actor_id=self.suspicious_actor_id)
+            view = TowerUpperFloorView(self.player, self.care_manager, suspicious_actor_id=self.suspicious_actor_id, entry_notice=notice)
             view.bind_message(getattr(interaction, "message", None))
             await interaction.response.edit_message(attachments=[], embed=view.make_embed(), view=view)
 
@@ -1408,8 +1410,15 @@ class TowerGeneratorView(ExpiringView):
 
 class TowerUpperFloorView(TowerPlaceView):
     """기존 진입점 호환용 상층 View."""
-    def __init__(self, player, care_manager, *, suspicious_actor_id=None):
+    def __init__(self, player, care_manager, *, suspicious_actor_id=None, entry_notice=None):
+        self.entry_notice = entry_notice
         super().__init__(player, care_manager, place="upper", suspicious_actor_id=suspicious_actor_id)
+
+    def make_embed(self, observation=None):
+        embed = super().make_embed(observation)
+        if self.entry_notice:
+            embed.add_field(name="📦 전시관 자동 보관", value=self.entry_notice, inline=False)
+        return embed
 
 
 class TowerLiftView(ExpiringView):

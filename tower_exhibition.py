@@ -22,6 +22,24 @@ def display(player,key):
     if not player.remove_item(item["item_id"],1): return False,[]
     st=ensure_state(player);st["displayed"].append(key)
     return True,apply_milestones(player)
+def store_carried_exhibits(player):
+    """탑 귀환 시 휴대 중인 전시용 유일품을 전시관으로 자동 이관한다."""
+    stored=[];rewards=[]
+    for key in list(available_to_display(player)):
+        ok,new_rewards=display(player,key)
+        if ok:
+            stored.append(EXHIBITS[key]["name"]);rewards.extend(new_rewards)
+    return stored,rewards
+
+def entry_notice(player):
+    stored,rewards=store_carried_exhibits(player)
+    if not stored: return None
+    names=", ".join(stored)
+    text=f"🏛️ **{names}**을(를) 비전의 탑 전시관에 보관했습니다."
+    if rewards:
+        text += "\n" + "\n".join(f"🔮 **{label}** 공명이 깨어났습니다." for label,_ in rewards)
+    return text
+
 def apply_milestones(player):
     st=ensure_state(player);n=len(st["displayed"]);rewards=[]
     for need,bonus,label in MILESTONES:

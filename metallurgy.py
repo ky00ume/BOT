@@ -199,6 +199,8 @@ class MetallurgyEngine:
                     from collection import collection_manager
                     grade = ALL_ITEMS.get(out_id, {}).get("grade", "Normal")
                     is_new, total = collection_manager.register("제련", out_id, out_name, grade)
+                    if is_new:
+                        collection_manager.apply_player_bonuses(self.player)
                 except Exception:
                     logger.warning('metallurgy: collection_manager.register 실패', exc_info=True)
 

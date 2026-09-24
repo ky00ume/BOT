@@ -12,7 +12,19 @@ CATEGORY_ICONS = {
     "요리":  "🍳",
     "채집":  "🌿",
     "채광":  "⛏️",
+    "벌목":  "🪓",
+    "제련":  "🔥",
 }
+
+COLLECTION_MILESTONES = (
+    {"count": 5, "label": "견습 수집가", "bonus": "기력 최대치 +2", "max_energy": 2},
+    {"count": 10, "label": "수집가", "bonus": "DEX +1", "stat": "dex", "value": 1},
+    {"count": 20, "label": "탐구가", "bonus": "기력 최대치 +3", "max_energy": 3},
+    {"count": 30, "label": "박물학도", "bonus": "LUCK +1", "stat": "luck", "value": 1},
+    {"count": 50, "label": "박물학자", "bonus": "DEX +1 · LUCK +1", "stats": {"dex": 1, "luck": 1}},
+    {"count": 75, "label": "대수집가", "bonus": "기력 최대치 +5", "max_energy": 5},
+    {"count": 100, "label": "세계의 기록자", "bonus": "STR/INT/DEX/WILL/LUCK +1", "stats": {"str": 1, "int": 1, "dex": 1, "will": 1, "luck": 1}},
+)
 
 
 class CollectionManager:
@@ -65,6 +77,42 @@ class CollectionManager:
 
         self._save()
         return is_new, cat[item_id]["count"]
+
+    def total_unique(self) -> int:
+        return sum(len(items) for items in self._data.values() if isinstance(items, dict))
+
+    def milestone_status(self) -> list[dict]:
+        total = self.total_unique()
+        return [{**m, "unlocked": total >= m["count"]} for m in COLLECTION_MILESTONES]
+
+    def next_milestone(self) -> dict | None:
+        total = self.total_unique()
+        return next((m for m in COLLECTION_MILESTONES if total < m["count"]), None)
+
+    def apply_player_bonuses(self, player) -> list[str]:
+        """현재 도감 종 수에 맞는 영구 보너스를 멱등 적용한다."""
+        flags = getattr(player, "_flags", None)
+        if flags is None:
+            player._flags = {}
+            flags = player._flags
+        claimed = set(flags.get("collection_milestones", []))
+        awarded = []
+        total = self.total_unique()
+        for m in COLLECTION_MILESTONES:
+            if total < m["count"] or m["count"] in claimed:
+                continue
+            if m.get("max_energy"):
+                player.max_energy += m["max_energy"]
+                player.energy = min(player.max_energy, player.energy + m["max_energy"])
+            stats = dict(m.get("stats", {}))
+            if m.get("stat"):
+                stats[m["stat"]] = stats.get(m["stat"], 0) + m.get("value", 0)
+            for stat, value in stats.items():
+                player.base_stats[stat] = player.base_stats.get(stat, 0) + value
+            claimed.add(m["count"])
+            awarded.append(f"{m['label']} — {m['bonus']}")
+        flags["collection_milestones"] = sorted(claimed)
+        return awarded
 
     def get_progress(self, category: str, total_possible: int) -> tuple[int, int, float]:
         """(collected, total_possible, percent) 반환"""

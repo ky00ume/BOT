@@ -590,6 +590,8 @@ class CookingEngine:
                 try:
                     from collection import collection_manager
                     is_new, total = collection_manager.register("요리", result_id, result_name)
+                    if is_new:
+                        collection_manager.apply_player_bonuses(self.player)
                 except Exception:
                     logger.warning('cooking_db: collection_manager.register 실패', exc_info=True)
                 try:

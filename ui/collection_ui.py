@@ -9,7 +9,7 @@ JS Risulike RPG v9 의 도감 UI 구조를 Discord 봇에 맞게 이식:
 import discord
 from ui.view_timeouts import GAME_VIEW_TIMEOUT
 from discord.ui import View, Button
-from collection import collection_manager, CATEGORY_ICONS
+from collection import collection_manager, CATEGORY_ICONS, COLLECTION_MILESTONES
 from ui.ui_theme import GRADE_EMBED_COLOR
 
 GRADE_ORDER = ["Legendary", "Epic", "Rare", "Normal"]
@@ -102,7 +102,7 @@ def make_collection_overview_embed() -> discord.Embed:
 
     embed = discord.Embed(
         title="📖 수집 도감",
-        description=f"총 **{total_all}종** 수집 완료\n\n탭을 선택해 카테고리별 도감을 확인하세요.",
+        description=f"총 **{total_all}종** 수집 완료\n\n새로운 종류를 발견할수록 영구 보너스가 열립니다.",
         color=0xC87800,
     )
     for cat, icon in CATEGORY_ICONS.items():
@@ -124,7 +124,16 @@ def make_collection_overview_embed() -> discord.Embed:
             value=f"**{count}종** 수집\n{grade_summary}",
             inline=True,
         )
-    embed.set_footer(text="아래 버튼으로 카테고리를 선택하세요")
+    next_m = collection_manager.next_milestone()
+    if next_m:
+        remain = next_m["count"] - total_all
+        embed.add_field(name="🎁 다음 수집 보너스", value=f"**{next_m['count']}종 · {next_m['label']}**\n{next_m['bonus']}  ·  앞으로 **{remain}종**", inline=False)
+    else:
+        embed.add_field(name="🏆 수집 보너스", value="모든 수집 마일스톤을 달성했습니다!", inline=False)
+    unlocked = [m for m in COLLECTION_MILESTONES if total_all >= m["count"]]
+    if unlocked:
+        embed.add_field(name="✨ 획득한 보너스", value="\n".join(f"✅ {m['count']}종 · {m['bonus']}" for m in unlocked[-4:]), inline=False)
+    embed.set_footer(text="카테고리를 눌러 발견 기록을 확인하세요 · 새 종류 수집이 핵심입니다")
     return embed
 
 

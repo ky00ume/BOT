@@ -374,6 +374,16 @@ class GatheringEngine:
 
         if added:
             try:
+                from collection import collection_manager
+                is_new, _ = collection_manager.register("채광", item["id"], item["name"], grade)
+                rewards = collection_manager.apply_player_bonuses(self.player) if is_new else []
+                if is_new:
+                    await ctx.send(f"📖✨ **새로운 도감 등록!** ⛏️ `{item['name']}` 이(가) 채광 도감에 추가됐슴미댜!")
+                for reward in rewards:
+                    await ctx.send(f"🎁 **수집 보너스 달성!** {reward}")
+            except Exception:
+                logger.warning('gathering: 채광 도감 등록 실패', exc_info=True)
+            try:
                 import fishing_card
                 buf = fishing_card.generate_gather_card(item["name"], count, grade)
                 await ctx.send(file=discord.File(buf, filename="mine_result.png"))
@@ -436,6 +446,16 @@ class GatheringEngine:
             logger.warning('gathering: village_manager.add_contribution (woodcut) 실패', exc_info=True)
 
         if added:
+            try:
+                from collection import collection_manager
+                is_new, _ = collection_manager.register("벌목", item["id"], item["name"], grade)
+                rewards = collection_manager.apply_player_bonuses(self.player) if is_new else []
+                if is_new:
+                    await ctx.send(f"📖✨ **새로운 도감 등록!** 🪓 `{item['name']}` 이(가) 벌목 도감에 추가됐슴미댜!")
+                for reward in rewards:
+                    await ctx.send(f"🎁 **수집 보너스 달성!** {reward}")
+            except Exception:
+                logger.warning('gathering: 벌목 도감 등록 실패', exc_info=True)
             try:
                 import fishing_card
                 buf = fishing_card.generate_gather_card(item["name"], count, grade)

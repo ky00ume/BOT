@@ -77,7 +77,7 @@ GATHERING_ZONE_DATA = {
     },
     "비버뱅 군락지": {
         "name": "비버뱅 군락지", "desc": "건드리면 터질 듯 부푼 균류가 빽빽한 위험 지역.",
-        "items": ["비버뱅", "팀마스크", "토치스톡", "나이트라이트 버섯"], "activities": ("gather",), "emoji": "💥",
+        "items": ["비버뱅", "팀마스크", "토치스톡", "나이트라이트 버섯", "공작버섯(희귀 사건)"], "activities": ("gather",), "emoji": "💥",
     },
     "셀루네 수정지": {
         "name": "셀루네 수정지", "desc": "전초기지 주변의 희미한 달빛 결정과 약초가 남은 곳.",
@@ -615,6 +615,24 @@ class HuntingZoneView(View):
         await view.send(interaction, edit=True)
 
 
+class BibberbangNoblestalkView(View):
+    def __init__(self, player):
+        super().__init__(timeout=GAME_VIEW_TIMEOUT); self.player=player
+        from bibberbang_event import event_payload
+        self.event=event_payload()
+        styles={"careful":discord.ButtonStyle.success,"dash":discord.ButtonStyle.primary,"burn":discord.ButtonStyle.danger,"leave":discord.ButtonStyle.secondary}
+        for key,label in self.event["choices"]:
+            b=Button(label=label,style=styles[key])
+            async def cb(interaction, choice=key):
+                import random, app_context
+                from bibberbang_event import resolve
+                result=resolve(self.player,choice,rng=random.random)
+                if result.get("resolved"):
+                    for child in self.children: child.disabled=True
+                await interaction.response.edit_message(embed=discord.Embed(title=self.event["title"],description=result["text"]),view=self)
+                app_context.get_save_manager().save(self.player)
+            b.callback=cb; self.add_item(b)
+
 class GatheringZoneView(View):
     """채집터 상세 뷰 (이미지 + 버튼)"""
 
@@ -633,6 +651,12 @@ class GatheringZoneView(View):
             gather_btn = Button(label="채집", style=discord.ButtonStyle.success, emoji="🌿")
             gather_btn.callback = self._gather_callback
             self.add_item(gather_btn)
+        if self.zone_name == "비버뱅 군락지":
+            from bibberbang_event import event_available
+            if event_available(self.player):
+                event_btn=Button(label="공작버섯 흔적",style=discord.ButtonStyle.primary,emoji="🍄")
+                event_btn.callback=self._noblestalk_callback
+                self.add_item(event_btn)
         if "woodcut" in activities:
             wood_btn = Button(label="벌목", style=discord.ButtonStyle.success, emoji="🪓")
             wood_btn.callback = self._woodcut_callback
@@ -667,6 +691,11 @@ class GatheringZoneView(View):
             )
         else:
             await channel_or_interaction.send(file=file, view=self)
+
+    async def _noblestalk_callback(self, interaction: discord.Interaction):
+        from bibberbang_event import event_payload
+        event=event_payload()
+        await interaction.response.send_message(embed=discord.Embed(title=event["title"],description=event["text"]),view=BibberbangNoblestalkView(self.player))
 
     async def _gather_callback(self, interaction: discord.Interaction):
         await interaction.response.defer()

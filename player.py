@@ -659,6 +659,13 @@ class Player:
                 break
 
             next_rank = RANK_ORDER[rank_idx + 1]
+            try:
+                from skill_breakthrough import blocks_rank_up
+                if blocks_rank_up(self, skill_id, current_rank):
+                    messages.append(f"🔒 {current_rank}→{next_rank} 돌파 퀘스트를 완료해야 승급할 수 있습니다.")
+                    break
+            except Exception as e:
+                logger.warning("스킬 돌파 퀘스트 확인 실패: %s", e)
             self.skill_exp[skill_id] -= threshold
             self.skill_ranks[skill_id] = next_rank
             current_rank = next_rank

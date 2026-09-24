@@ -63,7 +63,7 @@ GATHER_ITEMS_BY_SEASON = {
         {"id": "timmask",             "name": "팀마스크",          "grade": "Rare",      "rate": 0.04},
         {"id": "bibberbang",          "name": "비버뱅",            "grade": "Rare",      "rate": 0.03},
         {"id": "torchstalk",          "name": "토치스톡",          "grade": "Normal",    "rate": 0.08},
-        {"id": "sussur_bloom",        "name": "서서 꽃",           "grade": "Epic",      "rate": 0.005},
+        {"id": "sussur_bloom",        "name": "수서꽃",           "grade": "Epic",      "rate": 0.005},
         {"id": "apple",               "name": "사과",              "grade": "Normal",    "rate": 0.30},
         {"id": "carrot",              "name": "당근",              "grade": "Normal",    "rate": 0.22},
         {"id": "potato",              "name": "감자",              "grade": "Normal",    "rate": 0.25},
@@ -84,7 +84,7 @@ GATHER_ITEMS_BY_SEASON = {
         {"id": "toxic_mushroom",      "name": "독버섯",            "grade": "Normal",    "rate": 0.12},
         {"id": "timmask",             "name": "팀마스크",          "grade": "Rare",      "rate": 0.04},
         {"id": "nightlight_mushroom", "name": "나이트라이트 버섯", "grade": "Normal",    "rate": 0.07},
-        {"id": "sussur_bloom",        "name": "서서 꽃",           "grade": "Epic",      "rate": 0.003},
+        {"id": "sussur_bloom",        "name": "수서꽃",           "grade": "Epic",      "rate": 0.003},
         {"id": "lavender",       "name": "라벤더",      "grade": "Rare",      "rate": 0.05},
         {"id": "antidote_herb",  "name": "해독초",      "grade": "Normal",    "rate": 0.08},
         {"id": "moonlight_dew",  "name": "달빛 이슬",   "grade": "Epic",      "rate": 0.002},
@@ -134,7 +134,7 @@ GATHER_ZONE_ITEMS = {
         {"id": "hastening_spores",    "name": "가속 포자",         "grade": "Rare",    "rate": 0.035},
         {"id": "poison_spores",       "name": "독 포자",           "grade": "Rare",    "rate": 0.04},
         {"id": "underdark_truffle",   "name": "언더다크 트러플",   "grade": "Rare",    "rate": 0.03},
-        {"id": "sussur_bloom",        "name": "서서 꽃",           "grade": "Epic",    "rate": 0.005},
+        {"id": "sussur_bloom",        "name": "수서꽃",           "grade": "Epic",    "rate": 0.005},
     ],
 }
 

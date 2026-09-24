@@ -342,6 +342,15 @@ def make_life_detail_embed(player, skill_id: str) -> discord.Embed:
     training = _training_checklist_text(player, skill_id, rank)
     if training:
         embed.add_field(name="📋 이번 랭크 수련", value=training, inline=False)
+    try:
+        from skill_breakthrough import status as breakthrough_status
+        bq=breakthrough_status(player,skill_id,rank)
+        if bq:
+            lines=[("✅" if bq["progress"].get(k,0) else "⬜")+" "+label for k,label in bq["objectives"]]
+            state="돌파 완료" if bq["complete"] else ("진행 중" if bq["started"] else "EXP 충족 시 시작")
+            embed.add_field(name=f"🔐 {bq['target_rank']}랭크 돌파 · {state}",value=bq["description"]+"\n"+"\n".join(lines),inline=False)
+    except Exception as e:
+        logger.warning("돌파 퀘스트 UI 구성 실패: %s",e)
     if action_hint:
         embed.add_field(name="▶ 다음 행동", value=action_hint, inline=False)
     embed.set_footer(text="레시피가 있는 스킬은 아래 [📖 레시피]에서 바로 이어집니다." if recipes else "생활 스킬로 돌아가 다른 스킬도 확인할 수 있습니다.")

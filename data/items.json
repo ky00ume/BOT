@@ -718,7 +718,7 @@
       "desc": "불꽃 같은 발광을 내뿜는 언더다크 버섯."
     },
     "sussur_bloom": {
-      "name": "서서 꽃",
+      "name": "수서꽃",
       "type": "gathering",
       "grade": "Epic",
       "price": 1200,
@@ -1661,11 +1661,11 @@
       "en": 50
     },
     "sussur_bloom_tea": {
-      "name": "서서 꽃 차",
+      "name": "수서꽃 차",
       "type": "cooked",
       "grade": "Epic",
       "price": 900,
-      "desc": "서서 꽃으로 우려낸 차. 마법 저항력이 높아진다.",
+      "desc": "수서꽃으로 우려낸 차. 마법 저항력이 높아진다.",
       "hp": 80,
       "mp": 120,
       "en": 30

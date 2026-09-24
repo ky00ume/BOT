@@ -112,6 +112,32 @@ class BattleEngine:
                 newly.append(enemy)
         return newly
 
+    def _monster_special_attack(self, monster: dict, base_damage: int) -> tuple[int, str, dict]:
+        """몬스터 도감 traits를 실제 전투 행동으로 변환한다."""
+        traits = set(monster.get("traits", [])); roll = random.random(); effect = {}
+        if "화염 브레스" in traits and roll < 0.28:
+            return max(1, int(round(base_damage * 1.45))), "🔥 화염 브레스!", effect
+        if "산성 공격" in traits and roll < 0.30:
+            effect["corrode"] = 2
+            return max(1, int(round(base_damage * 1.20))), "🧪 산성 점액!", effect
+        if "독성 물기" in traits and roll < 0.32:
+            effect["poison"] = {"turns": 2, "damage": max(1, int(round(base_damage * 0.18)))}
+            return base_damage, "☠️ 독성 물기!", effect
+        if "거미줄 이동" in traits and roll < 0.42:
+            effect["webbed"] = 1
+            return base_damage, "🕸️ 거미줄 포박!", effect
+        return base_damage, "", effect
+
+    def _apply_player_monster_effects(self) -> list[str]:
+        flags = self.player._flags.setdefault("battle_monster_effects", {})
+        logs = []
+        poison = flags.get("poison")
+        if poison and poison.get("turns", 0) > 0:
+            dmg = max(1, int(poison.get("damage", 1))); self.player.hp = max(0, self.player.hp-dmg); poison["turns"] -= 1
+            logs.append(f"☠️ 독 피해 -{dmg}HP")
+            if poison["turns"] <= 0: flags.pop("poison", None)
+        return logs
+
     def _enemy_attack_phase(self, mods: dict, *, skip_enemy=None, counter=False) -> tuple[int, list[str]]:
         total = 0
         logs = []
@@ -128,10 +154,18 @@ class BattleEngine:
             mon_dmg = max(1, int(mon_atk * random.uniform(0.85, 1.15)) - defense)
             if counter:
                 mon_dmg = max(1, int(mon_dmg * 0.75))
+            mon_dmg, special_note, effects = self._monster_special_attack(monster, mon_dmg)
+            flags = player._flags.setdefault("battle_monster_effects", {})
+            if "poison" in effects and "독 면역" not in set(getattr(player, "traits", [])):
+                flags["poison"] = effects["poison"]
+            if effects.get("webbed"):
+                flags["webbed"] = max(flags.get("webbed", 0), effects["webbed"])
+            if effects.get("corrode"):
+                flags["corrode"] = max(flags.get("corrode", 0), effects["corrode"])
             player.hp = max(0, player.hp - mon_dmg)
             total += mon_dmg
             slow_note = " (둔화)" if slow_mult < 1.0 else ""
-            logs.append(f"{monster['name']}{slow_note} -{mon_dmg}HP")
+            logs.append(f"{monster['name']}{slow_note} -{mon_dmg}HP" + (f" {special_note}" if special_note else ""))
             if statuses.get("slow", 0) > 0:
                 statuses["slow"] -= 1
                 if statuses["slow"] <= 0:
@@ -219,7 +253,16 @@ class BattleEngine:
         self._sync_primary_enemy()
         monster = self.current_monster
         mods = self._get_condition_modifiers()
-        status_logs = self._apply_status_ticks()
+        player_effect_logs = self._apply_player_monster_effects()
+        pflags = player._flags.setdefault("battle_monster_effects", {})
+        if pflags.pop("webbed", 0):
+            mods["atk_mult"] *= 0.75
+            player_effect_logs.append("🕸️ 거미줄: 이번 턴 공격력 -25%")
+        if pflags.get("corrode", 0) > 0:
+            mods["def_mult"] *= 0.75; pflags["corrode"] -= 1
+            player_effect_logs.append("🧪 부식: 방어력 -25%")
+            if pflags["corrode"] <= 0: pflags.pop("corrode", None)
+        status_logs = player_effect_logs + self._apply_status_ticks()
         self._register_newly_defeated()
         if not self._alive_enemies():
             return self._finalize_group_victory(" · ".join(status_logs) or "상태이상으로 적을 쓰러뜨렸다")
@@ -510,6 +553,7 @@ class BattleEngine:
         self._sync_primary_enemy()
         monster_data = self.current_monster
         size = self._last_size
+        self.player._flags.pop("battle_monster_effects", None)
         self.in_battle       = True
         self.current_zone    = zone_key
         self.turn            = 1

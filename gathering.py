@@ -376,7 +376,7 @@ class GatheringEngine:
             try:
                 from collection import collection_manager
                 is_new, _ = collection_manager.register("채광", item["id"], item["name"], grade)
-                rewards = collection_manager.apply_player_bonuses(self.player) if is_new else []
+                rewards = collection_manager.apply_all_bonuses(self.player, "채광") if is_new else []
                 if is_new:
                     await ctx.send(f"📖✨ **새로운 도감 등록!** ⛏️ `{item['name']}` 이(가) 채광 도감에 추가됐슴미댜!")
                 for reward in rewards:
@@ -449,7 +449,7 @@ class GatheringEngine:
             try:
                 from collection import collection_manager
                 is_new, _ = collection_manager.register("벌목", item["id"], item["name"], grade)
-                rewards = collection_manager.apply_player_bonuses(self.player) if is_new else []
+                rewards = collection_manager.apply_all_bonuses(self.player, "벌목") if is_new else []
                 if is_new:
                     await ctx.send(f"📖✨ **새로운 도감 등록!** 🪓 `{item['name']}` 이(가) 벌목 도감에 추가됐슴미댜!")
                 for reward in rewards:

@@ -14,6 +14,22 @@ CATEGORY_ICONS = {
     "채광":  "⛏️",
     "벌목":  "🪓",
     "제련":  "🔥",
+    "몬스터": "🐾",
+}
+
+CATEGORY_MILESTONES = {
+    "낚시": (5, 12, 22),
+    "요리": (10, 25, 47),
+    "채집": (10, 30, 53),
+    "채광": (5, 10, 18),
+    "벌목": (3, 5, 7),
+    "제련": (3, 6, 9),
+    "몬스터": (5, 10, 17),
+}
+
+CATEGORY_REWARD_LABELS = {
+    "낚시": "낚시 숙련", "요리": "요리 연구", "채집": "야외 관찰",
+    "채광": "광물 연구", "벌목": "목재 연구", "제련": "금속 연구", "몬스터": "생태 연구",
 }
 
 COLLECTION_MILESTONES = (
@@ -113,6 +129,41 @@ class CollectionManager:
             awarded.append(f"{m['label']} — {m['bonus']}")
         flags["collection_milestones"] = sorted(claimed)
         return awarded
+
+    def category_milestone_status(self, category: str) -> list[dict]:
+        count = len(self._data.get(category, {}))
+        thresholds = CATEGORY_MILESTONES.get(category, ())
+        return [{"count": n, "unlocked": count >= n, "label": CATEGORY_REWARD_LABELS.get(category, category)} for n in thresholds]
+
+    def apply_category_bonuses(self, player, category: str) -> list[str]:
+        flags = getattr(player, "_flags", None)
+        if flags is None:
+            player._flags = {}; flags = player._flags
+        claimed = set(flags.get("collection_category_milestones", []))
+        count = len(self._data.get(category, {}))
+        awarded = []
+        thresholds = CATEGORY_MILESTONES.get(category, ())
+        for idx, target in enumerate(thresholds, 1):
+            key = f"{category}:{target}"
+            if count < target or key in claimed:
+                continue
+            # 카테고리 완성은 작지만 체감되는 영구 보너스. 데이터 규모에 맞춰 3단계로 제한한다.
+            if idx == 1:
+                player.max_energy += 1; player.energy = min(player.max_energy, player.energy + 1); bonus = "기력 최대치 +1"
+            elif idx == 2:
+                stat = "luck" if category in ("낚시", "채집", "몬스터") else "dex"
+                player.base_stats[stat] = player.base_stats.get(stat, 0) + 1; bonus = ("LUCK +1" if stat == "luck" else "DEX +1")
+            else:
+                player.max_energy += 2; player.energy = min(player.max_energy, player.energy + 2); bonus = "기력 최대치 +2"
+            claimed.add(key); awarded.append(f"{CATEGORY_REWARD_LABELS.get(category, category)} {target}종 — {bonus}")
+        flags["collection_category_milestones"] = sorted(claimed)
+        return awarded
+
+    def apply_all_bonuses(self, player, category: str | None = None) -> list[str]:
+        rewards = self.apply_player_bonuses(player)
+        if category:
+            rewards += self.apply_category_bonuses(player, category)
+        return rewards
 
     def get_progress(self, category: str, total_possible: int) -> tuple[int, int, float]:
         """(collected, total_possible, percent) 반환"""

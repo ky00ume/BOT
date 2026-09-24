@@ -168,6 +168,13 @@ class BattleEngine:
             monster_id = monster.get("id", "")
             if monster_id:
                 try:
+                    from collection import collection_manager
+                    is_new, _ = collection_manager.register("몬스터", monster_id, monster.get("name", monster_id), monster.get("_size", "M"))
+                    if is_new:
+                        collection_manager.apply_all_bonuses(self.player, "몬스터")
+                except Exception:
+                    logger.warning('battle: 몬스터 도감 등록 실패', exc_info=True)
+                try:
                     from special_npc import SpecialNPCEncounterManager
                     msg = SpecialNPCEncounterManager(self.player).record_kill(monster_id)
                     if msg:
@@ -864,6 +871,13 @@ class BattleEngine:
             contract_msg = ""
             monster_id = monster.get("id", "")
             if monster_id:
+                try:
+                    from collection import collection_manager
+                    is_new, _ = collection_manager.register("몬스터", monster_id, monster.get("name", monster_id), monster.get("_size", "M"))
+                    if is_new:
+                        collection_manager.apply_all_bonuses(self.player, "몬스터")
+                except Exception:
+                    logger.warning('battle: 몬스터 도감 등록 실패', exc_info=True)
                 try:
                     from special_npc import SpecialNPCEncounterManager
                     enc_mgr = SpecialNPCEncounterManager(self.player)

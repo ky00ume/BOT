@@ -47,7 +47,7 @@ class GatherBridge:
                 )
                 is_new_collection = bool(is_new)
                 if is_new_collection:
-                    collection_manager.apply_player_bonuses(economy.player)
+                    collection_manager.apply_all_bonuses(economy.player, "낚시" if category == "낚시" else "채집")
             except Exception as e:
                 logger.error(f"[GatherBridge] collection register 실패: {e}")
 
@@ -96,7 +96,7 @@ class GatherBridge:
                 )
                 is_new_collection = bool(is_new)
                 if is_new_collection:
-                    collection_manager.apply_player_bonuses(economy.player)
+                    collection_manager.apply_all_bonuses(economy.player, "낚시" if category == "낚시" else "채집")
             except Exception as e:
                 logger.error(f"[GatherBridge] collection register 실패: {e}")
 

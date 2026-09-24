@@ -9,12 +9,12 @@ from pathlib import Path
 SR=44100
 # (note, beats); R = rest
 MELODIES={
- "pet_song": {"bpm":112,"notes":[("G4",1),("B4",1),("D5",1),("B4",1),("A4",1),("G4",1),("E4",2),("G4",1),("A4",1),("B4",1),("D5",1),("B4",1),("A4",1),("G4",2)]},
- "spider_rhythm":{"bpm":126,"notes":[("E4",.5),("G4",.5),("A4",1),("E4",.5),("G4",.5),("B4",1),("A4",.5),("B4",.5),("D5",1),("B4",.5),("A4",.5),("G4",1),("E4",2)]},
- "come_back_alive":{"bpm":82,"notes":[("D4",1),("F4",1),("A4",2),("G4",1),("F4",1),("D4",2),("F4",1),("G4",1),("A4",1),("C5",1),("A4",2),("G4",1),("F4",1),("D4",2)]},
- "tower_lights":{"bpm":76,"notes":[("C4",1),("E4",1),("G4",2),("E4",1),("G4",1),("A4",2),("G4",1),("E4",1),("D4",2),("E4",1),("G4",1),("C5",2)]},
- "shadowlantern":{"bpm":70,"notes":[("D4",1.5),("A4",.5),("C5",1),("A4",1),("F4",2),("R",1),("D4",1),("F4",1),("A4",1),("C5",1),("A4",2),("G4",1),("D4",2)]},
- "eight_shadows":{"bpm":72,"notes":[("D3",1),("A3",1),("D4",1),("F4",1),("D4",1),("A3",1),("C4",2),("D4",1),("F4",1),("A4",1),("F4",1),("D4",2),("C4",1),("A3",1),("D4",2)]},
+ "pet_song": {"bpm":124,"notes":[("G4",1),("B4",1),("D5",1),("B4",1),("A4",1),("G4",1),("E4",2),("G4",1),("A4",1),("B4",1),("D5",1),("B4",1),("A4",1),("G4",2)]},
+ "spider_rhythm":{"bpm":136,"notes":[("E4",.5),("G4",.5),("A4",1),("E4",.5),("G4",.5),("B4",1),("A4",.5),("B4",.5),("D5",1),("B4",.5),("A4",.5),("G4",1),("E4",2)]},
+ "come_back_alive":{"bpm":94,"notes":[("D4",1),("F4",1),("A4",2),("G4",1),("F4",1),("D4",2),("F4",1),("G4",1),("A4",1),("C5",1),("A4",2),("G4",1),("F4",1),("D4",2)]},
+ "tower_lights":{"bpm":88,"notes":[("C4",1),("E4",1),("G4",2),("E4",1),("G4",1),("A4",2),("G4",1),("E4",1),("D4",2),("E4",1),("G4",1),("C5",2)]},
+ "shadowlantern":{"bpm":84,"notes":[("D4",1.5),("A4",.5),("C5",1),("A4",1),("F4",2),("R",1),("D4",1),("F4",1),("A4",1),("C5",1),("A4",2),("G4",1),("D4",2)]},
+ "eight_shadows":{"bpm":86,"notes":[("D3",1),("A3",1),("D4",1),("F4",1),("D4",1),("A3",1),("C4",2),("D4",1),("F4",1),("A4",1),("F4",1),("D4",2),("C4",1),("A3",1),("D4",2)]},
 }
 
 def hz(note):
@@ -25,9 +25,11 @@ def hz(note):
 
 def _pluck(freq,t):
     if not freq:return 0.0
-    # soft synthetic lyre: fast pluck + two gentle harmonics
-    env=math.exp(-3.7*t)
-    return env*(math.sin(2*math.pi*freq*t)+.28*math.sin(4*math.pi*freq*t)+.10*math.sin(6*math.pi*freq*t))/.0 if False else env*(math.sin(2*math.pi*freq*t)+.28*math.sin(4*math.pi*freq*t)+.10*math.sin(6*math.pi*freq*t))/1.38
+    # soft fantasy lyre: crisp pick, warm body, short sparkling upper partials
+    body=math.exp(-3.15*t)
+    sparkle=math.exp(-7.5*t)
+    pick=math.exp(-18*t)*math.sin(2*math.pi*freq*3*t)
+    return (body*(math.sin(2*math.pi*freq*t)+.24*math.sin(4*math.pi*freq*t)) + sparkle*.13*math.sin(6*math.pi*freq*t) + .08*pick)/1.34
 
 def render(melody_id,out_path):
     m=MELODIES[melody_id]; beat=60/m["bpm"]; samples=[]

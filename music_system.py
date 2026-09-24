@@ -55,3 +55,20 @@ def compose_variation(player, melody_id: str) -> tuple[bool, str]:
     player.skill_exp["composition"] = float(player.skill_exp.get("composition", 0.0)) + 30.0
     title = REPERTOIRE[melody_id]["title"]
     return True, f"✍️ 원곡의 핵심 선율만 가져와 **〈{title} · 츄라이더 변주〉**를 만들었습니다.  `작곡 EXP +30`"
+
+
+RHYTHM_KEYS = ("⬅️", "⬆️", "⬇️", "➡️")
+
+def rhythm_chart(melody_id: str) -> list[dict]:
+    """멜로디 음표에서 연주 미니게임용 키 타이밍을 만든다. 같은 곡은 항상 같은 패턴이다."""
+    from melody_renderer import MELODIES
+    melody=MELODIES.get(melody_id)
+    if not melody:
+        return []
+    beat_ms=60000.0/melody["bpm"]
+    elapsed=0.0; chart=[]
+    for idx,(note,beats) in enumerate(melody["notes"]):
+        if note != "R":
+            chart.append({"at_ms": round(elapsed), "key": RHYTHM_KEYS[idx % len(RHYTHM_KEYS)], "note": note})
+        elapsed += beat_ms*beats
+    return chart

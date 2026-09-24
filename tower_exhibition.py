@@ -36,3 +36,12 @@ def apply_milestones(player):
 def summary(player):
     st=ensure_state(player);n=len(st["displayed"]);next_m=next((m for m in MILESTONES if n<m[0]),None)
     return {"count":n,"total":len(EXHIBITS),"displayed":[EXHIBITS[k] for k in st["displayed"] if k in EXHIBITS],"next":next_m}
+
+
+def hall_stage(player):
+    n=len(displayed(player))
+    if n>=10: return {"level":4,"name":"기억의 전당","desc":"안쪽의 봉인된 전시실까지 열렸다. 유물의 빛이 천장 문양을 따라 흐르고, 탑 전체가 오래된 기억을 되찾은 듯 낮게 울린다.","change":"🔓 안쪽 전시실 개방 · 천장 비전 문양 점등"}
+    if n>=6: return {"level":3,"name":"관리되는 전시실","desc":"진열장마다 작은 조명이 켜지고 버나드가 전시품의 위치와 상태를 기록하기 시작했다. 빈 방이 이제 제법 박물관처럼 보인다.","change":"🤖 버나드 전시 관리 시작 · 진열장 조명 점등"}
+    if n>=3: return {"level":2,"name":"깨어난 전시실","desc":"첫 공명과 함께 먼지뿐이던 방의 진열장에 은은한 불이 들어왔다. 모험에서 가져온 물건들이 탑 안에 자기 자리를 얻기 시작한다.","change":"✨ 진열장 조명 점등 · 전시관 공명 활성화"}
+    if n>=1: return {"level":1,"name":"작은 전시실","desc":"오래 비어 있던 방에 첫 발견물이 놓였다. 아직 어둡고 조용하지만, 이곳이 무엇을 위한 방인지는 분명해졌다.","change":"🏛️ 첫 진열대 활성화"}
+    return {"level":0,"name":"빈 전시실","desc":"먼지 쌓인 진열대와 비어 있는 받침대만 남은 방. 아직 이 탑의 새 주인이 남긴 이야기는 없다.","change":"빈 진열대"}

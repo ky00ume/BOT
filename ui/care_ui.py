@@ -1347,11 +1347,13 @@ class TowerExhibitionView(ExpiringView):
             data=EXHIBITS[key];b=discord.ui.Button(label=f"전시: {data['name']}",emoji=data['emoji'],style=discord.ButtonStyle.success);b.callback=self._make_display(key);self.add_item(b)
         back=discord.ui.Button(label="상층으로",emoji="↩️",style=discord.ButtonStyle.secondary);back.callback=self._back;self.add_item(back)
     def make_embed(self,note=None):
-        from tower_exhibition import summary
-        info=summary(self.player);lines=[f"{x['emoji']} **{x['name']}** · {x['set']}\n{x['desc']}" for x in info['displayed']]
-        desc="탑의 한 방이 모험에서 가져온 유일한 발견물들을 위한 전시실로 바뀌고 있다."
+        from tower_exhibition import summary,hall_stage
+        info=summary(self.player);stage=hall_stage(self.player);lines=[f"{x['emoji']} **{x['name']}** · {x['set']}\n{x['desc']}" for x in info['displayed']]
+        desc=f"**Lv.{stage['level']} · {stage['name']}**\n{stage['desc']}\n\n{stage['change']}"
         e=discord.Embed(title=f"🏛️ 비전의 탑 · 전시관  {info['count']}/{info['total']}",description=desc,color=0x6A5B3F)
         e.add_field(name="전시품",value="\n\n".join(lines) if lines else "아직 진열장은 비어 있다.",inline=False)
+        if stage["level"] >= 3:
+            e.add_field(name="🤖 버나드의 관리 기록",value="‘전시물 상태 정상. 배치 순서를 기록했습니다. ...추가 보관 장소를 준비하겠습니다.’",inline=False)
         if info['next']:
             need,bonus,label=info['next'];pretty={"max_energy":"최대 기력","luck":"LUCK","dex":"DEX","int":"INT"};effect=" · ".join(f"{pretty.get(k,k)} +{v}" for k,v in bonus.items());e.add_field(name=f"🔮 다음 공명 · {need}점",value=f"{label} — {effect}",inline=False)
         else:e.add_field(name="🔮 전시관 공명",value="현재 준비된 모든 공명이 깨어났다.",inline=False)

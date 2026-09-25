@@ -1,12 +1,12 @@
 (()=>{
 'use strict';
 const SONGS={
- spider_rhythm:{title:'거미는 박자를 모른다',instrument:'LYRE',instrumentKo:'리라',bpm:136,audio:'assets/spider_rhythm.wav',lanes:[164.81,196,220,246.94,293.66,329.63,392,493.88],lyrics:['다리가 둘이면 하나 둘','다리가 넷이면 하나 둘 셋 넷','그런데 여덟 개가 우다다 오면','잠깐만, 처음부터 다시']},
- eight_shadows:{title:'여덟 개의 그림자',instrument:'LUTE',instrumentKo:'류트',bpm:86,audio:'assets/eight_shadows.wav',lanes:[146.83,174.61,196,220,261.63,293.66,349.23,440],lyrics:['길 하나에 그림자는 여덟','어느 것이 먼저 닿아도','나는 뒤따라 걷지 않아','내 노래로 옆을 걸을 거야','듣고 있는지 묻지 않을게','대답 같은 것도 필요 없어','네가 저만큼 앞에 있다면','나는 여기서 계속 부를 테니']},
- shadowlantern:{title:'그림자등불',instrument:'LYRE',instrumentKo:'리라',bpm:84,audio:'assets/shadowlantern.wav',lanes:[146.83,174.61,220,261.63,293.66,349.23,440,523.25],lyrics:['손에 든 빛이 길을 비추면','그 빛은 누구의 것이 될까','쥔 사람의 것일까','따라가는 사람의 것일까','나는 등불을 들지 않을래','대신 네가 보이는 데 있을게','길을 잃으면 이름을 부르고','대답이 없으면 한 번 더 부를게']},
- come_back_alive:{title:'살아 돌아온 사람에게',instrument:'LUTE',instrumentKo:'류트',bpm:94,audio:'assets/come_back_alive.wav',lanes:[146.83,174.61,196,220,261.63,293.66,349.23,440],lyrics:['영웅이라 부르지 않아도 돼','멋진 이야기가 아니어도 돼','흙투성이 신발을 끌고 와서','여기 있다고 말해주면 돼','이긴 날은 크게 부르고','진 날에는 조금 작게 부르자','오늘 돌아온 사람에게는','내일 부를 노래가 있으니까']},
- tower_lights:{title:'탑에 불이 켜지는 시간',instrument:'LUTE',instrumentKo:'류트',bpm:88,audio:'assets/tower_lights.wav',lanes:[130.81,164.81,196,220,261.63,329.63,392,523.25],lyrics:['높은 창에 불이 하나','아래층에도 불이 하나','누가 돌아왔는지 묻지 않아도','오늘은 방들이 따뜻하네','먼저 온 사람은 기다리고','늦게 온 사람은 문을 열고','그렇게 하나씩 돌아오다 보면','커다란 탑도 집이 되네']},
- pet_song:{title:'복복송',instrument:'LUTE',instrumentKo:'류트',bpm:124,audio:'assets/pet_song.wav',lanes:[164.81,196,220,246.94,293.66,329.63,392,493.88],lyrics:['복복 한 번, 복복 두 번','세 번째부터 세지 마세요','츄라이더가 납작해져도','행복한 거니까 계속하세요']},
+ spider_rhythm:{title:'거미는 박자를 모른다',instrument:'LYRE',instrumentKo:'리라',bpm:136,audio:'assets/spider_rhythm.wav',lanes:[164.81,196,220,246.94,293.66,329.63,392,493.88],lyrics:['다리가 둘이면 하나 둘','다리가 넷이면 하나 둘 셋 넷','그런데 여덟 개가 우다다 오면','잠깐만, 처음부터 다시'],chartStyle:'spider'},
+ eight_shadows:{title:'여덟 개의 그림자',instrument:'LUTE',instrumentKo:'류트',bpm:86,audio:'assets/eight_shadows.wav',lanes:[146.83,174.61,196,220,261.63,293.66,349.23,440],lyrics:['길 하나에 그림자는 여덟','어느 것이 먼저 닿아도','나는 뒤따라 걷지 않아','내 노래로 옆을 걸을 거야','듣고 있는지 묻지 않을게','대답 같은 것도 필요 없어','네가 저만큼 앞에 있다면','나는 여기서 계속 부를 테니'],chartStyle:'shadows'},
+ shadowlantern:{title:'그림자등불',instrument:'LYRE',instrumentKo:'리라',bpm:84,audio:'assets/shadowlantern.wav',lanes:[146.83,174.61,220,261.63,293.66,349.23,440,523.25],lyrics:['손에 든 빛이 길을 비추면','그 빛은 누구의 것이 될까','쥔 사람의 것일까','따라가는 사람의 것일까','나는 등불을 들지 않을래','대신 네가 보이는 데 있을게','길을 잃으면 이름을 부르고','대답이 없으면 한 번 더 부를게'],chartStyle:'lantern'},
+ come_back_alive:{title:'살아 돌아온 사람에게',instrument:'LUTE',instrumentKo:'류트',bpm:94,audio:'assets/come_back_alive.wav',lanes:[146.83,174.61,196,220,261.63,293.66,349.23,440],lyrics:['영웅이라 부르지 않아도 돼','멋진 이야기가 아니어도 돼','흙투성이 신발을 끌고 와서','여기 있다고 말해주면 돼','이긴 날은 크게 부르고','진 날에는 조금 작게 부르자','오늘 돌아온 사람에게는','내일 부를 노래가 있으니까'],chartStyle:'return'},
+ tower_lights:{title:'탑에 불이 켜지는 시간',instrument:'LUTE',instrumentKo:'류트',bpm:88,audio:'assets/tower_lights.wav',lanes:[130.81,164.81,196,220,261.63,329.63,392,523.25],lyrics:['높은 창에 불이 하나','아래층에도 불이 하나','누가 돌아왔는지 묻지 않아도','오늘은 방들이 따뜻하네','먼저 온 사람은 기다리고','늦게 온 사람은 문을 열고','그렇게 하나씩 돌아오다 보면','커다란 탑도 집이 되네'],chartStyle:'tower'},
+ pet_song:{title:'복복송',instrument:'LUTE',instrumentKo:'류트',bpm:124,audio:'assets/pet_song.wav',lanes:[164.81,196,220,246.94,293.66,329.63,392,493.88],lyrics:['복복 한 번, 복복 두 번','세 번째부터 세지 마세요','츄라이더가 납작해져도','행복한 거니까 계속하세요'],chartStyle:'pet'},
  lolth_hymn:{title:'거미줄 아래의 여덟 번째 기도',instrument:'PIANO',instrumentKo:'오래된 피아노',bpm:96,audio:'assets/lolth_hymn.wav',lanes:[146.83,174.61,220,233.08,261.63,293.66,369.99,440],lyrics:['여덟 번 얽힌 길 아래','낮은 기도는 이름을 감추고','한 줄이 다른 줄을 붙들 때','거미줄은 다시 문이 된다'],chartStyle:'lolth'},
  eilistraee_hymn:{title:'달빛 아래 맨발의 춤',instrument:'PIANO',instrumentKo:'오래된 피아노',bpm:108,audio:'assets/eilistraee_hymn.wav',lanes:[146.83,185,220,293.66,369.99,440,493.88,587.33],lyrics:['달빛이 칼끝에서 흘러','맨발의 원을 은빛으로 그리고','노래가 발보다 먼저 웃으면','밤은 잠시 길을 내어 준다'],chartStyle:'eilistraee'},
  vhaeraun_hymn:{title:'가면 뒤에 남긴 길',instrument:'PIANO',instrumentKo:'오래된 피아노',bpm:104,audio:'assets/vhaeraun_hymn.wav',lanes:[164.81,196,246.94,293.66,329.63,392,493.88,659.25],lyrics:['가면 아래 이름을 접어 두고','발소리 없는 계단을 오른다','보이지 않는 손이 길을 바꾸면','남은 그림자만 먼저 지나간다'],chartStyle:'vhaeraun'}
@@ -80,9 +80,22 @@ function buildPatternDrill(speed=1){
  notes.push(...Patterns.chord(at,[1,3,4,6]));
  return notes.sort((a,b)=>a.t-b.t||a.lane-b.lane);
 }
-function buildPianoChart(speed=1){
+function buildSongChart(speed=1){
  const b=BEAT/speed,n=[];let at=900/speed;const add=x=>n.push(...x),bar=(x,beats=4)=>{add(x);at+=b*beats};
- if(SONG.chartStyle==='lolth'){
+ if(SONG.chartStyle==='spider'){
+  for(let c=0;c<7;c++){bar(Patterns.trill(at,2,5,8,b/2));bar(Patterns.roll(at,[0,2,4,6,7,5,3,1],8,b/2));if(c%2){bar(Patterns.cross(at,[0,1,2,3],[7,6,5,4],8,b/2));}}
+  bar(Patterns.holdTrillReleaseChord(at,2,[5,6],[1,6],b*3,b/4));
+ }else if(SONG.chartStyle==='shadows'){
+  for(let c=0;c<6;c++){bar(Patterns.cross(at,[0,1,2,3],[4,5,6,7],8,b/2));bar(Patterns.stair(at,c%2?[7,6,5,4,3,2,1,0]:[0,1,2,3,4,5,6,7],b/2));bar([...Patterns.chord(at,[0,4]),...Patterns.chord(at+b*2,[3,7])]);}
+ }else if(SONG.chartStyle==='lantern'){
+  for(let c=0;c<6;c++){add(Patterns.hold(at,c%2?2:5,b*3));add(Patterns.stair(at+b/2,c%2?[7,6,4,3,1]:[0,1,3,4,6],b/2));at+=b*4;bar(Patterns.roll(at,[1,3,5,7,6,4,2,0],8,b/2));}
+ }else if(SONG.chartStyle==='return'){
+  for(let c=0;c<6;c++){bar([...Patterns.chord(at,[1,4]),...Patterns.chord(at+b,[2,5]),...Patterns.chord(at+b*2,[3,6]),...Patterns.chord(at+b*3,[0,7])]);bar(Patterns.stair(at,[0,2,4,6,7,5,3,1],b/2));bar(Patterns.multiHold(at,[1,6],b*3));}
+ }else if(SONG.chartStyle==='tower'){
+  for(let c=0;c<6;c++){bar(Patterns.stair(at,[0,1,2,3,4,5,6,7],b/2));bar([...Patterns.chord(at,[0,1]),...Patterns.chord(at+b,[2,3]),...Patterns.chord(at+b*2,[4,5]),...Patterns.chord(at+b*3,[6,7])]);bar(Patterns.stair(at,[7,5,3,1],b));}
+ }else if(SONG.chartStyle==='pet'){
+  for(let c=0;c<8;c++){bar(Patterns.jack(at,c%2?2:5,8,b/2));bar(Patterns.trill(at,1,6,8,b/2));if(c%2)bar([...Patterns.chord(at,[2,5]),...Patterns.chord(at+b*2,[1,6])]);}
+ }else if(SONG.chartStyle==='lolth'){
   for(let cycle=0;cycle<6;cycle++){bar(Patterns.roll(at,[0,4,1,5,2,6,3,7],8,b/2));bar([...Patterns.chord(at,[0,4]),...Patterns.chord(at+b,[1,5]),...Patterns.chord(at+b*2,[2,6]),...Patterns.chord(at+b*3,[3,7])]);if(cycle%2===1){add(Patterns.multiHold(at,[0,7],b*3));add(Patterns.trill(at+b/2,2,5,10,b/4));at+=b*4}}
   bar(Patterns.holdTrillReleaseChord(at,2,[5,6],[1,6],b*3,b/4));bar(Patterns.chord(at,[0,2,5,7]));
  }else if(SONG.chartStyle==='eilistraee'){
@@ -96,7 +109,7 @@ function buildPianoChart(speed=1){
 }
 function buildChart(){
  const speed=playbackSpeed(),interval=mode==='easy'?BEAT:BEAT/2;
- if(SONG.instrument==='PIANO'&&mode==='hard'){chart=buildPianoChart(speed);improvStart=improvEnd=Infinity;return;}
+ if(SONG.chartStyle&&mode==='hard'){chart=buildSongChart(speed);improvStart=improvEnd=Infinity;return;}
  if(mode==='hard'&&new URLSearchParams(location.search).get('drill')==='1'){
   chart=buildPatternDrill(speed);improvStart=improvEnd=Infinity;return;
  }

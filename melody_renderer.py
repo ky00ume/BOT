@@ -96,33 +96,44 @@ def _tone(freq,t,style):
     return _pluck(freq,t)*.72
 
 def render_composition(melody_id,out_path,target_seconds=56.0):
-    c=COMPOSITIONS[melody_id]; beat=60/c["bpm"]; total=int(SR*target_seconds); mix=[0.0]*total
-    bar=beat*4; bars=int(target_seconds/bar)+1
+    c=COMPOSITIONS[melody_id]; beat=60/c["bpm"]; total=int(SR*target_seconds); mix=[0.0]*total; bar=beat*4
     def add_note(midi,start,dur,gain):
-        a=int(start*SR); z=min(total,a+int(dur*SR)); f=_midi_hz(midi)
+        if start>=target_seconds: return
+        a=max(0,int(start*SR)); z=min(total,a+int(dur*SR)); f=_midi_hz(midi)
         for i in range(a,z):
             t=(i-a)/SR; rel=min(1.0,(z-i)/(SR*.05)); mix[i]+=_tone(f,t,c["style"])*gain*rel
-    for bi in range(bars):
-        start=bi*bar; chord=c["prog"][bi%len(c["prog"])]
-        # Harmonic grammar: bass establishes function, upper voices move as broken/held voicings.
-        add_note(chord[0]-12,start,bar*.92,.20)
+    def phrase(bi,section,energy=1.0):
+        start=bi*bar; chord=c["prog"][bi%len(c["prog"])]; add_note(chord[0]-12,start,bar*.90,.18*energy)
         if c["style"] in {"newage","impressionist"}:
-            for j,n in enumerate(chord[1:]): add_note(n,start+j*beat*.5,beat*1.6,.14)
+            arp=chord[1:]+chord[-2:0:-1]
+            for j,n in enumerate(arp[:6]): add_note(n,start+j*beat*.5,beat*1.25,.11*energy)
         elif c["style"] in {"jazz","darkjazz"}:
-            for n in chord[1:]: add_note(n,start,beat*1.75,.12)
-            for n in chord[1:]: add_note(n,start+beat*2,beat*1.5,.10)
+            for off,g in ((0,.11),(2,.09)):
+                for n in chord[1:]: add_note(n,start+beat*off,beat*1.55,g*energy)
         elif c["style"]=="baroque":
-            for j,n in enumerate(chord): add_note(n,start+j*beat*.5,beat*.8,.13)
-            for j,n in enumerate(reversed(chord)): add_note(n,start+beat*2+j*beat*.5,beat*.8,.11)
+            for j,n in enumerate((chord+list(reversed(chord)))[:8]): add_note(n,start+j*beat*.5,beat*.72,.105*energy)
         else:
-            for j,n in enumerate(chord[1:]): add_note(n,start+j*beat,beat*.9,.13)
-        # 8-note phrase with a small cadential variation every fourth bar.
-        for j,n in enumerate(c["mel"]):
-            nn=n + (12 if c["style"]=="impressionist" and j in (3,4) else 0)
-            if bi%4==3 and j>=6: nn-=2
-            add_note(nn,start+j*beat*.5,beat*.42,.24)
-    peak=max(1e-9,max(abs(x) for x in mix)); scale=.78/peak
-    vals=[int(max(-1,min(1,x*scale))*32767) for x in mix]
+            for j,n in enumerate(chord[1:]): add_note(n,start+j*beat,beat*.82,.11*energy)
+        mel=list(c["mel"])
+        if section=="A2": mel=[n+(12 if j in (2,3) else 0) for j,n in enumerate(mel)]
+        elif section=="B": mel=[n+(2 if j%2==0 else -1) for j,n in enumerate(mel[2:]+mel[:2])]
+        elif section=="RETURN": mel=[n+(12 if j in (3,4) else 0) for j,n in enumerate(mel)]
+        for j,n in enumerate(mel): add_note(n,start+j*beat*.5,beat*.40,.21*energy)
+    usable=max(1,int(target_seconds/bar)-2)
+    for bi in range(usable):
+        if bi<1: sec,e="INTRO",.65
+        elif bi<5: sec,e="A",.9
+        elif bi<9: sec,e="A2",1.0
+        elif bi<13: sec,e="B",1.08
+        else: sec,e="RETURN",.95
+        phrase(bi,sec,e)
+    start=usable*bar; dom=c["prog"][-1]
+    for n in dom: add_note(n,start,bar*.78,.12)
+    add_note(c["mel"][-2],start,beat*.8,.22); add_note(c["mel"][-1],start+beat,beat*1.6,.24)
+    start=(usable+1)*bar; tonic=c["prog"][0]
+    for n in tonic: add_note(n,start,bar*.92,.13)
+    add_note(c["mel"][0],start,bar*.86,.27)
+    peak=max(1e-9,max(abs(x) for x in mix)); scale=.78/peak; vals=[int(max(-1,min(1,x*scale))*32767) for x in mix]
     path=Path(out_path);path.parent.mkdir(parents=True,exist_ok=True)
     with wave.open(str(path),"wb") as w:
         w.setnchannels(1);w.setsampwidth(2);w.setframerate(SR);w.writeframes(struct.pack('<'+'h'*len(vals),*vals))

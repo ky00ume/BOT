@@ -112,3 +112,7 @@ footer{width:min(760px,100%);margin-inline:auto;font-family:Consolas,"Courier Ne
 .stage:after{height:var(--receptor-y)}
 .judge{bottom:118px}.playcombo{bottom:154px}
 @media(max-width:600px){.stage{--receptor-y:62px}.receptors{left:5px;right:5px;height:46px;gap:2px}.receptor{font-size:12px}.space-receptor{font-size:10px;letter-spacing:.06em}.judge{bottom:106px}.playcombo{bottom:140px}}
+
+/* Pin SPACE inside the receptor deck; override legacy absolute-position rules. */
+.receptors>.space-receptor{position:static!important;inset:auto!important;translate:none!important;transform:none;width:auto!important;height:auto!important;grid-column:5!important;grid-row:1!important;align-self:stretch;justify-self:stretch;margin:0;z-index:1}
+.receptors>.space-receptor.active{transform:translateY(1px)!important}

@@ -18,3 +18,11 @@ def test_piano_quest_advances_to_restored():
     assert advance_piano_quest(p)=="restored"
     assert piano_unlocked(p)
     assert advance_piano_quest(p)=="restored"
+
+
+def test_restored_piano_unlocks_three_drow_hymns():
+    from tower_exhibition import piano_repertoire
+    p=player_with(3)
+    for _ in range(3): advance_piano_quest(p)
+    songs=piano_repertoire(p)
+    assert set(songs)=={"lolth_hymn","eilistraee_hymn","vhaeraun_hymn"}

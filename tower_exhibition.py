@@ -91,3 +91,25 @@ def advance_piano_quest(player):
 
 def piano_unlocked(player):
     return piano_quest_state(player) == "restored"
+
+
+PIANO_REPERTOIRE = {
+    "lolth_hymn": {
+        "title": "거미줄 아래의 여덟 번째 기도",
+        "tradition": "롤쓰 교단의 성가",
+        "mood": "낮고 엄격한 행진처럼 시작해, 서로 얽히는 불협화음과 여덟 박의 반복으로 끝나는 곡",
+    },
+    "eilistraee_hymn": {
+        "title": "달빛 아래 맨발의 춤",
+        "tradition": "에일리스트레이 교단의 노래",
+        "mood": "높은 음역의 단순한 선율이 달빛처럼 번지고, 중간부터 춤추듯 자유롭게 박자가 풀리는 곡",
+    },
+    "vhaeraun_hymn": {
+        "title": "가면 뒤에 남긴 길",
+        "tradition": "베이론 교단의 은밀한 찬가",
+        "mood": "왼손의 낮은 반복음 위로 오른손 선율이 모습을 바꾸며 숨어드는, 조용하고 긴장된 곡",
+    },
+}
+
+def piano_repertoire(player):
+    return PIANO_REPERTOIRE if piano_unlocked(player) else {}

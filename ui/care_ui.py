@@ -1405,7 +1405,7 @@ class TowerPianoQuestView(ExpiringView):
         ),
         "restored": (
             "오래된 피아노",
-            "지하실의 오래된 피아노는 다시 연주할 수 있습니다. 새것처럼 반듯하지는 않지만, 낮은 음은 깊고 높은 음에는 오래된 금속성 울림이 조금 남아 있습니다.\n\n루바토의 레퍼토리에 이제 **피아노 편곡**을 만들 수 있는 악기가 하나 더 생겼습니다. 카르니스는 자신이 수리했다는 말을 굳이 하지 않지만, 건반 덮개와 페달은 유난히 깨끗합니다.",
+            "지하실의 오래된 피아노는 다시 연주할 수 있습니다. 새것처럼 반듯하지는 않지만, 낮은 음은 깊고 높은 음에는 오래된 금속성 울림이 조금 남아 있습니다.\n\n피아노 의자 안쪽에서는 서로 다른 필체로 적힌 낡은 악보 세 장이 발견됩니다. **롤쓰, 에일리스트레이, 베이론**을 섬기던 이들이 남긴 노래입니다. 루바토는 세 장을 한참 넘겨보다가 피아노 위에 나란히 펼쳐 둡니다.\n\n카르니스는 자신이 수리했다는 말을 굳이 하지 않지만, 건반 덮개와 페달은 유난히 깨끗합니다.",
             None,
         ),
     }
@@ -1415,11 +1415,22 @@ class TowerPianoQuestView(ExpiringView):
         state=piano_quest_state(player);scene=self.SCENES[state]
         if scene[2]:
             b=discord.ui.Button(label=scene[2],emoji="🎹",style=discord.ButtonStyle.primary);b.callback=self._advance;self.add_item(b)
+        elif state == "restored":
+            from tower_exhibition import PIANO_REPERTOIRE
+            for song_id,song in PIANO_REPERTOIRE.items():
+                b=discord.ui.Button(label=song["title"],emoji="🎼",style=discord.ButtonStyle.secondary);b.callback=self._song_callback(song_id);self.add_item(b)
         back=discord.ui.Button(label="전시관으로",emoji="↩️",style=discord.ButtonStyle.secondary);back.callback=self._back;self.add_item(back)
     def make_embed(self):
         from tower_exhibition import piano_quest_state
         state=piano_quest_state(self.player);title,text,_=self.SCENES[state]
         return discord.Embed(title=f"🎹 사이드 스토리 · {title}",description=text,color=0x4C4358)
+    def _song_callback(self,song_id):
+        async def callback(interaction):
+            from tower_exhibition import PIANO_REPERTOIRE
+            song=PIANO_REPERTOIRE[song_id]
+            embed=discord.Embed(title=f"🎹 {song['title']}",description=f"**{song['tradition']}**\n\n{song['mood']}\n\n루바토가 낡은 악보를 피아노 위에 펼치고 첫 음을 짚습니다.",color=0x4C4358)
+            await interaction.response.edit_message(attachments=[],embed=embed,view=self)
+        return callback
     async def _advance(self,interaction):
         from tower_exhibition import advance_piano_quest
         advance_piano_quest(self.player)

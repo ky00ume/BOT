@@ -10,7 +10,21 @@ let mode='easy',chart=[],running=false,starting=false,runId=0,startAt=0,raf=0,co
 const pressedKeys=new Set(),activeHolds=new Map(),travel=1800,windows={perfect:45,great:85,good:130};
 function q(s){return document.querySelector(s)}
 function playbackSpeed(){return Number(els.speed.value)||1}
-function makeNote(t,lane,type='normal',duration=0){return{t,lane,type,duration,hit:false,miss:false,holdState:duration?'pending':null,el:null}}
+function makeNote(t,lane,type='normal',duration=0,meta={}){return{t,lane,type,duration,releaseOnly:!!meta.releaseOnly,charge:!!meta.charge,hit:false,miss:false,holdState:duration?'pending':null,el:null}}
+const Patterns={
+ tap:(t,lane)=>[makeNote(t,lane)],
+ chord:(t,lanes)=>lanes.map(l=>makeNote(t,l)),
+ hold:(t,lane,duration,meta={})=>[makeNote(t,lane,'normal',duration,meta)],
+ multiHold:(t,lanes,duration)=>lanes.map(l=>makeNote(t,l,'normal',duration)),
+ release:(t,lane,duration)=>[makeNote(t,lane,'normal',duration,{releaseOnly:true})],
+ charge:(t,lane,duration)=>[makeNote(t,lane,'normal',duration,{charge:true})],
+ jack:(t,lane,count,step)=>Array.from({length:count},(_,i)=>makeNote(t+i*step,lane)),
+ trill:(t,a,b,count,step)=>Array.from({length:count},(_,i)=>makeNote(t+i*step,i%2?a:b)),
+ stair:(t,lanes,step)=>lanes.map((l,i)=>makeNote(t+i*step,l)),
+ roll:(t,lanes,count,step)=>Array.from({length:count},(_,i)=>makeNote(t+i*step,lanes[i%lanes.length])),
+ cross:(t,left,right,count,step)=>Array.from({length:count},(_,i)=>makeNote(t+i*step,i%2?right[i%right.length]:left[i%left.length])),
+ rearticulate:(t,lane,hold,step)=>[makeNote(t,lane,'normal',hold),makeNote(t+hold+step,lane)]
+};
 function buildChart(){
  const speed=playbackSpeed(),interval=mode==='easy'?BEAT:BEAT/2;
  const base=MODES[mode].pattern.map((lane,i)=>makeNote((900+i*interval)/speed,lane));
@@ -18,6 +32,18 @@ function buildChart(){
   // Expert combines simultaneous two-lane chords with sustained notes; EASY stays a clean 4K chart.
   [8,24,40,56].forEach(i=>base.push(makeNote((900+i*interval)/speed,(MODES.hard.pattern[i]+4)%8)));
   [5,17,33,49].forEach(i=>{base[i].duration=BEAT*1.5/speed;base[i].holdState='pending'});
+ }
+ if(mode==='hard'){
+  const t=(900+60*interval)/speed,step=BEAT/4/speed;
+  base.push(...Patterns.jack(t,0,4,step));
+  base.push(...Patterns.trill(t+BEAT/speed,2,5,6,step));
+  base.push(...Patterns.stair(t+BEAT*2.5/speed,[0,1,2,3,4,5,6,7],step));
+  base.push(...Patterns.roll(t+BEAT*4.5/speed,[0,2,4,6],8,step));
+  base.push(...Patterns.cross(t+BEAT*6.5/speed,[0,1,2,3],[7,6,5,4],8,step));
+  base.push(...Patterns.multiHold(t+BEAT*8.5/speed,[1,6],BEAT/speed));
+  base.push(...Patterns.release(t+BEAT*10/speed,3,BEAT/speed));
+  base.push(...Patterns.charge(t+BEAT*11.5/speed,4,BEAT*1.5/speed));
+  base.push(...Patterns.rearticulate(t+BEAT*13.5/speed,2,BEAT*.75/speed,step));
  }
  base.sort((a,b)=>a.t-b.t||a.lane-b.lane);chart=base;
  if(mode==='hard'){
@@ -55,12 +81,12 @@ function press(key){if(!running)return;const lane=MODES[mode].keys.indexOf(key);
  if(mode==='hard'&&phase==='improv'){if(memory.length<8){memory.push({lane,dt:t-improvStart});els.memory.textContent=`기억한 프레이즈 ${memory.length}/8`;if(memory.length===8)flash('MEMORY SEALED','perfect')}return}
  let best=null,err=Infinity;chart.forEach(n=>{if(n.lane!==lane||n.hit||n.miss||n.skip)return;const e=Math.abs(n.t-t);if(e<err){err=e;best=n}});
  const adaptiveGood=windows.good+(assist*45);if(!best||err>adaptiveGood){combo=0;flash(phase==='response'?'RESPONSE':'MISS',phase==='response'?'great':'miss');updateHud();return}
- best.hit=true;hits++;award(err);if(best.duration){best.holdState='holding';activeHolds.set(lane,best);flash('HOLD','great')}if(best.el){best.el.classList.add('hit');if(!best.duration)setTimeout(()=>best.el?.remove(),130)}
+ best.hit=true;hits++;award(err);if(best.duration){best.holdState='holding';activeHolds.set(lane,best);flash(best.charge?'CHARGE':best.releaseOnly?'RELEASE HOLD':'HOLD','great')}if(best.el){best.el.classList.add('hit');if(!best.duration)setTimeout(()=>best.el?.remove(),130)}
 }
-function release(key){const lane=MODES[mode].keys.indexOf(key);if(lane<0)return;pressedKeys.delete(key);els.lanes.children[lane]?.classList.remove('pressed');const note=activeHolds.get(lane);if(!note)return;activeHolds.delete(lane);if(note.holdState!=='holding')return;const err=Math.abs(now()-(note.t+note.duration));if(err<=windows.good){note.holdState='complete';award(err);if(note.el)note.el.classList.add('hold-complete')}else{note.holdState='failed';miss('HOLD MISS')}}
+function release(key){const lane=MODES[mode].keys.indexOf(key);if(lane<0)return;pressedKeys.delete(key);els.lanes.children[lane]?.classList.remove('pressed');const note=activeHolds.get(lane);if(!note)return;activeHolds.delete(lane);if(note.holdState!=='holding')return;const err=Math.abs(now()-(note.t+note.duration));if(err<=windows.good){note.holdState='complete';award(err);if(note.releaseOnly)flash('RELEASE','perfect');else if(note.charge)flash('CHARGE RELEASE','perfect');if(note.el)note.el.classList.add('hold-complete')}else{note.holdState='failed';miss('HOLD MISS')}}
 async function start(){reset();els.stage.focus();els.status.textContent=`${MODES[mode].label} · ${mode==='hard'?'화음·홀드·즉흥 기억/응답 활성':'정석 연주'}`;for(const n of ['3','2','1']){els.countdown.textContent=n;await new Promise(r=>setTimeout(r,450))}els.countdown.textContent='';try{els.song.playbackRate=playbackSpeed();await els.song.play()}catch(e){els.status.textContent='오디오 재생을 시작하지 못했습니다. 다시 눌러 주세요.';return}startAt=performance.now()+900;running=true;raf=requestAnimationFrame(frame)}
 function finish(){running=false;cancelAnimationFrame(raf);els.song.pause();els.stage.classList.remove('improv');const acc=judged?Math.max(0,100-totalErr/judged/1.3):0;flash(acc>=95?'FULL GROOVE':acc>=85?'CLEAR':'FINISH',acc>=85?'perfect':'great');els.status.textContent=`완주 · ${hits}/${chart.length} HIT · ${acc.toFixed(2)}% · 룬 ${runes}/4${memory.length?` · 기억 ${memory.length}음`:''}`}
 document.querySelectorAll('.difficulty').forEach(b=>b.addEventListener('click',()=>{mode=b.dataset.mode;document.querySelectorAll('.difficulty').forEach(x=>x.classList.toggle('active',x===b));reset()}));
 els.start.addEventListener('click',start);document.addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(MODES[mode].keys.includes(k)){e.preventDefault();if(!e.repeat)press(k)}});document.addEventListener('keyup',e=>release(e.key.toLowerCase()));
-reset();window.rhythmDemo={getState:()=>({mode,phase,score,combo,hits,judged,runes,memory:memory.length,notes:chart.map(n=>({t:n.t,lane:n.lane,type:n.type,duration:n.duration,hit:n.hit,holdState:n.holdState}))}),press,release};
+reset();window.rhythmDemo={getState:()=>({mode,phase,score,combo,hits,judged,runes,memory:memory.length,notes:chart.map(n=>({t:n.t,lane:n.lane,type:n.type,duration:n.duration,releaseOnly:n.releaseOnly,charge:n.charge,hit:n.hit,holdState:n.holdState}))}),press,release,Patterns};
 })();

@@ -1,4 +1,4 @@
-﻿(()=>{
+(()=>{
 'use strict';
 const BPM=136,BEAT=60000/BPM;
 const MODES={
@@ -96,7 +96,7 @@ function buildChart(){
 }
 function buildLanes(){els.lanes.innerHTML='';els.lanes.className='lanes '+(mode==='hard'?'hard':'');els.stage.querySelector('.receptors')?.remove();const deck=document.createElement('div');deck.className='receptors';MODES[mode].keys.forEach(k=>{const lane=document.createElement('div');lane.className='lane';els.lanes.appendChild(lane);const r=document.createElement('div');r.className='receptor';r.textContent=k.toUpperCase();deck.appendChild(r)});els.stage.appendChild(deck)}
 function reset(){cancelAnimationFrame(raf);els.song.pause();els.song.currentTime=0;running=false;combo=score=hits=judged=totalErr=runes=0;phase='theme';memory=[];callPlayed=false;responseRule=['echo','mirror','harmony'][Math.floor(Math.random()*3)];assist=0;recent=[];pressedKeys.clear();activeHolds.clear();els.stage.classList.remove('improv','awakened');buildChart();buildLanes();updateHud();els.judge.textContent='READY';els.judge.className='judge';els.phase.textContent='주제';els.memory.textContent=mode==='hard'?'즉흥 프레이즈를 기다리는 중':'정석 연주';renderRunes()}
-function renderRunes(){els.runes.innerHTML='';for(let i=0;i<4;i++){const r=document.createElement('i');r.textContent='◇';r.className=i<runes?'lit':'';els.runes.appendChild(r)}}
+const RUNE_SIGILS=[{glyph:'⚡',name:'폭풍'},{glyph:'≋',name:'천둥'},{glyph:'🔥',name:'지옥불'},{glyph:'✦',name:'비전'}];function renderRunes(){els.runes.innerHTML='';RUNE_SIGILS.forEach((sigil,i)=>{const r=document.createElement('i');r.textContent=sigil.glyph;r.title=sigil.name;r.setAttribute('aria-label',sigil.name);r.dataset.rune=sigil.name;r.className=i<runes?'lit':'';els.runes.appendChild(r)})}
 function updateHud(){els.score.textContent=String(score).padStart(6,'0');els.combo.textContent=`COMBO ${combo}`;els.playcombo.querySelector('b').textContent=combo;els.playcombo.classList.toggle('live',combo>1);els.accuracy.textContent=judged?`ACC ${(Math.max(0,100-totalErr/judged/1.3)).toFixed(2)}%`:'ACC --%'}
 function flash(t,c){els.judge.textContent=t;els.judge.className='judge '+c}
 function now(){return performance.now()-startAt}

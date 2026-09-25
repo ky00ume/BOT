@@ -48,3 +48,6 @@ footer{width:min(760px,100%);margin-inline:auto;font-family:Consolas,"Courier Ne
 .receptor:nth-child(4){border-right:3px solid rgba(183,154,98,.7)}
 .receptor.active{color:#fff1c2;background:linear-gradient(#793027,#32110f);box-shadow:inset 0 5px 18px rgba(214,148,68,.25)}
 .judge{bottom:105px}
+
+/* Play-focus HUD: configuration disappears once the chart starts. */
+.playcombo{position:absolute;left:50%;bottom:142px;translate:-50% 0;z-index:7;display:grid;place-items:center;pointer-events:none;opacity:.28;font-family:Consolas,monospace;text-shadow:0 2px 8px #000}.playcombo b{font-size:38px;line-height:.9;color:#f4dfae}.playcombo span{font-size:9px;letter-spacing:.22em;color:#b7a47d}.playcombo.live{opacity:.92}.playing .toolbar,.playing .ritual{opacity:0;pointer-events:none;transform:translateX(10px);transition:.18s ease}.playing .game-shell{grid-template-columns:minmax(0,1fr) 0}.playing header{opacity:.62}.playing .stage{width:min(760px,96vw);justify-self:center}.playing footer{opacity:.62}.toolbar,.ritual{transition:.18s ease}.hard .lane:nth-child(4){box-shadow:4px 0 0 rgba(7,8,9,.9)}

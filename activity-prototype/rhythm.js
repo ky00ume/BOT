@@ -23,7 +23,13 @@ const Patterns={
  stair:(t,lanes,step)=>lanes.map((l,i)=>makeNote(t+i*step,l)),
  roll:(t,lanes,count,step)=>Array.from({length:count},(_,i)=>makeNote(t+i*step,lanes[i%lanes.length])),
  cross:(t,left,right,count,step)=>Array.from({length:count},(_,i)=>makeNote(t+i*step,i%2?right[i%right.length]:left[i%left.length])),
- rearticulate:(t,lane,hold,step)=>[makeNote(t,lane,'normal',hold),makeNote(t+hold+step,lane)]
+ rearticulate:(t,lane,hold,step)=>[makeNote(t,lane,'normal',hold),makeNote(t+hold+step,lane)],
+ // Signature phrase: left-hand hold, right-hand trill, then release into a two-hand chord.
+ holdTrillReleaseChord:(t,holdLane,trillLanes,chordLanes,duration,step)=>[
+  makeNote(t,holdLane,'normal',duration,{releaseOnly:true}),
+  ...Array.from({length:6},(_,i)=>makeNote(t+step*(i+1),trillLanes[i%trillLanes.length])),
+  ...chordLanes.map(l=>makeNote(t+duration,l))
+ ]
 };
 function buildChart(){
  const speed=playbackSpeed(),interval=mode==='easy'?BEAT:BEAT/2;
@@ -44,6 +50,8 @@ function buildChart(){
   base.push(...Patterns.release(t+BEAT*10/speed,3,BEAT/speed));
   base.push(...Patterns.charge(t+BEAT*11.5/speed,4,BEAT*1.5/speed));
   base.push(...Patterns.rearticulate(t+BEAT*13.5/speed,2,BEAT*.75/speed,step));
+  // One deliberately vicious phrase: hold D, trill J/K, release D exactly as S+K lands.
+  base.push(...Patterns.holdTrillReleaseChord(t+BEAT*15/speed,2,[5,6],[1,6],BEAT*2/speed,step));
  }
  base.sort((a,b)=>a.t-b.t||a.lane-b.lane);chart=base;
  if(mode==='hard'){

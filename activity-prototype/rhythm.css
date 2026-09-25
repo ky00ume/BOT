@@ -116,3 +116,7 @@ footer{width:min(760px,100%);margin-inline:auto;font-family:Consolas,"Courier Ne
 /* Pin SPACE inside the receptor deck; override legacy absolute-position rules. */
 .receptors>.space-receptor{position:static!important;inset:auto!important;translate:none!important;transform:none;width:auto!important;height:auto!important;grid-column:5!important;grid-row:1!important;align-self:stretch;justify-self:stretch;margin:0;z-index:1}
 .receptors>.space-receptor.active{transform:translateY(1px)!important}
+
+/* Readable pre-song count-in: 3 · 2 · 1 · START, before the audio clock begins. */
+.countdown{font-variant-numeric:tabular-nums;text-shadow:0 0 18px rgba(213,177,91,.35)}
+.countdown.go{font-size:42px;letter-spacing:.16em;color:#f0d18a;text-shadow:0 0 24px rgba(240,209,138,.58)}

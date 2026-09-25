@@ -83,3 +83,10 @@ footer{width:min(760px,100%);margin-inline:auto;font-family:Consolas,"Courier Ne
 .result.show{background:radial-gradient(circle at 50% 35%,rgba(72,47,30,.99),rgba(5,6,7,1) 62%);backdrop-filter:blur(8px)}
 .result-grid div:nth-child(4) b{color:#cf7669}.result-grid div:nth-child(6) b{color:#d7b66f}
 
+
+/* Song lyrics live behind the note highway: readable as atmosphere, never as an input obstacle. */
+.lyrics{position:absolute;inset:13% 8% 24%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.1rem;pointer-events:none;z-index:0;text-align:center;opacity:.28;text-shadow:0 2px 14px #000;transition:opacity .2s ease}
+.lyrics span{font-size:clamp(.78rem,1.4vw,1.05rem);opacity:.36;letter-spacing:.04em}
+.lyrics b{max-width:82%;font-size:clamp(1rem,2.2vw,1.55rem);font-weight:650;line-height:1.45;opacity:.72;letter-spacing:.035em}
+.lanes,.judgeline,.receptors,.note{z-index:2}.playing .lyrics{opacity:.23}.stage.improv .lyrics{opacity:.14}
+.toolbar select{background:#15121a;color:#eadfca;border:1px solid #5b4a3e;border-radius:4px;padding:.35rem .5rem;max-width:220px}

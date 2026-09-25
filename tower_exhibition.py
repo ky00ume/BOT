@@ -10,7 +10,9 @@ MILESTONES=((3,{"max_energy":2},"낯선 유물의 공명"),(6,{"luck":1},"수집
 
 def ensure_state(player):
     if not isinstance(getattr(player,"tower_state",None),dict): player.tower_state={}
-    return player.tower_state.setdefault("exhibition",{"displayed":[],"claimed":[]})
+    st = player.tower_state.setdefault("exhibition",{"displayed":[],"claimed":[]})
+    st.setdefault("piano_quest", "locked")
+    return st
 def displayed(player): return list(ensure_state(player).get("displayed",[]))
 def available_to_display(player):
     inv=getattr(player,"inventory",{})
@@ -51,6 +53,7 @@ def apply_milestones(player):
             if stat in bonus: player.stats[stat]=player.stats.get(stat,0)+bonus[stat]
         st["claimed"].append(token);rewards.append((label,dict(bonus)))
         if need == 3:
+            st["piano_quest"] = "available"
             try:
                 from lubato_song_memory import remember
                 remember(player, "first_exhibition_resonance")
@@ -69,3 +72,22 @@ def hall_stage(player):
     if n>=3: return {"level":2,"name":"깨어난 전시실","desc":"첫 공명과 함께 먼지뿐이던 방의 진열장에 은은한 불이 들어왔다. 모험에서 가져온 물건들이 탑 안에 자기 자리를 얻기 시작한다.","change":"✨ 진열장 조명 점등 · 전시관 공명 활성화"}
     if n>=1: return {"level":1,"name":"작은 전시실","desc":"오래 비어 있던 방에 첫 발견물이 놓였다. 아직 어둡고 조용하지만, 이곳이 무엇을 위한 방인지는 분명해졌다.","change":"🏛️ 첫 진열대 활성화"}
     return {"level":0,"name":"빈 전시실","desc":"먼지 쌓인 진열대와 비어 있는 받침대만 남은 방. 아직 이 탑의 새 주인이 남긴 이야기는 없다.","change":"빈 진열대"}
+
+
+def piano_quest_state(player):
+    """전시관 첫 공명 뒤 열리는 지하실의 오래된 피아노 사이드 스토리."""
+    st = ensure_state(player)
+    if len(st.get("displayed", [])) >= 3 and st.get("piano_quest") == "locked":
+        st["piano_quest"] = "available"
+    return st.get("piano_quest", "locked")
+
+def advance_piano_quest(player):
+    st = ensure_state(player)
+    state = piano_quest_state(player)
+    order = {"available":"found", "found":"opened", "opened":"restored"}
+    if state in order:
+        st["piano_quest"] = order[state]
+    return st.get("piano_quest", state)
+
+def piano_unlocked(player):
+    return piano_quest_state(player) == "restored"

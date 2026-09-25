@@ -13,6 +13,15 @@ REPERTOIRE = {
     "pet_song": {"title": "복복송", "verse": "♪ 복복 한 번, 복복 두 번\n세 번째부터 세지 마세요\n츄라이더가 납작해져도\n행복한 거니까 계속하세요 ♪\n\n츄라이더가 눈을 반짝입니다.\n“2절도 있슴미까?”\n\n마제스티가 리라 줄을 한 번 튕깁니다.\n“당연하지.”"},
 }
 
+REPERTOIRE_INSTRUMENTS = {
+    "eight_shadows": "류트",
+    "shadowlantern": "리라",
+    "spider_rhythm": "리라",
+    "come_back_alive": "류트",
+    "tower_lights": "류트",
+    "pet_song": "류트",
+}
+
 SONGS = {
     "karniss_hide": {
         "title": "책장 아래의 작은 것",
@@ -108,4 +117,5 @@ def repertoire_songs() -> list[tuple[str, dict]]:
 
 def repertoire_text(song_id: str) -> str:
     song = REPERTOIRE[song_id]
-    return f"마제스티가 리라를 들고 익숙한 곡을 시작합니다.\n\n**〈{song['title']}〉**\n\n{song['verse']}"
+    instrument = REPERTOIRE_INSTRUMENTS.get(song_id, "류트")
+    return f"마제스티가 {instrument}를 들고 익숙한 곡을 시작합니다.\n\n**〈{song['title']}〉** · {instrument}\n\n{song['verse']}"

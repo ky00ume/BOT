@@ -1348,6 +1348,11 @@ class TowerExhibitionView(ExpiringView):
         for key in available_to_display(player):
             data=EXHIBITS[key];b=discord.ui.Button(label=f"전시: {data['name']}",emoji=data['emoji'],style=discord.ButtonStyle.success);b.callback=self._make_display(key);self.add_item(b)
         songs=discord.ui.Button(label="루바토의 노래 기억",emoji="🎼",style=discord.ButtonStyle.secondary);songs.callback=self._songs;self.add_item(songs)
+        from tower_exhibition import piano_quest_state
+        piano_state=piano_quest_state(player)
+        if piano_state != "locked":
+            label="지하실의 오래된 피아노" if piano_state != "restored" else "복원된 오래된 피아노"
+            piano=discord.ui.Button(label=label,emoji="🎹",style=discord.ButtonStyle.primary if piano_state != "restored" else discord.ButtonStyle.success);piano.callback=self._piano;self.add_item(piano)
         back=discord.ui.Button(label="상층으로",emoji="↩️",style=discord.ButtonStyle.secondary);back.callback=self._back;self.add_item(back)
     def make_embed(self,note=None):
         from tower_exhibition import summary,hall_stage
@@ -1372,10 +1377,58 @@ class TowerExhibitionView(ExpiringView):
             except Exception: logger.warning('전시관 저장 실패',exc_info=True)
             v=TowerExhibitionView(self.player,self.care_manager,suspicious_actor_id=self.suspicious_actor_id);v.bind_message(getattr(interaction,"message",None));await interaction.response.edit_message(attachments=[],embed=v.make_embed(note),view=v)
         return cb
+    async def _piano(self,interaction):
+        v=TowerPianoQuestView(self.player,self.care_manager,suspicious_actor_id=self.suspicious_actor_id);v.bind_message(getattr(interaction,"message",None));await interaction.response.edit_message(attachments=[],embed=v.make_embed(),view=v)
     async def _songs(self,interaction):
         v=LubatoSongMemoryView(self.player,self.care_manager,suspicious_actor_id=self.suspicious_actor_id);v.bind_message(getattr(interaction,"message",None));await interaction.response.edit_message(attachments=[],embed=v.make_embed(),view=v)
     async def _back(self,interaction):
         v=TowerUpperFloorView(self.player,self.care_manager,suspicious_actor_id=self.suspicious_actor_id);v.bind_message(getattr(interaction,"message",None));await interaction.response.edit_message(attachments=[],embed=v.make_embed(),view=v)
+
+
+class TowerPianoQuestView(ExpiringView):
+    """전시관 첫 공명으로 드러나는 지하실 피아노의 짧은 사이드 스토리."""
+    SCENES = {
+        "available": (
+            "지하실의 닫힌 문",
+            "전시관의 첫 공명이 가라앉은 뒤, 하층 창고 안쪽 벽에서 전에 없던 문 하나가 드러납니다.\n\n루바토가 먼지를 손끝으로 훑습니다.\n“이 탑, 아직도 숨기는 방이 있었네.”\n\n카르니스가 먼저 문 앞에 섭니다.\n“마제스티께서 원하신다면 제가 앞장서겠습니다. 하이네스의 작은 것은 뒤에 두십시오.”\n\n츄라이더는 말없이 루바토의 망토 뒤로 들어갑니다.",
+            "지하실 문을 연다",
+        ),
+        "found": (
+            "천 아래의 검은 윤곽",
+            "문 아래에는 오래된 음악실이 있습니다. 무너진 악보대와 빈 상자 사이, 커다란 천에 덮인 물건 하나가 벽을 차지하고 있습니다.\n\n루바토가 천을 걷자 낡은 피아노가 나타납니다. 건반 몇 개는 내려앉았고 현은 오래 녹슬었습니다.\n\n“...이건 버리면 안 되겠다.”\n\n카르니스가 피아노와 루바토를 번갈아 봅니다.\n“마제스티께서 바라신다면, 이 흉물도 다시 소리를 내게 하겠습니다.”\n\n“흉물이라고 먼저 정하진 말자, 카르니스.”",
+            "피아노 뚜껑을 살핀다",
+        ),
+        "opened": (
+            "남아 있던 한 음",
+            "루바토가 가장 온전한 건반 하나를 조심스럽게 누릅니다. 낮은 한 음이 먼지 낀 방 안으로 길게 번집니다.\n\n츄라이더가 피아노 다리 뒤에서 고개를 내밉니다.\n“살아 있슴미까?”\n\n“악기는 살아 있는 척을 잘하거든.”\n\n카르니스는 츄라이더를 노려보다가, 루바토가 다시 건반을 보는 순간 공구 상자를 집어 듭니다.\n“마제스티. 손을 더럽히실 필요는 없습니다. 수리는 제가 하겠습니다.”\n\n루바토가 웃습니다. “그럼 나는 조율할게. 하이네스가 돌아오면 들려주자.”",
+            "함께 피아노를 복원한다",
+        ),
+        "restored": (
+            "오래된 피아노",
+            "지하실의 오래된 피아노는 다시 연주할 수 있습니다. 새것처럼 반듯하지는 않지만, 낮은 음은 깊고 높은 음에는 오래된 금속성 울림이 조금 남아 있습니다.\n\n루바토의 레퍼토리에 이제 **피아노 편곡**을 만들 수 있는 악기가 하나 더 생겼습니다. 카르니스는 자신이 수리했다는 말을 굳이 하지 않지만, 건반 덮개와 페달은 유난히 깨끗합니다.",
+            None,
+        ),
+    }
+    def __init__(self,player,care_manager,*,suspicious_actor_id=None):
+        super().__init__(timeout=CARE_VIEW_TIMEOUT);self.player=player;self.care_manager=care_manager;self.suspicious_actor_id=suspicious_actor_id
+        from tower_exhibition import piano_quest_state
+        state=piano_quest_state(player);scene=self.SCENES[state]
+        if scene[2]:
+            b=discord.ui.Button(label=scene[2],emoji="🎹",style=discord.ButtonStyle.primary);b.callback=self._advance;self.add_item(b)
+        back=discord.ui.Button(label="전시관으로",emoji="↩️",style=discord.ButtonStyle.secondary);back.callback=self._back;self.add_item(back)
+    def make_embed(self):
+        from tower_exhibition import piano_quest_state
+        state=piano_quest_state(self.player);title,text,_=self.SCENES[state]
+        return discord.Embed(title=f"🎹 사이드 스토리 · {title}",description=text,color=0x4C4358)
+    async def _advance(self,interaction):
+        from tower_exhibition import advance_piano_quest
+        advance_piano_quest(self.player)
+        try:
+            from save_manager import save_manager;save_manager.save(self.player)
+        except Exception: logger.warning('피아노 사이드 스토리 저장 실패',exc_info=True)
+        v=TowerPianoQuestView(self.player,self.care_manager,suspicious_actor_id=self.suspicious_actor_id);v.bind_message(getattr(interaction,"message",None));await interaction.response.edit_message(attachments=[],embed=v.make_embed(),view=v)
+    async def _back(self,interaction):
+        v=TowerExhibitionView(self.player,self.care_manager,suspicious_actor_id=self.suspicious_actor_id);v.bind_message(getattr(interaction,"message",None));await interaction.response.edit_message(attachments=[],embed=v.make_embed(),view=v)
 
 
 class LubatoSongMemoryView(ExpiringView):

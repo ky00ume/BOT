@@ -81,31 +81,33 @@ function buildPatternDrill(speed=1){
  return notes.sort((a,b)=>a.t-b.t||a.lane-b.lane);
 }
 function buildSongChart(speed=1){
- const b=BEAT/speed,n=[];let at=900/speed;const add=x=>n.push(...x),bar=(x,beats=4)=>{add(x);at+=b*beats};
- if(SONG.chartStyle==='spider'){
-  for(let c=0;c<7;c++){bar(Patterns.trill(at,2,5,8,b/2));bar(Patterns.roll(at,[0,2,4,6,7,5,3,1],8,b/2));if(c%2){bar(Patterns.cross(at,[0,1,2,3],[7,6,5,4],8,b/2));}}
-  bar(Patterns.holdTrillReleaseChord(at,2,[5,6],[1,6],b*3,b/4));
- }else if(SONG.chartStyle==='shadows'){
-  for(let c=0;c<6;c++){bar(Patterns.cross(at,[0,1,2,3],[4,5,6,7],8,b/2));bar(Patterns.stair(at,c%2?[7,6,5,4,3,2,1,0]:[0,1,2,3,4,5,6,7],b/2));bar([...Patterns.chord(at,[0,4]),...Patterns.chord(at+b*2,[3,7])]);}
- }else if(SONG.chartStyle==='lantern'){
-  for(let c=0;c<6;c++){add(Patterns.hold(at,c%2?2:5,b*3));add(Patterns.stair(at+b/2,c%2?[7,6,4,3,1]:[0,1,3,4,6],b/2));at+=b*4;bar(Patterns.roll(at,[1,3,5,7,6,4,2,0],8,b/2));}
- }else if(SONG.chartStyle==='return'){
-  for(let c=0;c<6;c++){bar([...Patterns.chord(at,[1,4]),...Patterns.chord(at+b,[2,5]),...Patterns.chord(at+b*2,[3,6]),...Patterns.chord(at+b*3,[0,7])]);bar(Patterns.stair(at,[0,2,4,6,7,5,3,1],b/2));bar(Patterns.multiHold(at,[1,6],b*3));}
- }else if(SONG.chartStyle==='tower'){
-  for(let c=0;c<6;c++){bar(Patterns.stair(at,[0,1,2,3,4,5,6,7],b/2));bar([...Patterns.chord(at,[0,1]),...Patterns.chord(at+b,[2,3]),...Patterns.chord(at+b*2,[4,5]),...Patterns.chord(at+b*3,[6,7])]);bar(Patterns.stair(at,[7,5,3,1],b));}
- }else if(SONG.chartStyle==='pet'){
-  for(let c=0;c<8;c++){bar(Patterns.jack(at,c%2?2:5,8,b/2));bar(Patterns.trill(at,1,6,8,b/2));if(c%2)bar([...Patterns.chord(at,[2,5]),...Patterns.chord(at+b*2,[1,6])]);}
- }else if(SONG.chartStyle==='lolth'){
-  for(let cycle=0;cycle<6;cycle++){bar(Patterns.roll(at,[0,4,1,5,2,6,3,7],8,b/2));bar([...Patterns.chord(at,[0,4]),...Patterns.chord(at+b,[1,5]),...Patterns.chord(at+b*2,[2,6]),...Patterns.chord(at+b*3,[3,7])]);if(cycle%2===1){add(Patterns.multiHold(at,[0,7],b*3));add(Patterns.trill(at+b/2,2,5,10,b/4));at+=b*4}}
-  bar(Patterns.holdTrillReleaseChord(at,2,[5,6],[1,6],b*3,b/4));bar(Patterns.chord(at,[0,2,5,7]));
- }else if(SONG.chartStyle==='eilistraee'){
-  for(let cycle=0;cycle<6;cycle++){bar(Patterns.stair(at,cycle%2?[7,6,5,4,3,2,1,0]:[0,1,2,3,4,5,6,7],b/2));bar(Patterns.cross(at,[0,1,2,3],[4,5,6,7],8,b/2));bar(Patterns.roll(at,[2,4,6,7,5,3,1,0],8,b/2));}
-  bar([...Patterns.chord(at,[1,4]),...Patterns.chord(at+b,[2,5]),...Patterns.chord(at+b*2,[3,6]),...Patterns.chord(at+b*3,[4,7])]);
- }else{
-  for(let cycle=0;cycle<6;cycle++){add(Patterns.hold(at,cycle%2?1:0,b*4));add(Patterns.stair(at+b/2,cycle%2?[6,4,7,5,3,2]:[4,6,5,7,3,2],b/2));at+=b*4;bar(Patterns.cross(at,[0,1,2],[7,6,5],8,b/2));bar(Patterns.trill(at,2,6,8,b/2));}
-  bar(Patterns.holdTrillReleaseChord(at,1,[5,7],[2,6],b*3,b/4));
+ const b=BEAT/speed,n=[];const start=900/speed,bar=b*4,add=(t,lane,kind='tap',dur=0)=>n.push(makeNote(t,lane,kind,dur));
+ const sectionFor=bi=>bi<1?'INTRO':bi<5?'A':bi<9?'A2':bi<13?'B':'RETURN';
+ const laneSeq={spider:[4,5,6,7,6,5,4,3],shadows:[3,4,6,4,3,2,1,0],lantern:[3,6,7,6,4,3,2,1],return:[3,4,6,7,6,4,3,2],tower:[3,5,6,7,6,5,4,3],pet:[4,6,7,6,5,4,3,2],lolth:[3,4,6,5,3,2,1,2],eilistraee:[5,6,7,7,7,7,6,5],vhaeraun:[3,5,4,3,7,6,5,4]};
+ const seq=laneSeq[SONG.chartStyle]||laneSeq.vhaeraun;
+ // The audio renderer reserves two final bars for its cadence; mirror that exact form here.
+ const usable=Math.max(1,Math.floor((56000/speed)/bar)-2);
+ for(let bi=0;bi<usable;bi++){
+  const sec=sectionFor(bi),t=start+bi*bar;
+  let mel=seq.slice();
+  if(sec==='A2') mel=mel.map((x,j)=>(j===2||j===3)?Math.min(7,x+1):x);
+  else if(sec==='B') mel=mel.slice(2).concat(mel.slice(0,2)).map((x,j)=>Math.max(0,Math.min(7,x+(j%2===0?1:-1))));
+  else if(sec==='RETURN') mel=mel.map((x,j)=>(j===3||j===4)?Math.min(7,x+1):x);
+  // Main melody: every half beat, matching the composed phrase rhythm.
+  mel.forEach((lane,j)=>add(t+j*b*.5,lane));
+  // Section-specific playable accompaniment gestures, kept sparse enough to read the melody.
+  if(sec==='INTRO'){add(t,0,'hold',b*2.5);}
+  else if(SONG.chartStyle==='lolth'){add(t,bi%2?1:0,'hold',b*1.5);add(t+b*2,bi%2?6:7);}
+  else if(SONG.chartStyle==='eilistraee'||SONG.chartStyle==='tower'){add(t,0);add(t+b,2);add(t+b*2,4);add(t+b*3,6);}
+  else if(SONG.chartStyle==='vhaeraun'){add(t,0,'hold',b*1.5);add(t+b*2,1,'hold',b*1.25);}
+  else if(SONG.chartStyle==='spider'){add(t+b,bi%2?1:6);add(t+b*3,bi%2?6:1);}
+  else {add(t,0);add(t+b*2,1);}
  }
- return n.sort((a,b)=>a.t-b.t||a.lane-b.lane);
+ let t=start+usable*bar;
+ // Penultimate cadence bar, then a held tonic finish instead of an endless pattern.
+ add(t,seq[6]);add(t+b,seq[7],'hold',b*1.6);add(t,1);add(t+b*2,6);
+ t+=bar;add(t,seq[0],'hold',b*3.4);add(t,0,'hold',b*3.1);add(t,4,'hold',b*3.1);
+ return n.filter(x=>x.t<56000/speed).sort((a,b)=>a.t-b.t||a.lane-b.lane);
 }
 function buildChart(){
  const speed=playbackSpeed(),interval=mode==='easy'?BEAT:BEAT/2;

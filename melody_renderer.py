@@ -74,9 +74,63 @@ def render(melody_id,out_path,target_seconds=55.0):
         w.writeframes(struct.pack("<"+"h"*len(samples),*samples))
     return path
 
+# v2 composition grammar: functional/modal harmony first, rhythm chart second.
+# Chord symbols are MIDI-note voicings; melody uses scale-degree-ish MIDI notes.
+COMPOSITIONS={
+ "spider_rhythm":{"bpm":136,"style":"jazz","prog":[[52,55,59,62],[57,60,64,67],[50,54,57,60],[59,62,66,69]],"mel":[64,67,69,71,69,67,66,64]},
+ "eight_shadows":{"bpm":86,"style":"lute","prog":[[50,57,62,65],[48,55,60,64],[46,53,58,62],[45,52,57,60]],"mel":[62,65,69,65,64,62,60,57]},
+ "shadowlantern":{"bpm":84,"style":"modal","prog":[[50,57,62,65],[53,60,65,69],[48,55,60,64],[50,57,62,65]],"mel":[62,69,72,69,65,64,62,60]},
+ "come_back_alive":{"bpm":94,"style":"ballad","prog":[[50,57,62,66],[55,59,62,67],[57,61,64,69],[50,57,62,66]],"mel":[62,66,69,71,69,66,64,62]},
+ "tower_lights":{"bpm":88,"style":"newage","prog":[[48,55,60,64],[43,50,55,59],[45,52,57,60],[41,48,53,57]],"mel":[60,64,67,72,69,67,64,62]},
+ "pet_song":{"bpm":124,"style":"minuet","prog":[[55,59,62,67],[50,57,62,66],[48,55,60,64],[50,57,62,66]],"mel":[67,71,74,71,69,67,64,62]},
+ "lolth_hymn":{"bpm":96,"style":"baroque","prog":[[50,57,62,65],[51,57,63,66],[48,55,60,63],[45,52,57,60]],"mel":[62,63,66,65,62,60,57,58]},
+ "eilistraee_hymn":{"bpm":108,"style":"impressionist","prog":[[50,57,62,66,69],[55,62,67,71,74],[52,59,64,69,71],[57,64,69,73,76]],"mel":[74,78,81,86,85,81,78,76]},
+ "vhaeraun_hymn":{"bpm":104,"style":"darkjazz","prog":[[52,59,62,67],[50,57,60,64],[48,55,59,63],[47,54,57,62]],"mel":[64,67,66,64,71,69,67,66]},
+}
+
+def _midi_hz(n): return 440.0*2**((n-69)/12)
+
+def _tone(freq,t,style):
+    if style in {"newage","impressionist"}: return _piano(freq,t)*.72
+    if style in {"baroque","darkjazz","jazz","ballad","minuet"}: return _piano(freq,t)*.66
+    return _pluck(freq,t)*.72
+
+def render_composition(melody_id,out_path,target_seconds=56.0):
+    c=COMPOSITIONS[melody_id]; beat=60/c["bpm"]; total=int(SR*target_seconds); mix=[0.0]*total
+    bar=beat*4; bars=int(target_seconds/bar)+1
+    def add_note(midi,start,dur,gain):
+        a=int(start*SR); z=min(total,a+int(dur*SR)); f=_midi_hz(midi)
+        for i in range(a,z):
+            t=(i-a)/SR; rel=min(1.0,(z-i)/(SR*.05)); mix[i]+=_tone(f,t,c["style"])*gain*rel
+    for bi in range(bars):
+        start=bi*bar; chord=c["prog"][bi%len(c["prog"])]
+        # Harmonic grammar: bass establishes function, upper voices move as broken/held voicings.
+        add_note(chord[0]-12,start,bar*.92,.20)
+        if c["style"] in {"newage","impressionist"}:
+            for j,n in enumerate(chord[1:]): add_note(n,start+j*beat*.5,beat*1.6,.14)
+        elif c["style"] in {"jazz","darkjazz"}:
+            for n in chord[1:]: add_note(n,start,beat*1.75,.12)
+            for n in chord[1:]: add_note(n,start+beat*2,beat*1.5,.10)
+        elif c["style"]=="baroque":
+            for j,n in enumerate(chord): add_note(n,start+j*beat*.5,beat*.8,.13)
+            for j,n in enumerate(reversed(chord)): add_note(n,start+beat*2+j*beat*.5,beat*.8,.11)
+        else:
+            for j,n in enumerate(chord[1:]): add_note(n,start+j*beat,beat*.9,.13)
+        # 8-note phrase with a small cadential variation every fourth bar.
+        for j,n in enumerate(c["mel"]):
+            nn=n + (12 if c["style"]=="impressionist" and j in (3,4) else 0)
+            if bi%4==3 and j>=6: nn-=2
+            add_note(nn,start+j*beat*.5,beat*.42,.24)
+    peak=max(1e-9,max(abs(x) for x in mix)); scale=.78/peak
+    vals=[int(max(-1,min(1,x*scale))*32767) for x in mix]
+    path=Path(out_path);path.parent.mkdir(parents=True,exist_ok=True)
+    with wave.open(str(path),"wb") as w:
+        w.setnchannels(1);w.setsampwidth(2);w.setframerate(SR);w.writeframes(struct.pack('<'+'h'*len(vals),*vals))
+    return path
+
 if __name__=="__main__":
     import sys
-    if len(sys.argv)==3: render(sys.argv[1],sys.argv[2])
+    if len(sys.argv)==3: (render_composition(sys.argv[1],sys.argv[2]) if sys.argv[1] in COMPOSITIONS else render(sys.argv[1],sys.argv[2]))
     else:
         out=Path("assets/music")
         for key in MELODIES: render(key,out/f"{key}.wav")

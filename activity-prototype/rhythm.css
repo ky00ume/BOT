@@ -59,3 +59,16 @@ footer{width:min(760px,100%);margin-inline:auto;font-family:Consolas,"Courier Ne
 .receptor.active:before{border-color:#ffe2a0;box-shadow:inset 0 0 10px rgba(255,226,160,.55),0 0 13px rgba(255,188,78,.7)}
 .lane.pressed{background:linear-gradient(180deg,rgba(210,145,59,.02),rgba(210,105,50,.17))}
 
+
+/* Keep the 8K highway continuous: hand split is a hint, not a wall. */
+.lane,.lane:first-child{border-color:rgba(219,196,139,.12)}
+.lane:nth-child(4),.hard .lane:nth-child(4){border-right:1px solid rgba(219,196,139,.20);box-shadow:none}
+.receptor{border-right-color:rgba(219,196,139,.14)}
+.receptor:nth-child(4){border-right:1px solid rgba(219,196,139,.24)}
+.hard .lane:nth-child(4){box-shadow:none}
+
+
+/* Final center treatment: no hard 4|4 seam. */
+.lane:nth-child(4),.hard .lane:nth-child(4){border-right-color:rgba(219,196,139,.10)!important;border-right-width:1px!important;box-shadow:none!important}
+.receptor:nth-child(4){border-right-color:rgba(219,196,139,.14)!important;border-right-width:1px!important}
+

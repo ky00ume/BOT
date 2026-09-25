@@ -36,3 +36,15 @@ footer{width:min(760px,100%);margin-inline:auto;font-family:Consolas,"Courier Ne
 .judgeline{bottom:49px;height:8px}.judge{top:auto;bottom:88px;font-size:31px}.countdown{font-size:60px}
 @media(max-width:720px){.game-shell{display:block;padding:6px}.toolbar{position:static;display:flex;margin:5px 0}.ritual{margin:5px 0;grid-template-columns:repeat(3,1fr)}.stage{min-height:500px;height:70vh}header{height:42px}}
 
+
+/* Receptor deck: notes terminate at the judgement line; keycaps live below it. */
+.stage{--receptor-y:58px}
+.lanes{bottom:var(--receptor-y);overflow:hidden}
+.judgeline{bottom:var(--receptor-y);z-index:6}
+.lane-key{position:fixed;display:none}
+.stage:after{content:"";display:block;position:absolute;left:0;right:0;bottom:0;height:var(--receptor-y);z-index:5;background:linear-gradient(#17130e,#090a0b 45%,#050607);border-top:1px solid #4e402b;pointer-events:none}
+.receptors{position:absolute;left:0;right:0;bottom:0;height:var(--receptor-y);display:flex;z-index:8;pointer-events:none}
+.receptor{flex:1;display:grid;place-items:center;border-right:1px solid rgba(219,196,139,.2);font:700 16px Consolas,monospace;color:#cdbb94;background:linear-gradient(180deg,rgba(183,154,98,.06),rgba(0,0,0,.15))}
+.receptor:nth-child(4){border-right:3px solid rgba(183,154,98,.7)}
+.receptor.active{color:#fff1c2;background:linear-gradient(#793027,#32110f);box-shadow:inset 0 5px 18px rgba(214,148,68,.25)}
+.judge{bottom:105px}

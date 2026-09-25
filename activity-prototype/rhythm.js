@@ -6,7 +6,7 @@ const MODES={
  hard:{keys:['a','s','d','f','h','j','k','l'],label:'EXPERT · 8K',pattern:[0,4,2,6,1,5,3,7,0,3,4,7,1,2,5,6,0,4,1,5,2,6,3,7,0,2,4,6,1,3,5,7,0,7,2,5,1,6,3,4,0,4,2,6,1,5,3,7,0,3,5,7,1,2,4,6,0,4,1,5,2,6,3,7]}
 };
 const els={stage:q('#stage'),lanes:q('#lanes'),judge:q('#judge'),countdown:q('#countdown'),score:q('#score'),combo:q('#combo'),status:q('#status'),accuracy:q('#accuracy'),song:q('#song'),start:q('#start'),speed:q('#speed'),runes:q('#runes'),phase:q('#phase'),memory:q('#memory')};
-let mode='easy',chart=[],running=false,starting=false,runId=0,startAt=0,raf=0,combo=0,score=0,hits=0,judged=0,totalErr=0,runes=0,phase='theme',memory=[],improvStart=0,improvEnd=0,callPlayed=false,responseRule='mirror',assist=0,recent=[];
+let mode=new URLSearchParams(location.search).get('drill')==='1'?'hard':'easy',chart=[],running=false,starting=false,runId=0,startAt=0,raf=0,combo=0,score=0,hits=0,judged=0,totalErr=0,runes=0,phase='theme',memory=[],improvStart=0,improvEnd=0,callPlayed=false,responseRule='mirror',assist=0,recent=[];
 const pressedKeys=new Set(),activeHolds=new Map(),travel=1800,windows={perfect:45,great:85,good:130};
 function q(s){return document.querySelector(s)}
 function playbackSpeed(){return Number(els.speed.value)||1}
@@ -31,8 +31,34 @@ const Patterns={
   ...chordLanes.map(l=>makeNote(t+duration,l))
  ]
 };
+function buildPatternDrill(speed=1){
+ const b=BEAT/speed,q=b/2,notes=[],at=900/speed;
+ const add=(pattern,gap=b*.75)=>{notes.push(...pattern);const end=Math.max(...pattern.map(n=>n.t+(n.duration||0)));at=end+gap};
+ add(Patterns.tap(at,2));
+ add(Patterns.chord(at,[1,6]));
+ add(Patterns.hold(at,2,b*2));
+ add(Patterns.multiHold(at,[1,6],b*2));
+ add(Patterns.jack(at,0,8,q));
+ add(Patterns.trill(at,2,5,10,q));
+ add(Patterns.stair(at,[0,1,2,3,4,5,6,7],q));
+ add(Patterns.roll(at,[0,2,4,6,7,5,3,1],12,q));
+ add(Patterns.cross(at,[0,1,2,3],[7,6,5,4],12,q));
+ add(Patterns.release(at,3,b*2));
+ add(Patterns.charge(at,4,b*2.5));
+ add(Patterns.rearticulate(at,2,b*1.5,q));
+ add(Patterns.holdTrillReleaseChord(at,2,[5,6],[1,6],b*2,q/2),b);
+ // Closing exam: two sustained hands with taps between them, then a final chord.
+ notes.push(...Patterns.multiHold(at,[0,7],b*3));
+ notes.push(...Patterns.trill(at+q,2,5,8,q/2));
+ notes.push(...Patterns.chord(at+b*3,[1,3,4,6]));
+ return notes.sort((a,b)=>a.t-b.t||a.lane-b.lane);
+}
 function buildChart(){
  const speed=playbackSpeed(),interval=mode==='easy'?BEAT:BEAT/2;
+ if(mode==='hard'&&new URLSearchParams(location.search).get('drill')==='1'){
+  chart=buildPatternDrill(speed);improvStart=improvEnd=Infinity;return;
+ }
+
  const base=MODES[mode].pattern.map((lane,i)=>makeNote((900+i*interval)/speed,lane));
  if(mode==='hard'){
   // Expert combines simultaneous two-lane chords with sustained notes; EASY stays a clean 4K chart.
@@ -92,9 +118,9 @@ function press(key){if(!running)return;const lane=MODES[mode].keys.indexOf(key);
  best.hit=true;hits++;award(err);if(best.duration){best.holdState='holding';activeHolds.set(lane,best);flash(best.charge?'CHARGE':best.releaseOnly?'RELEASE HOLD':'HOLD','great')}if(best.el){best.el.classList.add('hit');if(!best.duration)setTimeout(()=>best.el?.remove(),130)}
 }
 function release(key){const lane=MODES[mode].keys.indexOf(key);if(lane<0)return;pressedKeys.delete(key);els.lanes.children[lane]?.classList.remove('pressed');const note=activeHolds.get(lane);if(!note)return;activeHolds.delete(lane);if(note.holdState!=='holding')return;const err=Math.abs(now()-(note.t+note.duration));if(err<=windows.good){note.holdState='complete';award(err);if(note.releaseOnly)flash('RELEASE','perfect');else if(note.charge)flash('CHARGE RELEASE','perfect');if(note.el)note.el.classList.add('hold-complete')}else{note.holdState='failed';miss('HOLD MISS')}}
-async function start(){reset();els.stage.focus();els.status.textContent=`${MODES[mode].label} · ${mode==='hard'?'화음·홀드·즉흥 기억/응답 활성':'정석 연주'}`;for(const n of ['3','2','1']){els.countdown.textContent=n;await new Promise(r=>setTimeout(r,450))}els.countdown.textContent='';try{els.song.playbackRate=playbackSpeed();await els.song.play()}catch(e){els.status.textContent='오디오 재생을 시작하지 못했습니다. 다시 눌러 주세요.';return}startAt=performance.now()+900;running=true;raf=requestAnimationFrame(frame)}
+async function start(){reset();els.stage.focus();const drill=mode==='hard'&&new URLSearchParams(location.search).get('drill')==='1';els.status.textContent=drill?'EXPERT · 1분 패턴 테스트곡':`${MODES[mode].label} · ${mode==='hard'?'화음·홀드·즉흥 기억/응답 활성':'정석 연주'}`;for(const n of ['3','2','1']){els.countdown.textContent=n;await new Promise(r=>setTimeout(r,450))}els.countdown.textContent='';try{els.song.playbackRate=playbackSpeed();await els.song.play()}catch(e){els.status.textContent='오디오 재생을 시작하지 못했습니다. 다시 눌러 주세요.';return}startAt=performance.now()+900;running=true;raf=requestAnimationFrame(frame)}
 function finish(){running=false;cancelAnimationFrame(raf);els.song.pause();els.stage.classList.remove('improv');const acc=judged?Math.max(0,100-totalErr/judged/1.3):0;flash(acc>=95?'FULL GROOVE':acc>=85?'CLEAR':'FINISH',acc>=85?'perfect':'great');els.status.textContent=`완주 · ${hits}/${chart.length} HIT · ${acc.toFixed(2)}% · 룬 ${runes}/4${memory.length?` · 기억 ${memory.length}음`:''}`}
-document.querySelectorAll('.difficulty').forEach(b=>b.addEventListener('click',()=>{mode=b.dataset.mode;document.querySelectorAll('.difficulty').forEach(x=>x.classList.toggle('active',x===b));reset()}));
+document.querySelectorAll('.difficulty').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));document.querySelectorAll('.difficulty').forEach(b=>b.addEventListener('click',()=>{mode=b.dataset.mode;document.querySelectorAll('.difficulty').forEach(x=>x.classList.toggle('active',x===b));reset()}));
 els.start.addEventListener('click',start);document.addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(MODES[mode].keys.includes(k)){e.preventDefault();if(!e.repeat)press(k)}});document.addEventListener('keyup',e=>release(e.key.toLowerCase()));
 reset();window.rhythmDemo={getState:()=>({mode,phase,score,combo,hits,judged,runes,memory:memory.length,notes:chart.map(n=>({t:n.t,lane:n.lane,type:n.type,duration:n.duration,releaseOnly:n.releaseOnly,charge:n.charge,hit:n.hit,holdState:n.holdState}))}),press,release,Patterns};
 })();

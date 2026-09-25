@@ -1,4 +1,4 @@
-(()=>{
+﻿(()=>{
 'use strict';
 const BPM=136,BEAT=60000/BPM;
 const MODES={

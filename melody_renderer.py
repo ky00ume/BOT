@@ -15,6 +15,9 @@ MELODIES={
  "tower_lights":{"bpm":88,"notes":[("C4",1),("E4",1),("G4",2),("E4",1),("G4",1),("A4",2),("G4",1),("E4",1),("D4",2),("E4",1),("G4",1),("C5",2)]},
  "shadowlantern":{"bpm":84,"notes":[("D4",1.5),("A4",.5),("C5",1),("A4",1),("F4",2),("R",1),("D4",1),("F4",1),("A4",1),("C5",1),("A4",2),("G4",1),("D4",2)]},
  "eight_shadows":{"bpm":86,"notes":[("D3",1),("A3",1),("D4",1),("F4",1),("D4",1),("A3",1),("C4",2),("D4",1),("F4",1),("A4",1),("F4",1),("D4",2),("C4",1),("A3",1),("D4",2)]},
+ "lolth_hymn":{"bpm":96,"instrument":"piano","notes":[("D3",1),("A3",1),("D4",1),("D#4",1),("A3",1),("C4",1),("D#4",1),("F#4",1),("D4",2),("A3",1),("D#4",1),("D4",1),("C4",1),("A3",2)]},
+ "eilistraee_hymn":{"bpm":108,"instrument":"piano","notes":[("D4",1),("F#4",1),("A4",1),("D5",1),("C#5",1),("A4",1),("F#4",1),("E4",1),("F#4",1),("A4",1),("B4",1),("D5",1),("A4",2),("F#4",2)]},
+ "vhaeraun_hymn":{"bpm":104,"instrument":"piano","notes":[("E3",1),("B3",1),("E4",1),("G4",1),("F#4",1),("E4",1),("B3",1),("D4",1),("E3",1),("B3",1),("F#4",1),("G4",1),("B4",1),("F#4",1),("E4",2)]},
 }
 
 def hz(note):
@@ -22,6 +25,12 @@ def hz(note):
     names={"C":0,"C#":1,"D":2,"D#":3,"E":4,"F":5,"F#":6,"G":7,"G#":8,"A":9,"A#":10,"B":11}
     name=note[:-1];octave=int(note[-1]);midi=12*(octave+1)+names[name]
     return 440.0*2**((midi-69)/12)
+
+def _piano(freq,t):
+    if not freq:return 0.0
+    # old upright: felted attack, woody body, slightly metallic upper strings
+    attack=min(1.0,t/.006); body=math.exp(-1.65*t); upper=math.exp(-3.6*t)
+    return attack*(body*(math.sin(2*math.pi*freq*t)+.31*math.sin(4*math.pi*freq*t)) + upper*.16*math.sin(6*math.pi*freq*t))/1.47
 
 def _pluck(freq,t):
     if not freq:return 0.0
@@ -32,11 +41,11 @@ def _pluck(freq,t):
     return (body*(math.sin(2*math.pi*freq*t)+.24*math.sin(4*math.pi*freq*t)) + sparkle*.13*math.sin(6*math.pi*freq*t) + .08*pick)/1.34
 
 def render(melody_id,out_path):
-    m=MELODIES[melody_id]; beat=60/m["bpm"]; samples=[]
+    m=MELODIES[melody_id]; beat=60/m["bpm"]; samples=[]; voice=_piano if m.get("instrument")=="piano" else _pluck
     for note,beats in m["notes"]:
         dur=beat*beats; f=hz(note); n=int(SR*dur)
         for i in range(n):
-            t=i/SR; x=_pluck(f,t)
+            t=i/SR; x=voice(f,t)
             # short release to avoid clicks
             rel=min(1.0,(n-i)/(SR*.025))
             samples.append(int(max(-1,min(1,x*.42*rel))*32767))

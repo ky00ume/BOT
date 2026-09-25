@@ -32,27 +32,41 @@ const Patterns={
  ]
 };
 function buildPatternDrill(speed=1){
- const b=BEAT/speed,e=b/4,notes=[];let at=900/speed;
- const phrase=(pattern,bars=1)=>{notes.push(...pattern);at+=b*bars};
- // Four-beat phrases are deliberately spaced so their shapes read before they are played.
- phrase([...Patterns.tap(at,2),...Patterns.tap(at+b,5),...Patterns.chord(at+b*2,[2,5]),...Patterns.chord(at+b*3,[1,6])],4);
- phrase(Patterns.jack(at,1,8,b/2),4);
- phrase(Patterns.trill(at,2,5,8,b/2),4);
- phrase(Patterns.stair(at,[0,1,2,3,4,5,6,7],b/2),4);
- phrase(Patterns.stair(at,[7,6,5,4,3,2,1,0],b/2),4);
- phrase(Patterns.roll(at,[0,2,4,6,7,5,3,1],8,b/2),4);
- phrase(Patterns.cross(at,[0,1,2,3],[7,6,5,4],8,b/2),4);
- // Sustains leave negative space around the moving hand.
+ const b=BEAT/speed,notes=[];let at=900/speed;
+ const phrase=(pattern,bars=4)=>{notes.push(...pattern);at+=b*bars};
+ // ~60 seconds at 136 BPM. Density grows in musical phrases rather than by adding random keys.
+ phrase([...Patterns.tap(at,2),...Patterns.tap(at+b,5),...Patterns.chord(at+b*2,[2,5]),...Patterns.chord(at+b*3,[1,6])]);
+ phrase(Patterns.jack(at,1,8,b/2));
+ phrase(Patterns.trill(at,2,5,8,b/2));
+ phrase(Patterns.stair(at,[0,1,2,3,4,5,6,7],b/2));
+ phrase(Patterns.stair(at,[7,6,5,4,3,2,1,0],b/2));
+ phrase(Patterns.roll(at,[0,2,4,6,7,5,3,1],8,b/2));
+ phrase(Patterns.cross(at,[0,1,2,3],[7,6,5,4],8,b/2));
  notes.push(...Patterns.hold(at,1,b*4));notes.push(...Patterns.stair(at+b,[4,5,6,7,6,5],b/2));at+=b*4;
  notes.push(...Patterns.multiHold(at,[0,7],b*4));notes.push(...Patterns.trill(at+b,2,5,6,b/2));at+=b*4;
- phrase(Patterns.release(at,3,b*3),4);
- phrase(Patterns.charge(at,4,b*3),4);
- phrase(Patterns.rearticulate(at,2,b*2,b/2),4);
- phrase(Patterns.holdTrillReleaseChord(at,2,[5,6],[1,6],b*3,b/4),4);
- // Finale: symmetrical holds frame a dense central answer and a clean four-note final chord.
- notes.push(...Patterns.multiHold(at,[0,7],b*4));
- notes.push(...Patterns.trill(at+b/2,3,4,12,b/4));
- notes.push(...Patterns.chord(at+b*4,[1,3,4,6]));
+ phrase(Patterns.release(at,3,b*3));
+ phrase(Patterns.charge(at,4,b*3));
+ phrase(Patterns.rearticulate(at,2,b*2,b/2));
+ phrase(Patterns.holdTrillReleaseChord(at,2,[5,6],[1,6],b*3,b/4));
+ // Development: denser harmony and hand interaction.
+ phrase([...Patterns.chord(at,[0,4]),...Patterns.chord(at+b,[1,5]),...Patterns.chord(at+b*2,[2,6]),...Patterns.chord(at+b*3,[3,7])]);
+ notes.push(...Patterns.hold(at,0,b*4));notes.push(...Patterns.trill(at+b/2,4,6,12,b/4));at+=b*4;
+ notes.push(...Patterns.hold(at,7,b*4));notes.push(...Patterns.trill(at+b/2,1,3,12,b/4));at+=b*4;
+ phrase(Patterns.roll(at,[0,4,1,5,2,6,3,7],16,b/4));
+ phrase([...Patterns.chord(at,[0,7]),...Patterns.chord(at+b,[1,6]),...Patterns.chord(at+b*2,[2,5]),...Patterns.chord(at+b*3,[3,4])]);
+ notes.push(...Patterns.multiHold(at,[0,7],b*4));notes.push(...Patterns.trill(at+b/2,3,4,12,b/4));at+=b*4;
+ // Coda cycle: repeat recognizable motifs with increasing chord density to carry the drill to ~60s.
+ for(let cycle=0;cycle<3;cycle++){
+  phrase(Patterns.trill(at,1+cycle,6-cycle,8,b/2));
+  phrase(Patterns.roll(at,[0,2,4,6,7,5,3,1],8,b/2));
+  phrase([...Patterns.chord(at,[0,4]),...Patterns.chord(at+b,[1,5]),...Patterns.chord(at+b*2,[2,6]),...Patterns.chord(at+b*3,[3,7])]);
+ }
+ phrase(Patterns.holdTrillReleaseChord(at,2,[5,6],[1,6],b*3,b/4));
+ phrase(Patterns.stair(at,[0,1,2,3,4,5,6,7],b/2));
+ phrase(Patterns.cross(at,[0,1,2,3],[7,6,5,4],8,b/2));
+ phrase([...Patterns.chord(at,[0,7]),...Patterns.chord(at+b,[1,6]),...Patterns.chord(at+b*2,[2,5]),...Patterns.chord(at+b*3,[3,4])]);
+ notes.push(...Patterns.multiHold(at,[0,7],b*4));notes.push(...Patterns.trill(at+b/2,3,4,12,b/4));at+=b*4;
+ notes.push(...Patterns.chord(at,[1,3,4,6]));
  return notes.sort((a,b)=>a.t-b.t||a.lane-b.lane);
 }
 function buildChart(){
@@ -104,6 +118,12 @@ function grade(err){if(err<=windows.perfect)return{pts:1000,text:'PERFECT',cls:'
 function award(err){adapt(true);const result=grade(err);judged++;totalErr+=err;combo++;counts[result.cls]++;maxCombo=Math.max(maxCombo,combo);score+=result.pts+Math.min(combo,100)*5;flash(result.text,result.cls);if(mode==='hard'&&result.cls==='perfect'&&runes<4&&combo%6===0){runes++;renderRunes();if(runes===4){flash('RUNE AWAKENED','perfect');els.stage.classList.add('awakened')}}updateHud()}
 function adapt(ok){if(mode!=='hard')return;recent.push(ok);if(recent.length>10)recent.shift();const rate=recent.filter(Boolean).length/recent.length,old=assist;if(recent.length>=5){if(rate<.45)assist=2;else if(rate<.7)assist=1;else if(rate>.9)assist=0}if(old!==assist)els.status.textContent=assist===2?'루바토가 박자를 넓게 받아줍니다':assist===1?'루바토가 손을 맞춰 줍니다':`${MODES[mode].label} · 연주 기억/룬 변주 활성`}function miss(text='MISS'){judged++;counts.miss++;totalErr+=130;combo=0;adapt(false);flash(text,'miss');updateHud()}
 function enterImprov(){phase='improv';els.phase.textContent='자유 즉흥';els.memory.textContent='원하는 키를 눌러 8음을 남기세요';els.stage.classList.add('improv');chart.forEach(n=>{if(n.type==='normal'&&n.t>=improvStart&&n.t<improvEnd){n.hit=true;if(n.el)n.el.remove()}})}
+let instrumentCtx=null;const heldVoices=new Map();
+const LANE_FREQ=[261.63,293.66,329.63,349.23,392,440,493.88,523.25];
+function audioCtx(){const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;if(!instrumentCtx)instrumentCtx=new C();if(instrumentCtx.state==='suspended')instrumentCtx.resume();return instrumentCtx}
+function pluckLane(lane,hold=false){const ctx=audioCtx();if(!ctx)return;stopLane(lane,.025);const o=ctx.createOscillator(),g=ctx.createGain(),f=ctx.createBiquadFilter(),t=ctx.currentTime;o.type='triangle';o.frequency.value=LANE_FREQ[lane];f.type='lowpass';f.frequency.value=2400;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.065,t+.008);if(hold){g.gain.exponentialRampToValueAtTime(.025,t+.18)}else{g.gain.exponentialRampToValueAtTime(.0001,t+.32)}o.connect(f).connect(g).connect(ctx.destination);o.start(t);if(hold){heldVoices.set(lane,{o,g,ctx})}else{o.stop(t+.34)}}
+function stopLane(lane,fade=.08){const v=heldVoices.get(lane);if(!v)return;const t=v.ctx.currentTime;try{v.g.gain.cancelScheduledValues(t);v.g.gain.setValueAtTime(Math.max(.0001,v.g.gain.value),t);v.g.gain.exponentialRampToValueAtTime(.0001,t+fade);v.o.stop(t+fade+.02)}catch{}heldVoices.delete(lane)}
+function stopAllVoices(){[...heldVoices.keys()].forEach(l=>stopLane(l,.03))}
 function playRubatoCall(){if(callPlayed)return;callPlayed=true;const C=window.AudioContext||window.webkitAudioContext,ctx=new C(),seq=[0,2,4,7,5,3,6,1],base=329.63;seq.forEach((lane,i)=>{const o=ctx.createOscillator(),g=ctx.createGain(),t=ctx.currentTime+i*.16;o.type='triangle';o.frequency.value=base*Math.pow(2,lane/12);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.07,t+.015);g.gain.exponentialRampToValueAtTime(.0001,t+.13);o.connect(g).connect(ctx.destination);o.start(t);o.stop(t+.14)});els.memory.textContent='루바토의 프레이즈를 듣고 응답하세요';flash('RUBATO CALL','perfect')}
 function enterResponse(){phase='response';playRubatoCall();els.phase.textContent='응답 연주';els.stage.classList.remove('improv');const response=chart.filter(n=>n.type==='response'),names={echo:'그대로 복창',mirror:'좌우 반전',harmony:'화음 응답'};if(memory.length){const min=memory[0].dt,max=memory[memory.length-1].dt,span=max-min;response.forEach((n,i)=>{const m=memory[i%memory.length];n.lane=responseRule==='echo'?m.lane:responseRule==='mirror'?7-m.lane:(m.lane+2)%8;const normalized=span>0?(m.dt-min)/span:i/Math.max(1,response.length-1);n.t=response[0].t+normalized*(response[response.length-1].t-response[0].t)});if(assist>=2&&responseRule==='harmony')responseRule='echo';if(assist>=1)response.forEach((n,i)=>{if(i%3===2)n.skip=true});if(responseRule==='harmony'&&assist===0){const extras=response.slice(0,4).map(n=>makeNote(n.t,(n.lane+4)%8,'response'));chart.push(...extras);chart.sort((a,b)=>a.t-b.t)}els.memory.textContent=`루바토의 요구 · ${names[responseRule]}`;flash(names[responseRule].toUpperCase(),'perfect')}else els.memory.textContent='기억된 음이 없어 기본 응답'}
 function phaseUpdate(t){if(mode!=='hard')return;if(phase==='theme'&&t>=improvStart)enterImprov();if(phase==='improv'&&t>=improvEnd)enterResponse()}
@@ -117,12 +137,12 @@ function press(key){if(!running)return;const lane=MODES[mode].keys.indexOf(key);
  if(mode==='hard'&&phase==='improv'){if(memory.length<8){memory.push({lane,dt:t-improvStart});els.memory.textContent=`기억한 프레이즈 ${memory.length}/8`;if(memory.length===8)flash('MEMORY SEALED','perfect')}return}
  let best=null,err=Infinity;chart.forEach(n=>{if(n.lane!==lane||n.hit||n.miss||n.skip)return;const e=Math.abs(n.t-t);if(e<err){err=e;best=n}});
  const adaptiveGood=windows.good+(assist*45);if(!best||err>adaptiveGood){combo=0;flash(phase==='response'?'RESPONSE':'MISS',phase==='response'?'great':'miss');updateHud();return}
- best.hit=true;hits++;award(err);if(best.duration){best.holdState='holding';activeHolds.set(lane,best);flash(best.charge?'CHARGE':best.releaseOnly?'RELEASE HOLD':'HOLD','great')}if(best.el){best.el.classList.add('hit');if(!best.duration)setTimeout(()=>best.el?.remove(),130)}
+ best.hit=true;hits++;pluckLane(lane,!!best.duration);award(err);if(best.duration){best.holdState='holding';activeHolds.set(lane,best);flash(best.charge?'CHARGE':best.releaseOnly?'RELEASE HOLD':'HOLD','great')}if(best.el){best.el.classList.add('hit');if(!best.duration)setTimeout(()=>best.el?.remove(),130)}
 }
-function release(key){const lane=MODES[mode].keys.indexOf(key);if(lane<0)return;pressedKeys.delete(key);els.lanes.children[lane]?.classList.remove('pressed');els.stage.querySelector('.receptors')?.children[lane]?.classList.remove('active');const note=activeHolds.get(lane);if(!note)return;activeHolds.delete(lane);if(note.holdState!=='holding')return;const err=Math.abs(now()-(note.t+note.duration));if(err<=windows.good){note.holdState='complete';award(err);if(note.releaseOnly)flash('RELEASE','perfect');else if(note.charge)flash('CHARGE RELEASE','perfect');if(note.el)note.el.classList.add('hold-complete')}else{note.holdState='failed';miss('HOLD MISS')}}
+function release(key){const lane=MODES[mode].keys.indexOf(key);if(lane<0)return;pressedKeys.delete(key);els.lanes.children[lane]?.classList.remove('pressed');els.stage.querySelector('.receptors')?.children[lane]?.classList.remove('active');const note=activeHolds.get(lane);if(!note)return;activeHolds.delete(lane);stopLane(lane);if(note.holdState!=='holding')return;const err=Math.abs(now()-(note.t+note.duration));if(err<=windows.good){note.holdState='complete';award(err);if(note.releaseOnly)flash('RELEASE','perfect');else if(note.charge)flash('CHARGE RELEASE','perfect');if(note.el)note.el.classList.add('hold-complete')}else{note.holdState='failed';miss('HOLD MISS')}}
 async function start(){reset();els.stage.focus();const drill=mode==='hard'&&new URLSearchParams(location.search).get('drill')==='1';els.status.textContent=drill?'EXPERT · 1분 패턴 테스트곡':`${MODES[mode].label} · ${mode==='hard'?'화음·홀드·즉흥 기억/응답 활성':'정석 연주'}`;for(const n of ['3','2','1']){els.countdown.textContent=n;await new Promise(r=>setTimeout(r,450))}els.countdown.textContent='';try{els.song.playbackRate=playbackSpeed();await els.song.play()}catch(e){els.status.textContent='오디오 재생을 시작하지 못했습니다. 다시 눌러 주세요.';return}startAt=performance.now()+900;running=true;document.body.classList.add('playing');raf=requestAnimationFrame(frame)}
-function finish(){running=false;document.body.classList.remove('playing');cancelAnimationFrame(raf);els.song.pause();els.stage.classList.remove('improv');const acc=judged?Math.max(0,100-totalErr/judged/1.3):0;const rank=acc>=99?'S+':acc>=95?'S':acc>=90?'A':acc>=80?'B':acc>=70?'C':'D';const fullPerfect=counts.miss===0&&counts.good===0&&counts.great===0&&judged>0,fullCombo=counts.miss===0&&judged>0;els.resultRank.textContent=rank;els.resultScore.textContent=String(score).padStart(6,'0');els.resultAcc.textContent=`${acc.toFixed(2)}%`;els.resultPerfect.textContent=counts.perfect;els.resultGreat.textContent=counts.great;els.resultGood.textContent=counts.good;els.resultMiss.textContent=counts.miss;els.resultCombo.textContent=maxCombo;els.resultRunes.textContent=`${runes} / 4`;els.resultClear.textContent=fullPerfect?'ALL PERFECT':fullCombo?'FULL COMBO':acc>=85?'CLEAR':'FINISH';const comments=[];if(runes===4)comments.push('네 개의 룬이 모두 응답했습니다.');if(memory.length)comments.push(`즉흥 프레이즈 ${memory.length}음을 기억했습니다.`);comments.push(acc>=95?'루바토가 만족스럽게 화음을 되짚습니다.':acc>=85?'루바토가 다음 프레이즈를 기다립니다.':'루바토가 박자를 조금 더 넓게 받아 줍니다.');els.resultRubato.textContent=comments.join(' ');els.result.classList.add('show');els.result.setAttribute('aria-hidden','false');els.status.textContent=`완주 · ${acc.toFixed(2)}% · ${rank}`;}
+function finish(){running=false;document.body.classList.remove('playing');cancelAnimationFrame(raf);els.song.pause();stopAllVoices();els.stage.classList.remove('improv');const acc=judged?Math.max(0,100-totalErr/judged/1.3):0;const rank=acc>=99?'S+':acc>=95?'S':acc>=90?'A':acc>=80?'B':acc>=70?'C':'D';const fullPerfect=counts.miss===0&&counts.good===0&&counts.great===0&&judged>0,fullCombo=counts.miss===0&&judged>0;els.resultRank.textContent=rank;els.resultScore.textContent=String(score).padStart(6,'0');els.resultAcc.textContent=`${acc.toFixed(2)}%`;els.resultPerfect.textContent=counts.perfect;els.resultGreat.textContent=counts.great;els.resultGood.textContent=counts.good;els.resultMiss.textContent=counts.miss;els.resultCombo.textContent=maxCombo;els.resultRunes.textContent=`${runes} / 4`;els.resultClear.textContent=fullPerfect?'ALL PERFECT':fullCombo?'FULL COMBO':acc>=85?'CLEAR':'FINISH';const comments=[];if(runes===4)comments.push('네 개의 룬이 모두 응답했습니다.');if(memory.length)comments.push(`즉흥 프레이즈 ${memory.length}음을 기억했습니다.`);comments.push(acc>=95?'루바토가 만족스럽게 화음을 되짚습니다.':acc>=85?'루바토가 다음 프레이즈를 기다립니다.':'루바토가 박자를 조금 더 넓게 받아 줍니다.');els.resultRubato.textContent=comments.join(' ');els.result.classList.add('show');els.result.setAttribute('aria-hidden','false');els.status.textContent=`완주 · ${acc.toFixed(2)}% · ${rank}`;}
 document.querySelectorAll('.difficulty').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));document.querySelectorAll('.difficulty').forEach(b=>b.addEventListener('click',()=>{mode=b.dataset.mode;document.querySelectorAll('.difficulty').forEach(x=>x.classList.toggle('active',x===b));reset()}));
 els.start.addEventListener('click',start);els.resultAgain.addEventListener('click',start);document.addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(MODES[mode].keys.includes(k)){e.preventDefault();if(!e.repeat)press(k)}});document.addEventListener('keyup',e=>release(e.key.toLowerCase()));
-reset();window.rhythmDemo={getState:()=>({mode,phase,score,combo,hits,judged,runes,memory:memory.length,notes:chart.map(n=>({t:n.t,lane:n.lane,type:n.type,duration:n.duration,releaseOnly:n.releaseOnly,charge:n.charge,hit:n.hit,holdState:n.holdState}))}),press,release,Patterns};
+reset();window.rhythmDemo={getState:()=>({mode,phase,score,combo,hits,judged,runes,memory:memory.length,duration:chart.length?chart.at(-1).t+900:0,notes:chart.map(n=>({t:n.t,lane:n.lane,type:n.type,duration:n.duration,releaseOnly:n.releaseOnly,charge:n.charge,hit:n.hit,holdState:n.holdState}))}),press,release,Patterns};
 })();

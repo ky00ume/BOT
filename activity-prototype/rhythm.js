@@ -32,25 +32,27 @@ const Patterns={
  ]
 };
 function buildPatternDrill(speed=1){
- const b=BEAT/speed,q=b/2,notes=[];let at=900/speed;
- const add=(pattern,gap=b*.75)=>{notes.push(...pattern);const end=Math.max(...pattern.map(n=>n.t+(n.duration||0)));at=end+gap};
- add(Patterns.tap(at,2));
- add(Patterns.chord(at,[1,6]));
- add(Patterns.hold(at,2,b*2));
- add(Patterns.multiHold(at,[1,6],b*2));
- add(Patterns.jack(at,0,8,q));
- add(Patterns.trill(at,2,5,10,q));
- add(Patterns.stair(at,[0,1,2,3,4,5,6,7],q));
- add(Patterns.roll(at,[0,2,4,6,7,5,3,1],12,q));
- add(Patterns.cross(at,[0,1,2,3],[7,6,5,4],12,q));
- add(Patterns.release(at,3,b*2));
- add(Patterns.charge(at,4,b*2.5));
- add(Patterns.rearticulate(at,2,b*1.5,q));
- add(Patterns.holdTrillReleaseChord(at,2,[5,6],[1,6],b*2,q/2),b);
- // Closing exam: two sustained hands with taps between them, then a final chord.
- notes.push(...Patterns.multiHold(at,[0,7],b*3));
- notes.push(...Patterns.trill(at+q,2,5,8,q/2));
- notes.push(...Patterns.chord(at+b*3,[1,3,4,6]));
+ const b=BEAT/speed,e=b/4,notes=[];let at=900/speed;
+ const phrase=(pattern,bars=1)=>{notes.push(...pattern);at+=b*bars};
+ // Four-beat phrases are deliberately spaced so their shapes read before they are played.
+ phrase([...Patterns.tap(at,2),...Patterns.tap(at+b,5),...Patterns.chord(at+b*2,[2,5]),...Patterns.chord(at+b*3,[1,6])],4);
+ phrase(Patterns.jack(at,1,8,b/2),4);
+ phrase(Patterns.trill(at,2,5,8,b/2),4);
+ phrase(Patterns.stair(at,[0,1,2,3,4,5,6,7],b/2),4);
+ phrase(Patterns.stair(at,[7,6,5,4,3,2,1,0],b/2),4);
+ phrase(Patterns.roll(at,[0,2,4,6,7,5,3,1],8,b/2),4);
+ phrase(Patterns.cross(at,[0,1,2,3],[7,6,5,4],8,b/2),4);
+ // Sustains leave negative space around the moving hand.
+ notes.push(...Patterns.hold(at,1,b*4));notes.push(...Patterns.stair(at+b,[4,5,6,7,6,5],b/2));at+=b*4;
+ notes.push(...Patterns.multiHold(at,[0,7],b*4));notes.push(...Patterns.trill(at+b,2,5,6,b/2));at+=b*4;
+ phrase(Patterns.release(at,3,b*3),4);
+ phrase(Patterns.charge(at,4,b*3),4);
+ phrase(Patterns.rearticulate(at,2,b*2,b/2),4);
+ phrase(Patterns.holdTrillReleaseChord(at,2,[5,6],[1,6],b*3,b/4),4);
+ // Finale: symmetrical holds frame a dense central answer and a clean four-note final chord.
+ notes.push(...Patterns.multiHold(at,[0,7],b*4));
+ notes.push(...Patterns.trill(at+b/2,3,4,12,b/4));
+ notes.push(...Patterns.chord(at+b*4,[1,3,4,6]));
  return notes.sort((a,b)=>a.t-b.t||a.lane-b.lane);
 }
 function buildChart(){

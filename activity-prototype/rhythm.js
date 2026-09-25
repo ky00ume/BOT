@@ -32,7 +32,7 @@ const Patterns={
  ]
 };
 function buildPatternDrill(speed=1){
- const b=BEAT/speed,q=b/2,notes=[],at=900/speed;
+ const b=BEAT/speed,q=b/2,notes=[];let at=900/speed;
  const add=(pattern,gap=b*.75)=>{notes.push(...pattern);const end=Math.max(...pattern.map(n=>n.t+(n.duration||0)));at=end+gap};
  add(Patterns.tap(at,2));
  add(Patterns.chord(at,[1,6]));

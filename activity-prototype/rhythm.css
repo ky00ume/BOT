@@ -51,3 +51,11 @@ footer{width:min(760px,100%);margin-inline:auto;font-family:Consolas,"Courier Ne
 
 /* Play-focus HUD: configuration disappears once the chart starts. */
 .playcombo{position:absolute;left:50%;bottom:142px;translate:-50% 0;z-index:7;display:grid;place-items:center;pointer-events:none;opacity:.28;font-family:Consolas,monospace;text-shadow:0 2px 8px #000}.playcombo b{font-size:38px;line-height:.9;color:#f4dfae}.playcombo span{font-size:9px;letter-spacing:.22em;color:#b7a47d}.playcombo.live{opacity:.92}.playing .toolbar,.playing .ritual{opacity:0;pointer-events:none;transform:translateX(10px);transition:.18s ease}.playing .game-shell{grid-template-columns:minmax(0,1fr) 0}.playing header{opacity:.62}.playing .stage{width:min(760px,96vw);justify-self:center}.playing footer{opacity:.62}.toolbar,.ritual{transition:.18s ease}.hard .lane:nth-child(4){box-shadow:4px 0 0 rgba(7,8,9,.9)}
+
+/* Strong per-key input feedback. */
+.receptor{position:relative;transition:background .045s ease,color .045s ease,box-shadow .045s ease,transform .045s ease}
+.receptor:before{content:"";position:absolute;inset:3px;border:1px solid transparent;pointer-events:none;transition:.045s ease}
+.receptor.active{color:#fff8dc;background:linear-gradient(#b34a35,#5e1d18 55%,#25100d);box-shadow:inset 0 0 18px rgba(255,214,126,.38),0 -8px 24px rgba(235,169,72,.48);transform:translateY(1px);text-shadow:0 0 8px #ffd98a}
+.receptor.active:before{border-color:#ffe2a0;box-shadow:inset 0 0 10px rgba(255,226,160,.55),0 0 13px rgba(255,188,78,.7)}
+.lane.pressed{background:linear-gradient(180deg,rgba(210,145,59,.02),rgba(210,105,50,.17))}
+

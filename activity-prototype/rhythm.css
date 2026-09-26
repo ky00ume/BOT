@@ -162,3 +162,9 @@ body:not(.playing) .toolbar #start{display:grid!important;visibility:visible!imp
 .stage.pedal-hit .judgeline{animation:pedalLine .18s ease-out}@keyframes pedalLine{0%{filter:brightness(2.4);box-shadow:0 0 13px #fff,0 0 38px #e7b456}100%{filter:none}}
 /* Hold bodies stop visually at the judgement deck instead of invading controls. */
 .lanes{clip-path:inset(0 0 0 0)}.note.hold-note{overflow:hidden}
+
+/* Reference pass: effects belong on the receptor/judgement line, not above it. */
+.hit-burst{bottom:0!important;translate:-50% 50%!important}
+.judge{bottom:calc(var(--receptor-y) + 14px)!important}
+.space-note.holding{filter:brightness(1.35);box-shadow:0 0 8px rgba(255,239,177,.8),0 0 18px rgba(226,175,75,.45);opacity:1!important}
+.space-note.hold-complete{animation:spaceRelease .12s ease-out forwards}@keyframes spaceRelease{to{opacity:0;transform:scaleX(1.25)}}

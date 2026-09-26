@@ -148,3 +148,17 @@ header{min-width:0;overflow:hidden}header>div:first-child{min-width:0;overflow:h
 
 /* Right rail uses explicit slots; never stack state cards on setup controls. */
 .game-shell{position:relative}.toolbar{position:relative!important;grid-area:side;align-self:start;top:auto!important}.ritual{position:absolute!important;top:352px!important;right:14px!important;width:208px!important;margin:0!important;box-sizing:border-box}.ritual>div{box-sizing:border-box}.playing .ritual{position:absolute!important}@media(max-width:720px){.ritual{position:static!important;width:auto!important;margin:6px 0!important}.toolbar{position:static!important}}
+
+/* START must stay visible while idle. */
+body:not(.playing) .toolbar{opacity:1!important;visibility:visible!important;transform:none!important;pointer-events:auto!important;min-height:330px}
+body:not(.playing) .toolbar #start{display:grid!important;visibility:visible!important;opacity:1!important;min-height:58px;position:relative!important;z-index:20!important}
+
+
+/* 2026-09-26 feedback pass: SPACE is a compact pedal, judgement is the visual event. */
+.receptors>.space-receptor{left:38%!important;right:38%!important;min-width:112px!important;bottom:-32px!important;height:25px!important;opacity:.78}.receptors>.space-receptor:before{display:none}.space-note{left:46%!important;width:8%!important;min-width:42px!important;max-width:62px!important;border-radius:7px 7px 2px 2px!important;opacity:.86}
+.judge{font-size:28px!important;line-height:1;opacity:.72}.judge.pop{animation:judgePop .17s cubic-bezier(.15,.8,.25,1)}.judge.perfect.pop{color:#fff5c8;text-shadow:0 0 5px #fff,0 0 18px #e8b950,0 0 36px rgba(238,173,60,.8)}.judge.great.pop{color:#e8f5ff;text-shadow:0 0 5px #fff,0 0 17px #69b6e9,0 0 32px rgba(91,165,220,.7)}.judge.good.pop{color:#efe1c8;text-shadow:0 0 12px #c29a63,0 0 24px rgba(194,154,99,.5)}.judge.miss.pop{color:#d77f76;text-shadow:0 0 15px rgba(205,74,66,.5)}
+@keyframes judgePop{0%{opacity:.15;transform:translate(-50%,8px) scale(.7)}35%{opacity:1;transform:translate(-50%,0) scale(1.18)}100%{opacity:.82;transform:translate(-50%,0) scale(1)}}
+.hit-burst{position:absolute;z-index:12;left:50%;bottom:calc(var(--receptor-y) - 5px);width:8px;height:8px;border-radius:50%;translate:-50% 50%;pointer-events:none;animation:burstCore .24s ease-out forwards}.hit-burst.perfect{background:#fff4bd;box-shadow:0 0 7px #fff,0 0 18px #efb84c,0 0 32px #d88927}.hit-burst.great{background:#eaf7ff;box-shadow:0 0 7px #fff,0 0 17px #76bce6}.hit-burst.good{background:#ead8b6;box-shadow:0 0 12px #ba9362}.hit-burst span{position:absolute;left:50%;top:50%;width:2px;height:30px;transform-origin:50% 0;background:linear-gradient(currentColor,transparent);color:#ffe8a3}.hit-burst span:nth-child(1){rotate:0deg}.hit-burst span:nth-child(2){rotate:58deg}.hit-burst span:nth-child(3){rotate:-58deg}@keyframes burstCore{0%{opacity:1;scale:.4}45%{opacity:1;scale:1.3}100%{opacity:0;scale:2}}
+.stage.pedal-hit .judgeline{animation:pedalLine .18s ease-out}@keyframes pedalLine{0%{filter:brightness(2.4);box-shadow:0 0 13px #fff,0 0 38px #e7b456}100%{filter:none}}
+/* Hold bodies stop visually at the judgement deck instead of invading controls. */
+.lanes{clip-path:inset(0 0 0 0)}.note.hold-note{overflow:hidden}

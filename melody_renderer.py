@@ -95,28 +95,40 @@ def _tone(freq,t,style):
     if style in {"baroque","darkjazz","jazz","ballad","minuet"}: return _piano(freq,t)*.66
     return _pluck(freq,t)*.72
 
-def render_composition(melody_id,out_path,target_seconds=56.0):
-    """Render a through-composed short form: intro / statement / answer / bridge / climax / cadence.
+FORM_BY_STYLE={
+ "jazz":["intro","a1","answer","bridge","lift","a2","bridge","climax","answer","return"],
+ "lute":["intro","a1","a2","answer","bridge","a1","lift","climax","return"],
+ "modal":["intro","bridge","a1","answer","a2","bridge","lift","return"],
+ "ballad":["intro","a1","answer","bridge","a2","lift","climax","return"],
+ "newage":["intro","a1","bridge","answer","a2","lift","bridge","climax","return"],
+ "minuet":["intro","a1","answer","a2","bridge","a1","lift","answer","return"],
+ "baroque":["intro","a1","a2","answer","bridge","lift","a1","climax","return"],
+ "impressionist":["intro","a1","bridge","answer","lift","a2","bridge","climax","return"],
+ "darkjazz":["intro","bridge","a1","answer","a2","lift","bridge","climax","answer","return"],
+}
 
-    Every bar gets an authored phrase role. We never fill duration by cycling the same 8-note motif.
-    """
+def render_composition(melody_id,out_path,target_seconds=56.0):
+    """Render a continuous short-form piece with song-specific section pacing and a resolved tail."""
     c=COMPOSITIONS[melody_id]; beat=60/c["bpm"]; total=int(SR*target_seconds); mix=[0.0]*total; bar=beat*4
     def add_note(midi,start,dur,gain):
         if start>=target_seconds or dur<=0:return
         a=max(0,int(start*SR));z=min(total,a+int(dur*SR));f=_midi_hz(midi)
         for i in range(a,z):
             t=(i-a)/SR; rel=min(1.0,(z-i)/(SR*.06)); mix[i]+=_tone(f,t,c["style"])*gain*rel
-    def harmony(chord,start,energy,texture):
-        add_note(chord[0]-12,start,bar*.82,.13*energy)
+    def harmony(chord,start,energy,texture,variant):
+        bass=chord[0]-12+(12 if variant%4==3 else 0);add_note(bass,start,bar*.82,.13*energy)
+        upper=chord[1:]
+        if variant%2: upper=upper[1:]+upper[:1]
         if texture=='air':
-            for j,n in enumerate(chord[1:]):add_note(n,start+(j*.75+1)*beat,beat*1.15,.075*energy)
+            for j,n in enumerate(upper):add_note(n,start+(j*.72+1)*beat,beat*(1.0+.12*(variant%2)),.075*energy)
         elif texture=='drive':
             for q in range(4):
-                for n in chord[1:3]:add_note(n,start+q*beat,beat*.42,.065*energy)
+                for n in upper[:2]:add_note(n,start+q*beat,beat*.42,.062*energy)
         else:
-            for j,n in enumerate(chord[1:]+chord[-2:0:-1]):add_note(n,start+j*beat*.5,beat*.65,.075*energy)
+            seq=upper+upper[-2:0:-1]
+            for j,n in enumerate(seq):add_note(n,start+j*beat*.5,beat*.65,.073*energy)
     def line_for(role,bi):
-        m=c['mel']; root=c['prog'][0][0]%12
+        m=c['mel'];v=bi%4
         variants={
           'intro':[(m[0]-12,1.0,1.5),(m[2]-12,2.75,.7)],
           'a1':[(m[0],.25,.65),(m[1],1,.55),(m[2],1.75,.8),(m[3],2.75,.7)],
@@ -127,25 +139,39 @@ def render_composition(melody_id,out_path,target_seconds=56.0):
           'climax':[(m[0]+12,.0,.45),(m[2]+12,.5,.45),(m[4]+12,1,.5),(m[3]+12,1.6,.45),(m[6]+12,2.15,.5),(m[7]+12,2.75,1.0)],
           'return':[(m[0],.0,.7),(m[1],.9,.55),(m[2],1.6,.6),(m[4],2.4,.55),(m[0],3.15,.7)],
         }
-        return variants[role]
-    # Roles deliberately alternate phrase density and register so the ear gets question/answer and breath.
-    roles=['intro','a1','a2','answer','bridge','a1','lift','answer','bridge','climax','return']
-    max_bars=max(1,int((target_seconds-2.2)/bar))
-    roles=roles[:max_bars]
-    for bi,role in enumerate(roles):
-        start=bi*bar; chord=c['prog'][bi%len(c['prog'])]
-        energy={'intro':.55,'bridge':.68,'lift':.98,'climax':1.12,'return':.78}.get(role,.84)
+        line=list(variants[role])
+        # Adjacent bars within a section answer each other instead of cloning the same phrase.
+        if role not in {'intro','return'}:
+            if v==1: line=[(n+(12 if j in (1,3) else 0),off+.08*(j%2),dur*.92) for j,(n,off,dur) in enumerate(line)]
+            elif v==2: line=[(n-(12 if j==0 else 0),max(0,off-.08*(j%2)),dur*1.06) for j,(n,off,dur) in enumerate(reversed(line))]
+            elif v==3: line=[(n+(2 if j%2==0 else -1),off+.12,dur*.86) for j,(n,off,dur) in enumerate(line)]
+        return line
+    route=FORM_BY_STYLE[c['style']]
+    cadence=max(0,target_seconds-max(3.4,beat*4.2))
+    body_bars=max(1,int(math.ceil(cadence/bar)))
+    for bi in range(body_bars):
+        start=bi*bar
+        if start>=cadence: break
+        pos=(bi+.5)/body_bars; ri=min(len(route)-1,int(pos*len(route)));role=route[ri]
+        chord=c['prog'][(bi+(ri%2))%len(c['prog'])]
+        energy={'intro':.52,'bridge':.66,'lift':.96,'climax':1.12,'return':.76}.get(role,.84)
         texture='air' if role in {'intro','bridge','return'} else ('drive' if role in {'lift','climax'} else 'flow')
-        harmony(chord,start,energy,texture)
+        harmony(chord,start,energy,texture,bi)
         for n,off,dur in line_for(role,bi):add_note(n,start+off*beat,dur*beat,.19*energy)
-    # A real ending: dominant breath -> tonic resolution -> tail. No new phrase starts after this point.
-    cad=max(0,target_seconds-2.8*beat); dom=c['prog'][-1]; tonic=c['prog'][0]
-    for n in dom[1:]:add_note(n,cad,beat*.7,.07)
-    add_note(c['mel'][-2],cad,beat*.7,.18)
-    res=cad+beat*.9
-    for n in tonic:add_note(n,res,beat*1.55,.09)
-    add_note(c['mel'][0],res,beat*1.65,.23)
-    peak=max(1e-9,max(abs(x) for x in mix));scale=.78/peak;vals=[int(max(-1,min(1,x*scale))*32767) for x in mix]
+    # Clear dominant -> tonic ending, then a short master fade so the WAV boundary never sounds chopped.
+    dom=c['prog'][-1]; tonic=c['prog'][0]
+    for n in dom[1:]:add_note(n,cadence,beat*.72,.07)
+    add_note(c['mel'][-2],cadence,beat*.75,.18)
+    res=cadence+beat*.92
+    tail_dur=max(beat*2.15,target_seconds-res-.08)
+    for n in tonic:add_note(n,res,tail_dur,.09)
+    add_note(c['mel'][0],res,tail_dur,.23)
+    peak=max(1e-9,max(abs(x) for x in mix));scale=.78/peak
+    fade_start=max(0,total-int(SR*.85))
+    vals=[]
+    for i,x in enumerate(mix):
+        fade=1.0 if i<fade_start else max(0.0,(total-1-i)/max(1,total-1-fade_start))
+        vals.append(int(max(-1,min(1,x*scale*fade))*32767))
     path=Path(out_path);path.parent.mkdir(parents=True,exist_ok=True)
     with wave.open(str(path),'wb') as w:
         w.setnchannels(1);w.setsampwidth(2);w.setframerate(SR);w.writeframes(struct.pack('<'+'h'*len(vals),*vals))

@@ -120,3 +120,31 @@ footer{width:min(760px,100%);margin-inline:auto;font-family:Consolas,"Courier Ne
 /* Readable pre-song count-in: 3 · 2 · 1 · START, before the audio clock begins. */
 .countdown{font-variant-numeric:tabular-nums;text-shadow:0 0 18px rgba(213,177,91,.35)}
 .countdown.go{font-size:42px;letter-spacing:.16em;color:#f0d18a;text-shadow:0 0 24px rgba(240,209,138,.58)}
+
+
+/* 2026-09-26 playability pass: pitch lanes stay 8K; SPACE is a separate pedal below them. */
+.game-shell{grid-template-columns:minmax(0,1fr) 208px;gap:8px 12px;overflow:visible}
+header{min-width:0;overflow:hidden}header>div:first-child{min-width:0;overflow:hidden}h1{overflow:hidden;text-overflow:ellipsis;max-width:100%}.stats{flex:0 0 auto}
+.toolbar{min-width:0;overflow:hidden}.toolbar label{min-width:0}.toolbar select{box-sizing:border-box;width:100%;max-width:100%;min-width:0;text-overflow:ellipsis}.toolbar kbd{display:none}.toolbar .difficulty{white-space:normal;line-height:1.3}.toolbar #start{display:grid;gap:1px;place-items:center;margin-top:4px;border-color:#d3a95d;background:linear-gradient(#743229,#401713);box-shadow:0 0 18px rgba(210,155,71,.18)}.toolbar #start strong{font:800 18px Consolas,monospace;letter-spacing:.14em}.toolbar #start span{font-size:9px;opacity:.72}.start-help{margin:0;padding:7px 5px;border-top:1px solid rgba(183,154,98,.24);font:10px/1.45 Arial,sans-serif;color:#b7a98e;text-align:center}
+.ritual{overflow:hidden}.ritual>div{min-width:0;overflow:hidden}.ritual b{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.runes{display:flex;flex-wrap:wrap;gap:3px}
+.stage{--receptor-y:112px;overflow:hidden}.lanes{bottom:var(--receptor-y);overflow:hidden}.judgeline{bottom:var(--receptor-y)}.stage:after{display:block!important;height:var(--receptor-y);background:linear-gradient(#17130e,#090a0b 38%,#050607);border-top:1px solid #4e402b}
+/* 8 pitch receptors align exactly with the 8 pitch lanes. */
+.receptors{left:0;right:0;bottom:42px;height:58px;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:0;border-top:1px solid rgba(219,196,139,.24);border-bottom:1px solid rgba(219,196,139,.14)}
+.receptor{grid-column:auto!important;border:0!important;border-right:1px solid rgba(219,196,139,.15)!important;border-radius:0;font-size:15px;background:linear-gradient(#211f1a,#0b0c0d)}
+.receptor:nth-child(4){border-right:1px solid rgba(219,196,139,.28)!important}.receptor:nth-child(5){border-left:1px solid rgba(219,196,139,.28)!important}
+/* SPACE is a pedal bar, not a ninth pitch column. */
+.receptors>.space-receptor{position:absolute!important;left:25%!important;right:25%!important;bottom:-34px!important;height:27px!important;width:auto!important;display:grid!important;grid-column:auto!important;border:1px solid #776443!important;background:linear-gradient(#29251f,#111211)!important;font-size:10px!important;letter-spacing:.22em!important;border-radius:2px;z-index:2!important}
+.receptors>.space-receptor:before{content:'PEDAL';font:7px Arial,sans-serif;letter-spacing:.16em;color:#806f54;position:absolute;left:8px}.receptors>.space-receptor.active{background:linear-gradient(#a84835,#481713)!important;box-shadow:0 0 16px rgba(235,169,72,.5)!important}
+/* Notes are clipped at the judgement line and can never enter the control deck. */
+.note,.space-note{clip-path:inset(0)}.space-note{z-index:4;left:42%;width:16%;min-width:0;max-width:none}.judge{bottom:146px}.playcombo{bottom:184px}
+/* Visible hit confirmation on the exact key that scored. */
+.receptor.hit-perfect,.receptor.hit-great,.receptor.hit-good{animation:keyHit .15s ease-out}.receptor.hit-perfect{color:#fff9dc;background:#8a5927!important;box-shadow:inset 0 0 20px #fff0a3,0 -8px 28px rgba(255,213,105,.75)!important}.receptor.hit-great{color:#e9f2ff;background:#3f5871!important;box-shadow:inset 0 0 17px #a9d0ef,0 -7px 22px rgba(116,176,224,.55)!important}.receptor.hit-good{color:#efe6d5;background:#5b4b3a!important;box-shadow:inset 0 0 14px #c6ad84!important}@keyframes keyHit{0%{filter:brightness(2);transform:translateY(2px)}100%{filter:brightness(1);transform:none}}
+.note.hit{opacity:0;filter:brightness(2.2);transform:scaleX(1.15);transition:opacity .12s ease,filter .12s ease,transform .12s ease}
+@media(max-width:720px){.game-shell{display:block}.toolbar{overflow:visible}.stage{--receptor-y:100px}.receptors{bottom:38px;height:52px}.receptors>.space-receptor{bottom:-31px!important}.judge{bottom:134px}.playcombo{bottom:170px}}
+
+/* Keep setup and song-state cards in separate vertical slots. */
+.toolbar{z-index:4;background:#171510}.ritual{margin-top:350px;z-index:2;background:#171510;border:1px solid #4d422f}.ritual>div{background:#171510}
+@media(max-width:720px){.ritual{margin-top:6px}}
+
+/* Right rail uses explicit slots; never stack state cards on setup controls. */
+.game-shell{position:relative}.toolbar{position:relative!important;grid-area:side;align-self:start;top:auto!important}.ritual{position:absolute!important;top:352px!important;right:14px!important;width:208px!important;margin:0!important;box-sizing:border-box}.ritual>div{box-sizing:border-box}.playing .ritual{position:absolute!important}@media(max-width:720px){.ritual{position:static!important;width:auto!important;margin:6px 0!important}.toolbar{position:static!important}}

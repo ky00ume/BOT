@@ -84,14 +84,16 @@ COMPOSITIONS={
  "tower_lights":{"bpm":88,"style":"newage","prog":[[48,55,60,64],[43,50,55,59],[45,52,57,60],[41,48,53,57]],"mel":[60,64,67,72,69,67,64,62]},
  "pet_song":{"bpm":124,"style":"minuet","prog":[[55,59,62,67],[50,57,62,66],[48,55,60,64],[50,57,62,66]],"mel":[67,71,74,71,69,67,64,62]},
  "lolth_hymn":{"bpm":96,"style":"baroque","prog":[[50,57,62,65],[51,57,63,66],[48,55,60,63],[45,52,57,60]],"mel":[62,63,66,65,62,60,57,58]},
- "eilistraee_hymn":{"bpm":108,"style":"impressionist","prog":[[50,57,62,66,69],[55,62,67,71,74],[52,59,64,69,71],[57,64,69,73,76]],"mel":[74,78,81,86,85,81,78,76]},
+ "eilistraee_hymn":{"bpm":108,"style":"impressionist","prog":[[50,57,62,66,69],[55,62,67,71,74],[52,59,64,69,71],[57,64,69,73,76]],"mel":[62,66,69,74,73,69,66,64]},
  "vhaeraun_hymn":{"bpm":104,"style":"darkjazz","prog":[[52,59,62,67],[50,57,60,64],[48,55,59,63],[47,54,57,62]],"mel":[64,67,66,64,71,69,67,66]},
 }
 
 def _midi_hz(n): return 440.0*2**((n-69)/12)
 
 def _tone(freq,t,style):
-    if style in {"newage","impressionist"}: return _piano(freq,t)*.72
+    if style=="impressionist":
+        attack=min(1.0,t/.018); body=math.exp(-1.25*t); return attack*body*(math.sin(2*math.pi*freq*t)+.12*math.sin(4*math.pi*freq*t))/1.12*.72
+    if style=="newage": return _piano(freq,t)*.72
     if style in {"baroque","darkjazz","jazz","ballad","minuet"}: return _piano(freq,t)*.66
     return _pluck(freq,t)*.72
 
@@ -135,8 +137,8 @@ def render_composition(melody_id,out_path,target_seconds=56.0):
           'a2':[(m[2],.0,.5),(m[3],.65,.6),(m[4],1.5,.55),(m[2],2.15,.5),(m[1],3,.75)],
           'answer':[(m[4],.0,.7),(m[3],.85,.5),(m[2],1.5,.65),(m[1],2.35,.5),(m[0],3,.85)],
           'bridge':[(m[5]-12,.25,.9),(m[6]-12,1.4,.65),(m[7]-12,2.25,1.2)],
-          'lift':[(m[2]+12,.0,.45),(m[3]+12,.55,.45),(m[4]+12,1.1,.7),(m[5]+12,2,.45),(m[6]+12,2.6,.85)],
-          'climax':[(m[0]+12,.0,.45),(m[2]+12,.5,.45),(m[4]+12,1,.5),(m[3]+12,1.6,.45),(m[6]+12,2.15,.5),(m[7]+12,2.75,1.0)],
+          'lift':[(m[2]+(0 if c['style'] in {'impressionist','baroque','darkjazz'} else 12),.0,.45),(m[3]+(0 if c['style'] in {'impressionist','baroque','darkjazz'} else 12),.55,.45),(m[4]+(0 if c['style'] in {'impressionist','baroque','darkjazz'} else 12),1.1,.7),(m[5]+(0 if c['style'] in {'impressionist','baroque','darkjazz'} else 12),2,.45),(m[6]+(0 if c['style'] in {'impressionist','baroque','darkjazz'} else 12),2.6,.85)],
+          'climax':[(m[0]+(0 if c['style'] in {'impressionist','baroque','darkjazz'} else 12),.0,.45),(m[2]+(0 if c['style'] in {'impressionist','baroque','darkjazz'} else 12),.5,.45),(m[4]+(0 if c['style'] in {'impressionist','baroque','darkjazz'} else 12),1,.5),(m[3]+(0 if c['style'] in {'impressionist','baroque','darkjazz'} else 12),1.6,.45),(m[6]+(0 if c['style'] in {'impressionist','baroque','darkjazz'} else 12),2.15,.5),(m[7]+(0 if c['style'] in {'impressionist','baroque','darkjazz'} else 12),2.75,1.0)],
           'return':[(m[0],.0,.7),(m[1],.9,.55),(m[2],1.6,.6),(m[4],2.4,.55),(m[0],3.15,.7)],
         }
         line=list(variants[role])

@@ -32,18 +32,17 @@ class TownCog(commands.Cog, name="마을"):
         view = TowerUpperFloorView(self.ctx.player, self.ctx.care_manager, suspicious_actor_id=getattr(self.ctx, "drider_id", None))
         await ctx.send(embed=view.make_embed(), view=view)
 
-    @commands.command(name="연주", aliases=["악기연주"])
+    @commands.command(name="악기연주", aliases=["연주"])
     async def music_cmd(self, ctx):
-        """배운 루바토 선율을 골라 바로 연주 미니게임으로 들어간다."""
+        """장착한 악기와 악보로 리듬게임 연주를 시작한다."""
         if not await check_channel(ctx, self.ctx.allowed_channel_id):
             return
-        from music_system import learned_melodies
-        from lubato_song_memory import REPERTOIRE
-        learned = learned_melodies(self.ctx.player)
-        if not learned:
-            await ctx.send("🎼 아직 배운 선율이 없슴미댜. `/탑` → 전시관 → 루바토의 노래 기억에서 레퍼토리를 먼저 들어보셰요!")
-            return
-        view = QuickMusicView(self.ctx.player, self.ctx.care_manager, learned, suspicious_actor_id=getattr(self.ctx, "drider_id", None))
+        from music_system import ensure_music_skills
+        ensure_music_skills(self.ctx.player)
+        view = InstrumentPerformanceSetupView(
+            self.ctx.player,
+            suspicious_actor_id=getattr(self.ctx, "drider_id", None),
+        )
         await ctx.send(embed=view.make_embed(), view=view)
 
     @commands.command(name="군락", aliases=["마이코니드", "마이코니드군락", "비전타운"])
@@ -178,26 +177,82 @@ class TownCog(commands.Cog, name="마을"):
         await send_msg_card(ctx, "이동", str(result), system_key="system")
 
 
-class QuickMusicView(discord.ui.View):
-    def __init__(self, player, care_manager, melody_ids, *, suspicious_actor_id=None):
+class InstrumentPerformanceSetupView(discord.ui.View):
+    """악기 + 악보를 장착한 뒤 외부 리듬게임 창으로 진입하는 준비 화면."""
+    def __init__(self, player, *, suspicious_actor_id=None):
         from ui.view_timeouts import GAME_VIEW_TIMEOUT
         super().__init__(timeout=GAME_VIEW_TIMEOUT)
-        self.player=player;self.care_manager=care_manager;self.suspicious_actor_id=suspicious_actor_id
-        from lubato_song_memory import REPERTOIRE
-        for melody_id in melody_ids[:20]:
-            song=REPERTOIRE.get(melody_id)
-            if not song: continue
-            b=discord.ui.Button(label=song["title"],emoji="🎻",style=discord.ButtonStyle.primary)
-            b.callback=self._make_play(melody_id);self.add_item(b)
+        self.player=player
+        self.suspicious_actor_id=suspicious_actor_id
+        self._rebuild()
+
+    def _rebuild(self):
+        from music_system import INSTRUMENTS, learned_melodies, FAITH_SONGS, equip_instrument, equip_score, music_loadout, can_start_instrument_performance
+        self.clear_items()
+        ld=music_loadout(self.player)
+        for iid,data in INSTRUMENTS.items():
+            b=discord.ui.Button(label=data["name"],emoji=data["emoji"],style=discord.ButtonStyle.success if ld.get("instrument")==iid else discord.ButtonStyle.secondary,row=0)
+            async def pick(interaction, instrument_id=iid):
+                equip_instrument(self.player,instrument_id);self._save();self._rebuild()
+                await interaction.response.edit_message(embed=self.make_embed(),view=self)
+            b.callback=pick;self.add_item(b)
+        known=[mid for mid,_ in learned_melodies(self.player)]
+        # 복원된 피아노 악보는 발견 플래그가 있으면 선택 가능. 구세이브 호환을 위해 관련 플래그가 없을 때는 노출하지 않는다.
+        try:
+            from tower_exhibition import piano_unlocked
+            piano_ready=piano_unlocked(self.player)
+        except Exception:
+            piano_ready=False
+        if piano_ready:
+            known += [mid for mid in FAITH_SONGS if mid not in known]
+        if known:
+            opts=[]
+            from music_system import song_title
+            for mid in known[:25]:
+                opts.append(discord.SelectOption(label=song_title(mid)[:100],value=mid,default=ld.get('score')==mid))
+            sel=discord.ui.Select(placeholder='📜 악보 장착',options=opts,row=1)
+            async def score_pick(interaction):
+                equip_score(self.player,sel.values[0]);self._save();self._rebuild()
+                await interaction.response.edit_message(embed=self.make_embed(),view=self)
+            sel.callback=score_pick;self.add_item(sel)
+        ok,_=can_start_instrument_performance(self.player)
+        play=discord.ui.Button(label='악기 연주',emoji='▶️',style=discord.ButtonStyle.primary,disabled=not ok,row=2)
+        play.callback=self._start
+        self.add_item(play)
+
+    def _save(self):
+        try:
+            from save_manager import save_manager
+            save_manager.save(self.player)
+        except Exception:
+            pass
+
     def make_embed(self):
-        return discord.Embed(title="🎻 악기 연주",description="배운 선율을 골라 연주합니다. 곡을 고르면 바로 리듬 연주가 시작됨미댜!",color=0x6B5578)
-    def _make_play(self, melody_id):
-        async def cb(interaction):
-            from ui.care_ui import RhythmPerformanceView
-            v=RhythmPerformanceView(self.player,self.care_manager,melody_id,suspicious_actor_id=self.suspicious_actor_id)
-            v.bind_message(getattr(interaction,"message",None))
-            await interaction.response.edit_message(attachments=[],embed=v.make_embed(),view=v)
-        return cb
+        from music_system import INSTRUMENTS, music_loadout, song_title, can_start_instrument_performance
+        ld=music_loadout(self.player)
+        inst=INSTRUMENTS.get(ld.get('instrument') or '',{}).get('name','—')
+        score=song_title(ld['score']) if ld.get('score') else '—'
+        ok,reason=can_start_instrument_performance(self.player)
+        desc=f"**악기**  {inst}\n**악보**  {score}\n\n악기와 악보를 맞춰 장착한 뒤 **악기 연주**를 누르면 리듬게임 창으로 들어갑니다."
+        if not ok: desc += f"\n\n> {reason}"
+        return discord.Embed(title='🎼 악기 연주 · 준비',description=desc,color=0x6B5578)
+
+    async def _start(self, interaction):
+        import os
+        from urllib.parse import urlencode
+        from music_system import music_loadout, can_start_instrument_performance
+        ok,reason=can_start_instrument_performance(self.player)
+        if not ok:
+            await interaction.response.send_message(reason,ephemeral=True);return
+        base=os.getenv('RHYTHM_ACTIVITY_URL','').strip()
+        if not base:
+            await interaction.response.send_message('리듬게임 Activity 주소가 아직 연결되지 않았슴미댜.',ephemeral=True);return
+        ld=music_loadout(self.player)
+        sep='&' if '?' in base else '?'
+        url=base+sep+urlencode({'song':ld['score']})
+        launch=discord.ui.View(timeout=300)
+        launch.add_item(discord.ui.Button(label='리듬게임 열기',emoji='🎹',style=discord.ButtonStyle.link,url=url))
+        await interaction.response.send_message('🎶 준비됐슴미댜. 아래 버튼으로 연주를 시작하셰요!',view=launch,ephemeral=True)
 
 
 async def setup(bot):

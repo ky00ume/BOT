@@ -1,16 +1,41 @@
 """츄라이더의 선율 습득·연주·작곡 시스템."""
 from __future__ import annotations
 
-from lubato_song_memory import REPERTOIRE
+from lubato_song_memory import REPERTOIRE, REPERTOIRE_INSTRUMENTS
 
 STATE_KEY = "music_book"
+
+INSTRUMENTS = {
+    "lyre": {"name": "리라", "emoji": "🎵"},
+    "lute": {"name": "류트", "emoji": "🎻"},
+    "piano": {"name": "피아노", "emoji": "🎹"},
+}
+
+FAITH_SONGS = {
+    "lolth_hymn": {"title": "거미줄 아래의 여덟 번째 기도", "instrument": "piano"},
+    "eilistraee_hymn": {"title": "달빛 아래 맨발의 춤", "instrument": "piano"},
+    "vhaeraun_hymn": {"title": "가면 뒤에 남긴 길", "instrument": "piano"},
+}
+
+def required_instrument(melody_id: str) -> str | None:
+    if melody_id in FAITH_SONGS:
+        return FAITH_SONGS[melody_id]["instrument"]
+    name = REPERTOIRE_INSTRUMENTS.get(melody_id)
+    return {"리라": "lyre", "류트": "lute", "피아노": "piano"}.get(name)
+
+def song_title(melody_id: str) -> str:
+    if melody_id in REPERTOIRE:
+        return REPERTOIRE[melody_id]["title"]
+    if melody_id in FAITH_SONGS:
+        return FAITH_SONGS[melody_id]["title"]
+    return melody_id
 
 
 def _state(player) -> dict:
     if not hasattr(player, "_flags") or player._flags is None:
         player._flags = {}
-    st = player._flags.setdefault(STATE_KEY, {"learned": [], "compositions": []})
-    st.setdefault("learned", []); st.setdefault("compositions", [])
+    st = player._flags.setdefault(STATE_KEY, {"learned": [], "compositions": [], "instrument": None, "score": None})
+    st.setdefault("learned", []); st.setdefault("compositions", []); st.setdefault("instrument", None); st.setdefault("score", None)
     return st
 
 
@@ -85,3 +110,34 @@ def performance_result(player, melody_id: str, hits: int, total: int) -> tuple[s
     elif rate>=.45: grade="🎵 끝까지 연주했다"
     else: grade="💦 조금 엉켰다"
     return grade,exp
+
+
+def equip_instrument(player, instrument_id: str) -> tuple[bool, str]:
+    ensure_music_skills(player)
+    if instrument_id not in INSTRUMENTS:
+        return False, "알 수 없는 악기임미댜."
+    _state(player)["instrument"] = instrument_id
+    return True, f"{INSTRUMENTS[instrument_id]['emoji']} **{INSTRUMENTS[instrument_id]['name']}**를 연주 악기로 장착했슴미댜."
+
+def equip_score(player, melody_id: str) -> tuple[bool, str]:
+    ensure_music_skills(player)
+    known = melody_id in _state(player)["learned"] or melody_id in FAITH_SONGS
+    if not known:
+        return False, "아직 갖고 있지 않은 악보임미댜."
+    _state(player)["score"] = melody_id
+    return True, f"📜 **〈{song_title(melody_id)}〉** 악보를 장착했슴미댜."
+
+def music_loadout(player) -> dict:
+    st=_state(player); mid=st.get("score"); iid=st.get("instrument")
+    return {"instrument": iid, "score": mid, "required": required_instrument(mid) if mid else None}
+
+def can_start_instrument_performance(player) -> tuple[bool, str]:
+    ld=music_loadout(player)
+    if not ld["instrument"]:
+        return False, "먼저 연주할 **악기**를 장착해야 함미댜."
+    if not ld["score"]:
+        return False, "먼저 연주할 **악보**를 장착해야 함미댜."
+    if ld["required"] and ld["instrument"] != ld["required"]:
+        want=INSTRUMENTS[ld["required"]]["name"]; got=INSTRUMENTS[ld["instrument"]]["name"]
+        return False, f"이 악보는 **{want}**용임미댜. 지금 장착한 악기는 **{got}**임미댜."
+    return True, ""

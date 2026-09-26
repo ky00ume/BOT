@@ -324,7 +324,7 @@ def make_life_detail_embed(player, skill_id: str) -> discord.Embed:
         "gathering": "채집 지역에서 🌿 채집으로 재료를 모읍니다.",
         "mining": "광맥 지역에서 ⛏️ 채광으로 광석을 모읍니다.",
         "rest": "휴식 장소에서 사용하며 컨디션을 회복합니다.",
-        "music": "마제스티(루바토)에게 배운 선율을 직접 연주하며 수련합니다.",
+        "music": "악기와 악보를 장착한 뒤 `/악기연주`로 리듬 연주를 시작합니다.",
         "composition": "배운 선율의 핵심 멜로디로 츄라이더만의 변주곡을 만들며 수련합니다.",
     }.get(skill_id)
     if recipes:
@@ -810,6 +810,14 @@ class SkillMainView(View):
                 recipe_btn = Button(label="레시피 보기", emoji="📖", style=discord.ButtonStyle.primary, custom_id=f"life_recipes_{skill_id}")
                 recipe_btn.callback = self._make_life_recipe_callback(skill_id)
                 self.add_item(recipe_btn)
+            if skill_id == "music":
+                play_btn = Button(label="악기 연주", emoji="🎻", style=discord.ButtonStyle.primary, custom_id="life_music_perform")
+                async def open_music(inter):
+                    from cogs.town_cog import InstrumentPerformanceSetupView
+                    v=InstrumentPerformanceSetupView(self.player)
+                    await inter.response.edit_message(embed=v.make_embed(), attachments=[], view=v)
+                play_btn.callback = open_music
+                self.add_item(play_btn)
             back_btn = Button(label="생활 스킬", emoji="◀️", style=discord.ButtonStyle.secondary, custom_id="life_hub_back")
             back_btn.callback = self._life_hub_callback
             self.add_item(back_btn)

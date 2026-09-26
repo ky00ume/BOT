@@ -103,9 +103,19 @@ class RestaurantEngine:
             await ctx.send(ansi(f"  {C.RED}✖ [{item['name']}]이(가) 인벤토리에 없슴미댜!{C.R}"))
             return
 
+        from cooking_db import peek_food_quality, pop_food_quality, food_affinity_modifier
+        cooked_score = peek_food_quality(self.player, item_id)
         self.player.remove_item(item_id, 1)
+        if cooked_score is not None:
+            pop_food_quality(self.player, item_id)
 
         aff_bonus = random.randint(3, 8)
+        quality_delta = food_affinity_modifier(cooked_score) if cooked_score is not None else 0
+        # 아주 낮은 점수의 직접 만든 음식은 "선물이라서 무조건 플러스"가 아니다.
+        if cooked_score is not None and cooked_score < 35:
+            aff_bonus = quality_delta
+        else:
+            aff_bonus += quality_delta
         try:
             if hasattr(self.player, "_affinity_manager") and self.player._affinity_manager:
                 aff = self.player._affinity_manager
@@ -118,7 +128,8 @@ class RestaurantEngine:
             header_box(f"🎁 {npc_name}에게 선물!"),
             f"  {C.WHITE}{item['name']}{C.R} 을(를) {npc['name']}에게 선물했슴미댜!",
             divider(),
-            f"  {C.PINK}💕 호감도 +{aff_bonus}{C.R}",
+            f"  {C.PINK}💕 호감도 {aff_bonus:+d}{C.R}",
+            *([f"  {C.GOLD}🍳 요리 품질 {cooked_score}/100 · 품질 보정 {quality_delta:+d}{C.R}"] if cooked_score is not None else []),
             f"  {C.DARK}\"{random.choice(['고마워요~!', '맛있어 보여요!', '어머, 이걸 저한테?', '감사합니다!'])}\"{C.R}",
         ]
         await ctx.send(ansi("\n".join(lines)))

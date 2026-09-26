@@ -495,6 +495,116 @@ RECIPES = {
 
 }
 
+
+# ── 마비노기식 요리 비율 게이지 ─────────────────────────────────────────────
+# 2재료 레시피는 숨은 제3재료를 찾아 넣으면 최고점(100점)에 도달할 수 있다.
+# 제3재료를 쓰지 않아도 조리는 가능하지만 90점이 상한이다.
+COOKING_BONUS_INGREDIENTS = {
+    "ck_soup_01": "salt",
+    "ck_steak_01": "pepper",
+    "salt_grilled_fish": "olive_oil",
+    "mushroom_soup": "butter",
+    "honey_milk": "sugar",
+    "coffee": "milk",
+    "ck_rice": "salt",
+    "ck_soft_tofu": "salt",
+    "ck_natto": "soy_sauce",
+    "sussur_bloom_tea": "honey",
+}
+
+
+def cooking_target_ratios(dish_id: str) -> dict[str, int]:
+    """레시피 수량에서 숨은 목표 비율을 만든다. 합계는 항상 100."""
+    recipe = RECIPES[dish_id]
+    ing = recipe.get("ingredients", {})
+    total = max(1, sum(max(0, int(v)) for v in ing.values()))
+    bonus = COOKING_BONUS_INGREDIENTS.get(dish_id) if len(ing) == 2 else None
+    bonus_share = 10 if bonus else 0
+    base_total = 100 - bonus_share
+    keys = list(ing)
+    raw = [base_total * ing[k] / total for k in keys]
+    vals = [int(round(x)) for x in raw]
+    if vals:
+        vals[-1] += base_total - sum(vals)
+    out = dict(zip(keys, vals))
+    if bonus:
+        out[bonus] = bonus_share
+    return out
+
+
+def cooking_initial_ratios(dish_id: str) -> dict[str, int]:
+    """정답을 노출하지 않는 시작점. 기본 재료끼리 거의 균등하게 놓는다."""
+    ing = list(RECIPES[dish_id].get("ingredients", {}))
+    bonus = COOKING_BONUS_INGREDIENTS.get(dish_id) if len(ing) == 2 else None
+    keys = ing + ([bonus] if bonus else [])
+    if not keys:
+        return {}
+    # 숨은 제3재료는 처음엔 0%. 플레이어가 찾아 넣어야 보너스를 받는다.
+    active = len(ing)
+    base = 100 // max(1, active)
+    vals = [base] * active
+    vals[-1] += 100 - sum(vals)
+    out = dict(zip(ing, vals))
+    if bonus:
+        out[bonus] = 0
+    return out
+
+
+def cooking_score(dish_id: str, ratios: dict[str, int]) -> int:
+    """비율 오차를 1~100 점수로 변환한다."""
+    target = cooking_target_ratios(dish_id)
+    keys = set(target) | set(ratios)
+    error = sum(abs(int(ratios.get(k, 0)) - int(target.get(k, 0))) for k in keys)
+    score = max(1, min(100, int(round(100 - error / 2))))
+    # 2재료 레시피는 숨은 재료를 전혀 쓰지 않으면 90점이 최대.
+    bonus = COOKING_BONUS_INGREDIENTS.get(dish_id)
+    if bonus and int(ratios.get(bonus, 0)) <= 0:
+        score = min(score, 90)
+    return score
+
+
+def cooking_quality_label(score: int) -> str:
+    score = max(1, min(100, int(score)))
+    if score >= 95: return "🌟 완벽한 요리"
+    if score >= 85: return "✨ 훌륭한 요리"
+    if score >= 70: return "🍽️ 맛있는 요리"
+    if score >= 50: return "🥣 무난한 요리"
+    if score >= 30: return "😐 아쉬운 요리"
+    return "💀 처참한 요리"
+
+
+def food_affinity_modifier(score: int) -> int:
+    """요리 점수가 선물 호감도에 주는 가감점. NPC 선호도와 별도로 더해진다."""
+    score = max(1, min(100, int(score)))
+    if score >= 95: return 5
+    if score >= 85: return 3
+    if score >= 70: return 1
+    if score < 20: return -5
+    if score < 35: return -3
+    if score < 50: return -1
+    return 0
+
+
+def record_food_quality(player, item_id: str, score: int) -> None:
+    store = player._flags.setdefault("cooked_food_quality", {})
+    store.setdefault(item_id, []).append(max(1, min(100, int(score))))
+
+
+def peek_food_quality(player, item_id: str) -> int | None:
+    scores = (getattr(player, "_flags", {}) or {}).get("cooked_food_quality", {}).get(item_id, [])
+    return int(scores[0]) if scores else None
+
+
+def pop_food_quality(player, item_id: str) -> int | None:
+    store = (getattr(player, "_flags", {}) or {}).get("cooked_food_quality", {})
+    scores = store.get(item_id, [])
+    if not scores:
+        return None
+    value = int(scores.pop(0))
+    if not scores:
+        store.pop(item_id, None)
+    return value
+
 class CookingEngine:
     def __init__(self, player):
         self.player = player
@@ -529,6 +639,73 @@ class CookingEngine:
         cmd = "/혼합 [레시피ID]" if method_filter == "mix" else "/요리 [레시피ID]"
         lines.append(f"  {C.GREEN}{cmd}{C.R} 으로 조리하셰요!")
         return ansi("\n".join(lines))
+
+    def cook_scored(self, dish_id: str, ratios: dict[str, int]) -> dict:
+        """게이지 비율로 조리한다. 랜덤 성공 대신 1~100 품질을 결과 권위로 사용한다."""
+        from items import ALL_ITEMS
+        recipe = RECIPES.get(dish_id)
+        if not recipe:
+            return {"success": False, "error": f"[{dish_id}] 레시피 없음", "recipe_name": dish_id, "system_key": "cooking"}
+        rank = self.player.skill_ranks.get("cooking", "연습")
+        if not _rank_gte(rank, recipe.get("rank_req", "연습")):
+            return {"success": False, "error": "요리 랭크가 부족합니다.", "recipe_name": recipe["name"], "system_key": "cooking"}
+        tool_req = recipe.get("tool_req")
+        if tool_req and self.player.inventory.get(tool_req, 0) <= 0:
+            return {"success": False, "error": f"도구 부족: {ALL_ITEMS.get(tool_req, {}).get('name', tool_req)} 필요", "recipe_name": recipe["name"], "system_key": "cooking"}
+        for ing_id, cnt in recipe.get("ingredients", {}).items():
+            if self.player.inventory.get(ing_id, 0) < cnt:
+                return {"success": False, "error": f"재료 부족: {ALL_ITEMS.get(ing_id, {}).get('name', ing_id)} x{cnt} 필요", "recipe_name": recipe["name"], "system_key": "cooking"}
+        base_ingredients = set(recipe.get("ingredients", {}))
+        extras = [k for k, v in ratios.items() if k not in base_ingredients and int(v) > 0]
+        for extra in extras:
+            if self.player.inventory.get(extra, 0) <= 0:
+                return {"success": False, "error": f"추가 재료 부족: {ALL_ITEMS.get(extra, {}).get('name', extra)} 필요", "recipe_name": recipe["name"], "system_key": "cooking"}
+
+        ingredient_details=[]; ing_list=[]
+        from item_grade import item_grade
+        for ing_id,cnt in recipe.get("ingredients",{}).items():
+            self.player.remove_item(ing_id,cnt)
+            name=ALL_ITEMS.get(ing_id,{}).get("name",ing_id); grade=item_grade(ing_id,ALL_ITEMS)
+            ing_list.append((name,cnt)); ingredient_details.append({"id":ing_id,"name":name,"count":cnt,"grade":grade})
+        for extra in extras:
+            self.player.remove_item(extra,1)
+            name=ALL_ITEMS.get(extra,{}).get("name",extra); grade=item_grade(extra,ALL_ITEMS)
+            ing_list.append((name,1)); ingredient_details.append({"id":extra,"name":name,"count":1,"grade":grade,"bonus":True})
+
+        score=cooking_score(dish_id,ratios); label=cooking_quality_label(score)
+        result_names=[]; result_grade="Normal"
+        for result_id,cnt in recipe["result"].items():
+            self.player.add_item(result_id,cnt)
+            for _ in range(cnt): record_food_quality(self.player,result_id,score)
+            result_name=ALL_ITEMS.get(result_id,{}).get("name",result_id)
+            result_names.append(f"{result_name} x{cnt}")
+            result_grade=ALL_ITEMS.get(result_id,{}).get("grade","Normal")
+            try:
+                from collection import collection_manager
+                is_new, _total = collection_manager.register("요리", result_id, result_name)
+                if is_new: collection_manager.apply_all_bonuses(self.player, "요리")
+            except Exception:
+                logger.warning('cooking_db: collection register 실패',exc_info=True)
+            try:
+                from achievements import achievement_manager
+                achievement_manager.increment("items_cooked",cnt)
+            except Exception:
+                logger.warning('cooking_db: achievement increment 실패',exc_info=True)
+            try:
+                from diary import diary_manager
+                diary_manager.increment("items_cooked",cnt)
+            except Exception:
+                logger.warning('cooking_db: diary increment 실패',exc_info=True)
+        exp=recipe.get("exp",10.0) * (0.7 + score/100*0.6)
+        rank_msg=self.player.train_skill("cooking",exp)
+        try:
+            from skill_breakthrough import record as record_breakthrough
+            record_breakthrough(self.player,f"cook_{dish_id}")
+        except Exception:
+            logger.warning('cooking_db: 돌파 퀘스트 기록 실패',exc_info=True)
+        return {"success":True,"recipe_name":recipe["name"],"result_name":", ".join(result_names),"result_grade":result_grade,
+                "ingredients":ing_list,"ingredient_details":ingredient_details,"exp":exp,"rank_up_msg":rank_msg or "","system_key":"cooking",
+                "quality_score":score,"quality_label":label,"ratios":dict(ratios)}
 
     def cook(self, dish_id: str, force_method: str = None) -> dict:
         """요리 실행. 결과를 dict로 반환 (BG3 렌더링 호환)."""

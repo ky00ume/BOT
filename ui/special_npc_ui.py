@@ -225,9 +225,16 @@ class SpecialNPCView(View):
             if self.player.inventory.get(item_id, 0) < 1:
                 await sel_interaction.response.send_message("아이템이 부족슴미댜!", ephemeral=True)
                 return
+            from cooking_db import peek_food_quality, pop_food_quality, food_affinity_modifier
+            cooked_score = peek_food_quality(self.player, item_id)
             self.player.remove_item(item_id, 1)
-            # 호감도 증가
+            if cooked_score is not None:
+                pop_food_quality(self.player, item_id)
+            # 직접 만든 요리는 품질이 호감도에 실제 영향을 준다.
             aff_gain = 5
+            if cooked_score is not None:
+                qmod = food_affinity_modifier(cooked_score)
+                aff_gain = qmod if cooked_score < 35 else aff_gain + qmod
             if self.aff_manager and hasattr(self.aff_manager, "add_affinity"):
                 self.aff_manager.add_affinity(self.npc_name, aff_gain)
             pts, lv = _get_aff_info(self.aff_manager, self.npc_name)
@@ -237,6 +244,8 @@ class SpecialNPCView(View):
                 "루바토": f"루바토가 {item_name}을(를) 받아 들고 활짝 웃는다. \"나 주는 거야? 좋아! 그럼 답례로 다음 노래는 네 몫이다.\"",
             }
             response = gift_responses.get(self.npc_name, f"{item_name}을(를) 선물했슴미댜!")
+            if cooked_score is not None:
+                response += f" [요리 품질 {cooked_score}/100 · 호감도 {aff_gain:+d}]"
             try:
                 from bg3_renderer import get_renderer, render_async
                 buf = await render_async(

@@ -650,7 +650,15 @@ class RecipeSelect(Select):
             emoji="🔨",
             custom_id=f"craft_exec_{recipe_id}",
         )
-        craft_btn.callback = view._make_craft_callback(self.skill_id, recipe_id)
+        if self.skill_id == "cooking":
+            craft_btn.label = "비율 맞추기"
+            craft_btn.emoji = "🍳"
+            async def open_gauge(inter):
+                gauge = CookingGaugeView(view, recipe_id)
+                await inter.response.edit_message(embed=gauge.make_embed(), attachments=[], view=gauge)
+            craft_btn.callback = open_gauge
+        else:
+            craft_btn.callback = view._make_craft_callback(self.skill_id, recipe_id)
         view.add_item(craft_btn)
 
         from core.directed_gathering import missing_recipe_ingredients
@@ -693,6 +701,127 @@ def _smith_quality_bar(score: int, width: int = 10) -> str:
     score = max(0, min(100, int(score)))
     filled = int(round(score / 100 * width))
     return "▰" * filled + "▱" * (width - filled)
+
+
+
+
+class CookingGaugeView(View):
+    """Discord 버튼만으로 비율을 맞추는 요리 게이지."""
+    def __init__(self, parent, recipe_id: str):
+        super().__init__(timeout=GAME_VIEW_TIMEOUT)
+        from cooking_db import RECIPES, cooking_initial_ratios, COOKING_BONUS_INGREDIENTS
+        self.parent=parent; self.player=parent.player; self.engine=parent.cooking_engine; self.recipe_id=recipe_id
+        self.recipe=RECIPES[recipe_id]; self.ratios=cooking_initial_ratios(recipe_id)
+        # 정답 제3재료는 backend에만 있고 화면에는 공개하지 않는다.
+        secret=COOKING_BONUS_INGREDIENTS.get(recipe_id)
+        if secret: self.ratios.pop(secret,None)
+        self.keys=list(self.ratios); self.selected=0; self.extra=None; self.has_secret=bool(secret)
+        self._build()
+
+    def _bar(self, value: int, width: int=20) -> str:
+        n=max(0,min(width,round(value/100*width)))
+        return "▰"*n + "▱"*(width-n)
+
+    def _extra_candidates(self):
+        from cooking_db import RECIPES
+        recipe_ids=set(self.recipe.get("ingredients",{}))
+        candidates=[]
+        seen=set()
+        for r in RECIPES.values():
+            for item_id in r.get("ingredients",{}):
+                if item_id in recipe_ids or item_id in seen or self.player.inventory.get(item_id,0)<=0: continue
+                seen.add(item_id);candidates.append(item_id)
+        return candidates[:24]
+
+    def make_embed(self):
+        from items import ALL_ITEMS
+        lines=[]
+        for i,k in enumerate(self.keys):
+            name=ALL_ITEMS.get(k,{}).get("name",k); marker="▶" if i==self.selected else " "
+            extra=" · 추가 재료" if k==self.extra else ""
+            lines.append(f"{marker} **{name}**{extra}\n`{self._bar(self.ratios[k])}` **{self.ratios[k]}%**")
+        desc="재료의 **비율**을 맞춰 조리합니다. 정답 수치는 보이지 않습니다.\n"
+        if self.has_secret:
+            desc += "이 요리는 두 재료만으로도 만들 수 있습니다. 하지만 어울리는 **제3재료를 직접 골라** 넣으면 더 높은 점수를 노릴 수 있습니다.\n"
+        desc += "\n" + "\n\n".join(lines)
+        embed=discord.Embed(title=f"🍳 {self.recipe.get('name',self.recipe_id)} · 비율 맞추기",description=desc,color=0xB4773A)
+        embed.add_field(name="합계",value=f"**{sum(self.ratios.values())}%**",inline=True)
+        embed.add_field(name="조작",value="재료 선택 → ±1 / ±10",inline=True)
+        embed.set_footer(text="조리하기를 누르는 순간 1~100점으로 평가됩니다.")
+        return embed
+
+    def _build(self):
+        from items import ALL_ITEMS
+        self.clear_items()
+        opts=[]
+        for i,k in enumerate(self.keys):
+            opts.append(discord.SelectOption(label=ALL_ITEMS.get(k,{}).get("name",k),value=str(i),description=f"현재 {self.ratios[k]}%",default=i==self.selected))
+        sel=discord.ui.Select(placeholder="조절할 재료",options=opts,row=0)
+        async def choose(interaction):
+            self.selected=int(sel.values[0]);self._build();await interaction.response.edit_message(embed=self.make_embed(),view=self,attachments=[])
+        sel.callback=choose;self.add_item(sel)
+
+        if self.has_secret:
+            candidates=self._extra_candidates()
+            extra_opts=[discord.SelectOption(label="추가 재료 없음",value="__none__",default=self.extra is None)]
+            for item_id in candidates:
+                extra_opts.append(discord.SelectOption(label=ALL_ITEMS.get(item_id,{}).get("name",item_id)[:100],value=item_id,default=item_id==self.extra))
+            extra_sel=discord.ui.Select(placeholder="제3재료를 찾아 넣기 (선택)",options=extra_opts[:25],row=1)
+            async def choose_extra(interaction):
+                value=extra_sel.values[0]
+                if self.extra and self.extra in self.ratios:
+                    reclaimed=self.ratios.pop(self.extra);self.keys.remove(self.extra)
+                    if self.keys:self.ratios[self.keys[0]]+=reclaimed
+                self.extra=None
+                if value!='__none__':
+                    self.extra=value;self.ratios[value]=0;self.keys.append(value);self.selected=len(self.keys)-1
+                else:self.selected=min(self.selected,len(self.keys)-1)
+                self._build();await interaction.response.edit_message(embed=self.make_embed(),view=self,attachments=[])
+            extra_sel.callback=choose_extra;self.add_item(extra_sel)
+
+        row=2 if self.has_secret else 1
+        for label,delta in (("-10",-10),("-1",-1),("+1",1),("+10",10)):
+            b=Button(label=label,style=discord.ButtonStyle.secondary,row=row)
+            async def adj(interaction,d=delta):
+                self._adjust(d);self._build();await interaction.response.edit_message(embed=self.make_embed(),view=self,attachments=[])
+            b.callback=adj;self.add_item(b)
+        cook=Button(label="조리하기",emoji="🍳",style=discord.ButtonStyle.success,row=row+1)
+        cook.callback=self._finish;self.add_item(cook)
+
+    def _adjust(self, delta: int):
+        if len(self.keys)<2:return
+        key=self.keys[self.selected];old=self.ratios[key];new=max(0,min(100,old+delta));actual=new-old
+        if actual==0:return
+        others=[k for k in self.keys if k!=key]
+        if actual>0:
+            remain=actual
+            for k in sorted(others,key=lambda x:self.ratios[x],reverse=True):
+                take=min(remain,self.ratios[k]);self.ratios[k]-=take;remain-=take
+                if remain<=0:break
+            actual-=remain;new=old+actual
+        else:
+            give=-actual;target=max(others,key=lambda x:self.ratios[x]);self.ratios[target]+=give
+        self.ratios[key]=new
+
+    async def _finish(self, interaction):
+        from items import ALL_ITEMS
+        if not self.engine:
+            await interaction.response.send_message("요리 엔진을 찾을 수 없습니다.",ephemeral=True);return
+        result=self.engine.cook_scored(self.recipe_id,self.ratios)
+        if not result.get("success"):
+            await interaction.response.send_message(result.get("error","조리할 수 없습니다."),ephemeral=True);return
+        try:
+            from save_manager import save_manager
+            save_manager.save(self.player)
+        except Exception: pass
+        score=result.get("quality_score",1);label=result.get("quality_label","")
+        embed=discord.Embed(title=f"🍽️ {self.recipe.get('name')} 완성",description=f"{label}\n\n# **{score} / 100점**",color=0xC18B52)
+        ratio_lines=[]
+        for k,v in result.get("ratios",{}).items(): ratio_lines.append(f"{ALL_ITEMS.get(k,{}).get('name',k)} {v}%")
+        embed.add_field(name="넣은 비율",value=" · ".join(ratio_lines),inline=False)
+        if self.extra and self.ratios.get(self.extra,0)>0: embed.add_field(name="🧪 제3재료",value=f"{ALL_ITEMS.get(self.extra,{}).get('name',self.extra)}를 넣었습니다.",inline=False)
+        embed.set_footer(text="이 점수는 음식에 저장되어 선물 반응에도 사용됩니다.")
+        await interaction.response.edit_message(embed=embed,attachments=[],view=None)
 
 
 class BlacksmithForgeView(View):

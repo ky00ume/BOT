@@ -96,46 +96,58 @@ def _tone(freq,t,style):
     return _pluck(freq,t)*.72
 
 def render_composition(melody_id,out_path,target_seconds=56.0):
+    """Render a through-composed short form: intro / statement / answer / bridge / climax / cadence.
+
+    Every bar gets an authored phrase role. We never fill duration by cycling the same 8-note motif.
+    """
     c=COMPOSITIONS[melody_id]; beat=60/c["bpm"]; total=int(SR*target_seconds); mix=[0.0]*total; bar=beat*4
     def add_note(midi,start,dur,gain):
-        if start>=target_seconds: return
-        a=max(0,int(start*SR)); z=min(total,a+int(dur*SR)); f=_midi_hz(midi)
+        if start>=target_seconds or dur<=0:return
+        a=max(0,int(start*SR));z=min(total,a+int(dur*SR));f=_midi_hz(midi)
         for i in range(a,z):
-            t=(i-a)/SR; rel=min(1.0,(z-i)/(SR*.05)); mix[i]+=_tone(f,t,c["style"])*gain*rel
-    def phrase(bi,section,energy=1.0):
-        start=bi*bar; chord=c["prog"][bi%len(c["prog"])]; add_note(chord[0]-12,start,bar*.90,.18*energy)
-        if c["style"] in {"newage","impressionist"}:
-            arp=chord[1:]+chord[-2:0:-1]
-            for j,n in enumerate(arp[:6]): add_note(n,start+j*beat*.5,beat*1.25,.11*energy)
-        elif c["style"] in {"jazz","darkjazz"}:
-            for off,g in ((0,.11),(2,.09)):
-                for n in chord[1:]: add_note(n,start+beat*off,beat*1.55,g*energy)
-        elif c["style"]=="baroque":
-            for j,n in enumerate((chord+list(reversed(chord)))[:8]): add_note(n,start+j*beat*.5,beat*.72,.105*energy)
+            t=(i-a)/SR; rel=min(1.0,(z-i)/(SR*.06)); mix[i]+=_tone(f,t,c["style"])*gain*rel
+    def harmony(chord,start,energy,texture):
+        add_note(chord[0]-12,start,bar*.82,.13*energy)
+        if texture=='air':
+            for j,n in enumerate(chord[1:]):add_note(n,start+(j*.75+1)*beat,beat*1.15,.075*energy)
+        elif texture=='drive':
+            for q in range(4):
+                for n in chord[1:3]:add_note(n,start+q*beat,beat*.42,.065*energy)
         else:
-            for j,n in enumerate(chord[1:]): add_note(n,start+j*beat,beat*.82,.11*energy)
-        mel=list(c["mel"])
-        if section=="A2": mel=[n+(12 if j in (2,3) else 0) for j,n in enumerate(mel)]
-        elif section=="B": mel=[n+(2 if j%2==0 else -1) for j,n in enumerate(mel[2:]+mel[:2])]
-        elif section=="RETURN": mel=[n+(12 if j in (3,4) else 0) for j,n in enumerate(mel)]
-        for j,n in enumerate(mel): add_note(n,start+j*beat*.5,beat*.40,.21*energy)
-    usable=max(1,int(target_seconds/bar)-2)
-    for bi in range(usable):
-        if bi<1: sec,e="INTRO",.65
-        elif bi<5: sec,e="A",.9
-        elif bi<9: sec,e="A2",1.0
-        elif bi<13: sec,e="B",1.08
-        else: sec,e="RETURN",.95
-        phrase(bi,sec,e)
-    start=usable*bar; dom=c["prog"][-1]
-    for n in dom: add_note(n,start,bar*.78,.12)
-    add_note(c["mel"][-2],start,beat*.8,.22); add_note(c["mel"][-1],start+beat,beat*1.6,.24)
-    start=(usable+1)*bar; tonic=c["prog"][0]
-    for n in tonic: add_note(n,start,bar*.92,.13)
-    add_note(c["mel"][0],start,bar*.86,.27)
-    peak=max(1e-9,max(abs(x) for x in mix)); scale=.78/peak; vals=[int(max(-1,min(1,x*scale))*32767) for x in mix]
+            for j,n in enumerate(chord[1:]+chord[-2:0:-1]):add_note(n,start+j*beat*.5,beat*.65,.075*energy)
+    def line_for(role,bi):
+        m=c['mel']; root=c['prog'][0][0]%12
+        variants={
+          'intro':[(m[0]-12,1.0,1.5),(m[2]-12,2.75,.7)],
+          'a1':[(m[0],.25,.65),(m[1],1,.55),(m[2],1.75,.8),(m[3],2.75,.7)],
+          'a2':[(m[2],.0,.5),(m[3],.65,.6),(m[4],1.5,.55),(m[2],2.15,.5),(m[1],3,.75)],
+          'answer':[(m[4],.0,.7),(m[3],.85,.5),(m[2],1.5,.65),(m[1],2.35,.5),(m[0],3,.85)],
+          'bridge':[(m[5]-12,.25,.9),(m[6]-12,1.4,.65),(m[7]-12,2.25,1.2)],
+          'lift':[(m[2]+12,.0,.45),(m[3]+12,.55,.45),(m[4]+12,1.1,.7),(m[5]+12,2,.45),(m[6]+12,2.6,.85)],
+          'climax':[(m[0]+12,.0,.45),(m[2]+12,.5,.45),(m[4]+12,1,.5),(m[3]+12,1.6,.45),(m[6]+12,2.15,.5),(m[7]+12,2.75,1.0)],
+          'return':[(m[0],.0,.7),(m[1],.9,.55),(m[2],1.6,.6),(m[4],2.4,.55),(m[0],3.15,.7)],
+        }
+        return variants[role]
+    # Roles deliberately alternate phrase density and register so the ear gets question/answer and breath.
+    roles=['intro','a1','a2','answer','bridge','a1','lift','answer','bridge','climax','return']
+    max_bars=max(1,int((target_seconds-2.2)/bar))
+    roles=roles[:max_bars]
+    for bi,role in enumerate(roles):
+        start=bi*bar; chord=c['prog'][bi%len(c['prog'])]
+        energy={'intro':.55,'bridge':.68,'lift':.98,'climax':1.12,'return':.78}.get(role,.84)
+        texture='air' if role in {'intro','bridge','return'} else ('drive' if role in {'lift','climax'} else 'flow')
+        harmony(chord,start,energy,texture)
+        for n,off,dur in line_for(role,bi):add_note(n,start+off*beat,dur*beat,.19*energy)
+    # A real ending: dominant breath -> tonic resolution -> tail. No new phrase starts after this point.
+    cad=max(0,target_seconds-2.8*beat); dom=c['prog'][-1]; tonic=c['prog'][0]
+    for n in dom[1:]:add_note(n,cad,beat*.7,.07)
+    add_note(c['mel'][-2],cad,beat*.7,.18)
+    res=cad+beat*.9
+    for n in tonic:add_note(n,res,beat*1.55,.09)
+    add_note(c['mel'][0],res,beat*1.65,.23)
+    peak=max(1e-9,max(abs(x) for x in mix));scale=.78/peak;vals=[int(max(-1,min(1,x*scale))*32767) for x in mix]
     path=Path(out_path);path.parent.mkdir(parents=True,exist_ok=True)
-    with wave.open(str(path),"wb") as w:
+    with wave.open(str(path),'wb') as w:
         w.setnchannels(1);w.setsampwidth(2);w.setframerate(SR);w.writeframes(struct.pack('<'+'h'*len(vals),*vals))
     return path
 

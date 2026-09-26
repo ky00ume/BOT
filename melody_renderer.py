@@ -83,9 +83,9 @@ COMPOSITIONS={
  "come_back_alive":{"bpm":94,"style":"ballad","prog":[[50,57,62,66],[55,59,62,67],[57,61,64,69],[50,57,62,66]],"mel":[62,66,69,71,69,66,64,62]},
  "tower_lights":{"bpm":88,"style":"newage","prog":[[48,55,60,64],[43,50,55,59],[45,52,57,60],[41,48,53,57]],"mel":[60,64,67,72,69,67,64,62]},
  "pet_song":{"bpm":124,"style":"minuet","prog":[[55,59,62,67],[50,57,62,66],[48,55,60,64],[50,57,62,66]],"mel":[67,71,74,71,69,67,64,62]},
- "lolth_hymn":{"bpm":96,"style":"baroque","prog":[[50,57,62,65],[51,57,63,66],[48,55,60,63],[45,52,57,60]],"mel":[62,63,66,65,62,60,57,58]},
+ "lolth_hymn":{"bpm":96,"style":"baroque","prog":[[50,57,62,65],[46,53,58,62],[48,55,60,64],[45,52,57,61]],"mel":[62,65,69,67,65,62,60,61]},
  "eilistraee_hymn":{"bpm":108,"style":"impressionist","prog":[[50,57,62,66,69],[55,62,67,71,74],[52,59,64,69,71],[57,64,69,73,76]],"mel":[62,66,69,74,73,69,66,64]},
- "vhaeraun_hymn":{"bpm":104,"style":"darkjazz","prog":[[52,59,62,67],[50,57,60,64],[48,55,59,63],[47,54,57,62]],"mel":[64,67,66,64,71,69,67,66]},
+ "vhaeraun_hymn":{"bpm":104,"style":"darkjazz","prog":[[52,59,64,67],[48,55,60,64],[45,52,57,60],[47,54,59,63]],"mel":[64,67,71,69,67,64,62,63]},
 }
 
 def _midi_hz(n): return 440.0*2**((n-69)/12)
@@ -109,9 +109,84 @@ FORM_BY_STYLE={
  "darkjazz":["intro","bridge","a1","answer","a2","lift","bridge","climax","answer","return"],
 }
 
+
+NATURAL_DUET_STYLES={"jazz","lute","modal","ballad","newage","minuet","baroque","impressionist","darkjazz"}
+
+def _render_natural_duet(c,out_path,target_seconds=56.0):
+    """Hand-shaped piano + plucked-string duet on a strict half-beat grid.
+
+    The earlier generator offset melody and accompaniment independently and then
+    applied chromatic +/- semitone mutations. That produced notes that sounded
+    late/early or simply wrong. Here rhythm is quantized and melodic notes are
+    chosen from the active chord with only diatonic neighbour motion.
+    """
+    beat=60/c["bpm"]; bar=beat*4; total=int(SR*target_seconds); mix=[0.0]*total
+    def add(midi,start,dur,gain,voice):
+        if start>=target_seconds or dur<=0:return
+        a=max(0,int(start*SR)); z=min(total,a+int(dur*SR)); f=_midi_hz(midi)
+        for i in range(a,z):
+            t=(i-a)/SR; rel=min(1.0,(z-i)/(SR*.055)); mix[i]+=voice(f,t)*gain*rel
+    # 4/4 accompaniment: bass on 1, soft piano answers on 2/3/4.
+    def accompaniment(ch,start,section):
+        energy={"intro":.72,"a":.9,"b":.82,"lift":1.0,"return":.8}[section]
+        backing=_pluck if c['style'] in {'lute','modal'} else _piano
+        add(ch[0]-12,start,beat*1.8,.095*energy,backing)
+        upper=ch[1:]
+        if section in {"intro","return"}:
+            for j,n in enumerate(upper[:3]): add(n,start+(1+j)*beat,beat*.8,.065*energy,backing)
+        else:
+            seq=(upper[:3]+upper[1:3]) if len(upper)>=3 else upper
+            for j,n in enumerate(seq[:6]): add(n,start+(1+j*.5)*beat,beat*.42,.052*energy,backing)
+    def melody_for(ch,pattern):
+        # Stable chord tones in one singing register.
+        tones=sorted({n if n>=60 else n+12 for n in ch[1:]})
+        while len(tones)<3: tones.append(tones[-1]+3)
+        lo,mid,hi=tones[0],tones[min(1,len(tones)-1)],tones[min(2,len(tones)-1)]
+        top=hi+12 if hi<67 else hi
+        patterns={
+          0:[(lo,0,1),(mid,1,1),(hi,2,1.5),(mid,3.5,.5)],
+          1:[(mid,0,.5),(hi,.5,1),(mid,1.5,.5),(lo,2,1),(mid,3,1)],
+          2:[(hi,0,1),(mid,1,1),(lo,2,2)],
+          3:[(lo,0,1.5),(mid,1.5,.5),(hi,2,1),(top,3,.5),(hi,3.5,.5)],
+        }
+        return patterns[pattern%4]
+    cadence=max(0,target_seconds-max(4.0,beat*5.2))
+    bars=max(1,int(cadence/bar))
+    for bi in range(bars):
+        start=bi*bar
+        if start>=cadence: break
+        ch=c['prog'][bi%len(c['prog'])]
+        pos=bi/max(1,bars-1)
+        section='intro' if bi<2 else ('a' if pos<.45 else ('b' if pos<.68 else ('lift' if pos<.86 else 'return')))
+        accompaniment(ch,start,section)
+        # Rubato's line is the plucked voice: sparse, phrase-shaped, always on-grid.
+        for n,off,dur in melody_for(ch,bi):
+            gain=.105 if section in {'intro','return'} else (.14 if section=='lift' else .125)
+            add(n,start+off*beat,dur*beat,gain,_pluck)
+    # Two-beat breath before a simple V -> I resolution.
+    breath_start=max(0,cadence-beat*.75)
+    dom=c['prog'][-1]; tonic=c['prog'][0]
+    for n in dom[1:]: add(n,cadence,beat*.9,.055,_piano)
+    add((dom[-1] if dom[-1]>=60 else dom[-1]+12),cadence,beat*.75,.10,_pluck)
+    res=cadence+beat*1.25
+    for n in tonic: add(n,res,beat*2.4,.07,_piano)
+    add((tonic[2] if len(tonic)>2 else tonic[-1]),res,beat*1.6,.12,_pluck)
+    peak=max(1e-9,max(abs(x) for x in mix)); scale=.76/peak
+    fade_start=max(0,total-int(SR*.9)); vals=[]
+    for i,x in enumerate(mix):
+        fade=1.0 if i<fade_start else max(0.0,(total-1-i)/max(1,total-1-fade_start))
+        vals.append(int(max(-1,min(1,x*scale*fade))*32767))
+    path=Path(out_path); path.parent.mkdir(parents=True,exist_ok=True)
+    with wave.open(str(path),'wb') as w:
+        w.setnchannels(1);w.setsampwidth(2);w.setframerate(SR);w.writeframes(struct.pack('<'+'h'*len(vals),*vals))
+    return path
+
 def render_composition(melody_id,out_path,target_seconds=56.0):
     """Render a continuous short-form piece with song-specific section pacing and a resolved tail."""
-    c=COMPOSITIONS[melody_id]; beat=60/c["bpm"]; total=int(SR*target_seconds); mix=[0.0]*total; bar=beat*4
+    c=COMPOSITIONS[melody_id]
+    if c["style"] in NATURAL_DUET_STYLES:
+        return _render_natural_duet(c,out_path,target_seconds)
+    beat=60/c["bpm"]; total=int(SR*target_seconds); mix=[0.0]*total; bar=beat*4
     def add_note(midi,start,dur,gain):
         if start>=target_seconds or dur<=0:return
         a=max(0,int(start*SR));z=min(total,a+int(dur*SR));f=_midi_hz(midi)

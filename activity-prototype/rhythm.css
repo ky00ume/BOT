@@ -168,3 +168,11 @@ body:not(.playing) .toolbar #start{display:grid!important;visibility:visible!imp
 .judge{bottom:calc(var(--receptor-y) + 14px)!important}
 .space-note.holding{filter:brightness(1.35);box-shadow:0 0 8px rgba(255,239,177,.8),0 0 18px rgba(226,175,75,.45);opacity:1!important}
 .space-note.hold-complete{animation:spaceRelease .12s ease-out forwards}@keyframes spaceRelease{to{opacity:0;transform:scaleX(1.25)}}
+
+/* Playing viewport: keep the cabinet inside the browser frame; active pedal bodies stay visible. */
+body.playing{overflow:hidden}
+body.playing .game-shell{height:100vh;max-height:100vh;padding:6px 10px;grid-template-rows:48px minmax(0,1fr) 28px;align-items:stretch}
+body.playing .stage{height:100%!important;min-height:0!important;max-height:none!important}
+body.playing footer{min-height:0;overflow:hidden}
+.space-note.hit.holding{opacity:1!important;transform:none!important;transition:none!important}
+@media(max-width:720px){body.playing .game-shell{height:100dvh;max-height:100dvh;padding:4px;grid-template-rows:42px minmax(0,1fr) 26px}body.playing .stage{min-height:0!important}}

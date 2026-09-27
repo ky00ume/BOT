@@ -17,17 +17,27 @@ FAITH_SONGS = {
     "vhaeraun_hymn": {"title": "가면 뒤에 남긴 길", "instrument": "piano"},
 }
 
+FISHING_SONGS = {
+    "chiikawa_pajama_parties": {"title": "파자마 파티즈의 노래", "instrument": None, "source": "fishing"},
+    "chiikawa_island_song": {"title": "섬의 노래", "instrument": None, "source": "fishing"},
+}
+
+EXTRA_SONGS = {**FAITH_SONGS, **FISHING_SONGS}
+
+def _song_exists(melody_id: str) -> bool:
+    return melody_id in REPERTOIRE or melody_id in EXTRA_SONGS
+
 def required_instrument(melody_id: str) -> str | None:
-    if melody_id in FAITH_SONGS:
-        return FAITH_SONGS[melody_id]["instrument"]
+    if melody_id in EXTRA_SONGS:
+        return EXTRA_SONGS[melody_id].get("instrument")
     name = REPERTOIRE_INSTRUMENTS.get(melody_id)
     return {"리라": "lyre", "류트": "lute", "피아노": "piano"}.get(name)
 
 def song_title(melody_id: str) -> str:
     if melody_id in REPERTOIRE:
         return REPERTOIRE[melody_id]["title"]
-    if melody_id in FAITH_SONGS:
-        return FAITH_SONGS[melody_id]["title"]
+    if melody_id in EXTRA_SONGS:
+        return EXTRA_SONGS[melody_id]["title"]
     return melody_id
 
 
@@ -47,7 +57,7 @@ def ensure_music_skills(player) -> None:
 
 
 def learn_melody(player, melody_id: str) -> bool:
-    if melody_id not in REPERTOIRE:
+    if not _song_exists(melody_id):
         return False
     ensure_music_skills(player)
     learned = _state(player)["learned"]
@@ -58,7 +68,13 @@ def learn_melody(player, melody_id: str) -> bool:
 
 
 def learned_melodies(player):
-    return [(key, REPERTOIRE[key]) for key in _state(player)["learned"] if key in REPERTOIRE]
+    rows=[]
+    for key in _state(player)["learned"]:
+        if key in REPERTOIRE:
+            rows.append((key, REPERTOIRE[key]))
+        elif key in EXTRA_SONGS:
+            rows.append((key, EXTRA_SONGS[key]))
+    return rows
 
 
 def perform(player, melody_id: str) -> tuple[bool, str]:
@@ -66,7 +82,7 @@ def perform(player, melody_id: str) -> tuple[bool, str]:
     if melody_id not in _state(player)["learned"]:
         return False, "아직 기억하지 못한 선율임미댜."
     player.skill_exp["music"] = float(player.skill_exp.get("music", 0.0)) + 20.0
-    return True, f"🎻 츄라이더가 **〈{REPERTOIRE[melody_id]['title']}〉**의 선율을 악기로 연주합니다.  `연주 EXP +20`"
+    return True, f"🎻 츄라이더가 **〈{song_title(melody_id)}〉**의 선율을 악기로 연주합니다.  `연주 EXP +20`"
 
 
 def compose_variation(player, melody_id: str) -> tuple[bool, str]:

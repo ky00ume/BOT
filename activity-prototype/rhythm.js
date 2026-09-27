@@ -9,7 +9,9 @@ const SONGS={
  pet_song:{title:'복복송',instrument:'LUTE',instrumentKo:'류트',bpm:124,audio:'assets/pet_song.wav',lanes:[164.81,196,220,246.94,293.66,329.63,392,493.88],lyrics:['복복 한 번, 복복 두 번','세 번째부터 세지 마세요','츄라이더가 납작해져도','행복한 거니까 계속하세요'],chartStyle:'pet'},
  lolth_hymn:{title:'거미줄 아래의 여덟 번째 기도',instrument:'PIANO',instrumentKo:'오래된 피아노',bpm:96,audio:'assets/lolth_hymn.wav',lanes:[146.83,174.61,220,233.08,261.63,293.66,369.99,440],lyrics:['여덟 번 얽힌 길 아래','낮은 기도는 이름을 감추고','한 줄이 다른 줄을 붙들 때','거미줄은 다시 문이 된다'],chartStyle:'lolth'},
  eilistraee_hymn:{title:'달빛 아래 맨발의 춤',instrument:'PIANO',instrumentKo:'오래된 피아노',bpm:108,audio:'assets/eilistraee_hymn.wav',lanes:[146.83,185,220,293.66,369.99,440,493.88,587.33],lyrics:['달빛이 칼끝에서 흘러','맨발의 원을 은빛으로 그리고','노래가 발보다 먼저 웃으면','밤은 잠시 길을 내어 준다'],chartStyle:'eilistraee'},
- vhaeraun_hymn:{title:'가면 뒤에 남긴 길',instrument:'PIANO',instrumentKo:'오래된 피아노',bpm:104,audio:'assets/vhaeraun_hymn.wav',lanes:[164.81,196,246.94,293.66,329.63,392,493.88,659.25],lyrics:['가면 아래 이름을 접어 두고','발소리 없는 계단을 오른다','보이지 않는 손이 길을 바꾸면','남은 그림자만 먼저 지나간다'],chartStyle:'vhaeraun'}
+ vhaeraun_hymn:{title:'가면 뒤에 남긴 길',instrument:'PIANO',instrumentKo:'오래된 피아노',bpm:104,audio:'assets/vhaeraun_hymn.wav',lanes:[164.81,196,246.94,293.66,329.63,392,493.88,659.25],lyrics:['가면 아래 이름을 접어 두고','발소리 없는 계단을 오른다','보이지 않는 손이 길을 바꾸면','남은 그림자만 먼저 지나간다'],chartStyle:'vhaeraun'},
+ chiikawa_pajama_parties:{title:'파자마 파티즈의 노래',instrument:'TRACK',instrumentKo:'낚시로 건진 악보',bpm:126,audio:'assets/pajama_parties_preview.m4a',durationMs:30000,lanes:[164.81,196,220,246.94,293.66,329.63,392,493.88],lyrics:[],chartStyle:'pajama'},
+ chiikawa_island_song:{title:'섬의 노래',instrument:'TRACK',instrumentKo:'낚시로 건진 악보',bpm:108,audio:'assets/island_song_preview.m4a',durationMs:30000,lanes:[146.83,174.61,196,220,261.63,293.66,349.23,440],lyrics:[],chartStyle:'island'}
 };
 const params=new URLSearchParams(location.search);let songId=SONGS[params.get('song')]?params.get('song'):'spider_rhythm',SONG=SONGS[songId],BPM=SONG.bpm,BEAT=60000/BPM;
 const MODES={
@@ -83,10 +85,11 @@ function buildPatternDrill(speed=1){
 function buildSongChart(speed=1){
  const b=BEAT/speed,n=[];const start=0,bar=b*4,add=(t,lane,kind='tap',dur=0)=>n.push(makeNote(t,lane,kind,dur));
  const sectionFor=bi=>bi<1?'INTRO':bi<5?'A':bi<9?'A2':bi<13?'B':'RETURN';
- const laneSeq={spider:[4,5,6,7,6,5,4,3],shadows:[3,4,6,4,3,2,1,0],lantern:[3,6,7,6,4,3,2,1],return:[3,4,6,7,6,4,3,2],tower:[3,5,6,7,6,5,4,3],pet:[4,6,7,6,5,4,3,2],lolth:[3,4,6,5,3,2,1,2],eilistraee:[5,6,7,7,7,7,6,5],vhaeraun:[3,5,4,3,7,6,5,4]};
+ const laneSeq={spider:[4,5,6,7,6,5,4,3],shadows:[3,4,6,4,3,2,1,0],lantern:[3,6,7,6,4,3,2,1],return:[3,4,6,7,6,4,3,2],tower:[3,5,6,7,6,5,4,3],pet:[4,6,7,6,5,4,3,2],lolth:[3,4,6,5,3,2,1,2],eilistraee:[5,6,7,7,7,7,6,5],vhaeraun:[3,5,4,3,7,6,5,4],pajama:[3,5,6,5,4,6,7,5],island:[2,4,5,4,3,5,6,4]};
  const seq=laneSeq[SONG.chartStyle]||laneSeq.vhaeraun;
  // The audio renderer reserves two final bars for its cadence; mirror that exact form here.
- const usable=Math.max(1,Math.floor((56000/speed)/bar)-2);
+ const songMs=(SONG.durationMs||56000);
+ const usable=Math.max(1,Math.floor((songMs/speed)/bar)-2);
  for(let bi=0;bi<usable;bi++){
   const sec=sectionFor(bi),t=start+bi*bar;
   let mel=seq.slice();
@@ -107,10 +110,10 @@ function buildSongChart(speed=1){
  // Penultimate cadence bar, then a held tonic finish instead of an endless pattern.
  add(t,seq[6]);add(t+b,seq[7],'hold',b*1.6);add(t,1);add(t+b*2,6);
  t+=bar;add(t,seq[0],'hold',b*3.4);add(t,0,'hold',b*3.1);add(t,4,'hold',b*3.1);
- return n.filter(x=>x.t<56000/speed).sort((a,b)=>a.t-b.t||a.lane-b.lane);
+ return n.filter(x=>x.t<(SONG.durationMs||56000)/speed).sort((a,b)=>a.t-b.t||a.lane-b.lane);
 }
 function buildSpaceChart(speed=1){
- if(mode!=='hard')return [];const b=BEAT/speed,start=0,bar=b*4,usable=Math.max(1,Math.floor((56000/speed)/bar)-2),out=[];
+ if(mode!=='hard')return [];const b=BEAT/speed,start=0,bar=b*4,songMs=(SONG.durationMs||56000),usable=Math.max(1,Math.floor((songMs/speed)/bar)-2),out=[];
  // Space is a musical accent/pedal: section arrivals plus the final tonic, never a ninth stream lane.
  [1,5,9,13].filter(x=>x<usable).forEach((bi,i)=>out.push({t:start+bi*bar,duration:i===2?b*1.5:b*.85,hit:false,miss:false,holding:false,el:null}));
  out.push({t:start+(usable+1)*bar,duration:b*3.1,hit:false,miss:false,holding:false,el:null});return out;

@@ -85,6 +85,24 @@ FISH_GUIDE = {
     },
 }
 
+FISHING_SHEET_DROP_RATE = 0.03
+FISHING_SHEET_SONGS = (
+    "chiikawa_pajama_parties",
+    "chiikawa_island_song",
+)
+
+def roll_fishing_sheet(player, *, rng=random.random, chooser=random.choice):
+    """성공 낚시 뒤 아직 없는 악보를 낮은 확률로 건져 올린다."""
+    from music_system import FISHING_SONGS, learn_melody
+    learned = set((getattr(player, "_flags", {}) or {}).get("music_book", {}).get("learned", []))
+    missing = [sid for sid in FISHING_SHEET_SONGS if sid in FISHING_SONGS and sid not in learned]
+    if not missing or rng() >= FISHING_SHEET_DROP_RATE:
+        return None
+    song_id = chooser(missing)
+    if not learn_melody(player, song_id):
+        return None
+    return song_id
+
 class FishingView(discord.ui.View):
     def __init__(self, player, spot_name: str, spot_data: dict, fish_db_filtered: dict, activity_id: str | None = None):
         super().__init__(timeout=70)
@@ -279,6 +297,7 @@ class FishingView(discord.ui.View):
         except Exception:
             logger.warning('fishing: 돌파 퀘스트 기록 실패', exc_info=True)
         rank_msg = player.train_skill("fishing", 15.0)
+        sheet_song_id = roll_fishing_sheet(player) if added else None
 
         if is_new_collection and self._message:
             await self._message.channel.send(
@@ -335,8 +354,17 @@ class FishingView(discord.ui.View):
                     color=GRADE_EMBED_COLOR.get(grade, 0xaa6600),
                 )
             await interaction.response.edit_message(embed=embed, view=self)
+        if sheet_song_id:
+            try:
+                from music_system import song_title
+                await interaction.followup.send(
+                    f"📜🌊 **물에 젖은 악보를 건져 올렸슴미댜!**\n"
+                    f"악보 **〈{song_title(sheet_song_id)}〉**를 읽어 음악책에 등록했슴미댜."
+                )
+            except Exception:
+                logger.warning('fishing: 악보 획득 알림 실패', exc_info=True)
         if self.activity_id:
-            activity_service.finish(self.activity_id, outcome="caught", payload={"fish": caught_name, "grade": grade, "size_cm": size_cm, "added": added})
+            activity_service.finish(self.activity_id, outcome="caught", payload={"fish": caught_name, "grade": grade, "size_cm": size_cm, "added": added, "sheet_song": sheet_song_id})
             bond_service.award("activity.fishing", actor_id=getattr(interaction.user, "id", None))
         self._apply_outing_state()
 

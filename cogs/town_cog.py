@@ -244,15 +244,25 @@ class InstrumentPerformanceSetupView(discord.ui.View):
         ok,reason=can_start_instrument_performance(self.player)
         if not ok:
             await interaction.response.send_message(reason,ephemeral=True);return
-        base=os.getenv('RHYTHM_ACTIVITY_URL','').strip()
-        if not base:
+        # Multiple public activity URLs are allowed. Keep the legacy single-value env as fallback.
+        raw=os.getenv('RHYTHM_ACTIVITY_URLS','').strip()
+        bases=[x.strip() for x in raw.replace('\n',',').replace(';',',').split(',') if x.strip()]
+        legacy=os.getenv('RHYTHM_ACTIVITY_URL','').strip()
+        if legacy and legacy not in bases:
+            bases.append(legacy)
+        if not bases:
             await interaction.response.send_message('리듬게임 Activity 주소가 아직 연결되지 않았슴미댜.',ephemeral=True);return
         ld=music_loadout(self.player)
-        sep='&' if '?' in base else '?'
-        url=base+sep+urlencode({'song':ld['score']})
+        urls=[]
+        for base in bases[:5]:
+            sep='&' if '?' in base else '?'
+            urls.append(base+sep+urlencode({'song':ld['score']}))
         launch=discord.ui.View(timeout=300)
-        launch.add_item(discord.ui.Button(label='리듬게임 열기',emoji='🎹',style=discord.ButtonStyle.link,url=url))
-        await interaction.response.send_message('🎶 준비됐슴미댜. 아래 버튼으로 연주를 시작하셰요!',view=launch,ephemeral=True)
+        for idx,url in enumerate(urls):
+            label='리듬게임 열기' if idx==0 else f'예비 링크 {idx}'
+            launch.add_item(discord.ui.Button(label=label,emoji='🎹' if idx==0 else '↪️',style=discord.ButtonStyle.link,url=url))
+        msg='🎶 준비됐슴미댜. 첫 번째 링크가 기본 주소고, 안 열리면 예비 링크를 써보셰요!' if len(urls)>1 else '🎶 준비됐슴미댜. 아래 버튼으로 연주를 시작하셰요!'
+        await interaction.response.send_message(msg,view=launch,ephemeral=True)
 
 
 async def setup(bot):

@@ -23,7 +23,9 @@ class SoundCog(commands.Cog, name="효과음"):
                 await ctx.send("먼저 음성 채널에 들어가 있으면 츄라이더가 따라감미댜.")
                 return
             await sound_director.join(channel)
-            await ctx.send(f"🔊 **{channel.name}**에 들어왔슴미댜. 이제 생활/제작 소리가 남미댜.")
+            from core.world_bgm import play_location_bgm
+            play_location_bgm(getattr(self.bot.ctx.player, "current_location", "비전의 탑"))
+            await ctx.send(f"🔊 **{channel.name}**에 들어왔슴미댜. 이제 장소 BGM과 생활/제작 소리가 남미댜.")
             return
         if mode in {"끄기", "꺼", "off"}:
             await sound_director.leave()

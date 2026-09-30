@@ -29,6 +29,8 @@ class TownCog(commands.Cog, name="마을"):
         if not await check_channel(ctx, self.ctx.allowed_channel_id):
             return
         from ui.care_ui import TowerUpperFloorView
+        from core.world_bgm import play_scene_bgm
+        play_scene_bgm("tower")
         view = TowerUpperFloorView(self.ctx.player, self.ctx.care_manager, suspicious_actor_id=getattr(self.ctx, "drider_id", None))
         await ctx.send(embed=view.make_embed(), view=view)
 
@@ -50,6 +52,8 @@ class TownCog(commands.Cog, name="마을"):
         if not await check_channel(ctx, self.ctx.allowed_channel_id):
             return
         from ui.town_ui import VisionTownView
+        from core.world_bgm import play_scene_bgm
+        play_scene_bgm("myconid_colony")
         view = VisionTownView(self.ctx.player, self.ctx.affinity_manager, self.ctx.npc_manager, village_manager, care_manager=self.ctx.care_manager)
         await view.send(ctx)
 
@@ -168,6 +172,8 @@ class TownCog(commands.Cog, name="마을"):
             origin = self.ctx.movement_system._get_location()
             result = self.ctx.movement_system.move_to(ctx.author.id, destination)
             if self.ctx.movement_system._get_location() == destination and origin != destination:
+                from core.world_bgm import play_location_bgm
+                play_location_bgm(destination)
                 event_store.append(GameEvent(
                     event_type="world.moved", actor_id=ctx.author.id, subject="츄라이더",
                     location=destination, payload={"from": origin, "to": destination},

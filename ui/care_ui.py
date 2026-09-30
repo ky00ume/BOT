@@ -1162,6 +1162,8 @@ class TowerPlaceView(ExpiringView):
         return callback
 
     async def _open_colony_road(self, interaction):
+        from core.world_bgm import play_scene_bgm
+        play_scene_bgm("colony_road")
         view = TowerColonyRoadView(
             self.player,
             self.care_manager,
@@ -1245,11 +1247,14 @@ class TowerColonyRoadView(ExpiringView):
         await interaction.response.edit_message(attachments=[], embed=view.make_embed(), view=view)
 
     async def _turn_back(self, interaction):
+        from core.world_bgm import play_scene_bgm
         if self.direction == "to_colony":
+            play_scene_bgm("tower")
             view = TowerUpperFloorView(self.player, self.care_manager, suspicious_actor_id=self.suspicious_actor_id)
             view.bind_message(getattr(interaction, "message", None))
             await interaction.response.edit_message(attachments=[], embed=view.make_embed(), view=view)
         else:
+            play_scene_bgm("myconid_colony")
             from ui.town_ui import VisionTownView
             import app_context
             from village import village_manager
@@ -1263,8 +1268,10 @@ class TowerColonyRoadView(ExpiringView):
             await view.send(interaction, edit=True)
 
     async def _arrive(self, interaction):
+        from core.world_bgm import play_scene_bgm
         if self.direction == "to_colony":
             self.player.current_location = "마이코니드 군락"
+            play_scene_bgm("myconid_colony")
             save_player_to_db(self.player)
             from ui.town_ui import VisionTownView
             import app_context
@@ -1279,6 +1286,7 @@ class TowerColonyRoadView(ExpiringView):
             await view.send(interaction, edit=True)
         else:
             self.player.current_location = "비전의 탑"
+            play_scene_bgm("tower")
             from tower_exhibition import entry_notice as exhibition_entry_notice
             notice = exhibition_entry_notice(self.player)
             save_player_to_db(self.player)

@@ -285,6 +285,8 @@ class VisionTownView(View):
 
     async def send(self, channel_or_interaction, edit=False):
         """뷰를 전송하거나 기존 메시지를 편집한다."""
+        from core.world_bgm import play_scene_bgm
+        play_scene_bgm("myconid_colony")
         file = self._make_banner_file()
         # 마을 기여도·레벨 임베드
         embed = None
@@ -331,6 +333,8 @@ class VisionTownView(View):
 
     async def _tower_road_callback(self, interaction: discord.Interaction):
         from ui.care_ui import TowerColonyRoadView
+        from core.world_bgm import play_scene_bgm
+        play_scene_bgm("colony_road")
         if self.care_manager is None:
             import app_context
             care_manager = app_context.get("care_manager")
@@ -411,6 +415,8 @@ class WorldMapView(View):
 
     async def send(self, channel_or_interaction, edit=False):
         """뷰를 전송하거나 기존 메시지를 편집한다."""
+        from core.world_bgm import play_location_bgm
+        play_location_bgm(getattr(self.player, "current_location", "마이코니드 군락"))
         file = self._make_banner_file()
         if edit and isinstance(channel_or_interaction, discord.Interaction):
             await channel_or_interaction.response.edit_message(
@@ -520,6 +526,11 @@ class HuntingZoneView(View):
         )
 
     async def send(self, channel_or_interaction, edit=False):
+        from core.world_bgm import play_location_bgm, play_scene_bgm
+        if self.zone_name == "드레드 할로우":
+            play_scene_bgm("hunting_ground")
+        else:
+            play_location_bgm(getattr(self.player, "current_location", ""))
         file = self._make_banner_file()
         if edit and isinstance(channel_or_interaction, discord.Interaction):
             await channel_or_interaction.response.edit_message(
